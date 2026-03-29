@@ -75,7 +75,7 @@ export function CertificationPage() {
 
   useEffect(() => {
     Promise.all(CERT_STATUSES.map((s) => fetchWorkOrders({ status: s }))).then((results) => {
-      const all = results.flatMap((r) => (r.data as Order[]) ?? [])
+      const all = results.flatMap((r) => (r.data as unknown as Order[]) ?? [])
       setOrders(all)
       setIsLoading(false)
     })
