@@ -48,10 +48,10 @@ export const authService = {
 
   async getCurrentUser(): Promise<AuthUser | null> {
     const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) return null
-    return fetchProfile(user.id)
+      data: { session },
+    } = await supabase.auth.getSession()
+    if (!session?.user) return null
+    return fetchProfile(session.user.id)
   },
 
   async signOut(): Promise<void> {

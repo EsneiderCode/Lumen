@@ -31,6 +31,8 @@ export function LoginPage() {
       const result = await signInWithEmail(email, password)
       if (result.error) {
         setError(result.error)
+      } else if (result.user) {
+        navigate(ROLE_ROUTES[result.user.role])
       }
     } finally {
       setIsSubmitting(false)

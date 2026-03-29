@@ -48,7 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithEmail = useCallback(async (email: string, password: string) => {
     const result = await authService.signInWithEmail(email, password)
     if (result.user) setUser(result.user)
-    return { error: result.error }
+    return { user: result.user, error: result.error }
   }, [])
 
   const signOut = useCallback(async () => {
