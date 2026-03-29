@@ -33,7 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return
       }
 
-      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
+      if (event === 'TOKEN_REFRESHED' && session) {
         const profile = await authService.getCurrentUser()
         if (mounted && profile) setUser(profile)
       }
