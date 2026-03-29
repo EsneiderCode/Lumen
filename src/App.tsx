@@ -16,6 +16,7 @@ import { TechOrdersPage } from '@/pages/technician/TechOrdersPage'
 import { TechOrderDetailPage } from '@/pages/technician/TechOrderDetailPage'
 import { RueckmeldungPage } from '@/pages/technician/RueckmeldungPage'
 import { WorkOrderDetailPage } from '@/pages/admin/WorkOrderDetailPage'
+import { CertificationPage } from '@/pages/admin/CertificationPage'
 import { ContractorDashboard } from '@/pages/contractor/ContractorDashboard'
 import { ROUTES } from '@/config/routes'
 
@@ -37,6 +38,7 @@ function App() {
               <Route path={ROUTES.ADMIN.ORDERS_EDIT} element={<WorkOrderFormPage />} />
               <Route path={ROUTES.ADMIN.ORDERS_ASSIGN} element={<WorkOrderAssignPage />} />
               <Route path={ROUTES.ADMIN.ORDERS_DETAIL} element={<WorkOrderDetailPage />} />
+              <Route path={ROUTES.ADMIN.CERTIFICATION} element={<CertificationPage />} />
             </Route>
           </Route>
 
