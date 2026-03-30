@@ -20,6 +20,9 @@ export interface WorkOrderFilters {
   project_id?: string
   client_id?: string
   search?: string
+  date_from?: string // ISO date YYYY-MM-DD
+  date_to?: string   // ISO date YYYY-MM-DD
+  priority?: 'normal' | 'alta' | 'urgente'
 }
 
 // ── Lookup tables ─────────────────────────────────────────────
@@ -82,6 +85,9 @@ export async function fetchWorkOrders(filters: WorkOrderFilters = {}) {
       `order_number.ilike.%${filters.search}%,address.ilike.%${filters.search}%`,
     )
   }
+  if (filters.date_from) query = query.gte('assigned_date', filters.date_from)
+  if (filters.date_to) query = query.lte('assigned_date', filters.date_to)
+  if (filters.priority) query = query.eq('priority', filters.priority)
 
   const { data, error } = await query
   return { data: data ?? [], error: error?.message ?? null }
@@ -311,9 +317,25 @@ export async function transitionWorkOrderStatus(
 export async function fetchStateHistory(workOrderId: string) {
   const { data, error } = await supabase
     .from('work_order_state_history')
-    .select('*')
+    .select('*, profiles ( full_name )')
     .eq('work_order_id', workOrderId)
     .order('created_at', { ascending: true })
+  return { data: data ?? [], error: error?.message ?? null }
+}
+
+// ── Contractor (LUM-019) ──────────────────────────────────────
+
+export async function fetchContractorWorkOrders(userId: string) {
+  const { data, error } = await supabase
+    .from('work_orders')
+    .select(`
+      *,
+      clients ( name, code ),
+      projects ( name, code ),
+      operators ( name, code )
+    `)
+    .eq('assigned_technician', userId)
+    .order('assigned_date', { ascending: false, nullsFirst: false })
   return { data: data ?? [], error: error?.message ?? null }
 }
 

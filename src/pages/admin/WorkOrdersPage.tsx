@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import {
   fetchWorkOrders,
@@ -8,6 +8,12 @@ import {
   type WorkOrderFilters,
 } from '@/services/workOrderService'
 import type { WorkOrderStatus, WorkType, TeamColor } from '@/types/enums'
+
+const PRIORITY_FILTER_LABELS = {
+  normal: 'Normal',
+  alta: 'Hoch',
+  urgente: 'Dringend',
+} as const
 import type { Database } from '@/types/database.types'
 
 type WorkOrderRow = Database['public']['Tables']['work_orders']['Row'] & {
@@ -85,19 +91,21 @@ export function WorkOrdersPage() {
   const [filters, setFilters] = useState<WorkOrderFilters>({})
   const [search, setSearch] = useState('')
 
-  const load = useCallback(async () => {
-    setIsLoading(true)
-    const activeFilters: WorkOrderFilters = { ...filters }
-    if (search.trim()) activeFilters.search = search.trim()
-    const { data, error } = await fetchWorkOrders(activeFilters)
-    if (error) setError(error)
-    else setOrders(data as unknown as WorkOrderRow[])
-    setIsLoading(false)
-  }, [filters, search])
-
   useEffect(() => {
-    load()
-  }, [load])
+    let cancelled = false
+    async function load() {
+      setIsLoading(true)
+      const activeFilters: WorkOrderFilters = { ...filters }
+      if (search.trim()) activeFilters.search = search.trim()
+      const { data, error } = await fetchWorkOrders(activeFilters)
+      if (cancelled) return
+      if (error) setError(error)
+      else setOrders(data as unknown as WorkOrderRow[])
+      setIsLoading(false)
+    }
+    void load()
+    return () => { cancelled = true }
+  }, [filters, search])
 
   useEffect(() => {
     fetchClients().then(({ data }) => setClients(data))
@@ -131,7 +139,8 @@ export function WorkOrdersPage() {
       </div>
 
       {/* Filters */}
-      <div className="mb-4 rounded-xl border border-gf-border bg-gf-card p-4">
+      <div className="mb-4 rounded-xl border border-gf-border bg-gf-card p-4 space-y-3">
+        {/* Row 1 */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {/* Search */}
           <input
@@ -190,7 +199,10 @@ export function WorkOrdersPage() {
               <option key={val} value={val}>{label}</option>
             ))}
           </select>
+        </div>
 
+        {/* Row 2 */}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {/* Client filter */}
           <select
             value={filters.client_id ?? ''}
@@ -218,6 +230,45 @@ export function WorkOrdersPage() {
               <option key={p.id} value={p.id}>{p.code} – {p.name}</option>
             ))}
           </select>
+
+          {/* Priority filter */}
+          <select
+            value={filters.priority ?? ''}
+            onChange={(e) =>
+              setFilters((f) => ({
+                ...f,
+                priority: (e.target.value as 'normal' | 'alta' | 'urgente') || undefined,
+              }))
+            }
+            className="rounded-lg border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+          >
+            <option value="">Alle Prioritäten</option>
+            {Object.entries(PRIORITY_FILTER_LABELS).map(([val, label]) => (
+              <option key={val} value={val}>{label}</option>
+            ))}
+          </select>
+
+          {/* Date from */}
+          <input
+            type="date"
+            value={filters.date_from ?? ''}
+            onChange={(e) =>
+              setFilters((f) => ({ ...f, date_from: e.target.value || undefined }))
+            }
+            className="rounded-lg border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+            title="Einsatzdatum von"
+          />
+
+          {/* Date to */}
+          <input
+            type="date"
+            value={filters.date_to ?? ''}
+            onChange={(e) =>
+              setFilters((f) => ({ ...f, date_to: e.target.value || undefined }))
+            }
+            className="rounded-lg border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+            title="Einsatzdatum bis"
+          />
 
           {/* Reset */}
           <button

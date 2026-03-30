@@ -107,6 +107,7 @@ interface StateEntry {
   changed_by: string
   notes: string | null
   created_at: string
+  profiles: { full_name: string } | null
 }
 
 // Statuses where PDF download is available
@@ -593,7 +594,7 @@ export function WorkOrderDetailPage() {
                   {i < history.length - 1 && <div className="mt-1 h-6 w-px bg-gf-border" />}
                 </div>
                 <div className="flex-1 pb-1">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[entry.to_status]}`}>
                       {STATUS_LABELS[entry.to_status]}
                     </span>
@@ -608,6 +609,9 @@ export function WorkOrderDetailPage() {
                   )}
                   <p className="text-xs text-gf-text-muted">
                     {new Date(entry.created_at).toLocaleString('de-DE')}
+                    {entry.profiles?.full_name && (
+                      <span className="ml-1.5 text-gf-text-muted">· {entry.profiles.full_name}</span>
+                    )}
                   </p>
                 </div>
               </li>

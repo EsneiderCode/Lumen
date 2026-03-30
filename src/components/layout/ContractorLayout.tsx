@@ -4,9 +4,9 @@ import { ROUTES } from '@/config/routes'
 import { useAuth } from '@/hooks/useAuth'
 
 const NAV_ITEMS: BottomNavItem[] = [
-  { label: 'Aufträge', path: ROUTES.CONTRACTOR.DASHBOARD, icon: '📋' },
+  { label: 'Übersicht', path: ROUTES.CONTRACTOR.DASHBOARD, icon: '🏠' },
+  { label: 'Aufträge', path: ROUTES.CONTRACTOR.ORDERS, icon: '📋' },
   { label: 'Dokumente', path: ROUTES.CONTRACTOR.DOCUMENTS, icon: '📄' },
-  { label: 'Zertifikate', path: ROUTES.CONTRACTOR.CERTIFICATIONS, icon: '✅' },
 ]
 
 export function ContractorLayout() {
