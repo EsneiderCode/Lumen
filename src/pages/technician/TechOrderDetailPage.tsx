@@ -215,6 +215,28 @@ export function TechOrderDetailPage() {
         </div>
       )}
 
+      {order.status === 'returned' && (
+        <div className="rounded-xl border border-gf-danger/50 bg-gf-danger/10 p-4">
+          {(() => {
+            const returnEntry = [...history].reverse().find((e) => e.to_status === 'returned')
+            return (
+              <>
+                <p className="font-semibold text-rose-700">⚠ Auftrag zurückgegeben — Nichtkonformität</p>
+                {returnEntry?.notes && (
+                  <p className="mt-1 text-sm text-rose-600">{returnEntry.notes}</p>
+                )}
+              </>
+            )
+          })()}
+          <button
+            onClick={() => navigate(`/tech/orders/${order.id}/rueckmeldung`)}
+            className="mt-3 w-full rounded-xl bg-gf-danger px-4 py-3 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+          >
+            📝 Rückmeldung korrigieren
+          </button>
+        </div>
+      )}
+
       {error && (
         <div className="rounded-lg border border-gf-danger/30 bg-gf-danger/10 px-4 py-3 text-sm text-rose-700">
           {error}

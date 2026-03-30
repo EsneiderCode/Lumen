@@ -102,11 +102,12 @@ export function TechOrdersPage() {
       )
     : orders
 
+  const returnedOrders = filtered.filter((o) => o.status === 'returned')
   const activeOrders = filtered.filter(
     (o) => ['assigned', 'in_progress', 'executed', 'rueckmeldung_pending'].includes(o.status),
   )
   const otherOrders = filtered.filter(
-    (o) => !['assigned', 'in_progress', 'executed', 'rueckmeldung_pending'].includes(o.status),
+    (o) => !['assigned', 'in_progress', 'executed', 'rueckmeldung_pending', 'returned'].includes(o.status),
   )
 
   function OrderCard({ order }: { order: WorkOrderRow }) {
@@ -204,6 +205,16 @@ export function TechOrdersPage() {
         </div>
       ) : (
         <div className="space-y-4">
+          {returnedOrders.length > 0 && (
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-rose-600">
+                ⚠ Zurückgegeben — Korrektur erforderlich ({returnedOrders.length})
+              </p>
+              <div className="space-y-2">
+                {returnedOrders.map((o) => <OrderCard key={o.id} order={o} />)}
+              </div>
+            </div>
+          )}
           {activeOrders.length > 0 && (
             <div>
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gf-text-muted">

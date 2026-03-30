@@ -267,7 +267,7 @@ export async function fetchMyWorkOrders(userId: string, team: string | null) {
       projects ( name, code ),
       operators ( name, code )
     `)
-    .not('status', 'in', '("cancelled","paid","returned")')
+    .not('status', 'in', '("cancelled","paid")')
     .order('assigned_date', { ascending: true, nullsFirst: false })
 
   if (team) {
