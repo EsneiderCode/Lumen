@@ -1,10 +1,69 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { useAuth } from '@/hooks/useAuth'
+
+// ── Time picker ────────────────────────────────────────────────
+function TimePickerField({ label, value, onChange }: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+}) {
+  const formatted = value
+    ? value.slice(0, 5)       // "HH:MM"
+    : null
+
+  return (
+    <div>
+      <label className="mb-1.5 block text-xs font-medium text-gf-text-muted">{label}</label>
+      <div className="relative">
+        {/* Visual layer — pointer-events-none so the input overlay catches the tap */}
+        <div
+          className={`flex items-center gap-3 rounded-xl border-2 px-4 py-3.5 transition-colors pointer-events-none ${
+            value
+              ? 'border-gf-primary/50 bg-gf-primary/5'
+              : 'border-gf-border bg-gf-surface'
+          }`}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={`h-5 w-5 shrink-0 ${value ? 'text-gf-primary' : 'text-gf-text-muted'}`}
+          >
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
+          <span
+            className={`flex-1 font-mono text-lg font-bold tracking-wider ${
+              formatted ? 'text-gf-text' : 'text-gf-text-placeholder'
+            }`}
+          >
+            {formatted ?? '--:--'}
+          </span>
+          {formatted && (
+            <span className="text-xs font-semibold text-gf-primary">Uhr</span>
+          )}
+        </div>
+        {/* Transparent native input as tap target — full overlay */}
+        <input
+          type="time"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+        />
+      </div>
+    </div>
+  )
+}
 import {
   fetchWorkOrder,
   fetchWorkOrderDetail,
   fetchWorkOrderPhotos,
+  fetchStateHistory,
   upsertWorkOrderDetail,
   uploadWorkOrderPhoto,
   transitionWorkOrderStatus,
@@ -112,6 +171,7 @@ export function RueckmeldungPage() {
   const [uploadingType, setUploadingType] = useState<PhotoType | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [savedOk, setSavedOk] = useState(false)
+  const [returnedNote, setReturnedNote] = useState<string | null>(null)
 
   const fileInputRefs = {
     before: useRef<HTMLInputElement>(null),
@@ -124,7 +184,8 @@ export function RueckmeldungPage() {
     Promise.all([
       fetchWorkOrder(id),
       fetchWorkOrderPhotos(id),
-    ]).then(async ([{ data: orderData, error: orderErr }, { data: photoData }]) => {
+      fetchStateHistory(id),
+    ]).then(async ([{ data: orderData, error: orderErr }, { data: photoData }, { data: histData }]) => {
       if (orderErr || !orderData) {
         setError(orderErr ?? 'Auftrag nicht gefunden')
         setIsLoading(false)
@@ -132,6 +193,10 @@ export function RueckmeldungPage() {
       }
       setOrder(orderData as unknown as typeof order)
       setPhotos((photoData ?? []) as Photo[])
+
+      const histEntries = (histData ?? []) as Array<{ to_status: string; notes: string | null }>
+      const returnEntry = [...histEntries].reverse().find((e) => e.to_status === 'returned')
+      if (returnEntry?.notes) setReturnedNote(returnEntry.notes)
 
       // Load existing detail
       const table = workTypeToDetailTable(orderData.work_type)
@@ -250,6 +315,15 @@ export function RueckmeldungPage() {
         </div>
       </div>
 
+      {/* Non-conformity banner */}
+      {order.status === 'returned' && returnedNote && (
+        <div className="rounded-xl border border-gf-danger/50 bg-gf-danger/10 p-4">
+          <p className="font-semibold text-rose-700">⚠ Auftrag zurückgegeben — Nichtkonformität</p>
+          <p className="mt-1 text-sm text-rose-600">{returnedNote}</p>
+          <p className="mt-2 text-xs text-rose-500">Korrekturen vornehmen und die Rückmeldung erneut senden.</p>
+        </div>
+      )}
+
       {/* Order summary */}
       <div className="rounded-xl border border-gf-border bg-gf-card p-4">
         <div className="grid grid-cols-2 gap-2 text-sm">
@@ -274,24 +348,8 @@ export function RueckmeldungPage() {
       <div className="rounded-xl border border-gf-border bg-gf-card p-4">
         <h3 className="mb-3 font-display text-sm font-semibold text-gf-text">Einsatzzeiten</h3>
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gf-text-muted">Beginn</label>
-            <input
-              type="time"
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-              className="w-full rounded-lg border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gf-text-muted">Ende</label>
-            <input
-              type="time"
-              value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
-              className="w-full rounded-lg border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
-            />
-          </div>
+          <TimePickerField label="Beginn" value={startTime} onChange={setStartTime} />
+          <TimePickerField label="Ende" value={endTime} onChange={setEndTime} />
         </div>
       </div>
 
@@ -448,7 +506,7 @@ export function RueckmeldungPage() {
           onClick={handleSend}
           className="rounded-xl bg-gf-primary px-4 py-3 text-sm font-semibold text-white hover:bg-gf-primary-dark disabled:opacity-50 transition-colors"
         >
-          {isSending ? 'Wird gesendet…' : 'Rückmeldung senden'}
+          {isSending ? 'Wird gesendet…' : order.status === 'returned' ? 'Korrigierte RM senden' : 'Rückmeldung senden'}
         </button>
       </div>
 

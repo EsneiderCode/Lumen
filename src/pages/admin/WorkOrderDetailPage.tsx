@@ -120,11 +120,12 @@ const PDF_VISIBLE_STATUSES: WorkOrderStatus[] = [
   'paid',
 ]
 
-type ModalType = 'send_to_client' | 'accept' | 'reject' | 'invoice' | 'mark_paid' | null
+type ModalType = 'send_to_client' | 'accept' | 'reject' | 'invoice' | 'mark_paid' | 'return_nonconformity' | null
 
 interface ModalState {
   type: ModalType
   inputValue: string
+  categoryValue: string
 }
 
 export function WorkOrderDetailPage() {
@@ -155,7 +156,7 @@ export function WorkOrderDetailPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [modal, setModal] = useState<ModalState>({ type: null, inputValue: '' })
+  const [modal, setModal] = useState<ModalState>({ type: null, inputValue: '', categoryValue: '' })
 
   useEffect(() => {
     if (!id) return
@@ -195,7 +196,7 @@ export function WorkOrderDetailPage() {
       setOrder((prev) => (prev ? { ...prev, status: updated!.status } : prev))
       const { data: histData } = await fetchStateHistory(id)
       setHistory((histData ?? []) as unknown as StateEntry[])
-      setModal({ type: null, inputValue: '' })
+      setModal({ type: null, inputValue: '', categoryValue: '' })
     }
     setIsTransitioning(false)
   }
@@ -210,11 +211,11 @@ export function WorkOrderDetailPage() {
   }
 
   function openModal(type: ModalType) {
-    setModal({ type, inputValue: '' })
+    setModal({ type, inputValue: '', categoryValue: '' })
   }
 
   function closeModal() {
-    setModal({ type: null, inputValue: '' })
+    setModal({ type: null, inputValue: '', categoryValue: '' })
   }
 
   function handleModalConfirm() {
@@ -236,6 +237,10 @@ export function WorkOrderDetailPage() {
         break
       case 'mark_paid':
         void doTransition('paid', 'Als bezahlt markiert')
+        break
+      case 'return_nonconformity':
+        if (!modal.categoryValue || modal.inputValue.trim().length < 20) return
+        void doTransition('returned', `Nichtkonformität (${modal.categoryValue}): ${modal.inputValue.trim()}`)
         break
     }
   }
@@ -312,13 +317,22 @@ export function WorkOrderDetailPage() {
               <p className="font-semibold text-amber-700">Rückmeldung liegt vor</p>
               <p className="text-sm text-amber-600">Technische Daten und Fotos geprüft? Intern zertifizieren.</p>
             </div>
-            <button
-              disabled={isTransitioning}
-              onClick={handleCertify}
-              className="shrink-0 rounded-lg bg-gf-success px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
-            >
-              {isTransitioning ? 'Wird zertifiziert…' : '✓ Interne Zertifizierung'}
-            </button>
+            <div className="flex shrink-0 gap-2">
+              <button
+                disabled={isTransitioning}
+                onClick={() => openModal('return_nonconformity')}
+                className="rounded-lg border border-gf-danger/40 px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-gf-danger/10 disabled:opacity-50 transition-colors"
+              >
+                ↩ Zurückgeben
+              </button>
+              <button
+                disabled={isTransitioning}
+                onClick={handleCertify}
+                className="rounded-lg bg-gf-success px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+              >
+                {isTransitioning ? 'Wird zertifiziert…' : '✓ Intern zertifizieren'}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -331,13 +345,22 @@ export function WorkOrderDetailPage() {
               <p className="font-semibold text-emerald-700">Intern zertifiziert</p>
               <p className="text-sm text-emerald-600">Auftrag kann jetzt an den Kunden weitergeleitet werden.</p>
             </div>
-            <button
-              disabled={isTransitioning}
-              onClick={() => openModal('send_to_client')}
-              className="shrink-0 rounded-lg bg-gf-primary px-4 py-2 text-sm font-semibold text-gf-base hover:bg-gf-primary-light disabled:opacity-50 transition-colors"
-            >
-              📤 An Kunden senden
-            </button>
+            <div className="flex shrink-0 gap-2">
+              <button
+                disabled={isTransitioning}
+                onClick={() => openModal('return_nonconformity')}
+                className="rounded-lg border border-gf-danger/40 px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-gf-danger/10 disabled:opacity-50 transition-colors"
+              >
+                ↩ Zurückgeben
+              </button>
+              <button
+                disabled={isTransitioning}
+                onClick={() => openModal('send_to_client')}
+                className="rounded-lg bg-gf-primary px-4 py-2 text-sm font-semibold text-gf-base hover:bg-gf-primary-light disabled:opacity-50 transition-colors"
+              >
+                📤 An Kunden senden
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -684,6 +707,44 @@ export function WorkOrderDetailPage() {
                 </p>
               </>
             )}
+            {modal.type === 'return_nonconformity' && (
+              <>
+                <h3 className="mb-2 font-display text-base font-bold text-gf-text">Auftrag zurückgeben</h3>
+                <p className="mb-4 text-sm text-gf-text-muted">Nichtkonformität angeben — beide Felder sind Pflicht.</p>
+                <div className="mb-4">
+                  <label className="mb-1.5 block text-xs font-medium text-gf-text-muted">Kategorie</label>
+                  <select
+                    value={modal.categoryValue}
+                    onChange={(e) => setModal((m) => ({ ...m, categoryValue: e.target.value }))}
+                    autoFocus
+                    className="w-full rounded-lg border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none"
+                  >
+                    <option value="">— Kategorie wählen —</option>
+                    <option value="datos incorrectos">Datos incorrectos</option>
+                    <option value="fotos insuficientes">Fotos insuficientes</option>
+                    <option value="mediciones faltantes">Mediciones faltantes</option>
+                    <option value="trabajo incompleto">Trabajo incompleto</option>
+                    <option value="otro">Otro</option>
+                  </select>
+                </div>
+                <div className="mb-2">
+                  <label className="mb-1.5 block text-xs font-medium text-gf-text-muted">
+                    Beschreibung <span className="text-gf-text-placeholder">(min. 20 Zeichen)</span>
+                  </label>
+                  <textarea
+                    value={modal.inputValue}
+                    onChange={(e) => setModal((m) => ({ ...m, inputValue: e.target.value }))}
+                    placeholder="Detaillierte Beschreibung der Nichtkonformität…"
+                    rows={4}
+                    className="w-full rounded-lg border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder-gf-text-placeholder focus:border-gf-primary focus:outline-none resize-none"
+                  />
+                  {modal.inputValue.length > 0 && modal.inputValue.length < 20 && (
+                    <p className="mt-1 text-xs text-rose-600">{20 - modal.inputValue.length} Zeichen fehlen</p>
+                  )}
+                </div>
+                <div className="mb-4" />
+              </>
+            )}
 
             <div className="flex justify-end gap-3">
               <button
@@ -697,7 +758,8 @@ export function WorkOrderDetailPage() {
                 onClick={handleModalConfirm}
                 disabled={
                   isTransitioning ||
-                  ((modal.type === 'reject' || modal.type === 'invoice') && !modal.inputValue.trim())
+                  ((modal.type === 'reject' || modal.type === 'invoice') && !modal.inputValue.trim()) ||
+                  (modal.type === 'return_nonconformity' && (!modal.categoryValue || modal.inputValue.trim().length < 20))
                 }
                 className="rounded-lg bg-gf-primary px-4 py-2 text-sm font-semibold text-gf-base hover:bg-gf-primary-light disabled:opacity-50 transition-colors"
               >
