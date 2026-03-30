@@ -78,10 +78,12 @@ export function TechOrdersPage() {
 
   useEffect(() => {
     if (!user) return
+    const userId = user.id
+    const team = user.team
     let cancelled = false
     async function load() {
       setIsLoading(true)
-      const { data, error } = await fetchMyWorkOrders(user.id, user.team)
+      const { data, error } = await fetchMyWorkOrders(userId, team)
       if (cancelled) return
       if (error) setError(error)
       else setOrders(data as unknown as WorkOrderRow[])

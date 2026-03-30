@@ -171,7 +171,7 @@ export function WorkOrderDetailPage() {
       }
       setOrder(orderData as unknown as typeof order)
       setPhotos((photoData ?? []) as Photo[])
-      setHistory((histData ?? []) as StateEntry[])
+      setHistory((histData ?? []) as unknown as StateEntry[])
 
       const table = workTypeToDetailTable(orderData.work_type)
       const { data: detailData } = await fetchWorkOrderDetail(table, id)
@@ -194,7 +194,7 @@ export function WorkOrderDetailPage() {
     } else {
       setOrder((prev) => (prev ? { ...prev, status: updated!.status } : prev))
       const { data: histData } = await fetchStateHistory(id)
-      setHistory((histData ?? []) as StateEntry[])
+      setHistory((histData ?? []) as unknown as StateEntry[])
       setModal({ type: null, inputValue: '' })
     }
     setIsTransitioning(false)

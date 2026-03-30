@@ -100,10 +100,11 @@ export function ContractorOrdersPage() {
 
   useEffect(() => {
     if (!user) return
+    const userId = user.id
     let cancelled = false
     async function load() {
       setIsLoading(true)
-      const { data, error } = await fetchContractorWorkOrders(user.id)
+      const { data, error } = await fetchContractorWorkOrders(userId)
       if (cancelled) return
       if (error) setError(error)
       else setOrders(data as unknown as WorkOrderRow[])
