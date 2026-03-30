@@ -66,6 +66,7 @@ import {
   fetchStateHistory,
   upsertWorkOrderDetail,
   uploadWorkOrderPhoto,
+  deleteWorkOrderPhoto,
   transitionWorkOrderStatus,
   workTypeToDetailTable,
   getPhotoPublicUrl,
@@ -169,6 +170,7 @@ export function RueckmeldungPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const [uploadingType, setUploadingType] = useState<PhotoType | null>(null)
+  const [deletingPhotoId, setDeletingPhotoId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [savedOk, setSavedOk] = useState(false)
   const [returnedNote, setReturnedNote] = useState<string | null>(null)
@@ -230,6 +232,18 @@ export function RueckmeldungPage() {
       }
     }
     setUploadingType(null)
+  }
+
+  async function handlePhotoDelete(photoId: string, storagePath: string) {
+    setDeletingPhotoId(photoId)
+    setError(null)
+    const { error } = await deleteWorkOrderPhoto(photoId, storagePath)
+    if (error) {
+      setError(`Foto löschen fehlgeschlagen: ${error}`)
+    } else {
+      setPhotos((prev) => prev.filter((p) => p.id !== photoId))
+    }
+    setDeletingPhotoId(null)
   }
 
   async function handleSave() {
@@ -443,12 +457,27 @@ export function RueckmeldungPage() {
                 {typePhotos.length > 0 ? (
                   <div className="grid grid-cols-3 gap-2">
                     {typePhotos.map((photo) => (
-                      <div key={photo.id} className="aspect-square overflow-hidden rounded-lg bg-gf-surface">
+                      <div key={photo.id} className="relative aspect-square overflow-hidden rounded-lg bg-gf-surface">
                         <img
                           src={getPhotoPublicUrl(photo.storage_path)}
                           alt={photo.caption ?? PHOTO_LABELS[type]}
                           className="h-full w-full object-cover"
                         />
+                        <button
+                          type="button"
+                          disabled={deletingPhotoId === photo.id}
+                          onClick={() => handlePhotoDelete(photo.id, photo.storage_path)}
+                          className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white hover:bg-gf-danger disabled:opacity-50 transition-colors"
+                          aria-label="Foto löschen"
+                        >
+                          {deletingPhotoId === photo.id ? (
+                            <span className="h-3 w-3 animate-spin rounded-full border border-white border-t-transparent" />
+                          ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5">
+                              <path d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z" />
+                            </svg>
+                          )}
+                        </button>
                       </div>
                     ))}
                   </div>

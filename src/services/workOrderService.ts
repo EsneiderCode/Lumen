@@ -382,3 +382,16 @@ export function getPhotoPublicUrl(storagePath: string): string {
   const { data } = supabase.storage.from('work-order-photos').getPublicUrl(storagePath)
   return data.publicUrl
 }
+
+export async function deleteWorkOrderPhoto(photoId: string, storagePath: string) {
+  const { error: storageError } = await supabase.storage
+    .from('work-order-photos')
+    .remove([storagePath])
+  if (storageError) return { error: storageError.message }
+
+  const { error: dbError } = await supabase
+    .from('work_order_photos')
+    .delete()
+    .eq('id', photoId)
+  return { error: dbError?.message ?? null }
+}
