@@ -358,7 +358,7 @@ export function WorkOrdersPage() {
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => navigate(`/admin/orders/${order.id}`)}
-                          className={`rounded px-2 py-1 text-xs font-medium transition-colors ${
+                          className={`rounded px-2.5 py-1.5 text-xs font-medium transition-colors ${
                             order.status === 'rueckmeldung_sent'
                               ? 'text-amber-700 hover:bg-amber-50'
                               : 'text-gf-text-muted hover:bg-gf-surface hover:text-gf-text'
@@ -370,7 +370,7 @@ export function WorkOrdersPage() {
                         {(order.status === 'created') && (
                           <button
                             onClick={() => navigate(`/admin/orders/${order.id}/assign`)}
-                            className="rounded px-2 py-1 text-xs font-medium text-gf-primary hover:bg-gf-primary/10 transition-colors"
+                            className="rounded px-2.5 py-1.5 text-xs font-medium text-gf-primary hover:bg-gf-primary/10 transition-colors"
                             title="Zuweisen"
                           >
                             Zuweisen
@@ -378,14 +378,14 @@ export function WorkOrdersPage() {
                         )}
                         <button
                           onClick={() => navigate(`/admin/orders/${order.id}/edit`)}
-                          className="rounded px-2 py-1 text-xs font-medium text-gf-text-muted hover:bg-gf-surface hover:text-gf-text transition-colors"
+                          className="rounded px-2.5 py-1.5 text-xs font-medium text-gf-text-muted hover:bg-gf-surface hover:text-gf-text transition-colors"
                           title="Bearbeiten"
                         >
                           Bearb.
                         </button>
                         <button
                           onClick={() => setDeleteId(order.id)}
-                          className="rounded px-2 py-1 text-xs font-medium text-gf-text-muted hover:bg-gf-danger/10 hover:text-gf-danger transition-colors"
+                          className="rounded px-2.5 py-1.5 text-xs font-medium text-gf-text-muted hover:bg-gf-danger/10 hover:text-gf-danger transition-colors"
                           title="Löschen"
                         >
                           Löschen

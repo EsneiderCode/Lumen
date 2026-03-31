@@ -312,23 +312,23 @@ export function WorkOrderDetailPage() {
       {/* rueckmeldung_sent → internally_certified */}
       {order.status === 'rueckmeldung_sent' && (
         <div className="rounded-xl border border-gf-warning/40 bg-gf-warning/10 p-4">
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-semibold text-amber-700">Rückmeldung liegt vor</p>
               <p className="text-sm text-amber-600">Technische Daten und Fotos geprüft? Intern zertifizieren.</p>
             </div>
-            <div className="flex shrink-0 gap-2">
+            <div className="flex gap-2 sm:shrink-0">
               <button
                 disabled={isTransitioning}
                 onClick={() => openModal('return_nonconformity')}
-                className="rounded-lg border border-gf-danger/40 px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-gf-danger/10 disabled:opacity-50 transition-colors"
+                className="flex-1 rounded-lg border border-gf-danger/40 px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-gf-danger/10 disabled:opacity-50 transition-colors sm:flex-none"
               >
                 ↩ Zurückgeben
               </button>
               <button
                 disabled={isTransitioning}
                 onClick={handleCertify}
-                className="rounded-lg bg-gf-success px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+                className="flex-1 rounded-lg bg-gf-success px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity sm:flex-none"
               >
                 {isTransitioning ? 'Wird zertifiziert…' : '✓ Intern zertifizieren'}
               </button>
@@ -340,23 +340,23 @@ export function WorkOrderDetailPage() {
       {/* internally_certified → sent_to_client (LUM-015) */}
       {order.status === 'internally_certified' && (
         <div className="rounded-xl border border-gf-success/40 bg-gf-success/10 p-4">
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-semibold text-emerald-700">Intern zertifiziert</p>
               <p className="text-sm text-emerald-600">Auftrag kann jetzt an den Kunden weitergeleitet werden.</p>
             </div>
-            <div className="flex shrink-0 gap-2">
+            <div className="flex gap-2 sm:shrink-0">
               <button
                 disabled={isTransitioning}
                 onClick={() => openModal('return_nonconformity')}
-                className="rounded-lg border border-gf-danger/40 px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-gf-danger/10 disabled:opacity-50 transition-colors"
+                className="flex-1 rounded-lg border border-gf-danger/40 px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-gf-danger/10 disabled:opacity-50 transition-colors sm:flex-none"
               >
                 ↩ Zurückgeben
               </button>
               <button
                 disabled={isTransitioning}
                 onClick={() => openModal('send_to_client')}
-                className="rounded-lg bg-gf-primary px-4 py-2 text-sm font-semibold text-gf-base hover:bg-gf-primary-light disabled:opacity-50 transition-colors"
+                className="flex-1 rounded-lg bg-gf-primary px-4 py-2 text-sm font-semibold text-gf-base hover:bg-gf-primary-light disabled:opacity-50 transition-colors sm:flex-none"
               >
                 📤 An Kunden senden
               </button>
@@ -368,23 +368,23 @@ export function WorkOrderDetailPage() {
       {/* sent_to_client → client_accepted / client_rejected (LUM-017) */}
       {order.status === 'sent_to_client' && (
         <div className="rounded-xl border border-gf-primary/30 bg-gf-primary/5 p-4">
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-semibold text-gf-primary-dark">Beim Kunden</p>
               <p className="text-sm text-gf-text-muted">Auf Rückmeldung des Kunden warten oder Ergebnis eintragen.</p>
             </div>
-            <div className="flex gap-2 shrink-0">
+            <div className="flex gap-2 sm:shrink-0">
               <button
                 disabled={isTransitioning}
                 onClick={() => openModal('reject')}
-                className="rounded-lg border border-gf-danger/40 px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-gf-danger/10 disabled:opacity-50 transition-colors"
+                className="flex-1 rounded-lg border border-gf-danger/40 px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-gf-danger/10 disabled:opacity-50 transition-colors sm:flex-none"
               >
                 ❌ Abgelehnt
               </button>
               <button
                 disabled={isTransitioning}
                 onClick={() => openModal('accept')}
-                className="rounded-lg bg-gf-success px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+                className="flex-1 rounded-lg bg-gf-success px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity sm:flex-none"
               >
                 ✅ Akzeptiert
               </button>
@@ -574,7 +574,7 @@ export function WorkOrderDetailPage() {
                   <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gf-text-muted">
                     {PHOTO_LABELS[type]} ({typePhotos.length})
                   </p>
-                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                     {typePhotos.map((photo) => (
                       <a
                         key={photo.id}

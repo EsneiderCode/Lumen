@@ -139,10 +139,10 @@ export function TechDashboard() {
       </div>
 
       {/* Stats row */}
-      <div className="mb-5 grid grid-cols-3 gap-3">
+      <div className="mb-5 grid grid-cols-3 gap-2 sm:gap-3">
         {isLoading
           ? Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="rounded-xl border border-gf-border bg-gf-card p-4 text-center">
+              <div key={i} className="rounded-xl border border-gf-border bg-gf-card p-3 text-center sm:p-4">
                 <div className="mx-auto mb-2 h-1 w-8 rounded-full bg-gf-border" />
                 <div className="mx-auto mb-1 h-6 w-6 animate-pulse rounded bg-gf-border" />
                 <div className="mx-auto h-3 w-10 animate-pulse rounded bg-gf-border" />
@@ -153,7 +153,7 @@ export function TechDashboard() {
               { label: 'Offen', value: openCount, color: 'bg-gf-warning' },
               { label: 'Erledigt', value: doneCount, color: 'bg-gf-success' },
             ].map((s) => (
-              <div key={s.label} className="rounded-xl border border-gf-border bg-gf-card p-4 text-center">
+              <div key={s.label} className="rounded-xl border border-gf-border bg-gf-card p-3 text-center sm:p-4">
                 <div className={`mx-auto mb-2 h-1 w-8 rounded-full ${s.color}`} />
                 <p className="font-display text-xl font-bold text-gf-text">{s.value}</p>
                 <p className="text-xs text-gf-text-muted">{s.label}</p>

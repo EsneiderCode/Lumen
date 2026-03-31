@@ -455,7 +455,7 @@ export function RueckmeldungPage() {
                   />
                 </div>
                 {typePhotos.length > 0 ? (
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                     {typePhotos.map((photo) => (
                       <div key={photo.id} className="relative aspect-square overflow-hidden rounded-lg bg-gf-surface">
                         <img
