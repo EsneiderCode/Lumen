@@ -18,6 +18,7 @@ import { RueckmeldungPage } from '@/pages/technician/RueckmeldungPage'
 import { WorkOrderDetailPage } from '@/pages/admin/WorkOrderDetailPage'
 import { CertificationPage } from '@/pages/admin/CertificationPage'
 import { ContractorDashboard } from '@/pages/contractor/ContractorDashboard'
+import { ContractorOrdersPage } from '@/pages/contractor/ContractorOrdersPage'
 import { ROUTES } from '@/config/routes'
 
 function App() {
@@ -56,6 +57,7 @@ function App() {
           <Route element={<ProtectedRoute allowedRoles={['contractor']} />}>
             <Route element={<ContractorLayout />}>
               <Route path={ROUTES.CONTRACTOR.DASHBOARD} element={<ContractorDashboard />} />
+              <Route path={ROUTES.CONTRACTOR.ORDERS} element={<ContractorOrdersPage />} />
             </Route>
           </Route>
 

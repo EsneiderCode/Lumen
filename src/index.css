@@ -35,24 +35,54 @@
   --color-gf-border-dark: rgba(255, 255, 255, 0.12);
   --color-gf-border-dark-hover: rgba(255, 255, 255, 0.2);
 
+  /* ─── Nexus Design System — semantic palette ─── */
+  --color-primary-500: #3b82f6;
+  --color-nexus-success: #16a34a;
+  --color-nexus-warning: #d97706;
+  --color-nexus-danger: #dc2626;
+
+  /* Gradient endpoint (nexus-bg linear tail) */
+  --color-gf-surface-end: #eaecf0;
+
+  /* Scrollbar */
+  --color-gf-scrollbar: #cbd5e1;
+  --color-gf-scrollbar-hover: #94a3b8;
+
   /* Team colors */
   --color-team-rot: #ef4444;
   --color-team-gruen: #22c55e;
-  --color-team-blau: #3b82f6;
+  --color-team-blau: var(--color-primary-500);
   --color-team-gelb: #eab308;
 
   /* Typography */
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  --font-sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --font-display: 'Syne', 'IBM Plex Sans', system-ui, sans-serif;
+
+  /* ─── Border radius scale ─── */
+  /* badge / dots: use rounded-full (9999px) — no custom token needed */
+  --radius-gf-btn:     0.5rem;   /* 8px  — buttons, inputs, small rows  */
+  --radius-gf-card:    1.25rem;  /* 20px — cards, panels, alerts        */
+  --radius-gf-card-lg: 1.75rem;  /* 28px — large cards, auth icon boxes */
+
+  /* ─── Shadow (elevation) scale ─── */
+  --shadow-gf-sm:    0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-gf-md:    0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-gf-modal: 0 20px 40px rgba(0, 0, 0, 0.12), 0 8px 16px rgba(0, 0, 0, 0.08);
 }
 
 /* ─── Base styles ─── */
 body {
   margin: 0;
+  font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
   background-color: var(--color-gf-surface);
   color: var(--color-gf-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3 {
+  font-family: 'Syne', system-ui, sans-serif;
+  letter-spacing: -0.03em;
 }
 
 /* ─── Scrollbar styling (webkit) ─── */
@@ -63,15 +93,52 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: var(--color-gf-scrollbar);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: var(--color-gf-scrollbar-hover);
 }
 
 /* ─── Selection ─── */
 ::selection {
   background-color: color-mix(in srgb, var(--color-gf-primary) 25%, transparent);
   color: var(--color-gf-text);
+}
+
+/* ─── Nexus background gradient ─────────────────────────────────────────── */
+/* Standard page background for all layouts: radial blue + green + linear   */
+.nexus-bg {
+  background:
+    radial-gradient(ellipse 70% 50% at 0% 0%,
+      color-mix(in srgb, var(--color-gf-primary) 7%, transparent),
+      transparent),
+    radial-gradient(ellipse 60% 50% at 100% 100%,
+      color-mix(in srgb, var(--color-gf-success) 6%, transparent),
+      transparent),
+    linear-gradient(180deg, var(--color-gf-surface) 0%, var(--color-gf-surface-end) 100%);
+}
+
+/* ─── Transition standards ───────────────────────────────────────────────  */
+/* Standard interactive elements: 200ms ease                                 */
+/* Route / page fades:            150ms ease                                 */
+
+/* Route fade-in — apply to <Outlet> wrapper for page transitions */
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.page-fade-in {
+  animation: pageFadeIn 150ms ease forwards;
+}
+
+/* ─── Card hover lift ────────────────────────────────────────────────────  */
+/* Add .card-lift to any interactive card */
+.card-lift {
+  transition: transform 200ms ease;
+}
+
+.card-lift:hover {
+  transform: translateY(-1px);
 }

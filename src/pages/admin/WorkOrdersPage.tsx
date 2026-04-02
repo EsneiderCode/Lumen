@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import {
   fetchWorkOrders,
@@ -8,6 +8,12 @@ import {
   type WorkOrderFilters,
 } from '@/services/workOrderService'
 import type { WorkOrderStatus, WorkType, TeamColor } from '@/types/enums'
+
+const PRIORITY_FILTER_LABELS = {
+  normal: 'Normal',
+  alta: 'Hoch',
+  urgente: 'Dringend',
+} as const
 import type { Database } from '@/types/database.types'
 
 type WorkOrderRow = Database['public']['Tables']['work_orders']['Row'] & {
@@ -85,19 +91,21 @@ export function WorkOrdersPage() {
   const [filters, setFilters] = useState<WorkOrderFilters>({})
   const [search, setSearch] = useState('')
 
-  const load = useCallback(async () => {
-    setIsLoading(true)
-    const activeFilters: WorkOrderFilters = { ...filters }
-    if (search.trim()) activeFilters.search = search.trim()
-    const { data, error } = await fetchWorkOrders(activeFilters)
-    if (error) setError(error)
-    else setOrders(data as unknown as WorkOrderRow[])
-    setIsLoading(false)
-  }, [filters, search])
-
   useEffect(() => {
-    load()
-  }, [load])
+    let cancelled = false
+    async function load() {
+      setIsLoading(true)
+      const activeFilters: WorkOrderFilters = { ...filters }
+      if (search.trim()) activeFilters.search = search.trim()
+      const { data, error } = await fetchWorkOrders(activeFilters)
+      if (cancelled) return
+      if (error) setError(error)
+      else setOrders(data as unknown as WorkOrderRow[])
+      setIsLoading(false)
+    }
+    void load()
+    return () => { cancelled = true }
+  }, [filters, search])
 
   useEffect(() => {
     fetchClients().then(({ data }) => setClients(data))
@@ -124,14 +132,15 @@ export function WorkOrdersPage() {
         </div>
         <button
           onClick={() => navigate('/admin/orders/new')}
-          className="flex items-center gap-2 rounded-lg bg-gf-primary px-4 py-2 text-sm font-semibold text-white hover:bg-gf-primary-dark transition-colors"
+          className="flex items-center gap-2 rounded-gf-btn bg-gf-primary px-4 py-2 text-sm font-semibold text-gf-base hover:bg-gf-primary-dark transition-colors"
         >
           <span className="text-base leading-none">+</span> Neuer Auftrag
         </button>
       </div>
 
       {/* Filters */}
-      <div className="mb-4 rounded-xl border border-gf-border bg-gf-card p-4">
+      <div className="mb-4 rounded-gf-card border border-gf-border bg-gf-card p-4 space-y-3">
+        {/* Row 1 */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {/* Search */}
           <input
@@ -139,7 +148,7 @@ export function WorkOrdersPage() {
             placeholder="Suchen…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="col-span-2 rounded-lg border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary sm:col-span-1"
+            className="col-span-2 rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary sm:col-span-1"
           />
 
           {/* Status filter */}
@@ -151,7 +160,7 @@ export function WorkOrdersPage() {
                 status: (e.target.value as WorkOrderStatus) || undefined,
               }))
             }
-            className="rounded-lg border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+            className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
           >
             <option value="">Alle Status</option>
             {Object.entries(STATUS_LABELS).map(([val, label]) => (
@@ -165,7 +174,7 @@ export function WorkOrdersPage() {
             onChange={(e) =>
               setFilters((f) => ({ ...f, team: (e.target.value as TeamColor) || undefined }))
             }
-            className="rounded-lg border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+            className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
           >
             <option value="">Alle Teams</option>
             <option value="rot">Rot</option>
@@ -183,21 +192,24 @@ export function WorkOrdersPage() {
                 work_type: (e.target.value as WorkType) || undefined,
               }))
             }
-            className="rounded-lg border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+            className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
           >
             <option value="">Alle Typen</option>
             {Object.entries(WORK_TYPE_LABELS).map(([val, label]) => (
               <option key={val} value={val}>{label}</option>
             ))}
           </select>
+        </div>
 
+        {/* Row 2 */}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {/* Client filter */}
           <select
             value={filters.client_id ?? ''}
             onChange={(e) =>
               setFilters((f) => ({ ...f, client_id: e.target.value || undefined }))
             }
-            className="rounded-lg border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+            className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
           >
             <option value="">Alle Kunden</option>
             {clients.map((c) => (
@@ -211,7 +223,7 @@ export function WorkOrdersPage() {
             onChange={(e) =>
               setFilters((f) => ({ ...f, project_id: e.target.value || undefined }))
             }
-            className="rounded-lg border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+            className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
           >
             <option value="">Alle Projekte</option>
             {projects.map((p) => (
@@ -219,10 +231,49 @@ export function WorkOrdersPage() {
             ))}
           </select>
 
+          {/* Priority filter */}
+          <select
+            value={filters.priority ?? ''}
+            onChange={(e) =>
+              setFilters((f) => ({
+                ...f,
+                priority: (e.target.value as 'normal' | 'alta' | 'urgente') || undefined,
+              }))
+            }
+            className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+          >
+            <option value="">Alle Prioritäten</option>
+            {Object.entries(PRIORITY_FILTER_LABELS).map(([val, label]) => (
+              <option key={val} value={val}>{label}</option>
+            ))}
+          </select>
+
+          {/* Date from */}
+          <input
+            type="date"
+            value={filters.date_from ?? ''}
+            onChange={(e) =>
+              setFilters((f) => ({ ...f, date_from: e.target.value || undefined }))
+            }
+            className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+            title="Einsatzdatum von"
+          />
+
+          {/* Date to */}
+          <input
+            type="date"
+            value={filters.date_to ?? ''}
+            onChange={(e) =>
+              setFilters((f) => ({ ...f, date_to: e.target.value || undefined }))
+            }
+            className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+            title="Einsatzdatum bis"
+          />
+
           {/* Reset */}
           <button
             onClick={() => { setFilters({}); setSearch('') }}
-            className="rounded-lg border border-gf-border px-3 py-2 text-sm text-gf-text-muted hover:border-gf-primary hover:text-gf-primary transition-colors"
+            className="rounded-gf-btn border border-gf-border px-3 py-2 text-sm text-gf-text-muted hover:border-gf-primary hover:text-gf-primary transition-colors"
           >
             Zurücksetzen
           </button>
@@ -231,13 +282,13 @@ export function WorkOrdersPage() {
 
       {/* Error */}
       {error && (
-        <div className="mb-4 rounded-lg border border-gf-danger/30 bg-gf-danger/10 px-4 py-3 text-sm text-rose-700">
+        <div className="mb-4 rounded-gf-btn border border-gf-danger/30 bg-gf-danger/10 px-4 py-3 text-sm text-rose-700">
           {error}
         </div>
       )}
 
       {/* Table */}
-      <div className="rounded-xl border border-gf-border bg-gf-card overflow-hidden">
+      <div className="rounded-gf-card border border-gf-border bg-gf-card overflow-hidden">
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-gf-border border-t-gf-primary" />
@@ -307,7 +358,7 @@ export function WorkOrdersPage() {
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => navigate(`/admin/orders/${order.id}`)}
-                          className={`rounded px-2 py-1 text-xs font-medium transition-colors ${
+                          className={`rounded px-2.5 py-1.5 text-xs font-medium transition-colors ${
                             order.status === 'rueckmeldung_sent'
                               ? 'text-amber-700 hover:bg-amber-50'
                               : 'text-gf-text-muted hover:bg-gf-surface hover:text-gf-text'
@@ -319,7 +370,7 @@ export function WorkOrdersPage() {
                         {(order.status === 'created') && (
                           <button
                             onClick={() => navigate(`/admin/orders/${order.id}/assign`)}
-                            className="rounded px-2 py-1 text-xs font-medium text-gf-primary hover:bg-gf-primary/10 transition-colors"
+                            className="rounded px-2.5 py-1.5 text-xs font-medium text-gf-primary hover:bg-gf-primary/10 transition-colors"
                             title="Zuweisen"
                           >
                             Zuweisen
@@ -327,14 +378,14 @@ export function WorkOrdersPage() {
                         )}
                         <button
                           onClick={() => navigate(`/admin/orders/${order.id}/edit`)}
-                          className="rounded px-2 py-1 text-xs font-medium text-gf-text-muted hover:bg-gf-surface hover:text-gf-text transition-colors"
+                          className="rounded px-2.5 py-1.5 text-xs font-medium text-gf-text-muted hover:bg-gf-surface hover:text-gf-text transition-colors"
                           title="Bearbeiten"
                         >
                           Bearb.
                         </button>
                         <button
                           onClick={() => setDeleteId(order.id)}
-                          className="rounded px-2 py-1 text-xs font-medium text-gf-text-muted hover:bg-gf-danger/10 hover:text-gf-danger transition-colors"
+                          className="rounded px-2.5 py-1.5 text-xs font-medium text-gf-text-muted hover:bg-gf-danger/10 hover:text-gf-danger transition-colors"
                           title="Löschen"
                         >
                           Löschen
@@ -352,7 +403,7 @@ export function WorkOrdersPage() {
       {/* Delete confirmation modal */}
       {deleteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-sm rounded-xl border border-gf-border bg-gf-card p-6 shadow-xl">
+          <div className="w-full max-w-sm rounded-gf-card border border-gf-border bg-gf-card p-6 shadow-gf-modal">
             <h3 className="mb-2 font-display text-base font-semibold text-gf-text">
               Auftrag löschen?
             </h3>
@@ -362,13 +413,13 @@ export function WorkOrdersPage() {
             <div className="flex gap-3">
               <button
                 onClick={() => setDeleteId(null)}
-                className="flex-1 rounded-lg border border-gf-border px-4 py-2 text-sm font-medium text-gf-text hover:bg-gf-surface transition-colors"
+                className="flex-1 rounded-gf-btn border border-gf-border px-4 py-2 text-sm font-medium text-gf-text hover:bg-gf-surface transition-colors"
               >
                 Abbrechen
               </button>
               <button
                 onClick={() => handleDelete(deleteId)}
-                className="flex-1 rounded-lg bg-gf-danger px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+                className="flex-1 rounded-gf-btn bg-gf-danger px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
               >
                 Löschen
               </button>

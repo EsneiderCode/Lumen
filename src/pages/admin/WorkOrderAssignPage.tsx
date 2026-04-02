@@ -102,7 +102,7 @@ export function WorkOrderAssignPage() {
       <div className="mb-6 flex items-center gap-3">
         <button
           onClick={() => navigate('/admin/orders')}
-          className="flex h-8 w-8 items-center justify-center rounded-lg border border-gf-border text-gf-text-muted hover:border-gf-primary hover:text-gf-primary transition-colors"
+          className="flex h-8 w-8 items-center justify-center rounded-gf-btn border border-gf-border text-gf-text-muted hover:border-gf-primary hover:text-gf-primary transition-colors"
         >
           ←
         </button>
@@ -116,7 +116,7 @@ export function WorkOrderAssignPage() {
 
       {/* Order summary */}
       {order && (
-        <div className="mb-5 rounded-xl border border-gf-border bg-gf-card p-4">
+        <div className="mb-5 rounded-gf-card border border-gf-border bg-gf-card p-4">
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div>
               <p className="text-xs text-gf-text-muted">Kunde</p>
@@ -141,7 +141,7 @@ export function WorkOrderAssignPage() {
       )}
 
       <form onSubmit={handleAssign}>
-        <div className="rounded-xl border border-gf-border bg-gf-card p-5 space-y-5">
+        <div className="rounded-gf-card border border-gf-border bg-gf-card p-5 space-y-5">
           <h3 className="font-display text-sm font-semibold text-gf-text">Zuweisung</h3>
 
           {/* Team selection */}
@@ -155,7 +155,7 @@ export function WorkOrderAssignPage() {
                   key={team.value}
                   type="button"
                   onClick={() => { setSelectedTeam(team.value); setSelectedTechnician('') }}
-                  className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-medium transition-all ${
+                  className={`flex items-center gap-2 rounded-gf-btn border px-3 py-2.5 text-sm font-medium transition-all ${
                     selectedTeam === team.value
                       ? 'border-gf-primary bg-gf-primary/10 text-gf-primary'
                       : 'border-gf-border bg-gf-surface text-gf-text hover:border-gf-primary/50'
@@ -177,7 +177,7 @@ export function WorkOrderAssignPage() {
               value={selectedTechnician}
               onChange={(e) => setSelectedTechnician(e.target.value)}
               disabled={!selectedTeam}
-              className="w-full rounded-lg border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary disabled:opacity-50"
+              className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary disabled:opacity-50"
             >
               <option value="">— Mitarbeiter wählen —</option>
               {filteredTechnicians.map((t) => (
@@ -200,14 +200,14 @@ export function WorkOrderAssignPage() {
               type="date"
               value={assignedDate}
               onChange={(e) => setAssignedDate(e.target.value)}
-              className="w-full rounded-lg border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+              className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
             />
           </div>
         </div>
 
         {/* Error */}
         {error && (
-          <div className="mt-4 rounded-lg border border-gf-danger/30 bg-gf-danger/10 px-4 py-3 text-sm text-rose-700">
+          <div className="mt-4 rounded-gf-btn border border-gf-danger/30 bg-gf-danger/10 px-4 py-3 text-sm text-rose-700">
             {error}
           </div>
         )}
@@ -217,14 +217,14 @@ export function WorkOrderAssignPage() {
           <button
             type="button"
             onClick={() => navigate('/admin/orders')}
-            className="flex-1 rounded-lg border border-gf-border px-4 py-2.5 text-sm font-medium text-gf-text hover:bg-gf-surface transition-colors"
+            className="flex-1 rounded-gf-btn border border-gf-border px-4 py-2.5 text-sm font-medium text-gf-text hover:bg-gf-surface transition-colors"
           >
             Abbrechen
           </button>
           <button
             type="submit"
             disabled={!selectedTeam || isSaving}
-            className="flex-1 rounded-lg bg-gf-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-gf-primary-dark disabled:opacity-50 transition-colors"
+            className="flex-1 rounded-gf-btn bg-gf-primary px-4 py-2.5 text-sm font-semibold text-gf-base hover:bg-gf-primary-dark disabled:opacity-50 transition-colors"
           >
             {isSaving ? 'Zuweisen…' : 'Zuweisen & Status → Assigned'}
           </button>

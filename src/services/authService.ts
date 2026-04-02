@@ -62,7 +62,18 @@ export const authService = {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
     })
-    return { error: error?.message ?? null }
+    if (error) {
+      // SMTP not configured → Supabase returns 500 with "Error sending" message
+      const msg = error.message.toLowerCase()
+      if (msg.includes('sending') || msg.includes('smtp') || msg.includes('email') || error.status === 500) {
+        return {
+          error:
+            'Der E-Mail-Dienst ist noch nicht konfiguriert. Wenden Sie sich an den Administrator für das Zurücksetzen Ihres Passworts.',
+        }
+      }
+      return { error: error.message }
+    }
+    return { error: null }
   },
 
   async updatePassword(newPassword: string): Promise<{ error: string | null }> {

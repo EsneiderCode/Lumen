@@ -1,12 +1,72 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { useAuth } from '@/hooks/useAuth'
+
+// ── Time picker ────────────────────────────────────────────────
+function TimePickerField({ label, value, onChange }: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+}) {
+  const formatted = value
+    ? value.slice(0, 5)       // "HH:MM"
+    : null
+
+  return (
+    <div>
+      <label className="mb-1.5 block text-xs font-medium text-gf-text-muted">{label}</label>
+      <div className="relative">
+        {/* Visual layer — pointer-events-none so the input overlay catches the tap */}
+        <div
+          className={`flex items-center gap-3 rounded-gf-card border-2 px-4 py-3.5 transition-colors pointer-events-none ${
+            value
+              ? 'border-gf-primary/50 bg-gf-primary/5'
+              : 'border-gf-border bg-gf-surface'
+          }`}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={`h-5 w-5 shrink-0 ${value ? 'text-gf-primary' : 'text-gf-text-muted'}`}
+          >
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
+          <span
+            className={`flex-1 font-mono text-lg font-bold tracking-wider ${
+              formatted ? 'text-gf-text' : 'text-gf-text-placeholder'
+            }`}
+          >
+            {formatted ?? '--:--'}
+          </span>
+          {formatted && (
+            <span className="text-xs font-semibold text-gf-primary">Uhr</span>
+          )}
+        </div>
+        {/* Transparent native input as tap target — full overlay */}
+        <input
+          type="time"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+        />
+      </div>
+    </div>
+  )
+}
 import {
   fetchWorkOrder,
   fetchWorkOrderDetail,
   fetchWorkOrderPhotos,
+  fetchStateHistory,
   upsertWorkOrderDetail,
   uploadWorkOrderPhoto,
+  deleteWorkOrderPhoto,
   transitionWorkOrderStatus,
   workTypeToDetailTable,
   getPhotoPublicUrl,
@@ -110,8 +170,10 @@ export function RueckmeldungPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const [uploadingType, setUploadingType] = useState<PhotoType | null>(null)
+  const [deletingPhotoId, setDeletingPhotoId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [savedOk, setSavedOk] = useState(false)
+  const [returnedNote, setReturnedNote] = useState<string | null>(null)
 
   const fileInputRefs = {
     before: useRef<HTMLInputElement>(null),
@@ -124,7 +186,8 @@ export function RueckmeldungPage() {
     Promise.all([
       fetchWorkOrder(id),
       fetchWorkOrderPhotos(id),
-    ]).then(async ([{ data: orderData, error: orderErr }, { data: photoData }]) => {
+      fetchStateHistory(id),
+    ]).then(async ([{ data: orderData, error: orderErr }, { data: photoData }, { data: histData }]) => {
       if (orderErr || !orderData) {
         setError(orderErr ?? 'Auftrag nicht gefunden')
         setIsLoading(false)
@@ -132,6 +195,10 @@ export function RueckmeldungPage() {
       }
       setOrder(orderData as unknown as typeof order)
       setPhotos((photoData ?? []) as Photo[])
+
+      const histEntries = (histData ?? []) as Array<{ to_status: string; notes: string | null }>
+      const returnEntry = [...histEntries].reverse().find((e) => e.to_status === 'returned')
+      if (returnEntry?.notes) setReturnedNote(returnEntry.notes)
 
       // Load existing detail
       const table = workTypeToDetailTable(orderData.work_type)
@@ -165,6 +232,18 @@ export function RueckmeldungPage() {
       }
     }
     setUploadingType(null)
+  }
+
+  async function handlePhotoDelete(photoId: string, storagePath: string) {
+    setDeletingPhotoId(photoId)
+    setError(null)
+    const { error } = await deleteWorkOrderPhoto(photoId, storagePath)
+    if (error) {
+      setError(`Foto löschen fehlgeschlagen: ${error}`)
+    } else {
+      setPhotos((prev) => prev.filter((p) => p.id !== photoId))
+    }
+    setDeletingPhotoId(null)
   }
 
   async function handleSave() {
@@ -225,7 +304,7 @@ export function RueckmeldungPage() {
 
   if (!order) {
     return (
-      <div className="rounded-lg border border-gf-danger/30 bg-gf-danger/10 px-4 py-3 text-sm text-rose-700">
+      <div className="rounded-gf-btn border border-gf-danger/30 bg-gf-danger/10 px-4 py-3 text-sm text-rose-700">
         {error ?? 'Auftrag nicht gefunden'}
       </div>
     )
@@ -240,7 +319,7 @@ export function RueckmeldungPage() {
       <div className="flex items-center gap-3">
         <button
           onClick={() => navigate(`/tech/orders/${id}`)}
-          className="flex h-8 w-8 items-center justify-center rounded-lg border border-gf-border text-gf-text-muted hover:border-gf-primary hover:text-gf-primary transition-colors"
+          className="flex h-8 w-8 items-center justify-center rounded-gf-btn border border-gf-border text-gf-text-muted hover:border-gf-primary hover:text-gf-primary transition-colors"
         >
           ←
         </button>
@@ -250,8 +329,17 @@ export function RueckmeldungPage() {
         </div>
       </div>
 
+      {/* Non-conformity banner */}
+      {order.status === 'returned' && returnedNote && (
+        <div className="rounded-gf-card border border-gf-danger/50 bg-gf-danger/10 p-4">
+          <p className="font-semibold text-rose-700">⚠ Auftrag zurückgegeben — Nichtkonformität</p>
+          <p className="mt-1 text-sm text-rose-600">{returnedNote}</p>
+          <p className="mt-2 text-xs text-rose-500">Korrekturen vornehmen und die Rückmeldung erneut senden.</p>
+        </div>
+      )}
+
       {/* Order summary */}
-      <div className="rounded-xl border border-gf-border bg-gf-card p-4">
+      <div className="rounded-gf-card border border-gf-border bg-gf-card p-4">
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div>
             <p className="text-xs text-gf-text-muted">Kunde</p>
@@ -271,33 +359,17 @@ export function RueckmeldungPage() {
       </div>
 
       {/* Time inputs */}
-      <div className="rounded-xl border border-gf-border bg-gf-card p-4">
+      <div className="rounded-gf-card border border-gf-border bg-gf-card p-4">
         <h3 className="mb-3 font-display text-sm font-semibold text-gf-text">Einsatzzeiten</h3>
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gf-text-muted">Beginn</label>
-            <input
-              type="time"
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-              className="w-full rounded-lg border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-xs font-medium text-gf-text-muted">Ende</label>
-            <input
-              type="time"
-              value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
-              className="w-full rounded-lg border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
-            />
-          </div>
+          <TimePickerField label="Beginn" value={startTime} onChange={setStartTime} />
+          <TimePickerField label="Ende" value={endTime} onChange={setEndTime} />
         </div>
       </div>
 
       {/* Dynamic detail fields */}
       {detailFields.length > 0 && (
-        <div className="rounded-xl border border-gf-primary/30 bg-gf-card p-4">
+        <div className="rounded-gf-card border border-gf-primary/30 bg-gf-card p-4">
           <h3 className="mb-1 font-display text-sm font-semibold text-gf-text">
             Technische Daten — {WORK_TYPE_LABELS[order.work_type]}
           </h3>
@@ -324,7 +396,7 @@ export function RueckmeldungPage() {
                     <select
                       value={String(detail[field.key] ?? '')}
                       onChange={(e) => setDetailField(field.key, e.target.value)}
-                      className="w-full rounded-lg border border-gf-border bg-gf-surface px-3 py-2.5 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+                      className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2.5 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
                     >
                       <option value="">— wählen —</option>
                       {field.options?.map((opt) => (
@@ -342,7 +414,7 @@ export function RueckmeldungPage() {
                         setDetailField(field.key, field.type === 'number' ? Number(e.target.value) : e.target.value)
                       }
                       placeholder={field.placeholder}
-                      className="w-full rounded-lg border border-gf-border bg-gf-surface px-3 py-2.5 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+                      className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2.5 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
                     />
                   </>
                 )}
@@ -353,7 +425,7 @@ export function RueckmeldungPage() {
       )}
 
       {/* Photos */}
-      <div className="rounded-xl border border-gf-border bg-gf-card p-4">
+      <div className="rounded-gf-card border border-gf-border bg-gf-card p-4">
         <h3 className="mb-3 font-display text-sm font-semibold text-gf-text">Fotos</h3>
         <div className="space-y-4">
           {(['before', 'during', 'after'] as PhotoType[]).map((type) => {
@@ -368,7 +440,7 @@ export function RueckmeldungPage() {
                     type="button"
                     disabled={uploadingType === type}
                     onClick={() => fileInputRefs[type].current?.click()}
-                    className="rounded-lg border border-gf-border px-2.5 py-1 text-xs font-medium text-gf-text-muted hover:border-gf-primary hover:text-gf-primary transition-colors disabled:opacity-50"
+                    className="rounded-gf-btn border border-gf-border px-2.5 py-1 text-xs font-medium text-gf-text-muted hover:border-gf-primary hover:text-gf-primary transition-colors disabled:opacity-50"
                   >
                     {uploadingType === type ? 'Lädt…' : '+ Foto'}
                   </button>
@@ -383,20 +455,35 @@ export function RueckmeldungPage() {
                   />
                 </div>
                 {typePhotos.length > 0 ? (
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                     {typePhotos.map((photo) => (
-                      <div key={photo.id} className="aspect-square overflow-hidden rounded-lg bg-gf-surface">
+                      <div key={photo.id} className="relative aspect-square overflow-hidden rounded-gf-btn bg-gf-surface">
                         <img
                           src={getPhotoPublicUrl(photo.storage_path)}
                           alt={photo.caption ?? PHOTO_LABELS[type]}
                           className="h-full w-full object-cover"
                         />
+                        <button
+                          type="button"
+                          disabled={deletingPhotoId === photo.id}
+                          onClick={() => handlePhotoDelete(photo.id, photo.storage_path)}
+                          className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white hover:bg-gf-danger disabled:opacity-50 transition-colors"
+                          aria-label="Foto löschen"
+                        >
+                          {deletingPhotoId === photo.id ? (
+                            <span className="h-3 w-3 animate-spin rounded-full border border-white border-t-transparent" />
+                          ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5">
+                              <path d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z" />
+                            </svg>
+                          )}
+                        </button>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <div
-                    className="flex h-16 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-gf-border text-xs text-gf-text-muted hover:border-gf-primary/50 transition-colors"
+                    className="flex h-16 cursor-pointer items-center justify-center rounded-gf-btn border-2 border-dashed border-gf-border text-xs text-gf-text-muted hover:border-gf-primary/50 transition-colors"
                     onClick={() => fileInputRefs[type].current?.click()}
                   >
                     Keine Fotos · Tippen um hinzuzufügen
@@ -409,7 +496,7 @@ export function RueckmeldungPage() {
       </div>
 
       {/* Technician notes */}
-      <div className="rounded-xl border border-gf-border bg-gf-card p-4">
+      <div className="rounded-gf-card border border-gf-border bg-gf-card p-4">
         <label className="mb-1 block text-xs font-medium text-gf-text-muted">
           Notizen / Besonderheiten
         </label>
@@ -418,18 +505,18 @@ export function RueckmeldungPage() {
           onChange={(e) => setTechNotes(e.target.value)}
           rows={3}
           placeholder="Besonderheiten, Probleme, Hinweise für Admin…"
-          className="w-full rounded-lg border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary resize-none"
+          className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary resize-none"
         />
       </div>
 
       {/* Error / success */}
       {error && (
-        <div className="rounded-lg border border-gf-danger/30 bg-gf-danger/10 px-4 py-3 text-sm text-rose-700">
+        <div className="rounded-gf-btn border border-gf-danger/30 bg-gf-danger/10 px-4 py-3 text-sm text-rose-700">
           {error}
         </div>
       )}
       {savedOk && (
-        <div className="rounded-lg border border-gf-success/30 bg-gf-success/10 px-4 py-3 text-sm text-emerald-700">
+        <div className="rounded-gf-btn border border-gf-success/30 bg-gf-success/10 px-4 py-3 text-sm text-emerald-700">
           Daten gespeichert.
         </div>
       )}
@@ -439,16 +526,16 @@ export function RueckmeldungPage() {
         <button
           disabled={isSaving || isSending}
           onClick={handleSave}
-          className="rounded-xl border border-gf-border px-4 py-3 text-sm font-semibold text-gf-text hover:bg-gf-surface disabled:opacity-50 transition-colors"
+          className="rounded-gf-card border border-gf-border px-4 py-3 text-sm font-semibold text-gf-text hover:bg-gf-surface disabled:opacity-50 transition-colors"
         >
           {isSaving ? 'Speichern…' : 'Zwischenspeichern'}
         </button>
         <button
           disabled={isSaving || isSending}
           onClick={handleSend}
-          className="rounded-xl bg-gf-primary px-4 py-3 text-sm font-semibold text-white hover:bg-gf-primary-dark disabled:opacity-50 transition-colors"
+          className="rounded-gf-card bg-gf-primary px-4 py-3 text-sm font-semibold text-gf-base hover:bg-gf-primary-dark disabled:opacity-50 transition-colors"
         >
-          {isSending ? 'Wird gesendet…' : 'Rückmeldung senden'}
+          {isSending ? 'Wird gesendet…' : order.status === 'returned' ? 'Korrigierte RM senden' : 'Rückmeldung senden'}
         </button>
       </div>
 
