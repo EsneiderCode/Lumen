@@ -35,10 +35,23 @@
   --color-gf-border-dark: rgba(255, 255, 255, 0.12);
   --color-gf-border-dark-hover: rgba(255, 255, 255, 0.2);
 
+  /* ─── Nexus Design System — semantic palette ─── */
+  --color-primary-500: #3b82f6;
+  --color-nexus-success: #16a34a;
+  --color-nexus-warning: #d97706;
+  --color-nexus-danger: #dc2626;
+
+  /* Gradient endpoint (nexus-bg linear tail) */
+  --color-gf-surface-end: #eaecf0;
+
+  /* Scrollbar */
+  --color-gf-scrollbar: #cbd5e1;
+  --color-gf-scrollbar-hover: #94a3b8;
+
   /* Team colors */
   --color-team-rot: #ef4444;
   --color-team-gruen: #22c55e;
-  --color-team-blau: #3b82f6;
+  --color-team-blau: var(--color-primary-500);
   --color-team-gelb: #eab308;
 
   /* Typography */
@@ -74,11 +87,11 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: var(--color-gf-scrollbar);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: var(--color-gf-scrollbar-hover);
 }
 
 /* ─── Selection ─── */
@@ -97,7 +110,7 @@ body {
     radial-gradient(ellipse 60% 50% at 100% 100%,
       color-mix(in srgb, var(--color-gf-success) 6%, transparent),
       transparent),
-    linear-gradient(180deg, var(--color-gf-surface) 0%, #eaecf0 100%);
+    linear-gradient(180deg, var(--color-gf-surface) 0%, var(--color-gf-surface-end) 100%);
 }
 
 /* ─── Transition standards ───────────────────────────────────────────────  */
