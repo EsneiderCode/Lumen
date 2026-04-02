@@ -34,7 +34,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       >
         {/* Brand */}
         <div className="flex h-16 items-center gap-3 border-b border-gf-border-dark px-6">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-gf-primary/20 bg-gf-base-light">
+          <div className="flex h-8 w-8 items-center justify-center rounded-gf-btn border border-gf-primary/20 bg-gf-base-light">
             <span className="font-display text-sm font-bold text-gf-primary">L</span>
           </div>
           <span className="font-display text-lg font-bold text-gf-text-inverse">LUMEN</span>
@@ -49,7 +49,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               end={item.path === ROUTES.ADMIN.DASHBOARD}
               onClick={onClose}
               className={({ isActive }) =>
-                `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                `flex items-center gap-3 rounded-gf-btn px-3 py-2.5 text-sm font-medium transition-colors ${
                   isActive
                     ? 'border-l-2 border-gf-primary bg-gf-primary/10 text-gf-primary'
                     : 'border-l-2 border-transparent text-gf-text-muted hover:bg-gf-border-dark hover:text-gf-text-inverse'

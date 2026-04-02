@@ -16,7 +16,7 @@ export function AdminLayout() {
             {/* Hamburger — mobile only */}
             <button
               onClick={() => setSidebarOpen(true)}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-gf-border text-gf-text-muted transition-colors hover:border-gf-primary hover:text-gf-primary md:hidden"
+              className="flex h-9 w-9 items-center justify-center rounded-gf-btn border border-gf-border text-gf-text-muted transition-colors hover:border-gf-primary hover:text-gf-primary md:hidden"
               aria-label="Menü öffnen"
             >
               <svg
@@ -42,14 +42,16 @@ export function AdminLayout() {
             <span className="hidden text-sm text-gf-text-muted sm:block">{user?.fullName}</span>
             <button
               onClick={signOut}
-              className="rounded-lg border border-gf-border px-3 py-1.5 text-sm text-gf-text-muted transition-colors hover:border-gf-danger/30 hover:text-gf-danger"
+              className="rounded-gf-btn border border-gf-border px-3 py-1.5 text-sm text-gf-text-muted transition-colors hover:border-gf-danger/30 hover:text-gf-danger"
             >
               Abmelden
             </button>
           </div>
         </header>
-        <main className="flex-1 overflow-auto bg-gf-surface p-4 md:p-6">
-          <Outlet />
+        <main className="flex-1 overflow-auto nexus-bg p-4 md:p-6">
+          <div className="page-fade-in">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

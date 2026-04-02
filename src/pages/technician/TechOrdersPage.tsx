@@ -115,9 +115,9 @@ export function TechOrdersPage() {
     return (
       <button
         onClick={() => navigate(`/tech/orders/${order.id}`)}
-        className={`w-full rounded-xl border p-4 text-left transition-all active:scale-[0.99] ${
+        className={`w-full rounded-gf-card border p-4 text-left transition-all active:scale-[0.99] ${
           isActive
-            ? 'border-gf-primary/40 bg-gf-card shadow-sm'
+            ? 'border-gf-primary/40 bg-gf-card shadow-gf-sm'
             : 'border-gf-border bg-gf-card opacity-75'
         }`}
       >
@@ -171,7 +171,7 @@ export function TechOrdersPage() {
 
   if (error) {
     return (
-      <div className="rounded-lg border border-gf-danger/30 bg-gf-danger/10 px-4 py-3 text-sm text-rose-700">
+      <div className="rounded-gf-btn border border-gf-danger/30 bg-gf-danger/10 px-4 py-3 text-sm text-rose-700">
         {error}
       </div>
     )
@@ -193,13 +193,13 @@ export function TechOrdersPage() {
             placeholder="Auftrag suchen…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-gf-border bg-gf-card px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+            className="w-full rounded-gf-btn border border-gf-border bg-gf-card px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
           />
         </div>
       )}
 
       {orders.length === 0 ? (
-        <div className="rounded-xl border border-gf-border bg-gf-card py-16 text-center">
+        <div className="rounded-gf-card border border-gf-border bg-gf-card py-16 text-center">
           <p className="text-2xl">📋</p>
           <p className="mt-2 text-sm text-gf-text-muted">Keine aktiven Aufträge</p>
         </div>

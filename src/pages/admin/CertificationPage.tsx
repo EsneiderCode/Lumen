@@ -225,7 +225,7 @@ export function CertificationPage() {
         <button
           onClick={handleExcelExport}
           disabled={total === 0}
-          className="flex items-center gap-1.5 rounded-lg border border-gf-border px-3 py-1.5 text-xs font-medium text-gf-text-muted hover:border-gf-primary hover:text-gf-primary disabled:opacity-40 transition-colors"
+          className="flex items-center gap-1.5 rounded-gf-btn border border-gf-border px-3 py-1.5 text-xs font-medium text-gf-text-muted hover:border-gf-primary hover:text-gf-primary disabled:opacity-40 transition-colors"
         >
           📊 Excel {hasSelection ? `(${selected.size})` : ''}
         </button>
@@ -236,7 +236,7 @@ export function CertificationPage() {
         <select
           value={filterTeam}
           onChange={(e) => setFilterTeam(e.target.value as TeamColor | '')}
-          className="rounded-lg border border-gf-border bg-gf-surface px-3 py-1.5 text-sm text-gf-text focus:border-gf-primary focus:outline-none"
+          className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-1.5 text-sm text-gf-text focus:border-gf-primary focus:outline-none"
         >
           <option value="">Alle Teams</option>
           <option value="rot">Rot</option>
@@ -248,7 +248,7 @@ export function CertificationPage() {
         <select
           value={filterProject}
           onChange={(e) => setFilterProject(e.target.value)}
-          className="rounded-lg border border-gf-border bg-gf-surface px-3 py-1.5 text-sm text-gf-text focus:border-gf-primary focus:outline-none"
+          className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-1.5 text-sm text-gf-text focus:border-gf-primary focus:outline-none"
         >
           <option value="">Alle Projekte</option>
           {projects.map((p) => (
@@ -260,13 +260,13 @@ export function CertificationPage() {
           type="date"
           value={filterDateFrom}
           onChange={(e) => setFilterDateFrom(e.target.value)}
-          className="rounded-lg border border-gf-border bg-gf-surface px-3 py-1.5 text-sm text-gf-text focus:border-gf-primary focus:outline-none"
+          className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-1.5 text-sm text-gf-text focus:border-gf-primary focus:outline-none"
         />
         <input
           type="date"
           value={filterDateTo}
           onChange={(e) => setFilterDateTo(e.target.value)}
-          className="rounded-lg border border-gf-border bg-gf-surface px-3 py-1.5 text-sm text-gf-text focus:border-gf-primary focus:outline-none"
+          className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-1.5 text-sm text-gf-text focus:border-gf-primary focus:outline-none"
         />
 
         {(filterTeam || filterProject || filterDateFrom || filterDateTo) && (
@@ -277,7 +277,7 @@ export function CertificationPage() {
               setFilterDateFrom('')
               setFilterDateTo('')
             }}
-            className="rounded-lg border border-gf-danger/30 px-3 py-1.5 text-xs font-medium text-rose-600 hover:bg-gf-danger/10 transition-colors"
+            className="rounded-gf-btn border border-gf-danger/30 px-3 py-1.5 text-xs font-medium text-rose-600 hover:bg-gf-danger/10 transition-colors"
           >
             × Filter löschen
           </button>
@@ -286,14 +286,14 @@ export function CertificationPage() {
 
       {/* Bulk action bar */}
       {hasSelection && (
-        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-gf-primary/30 bg-gf-primary/5 px-4 py-3">
+        <div className="flex flex-wrap items-center gap-3 rounded-gf-card border border-gf-primary/30 bg-gf-primary/5 px-4 py-3">
           <span className="text-sm font-semibold text-gf-primary-dark">{selected.size} ausgewählt</span>
           <div className="flex flex-wrap gap-2 ml-auto">
             {selectedCertifiable > 0 && (
               <button
                 disabled={isBulkWorking}
                 onClick={() => void handleBulkCertify()}
-                className="rounded-lg bg-gf-success px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+                className="rounded-gf-btn bg-gf-success px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
               >
                 {isBulkWorking ? '…' : `✓ Intern zertifizieren (${selectedCertifiable})`}
               </button>
@@ -302,7 +302,7 @@ export function CertificationPage() {
               <button
                 disabled={isBulkWorking}
                 onClick={() => void handleBulkSendToClient()}
-                className="rounded-lg bg-gf-primary px-3 py-1.5 text-xs font-semibold text-gf-base hover:bg-gf-primary-light disabled:opacity-50 transition-colors"
+                className="rounded-gf-btn bg-gf-primary px-3 py-1.5 text-xs font-semibold text-gf-base hover:bg-gf-primary-light disabled:opacity-50 transition-colors"
               >
                 {isBulkWorking ? '…' : `📤 An Kunden senden (${selectedSendable})`}
               </button>
@@ -311,14 +311,14 @@ export function CertificationPage() {
               <button
                 disabled={isBulkWorking}
                 onClick={() => setBulkInvoiceModal({ open: true, invoiceNumber: '' })}
-                className="rounded-lg bg-gf-accent px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+                className="rounded-gf-btn bg-gf-accent px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
               >
                 {`🧾 Fakturieren (${selectedInvoiceable})`}
               </button>
             )}
             <button
               onClick={() => setSelected(new Set())}
-              className="rounded-lg border border-gf-border px-3 py-1.5 text-xs font-medium text-gf-text-muted hover:border-gf-primary hover:text-gf-primary transition-colors"
+              className="rounded-gf-btn border border-gf-border px-3 py-1.5 text-xs font-medium text-gf-text-muted hover:border-gf-primary hover:text-gf-primary transition-colors"
             >
               Auswahl aufheben
             </button>
@@ -332,7 +332,7 @@ export function CertificationPage() {
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-gf-border border-t-gf-primary" />
         </div>
       ) : total === 0 ? (
-        <div className="rounded-xl border border-gf-border bg-gf-card px-6 py-12 text-center">
+        <div className="rounded-gf-card border border-gf-border bg-gf-card px-6 py-12 text-center">
           <p className="text-gf-text-muted">Keine Aufträge im Zertifizierungsprozess.</p>
         </div>
       ) : (
@@ -357,7 +357,7 @@ export function CertificationPage() {
                   <span className="text-xs text-gf-text-muted">— {description}</span>
                   <span className="ml-auto text-xs text-gf-text-muted">{items.length}</span>
                 </div>
-                <div className="overflow-hidden rounded-xl border border-gf-border bg-gf-card">
+                <div className="overflow-hidden rounded-gf-card border border-gf-border bg-gf-card">
                   {items.map((order, i) => (
                     <div
                       key={order.id}
@@ -415,7 +415,7 @@ export function CertificationPage() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
           onClick={(e) => { if (e.target === e.currentTarget) setBulkInvoiceModal({ open: false, invoiceNumber: '' }) }}
         >
-          <div className="w-full max-w-sm rounded-xl border border-gf-border bg-gf-card p-6 shadow-lg">
+          <div className="w-full max-w-sm rounded-gf-card border border-gf-border bg-gf-card p-6 shadow-gf-modal">
             <h3 className="mb-2 font-display text-base font-bold text-gf-text">Sammel-Fakturierung</h3>
             <p className="mb-3 text-sm text-gf-text-muted">
               Rechnungsnummer für {selectedInvoiceable} Aufträge (Pflichtfeld).
@@ -426,19 +426,19 @@ export function CertificationPage() {
               onChange={(e) => setBulkInvoiceModal((m) => ({ ...m, invoiceNumber: e.target.value }))}
               placeholder="z.B. RE-2026-0042"
               autoFocus
-              className="w-full rounded-lg border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder-gf-text-placeholder focus:border-gf-primary focus:outline-none mb-5"
+              className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder-gf-text-placeholder focus:border-gf-primary focus:outline-none mb-5"
             />
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setBulkInvoiceModal({ open: false, invoiceNumber: '' })}
-                className="rounded-lg border border-gf-border px-4 py-2 text-sm font-medium text-gf-text-muted hover:border-gf-primary hover:text-gf-primary transition-colors"
+                className="rounded-gf-btn border border-gf-border px-4 py-2 text-sm font-medium text-gf-text-muted hover:border-gf-primary hover:text-gf-primary transition-colors"
               >
                 Abbrechen
               </button>
               <button
                 onClick={() => void handleBulkInvoice()}
                 disabled={!bulkInvoiceModal.invoiceNumber.trim() || isBulkWorking}
-                className="rounded-lg bg-gf-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+                className="rounded-gf-btn bg-gf-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
               >
                 {isBulkWorking ? '…' : 'Fakturieren'}
               </button>

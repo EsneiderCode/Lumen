@@ -121,7 +121,7 @@ export function TechDashboard() {
   return (
     <div>
       {/* Greeting */}
-      <div className="mb-5 rounded-xl border border-gf-border bg-gf-card p-5">
+      <div className="mb-5 rounded-gf-card border border-gf-border bg-gf-card p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 className="font-display text-lg font-bold text-gf-text">
@@ -142,7 +142,7 @@ export function TechDashboard() {
       <div className="mb-5 grid grid-cols-3 gap-2 sm:gap-3">
         {isLoading
           ? Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="rounded-xl border border-gf-border bg-gf-card p-3 text-center sm:p-4">
+              <div key={i} className="rounded-gf-card border border-gf-border bg-gf-card p-3 text-center sm:p-4">
                 <div className="mx-auto mb-2 h-1 w-8 rounded-full bg-gf-border" />
                 <div className="mx-auto mb-1 h-6 w-6 animate-pulse rounded bg-gf-border" />
                 <div className="mx-auto h-3 w-10 animate-pulse rounded bg-gf-border" />
@@ -153,7 +153,7 @@ export function TechDashboard() {
               { label: 'Offen', value: openCount, color: 'bg-gf-warning' },
               { label: 'Erledigt', value: doneCount, color: 'bg-gf-success' },
             ].map((s) => (
-              <div key={s.label} className="rounded-xl border border-gf-border bg-gf-card p-3 text-center sm:p-4">
+              <div key={s.label} className="rounded-gf-card border border-gf-border bg-gf-card p-3 text-center sm:p-4">
                 <div className={`mx-auto mb-2 h-1 w-8 rounded-full ${s.color}`} />
                 <p className="font-display text-xl font-bold text-gf-text">{s.value}</p>
                 <p className="text-xs text-gf-text-muted">{s.label}</p>
@@ -162,7 +162,7 @@ export function TechDashboard() {
       </div>
 
       {/* Active orders */}
-      <div className="rounded-xl border border-gf-border bg-gf-card p-5">
+      <div className="rounded-gf-card border border-gf-border bg-gf-card p-5">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="font-display text-sm font-semibold text-gf-text">Meine Aufträge</h3>
           {orders.length > 0 && (
@@ -195,7 +195,7 @@ export function TechDashboard() {
               <button
                 key={order.id}
                 onClick={() => navigate(`/tech/orders/${order.id}`)}
-                className="w-full rounded-lg border border-gf-primary/30 bg-gf-surface px-3 py-2.5 text-left transition-all active:scale-[0.99]"
+                className="w-full rounded-gf-btn border border-gf-primary/30 bg-gf-surface px-3 py-2.5 text-left transition-all active:scale-[0.99]"
               >
                 <div className="mb-1 flex items-center justify-between gap-2">
                   <span className="font-mono text-xs font-semibold text-gf-primary">{order.order_number}</span>
