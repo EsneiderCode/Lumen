@@ -255,7 +255,7 @@ export function WorkOrderDetailPage() {
 
   if (!order) {
     return (
-      <div className="rounded-lg border border-gf-danger/30 bg-gf-danger/10 px-4 py-3 text-sm text-rose-700">
+      <div className="rounded-gf-btn border border-gf-danger/30 bg-gf-danger/10 px-4 py-3 text-sm text-rose-700">
         {error ?? 'Auftrag nicht gefunden'}
       </div>
     )
@@ -275,7 +275,7 @@ export function WorkOrderDetailPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/admin/orders')}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-gf-border text-gf-text-muted hover:border-gf-primary hover:text-gf-primary transition-colors"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-gf-btn border border-gf-border text-gf-text-muted hover:border-gf-primary hover:text-gf-primary transition-colors"
           >
             ←
           </button>
@@ -293,14 +293,14 @@ export function WorkOrderDetailPage() {
           {showPdfButton && (
             <button
               onClick={handlePdfDownload}
-              className="rounded-lg border border-gf-border px-3 py-1.5 text-xs font-medium text-gf-text-muted hover:border-gf-primary hover:text-gf-primary transition-colors"
+              className="rounded-gf-btn border border-gf-border px-3 py-1.5 text-xs font-medium text-gf-text-muted hover:border-gf-primary hover:text-gf-primary transition-colors"
             >
               📄 PDF
             </button>
           )}
           <button
             onClick={() => navigate(`/admin/orders/${id}/edit`)}
-            className="rounded-lg border border-gf-border px-3 py-1.5 text-xs font-medium text-gf-text-muted hover:border-gf-primary hover:text-gf-primary transition-colors"
+            className="rounded-gf-btn border border-gf-border px-3 py-1.5 text-xs font-medium text-gf-text-muted hover:border-gf-primary hover:text-gf-primary transition-colors"
           >
             Bearbeiten
           </button>
@@ -311,7 +311,7 @@ export function WorkOrderDetailPage() {
 
       {/* rueckmeldung_sent → internally_certified */}
       {order.status === 'rueckmeldung_sent' && (
-        <div className="rounded-xl border border-gf-warning/40 bg-gf-warning/10 p-4">
+        <div className="rounded-gf-card border border-gf-warning/40 bg-gf-warning/10 p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-semibold text-amber-700">Rückmeldung liegt vor</p>
@@ -321,14 +321,14 @@ export function WorkOrderDetailPage() {
               <button
                 disabled={isTransitioning}
                 onClick={() => openModal('return_nonconformity')}
-                className="flex-1 rounded-lg border border-gf-danger/40 px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-gf-danger/10 disabled:opacity-50 transition-colors sm:flex-none"
+                className="flex-1 rounded-gf-btn border border-gf-danger/40 px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-gf-danger/10 disabled:opacity-50 transition-colors sm:flex-none"
               >
                 ↩ Zurückgeben
               </button>
               <button
                 disabled={isTransitioning}
                 onClick={handleCertify}
-                className="flex-1 rounded-lg bg-gf-success px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity sm:flex-none"
+                className="flex-1 rounded-gf-btn bg-gf-success px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity sm:flex-none"
               >
                 {isTransitioning ? 'Wird zertifiziert…' : '✓ Intern zertifizieren'}
               </button>
@@ -339,7 +339,7 @@ export function WorkOrderDetailPage() {
 
       {/* internally_certified → sent_to_client (LUM-015) */}
       {order.status === 'internally_certified' && (
-        <div className="rounded-xl border border-gf-success/40 bg-gf-success/10 p-4">
+        <div className="rounded-gf-card border border-gf-success/40 bg-gf-success/10 p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-semibold text-emerald-700">Intern zertifiziert</p>
@@ -349,14 +349,14 @@ export function WorkOrderDetailPage() {
               <button
                 disabled={isTransitioning}
                 onClick={() => openModal('return_nonconformity')}
-                className="flex-1 rounded-lg border border-gf-danger/40 px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-gf-danger/10 disabled:opacity-50 transition-colors sm:flex-none"
+                className="flex-1 rounded-gf-btn border border-gf-danger/40 px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-gf-danger/10 disabled:opacity-50 transition-colors sm:flex-none"
               >
                 ↩ Zurückgeben
               </button>
               <button
                 disabled={isTransitioning}
                 onClick={() => openModal('send_to_client')}
-                className="flex-1 rounded-lg bg-gf-primary px-4 py-2 text-sm font-semibold text-gf-base hover:bg-gf-primary-light disabled:opacity-50 transition-colors sm:flex-none"
+                className="flex-1 rounded-gf-btn bg-gf-primary px-4 py-2 text-sm font-semibold text-gf-base hover:bg-gf-primary-light disabled:opacity-50 transition-colors sm:flex-none"
               >
                 📤 An Kunden senden
               </button>
@@ -367,7 +367,7 @@ export function WorkOrderDetailPage() {
 
       {/* sent_to_client → client_accepted / client_rejected (LUM-017) */}
       {order.status === 'sent_to_client' && (
-        <div className="rounded-xl border border-gf-primary/30 bg-gf-primary/5 p-4">
+        <div className="rounded-gf-card border border-gf-primary/30 bg-gf-primary/5 p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-semibold text-gf-primary-dark">Beim Kunden</p>
@@ -377,14 +377,14 @@ export function WorkOrderDetailPage() {
               <button
                 disabled={isTransitioning}
                 onClick={() => openModal('reject')}
-                className="flex-1 rounded-lg border border-gf-danger/40 px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-gf-danger/10 disabled:opacity-50 transition-colors sm:flex-none"
+                className="flex-1 rounded-gf-btn border border-gf-danger/40 px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-gf-danger/10 disabled:opacity-50 transition-colors sm:flex-none"
               >
                 ❌ Abgelehnt
               </button>
               <button
                 disabled={isTransitioning}
                 onClick={() => openModal('accept')}
-                className="flex-1 rounded-lg bg-gf-success px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity sm:flex-none"
+                className="flex-1 rounded-gf-btn bg-gf-success px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity sm:flex-none"
               >
                 ✅ Akzeptiert
               </button>
@@ -395,7 +395,7 @@ export function WorkOrderDetailPage() {
 
       {/* client_rejected — rejection banner + return to revision (LUM-017) */}
       {order.status === 'client_rejected' && (
-        <div className="rounded-xl border border-gf-danger/40 bg-gf-danger/10 p-4">
+        <div className="rounded-gf-card border border-gf-danger/40 bg-gf-danger/10 p-4">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="font-semibold text-rose-700">Vom Kunden abgelehnt</p>
@@ -406,7 +406,7 @@ export function WorkOrderDetailPage() {
             <button
               disabled={isTransitioning}
               onClick={() => void doTransition('internally_certified', 'Zur Überarbeitung zurückgegeben')}
-              className="shrink-0 rounded-lg border border-gf-warning/40 px-3 py-2 text-sm font-semibold text-amber-700 hover:bg-gf-warning/10 disabled:opacity-50 transition-colors"
+              className="shrink-0 rounded-gf-btn border border-gf-warning/40 px-3 py-2 text-sm font-semibold text-amber-700 hover:bg-gf-warning/10 disabled:opacity-50 transition-colors"
             >
               {isTransitioning ? '…' : '🔄 Zur Überarbeitung'}
             </button>
@@ -416,7 +416,7 @@ export function WorkOrderDetailPage() {
 
       {/* client_accepted → invoiced (LUM-018) */}
       {order.status === 'client_accepted' && (
-        <div className="rounded-xl border border-gf-success/40 bg-gf-success/10 p-4">
+        <div className="rounded-gf-card border border-gf-success/40 bg-gf-success/10 p-4">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="font-semibold text-emerald-700">Vom Kunden akzeptiert</p>
@@ -425,7 +425,7 @@ export function WorkOrderDetailPage() {
             <button
               disabled={isTransitioning}
               onClick={() => openModal('invoice')}
-              className="shrink-0 rounded-lg bg-gf-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+              className="shrink-0 rounded-gf-btn bg-gf-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
             >
               🧾 Fakturieren
             </button>
@@ -435,7 +435,7 @@ export function WorkOrderDetailPage() {
 
       {/* invoiced → paid (LUM-018) */}
       {order.status === 'invoiced' && (
-        <div className="rounded-xl border border-gf-accent/30 bg-gf-accent/5 p-4">
+        <div className="rounded-gf-card border border-gf-accent/30 bg-gf-accent/5 p-4">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="font-semibold text-purple-700">Fakturiert</p>
@@ -446,7 +446,7 @@ export function WorkOrderDetailPage() {
             <button
               disabled={isTransitioning}
               onClick={() => openModal('mark_paid')}
-              className="shrink-0 rounded-lg bg-gf-success px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+              className="shrink-0 rounded-gf-btn bg-gf-success px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
             >
               💳 Als bezahlt markieren
             </button>
@@ -456,19 +456,19 @@ export function WorkOrderDetailPage() {
 
       {/* paid — final state banner */}
       {order.status === 'paid' && (
-        <div className="rounded-xl border border-gf-success/30 bg-gf-success/10 px-4 py-3">
+        <div className="rounded-gf-card border border-gf-success/30 bg-gf-success/10 px-4 py-3">
           <p className="text-sm font-semibold text-emerald-700">✓ Bezahlt — Auftrag abgeschlossen</p>
         </div>
       )}
 
       {error && (
-        <div className="rounded-lg border border-gf-danger/30 bg-gf-danger/10 px-4 py-3 text-sm text-rose-700">
+        <div className="rounded-gf-btn border border-gf-danger/30 bg-gf-danger/10 px-4 py-3 text-sm text-rose-700">
           {error}
         </div>
       )}
 
       {/* Order info */}
-      <div className="rounded-xl border border-gf-border bg-gf-card p-5">
+      <div className="rounded-gf-card border border-gf-border bg-gf-card p-5">
         <h3 className="mb-4 font-display text-sm font-semibold text-gf-text">Auftragsdaten</h3>
         <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
           <div>
@@ -523,7 +523,7 @@ export function WorkOrderDetailPage() {
 
       {/* Rückmeldung technical data */}
       {hasDetail && (
-        <div className="rounded-xl border border-gf-primary/30 bg-gf-card p-5">
+        <div className="rounded-gf-card border border-gf-primary/30 bg-gf-card p-5">
           <h3 className="mb-1 font-display text-sm font-semibold text-gf-text">
             Rückmeldung — {WORK_TYPE_LABELS[order.work_type]}
           </h3>
@@ -554,7 +554,7 @@ export function WorkOrderDetailPage() {
         const rmEntry = history.find((e) => e.to_status === 'rueckmeldung_sent')
         if (!rmEntry?.notes || rmEntry.notes === 'Rückmeldung gesendet') return null
         return (
-          <div className="rounded-xl border border-gf-border bg-gf-card p-5">
+          <div className="rounded-gf-card border border-gf-border bg-gf-card p-5">
             <h3 className="mb-2 font-display text-sm font-semibold text-gf-text">Notizen vom Techniker</h3>
             <p className="text-sm text-gf-text">{rmEntry.notes}</p>
           </div>
@@ -563,7 +563,7 @@ export function WorkOrderDetailPage() {
 
       {/* Photos */}
       {photos.length > 0 && (
-        <div className="rounded-xl border border-gf-border bg-gf-card p-5">
+        <div className="rounded-gf-card border border-gf-border bg-gf-card p-5">
           <h3 className="mb-4 font-display text-sm font-semibold text-gf-text">Fotos ({photos.length})</h3>
           <div className="space-y-4">
             {(['before', 'during', 'after'] as PhotoType[]).map((type) => {
@@ -581,7 +581,7 @@ export function WorkOrderDetailPage() {
                         href={getPhotoPublicUrl(photo.storage_path)}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="aspect-square overflow-hidden rounded-lg bg-gf-surface ring-1 ring-gf-border hover:ring-gf-primary transition-all"
+                        className="aspect-square overflow-hidden rounded-gf-btn bg-gf-surface ring-1 ring-gf-border hover:ring-gf-primary transition-all"
                       >
                         <img
                           src={getPhotoPublicUrl(photo.storage_path)}
@@ -599,7 +599,7 @@ export function WorkOrderDetailPage() {
       )}
 
       {photos.length === 0 && (
-        <div className="rounded-xl border border-gf-border bg-gf-card p-5">
+        <div className="rounded-gf-card border border-gf-border bg-gf-card p-5">
           <h3 className="mb-2 font-display text-sm font-semibold text-gf-text">Fotos</h3>
           <p className="text-sm text-gf-text-muted">Noch keine Fotos hochgeladen.</p>
         </div>
@@ -607,7 +607,7 @@ export function WorkOrderDetailPage() {
 
       {/* State history */}
       {history.length > 0 && (
-        <div className="rounded-xl border border-gf-border bg-gf-card p-5">
+        <div className="rounded-gf-card border border-gf-border bg-gf-card p-5">
           <h3 className="mb-4 font-display text-sm font-semibold text-gf-text">Statusverlauf</h3>
           <ol className="space-y-3">
             {history.map((entry, i) => (
@@ -649,7 +649,7 @@ export function WorkOrderDetailPage() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
           onClick={(e) => { if (e.target === e.currentTarget) closeModal() }}
         >
-          <div className="w-full max-w-sm rounded-xl border border-gf-border bg-gf-card p-6 shadow-lg">
+          <div className="w-full max-w-sm rounded-gf-card border border-gf-border bg-gf-card p-6 shadow-gf-modal">
             {modal.type === 'send_to_client' && (
               <>
                 <h3 className="mb-2 font-display text-base font-bold text-gf-text">An Kunden senden?</h3>
@@ -667,7 +667,7 @@ export function WorkOrderDetailPage() {
                   onChange={(e) => setModal((m) => ({ ...m, inputValue: e.target.value }))}
                   placeholder="Notiz (optional)…"
                   rows={3}
-                  className="w-full rounded-lg border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder-gf-text-placeholder focus:border-gf-primary focus:outline-none mb-5"
+                  className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder-gf-text-placeholder focus:border-gf-primary focus:outline-none mb-5"
                 />
               </>
             )}
@@ -680,7 +680,7 @@ export function WorkOrderDetailPage() {
                   onChange={(e) => setModal((m) => ({ ...m, inputValue: e.target.value }))}
                   placeholder="Ablehnungsgrund…"
                   rows={3}
-                  className="w-full rounded-lg border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder-gf-text-placeholder focus:border-gf-primary focus:outline-none mb-5"
+                  className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder-gf-text-placeholder focus:border-gf-primary focus:outline-none mb-5"
                   autoFocus
                 />
               </>
@@ -694,7 +694,7 @@ export function WorkOrderDetailPage() {
                   value={modal.inputValue}
                   onChange={(e) => setModal((m) => ({ ...m, inputValue: e.target.value }))}
                   placeholder="z.B. RE-2026-0042"
-                  className="w-full rounded-lg border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder-gf-text-placeholder focus:border-gf-primary focus:outline-none mb-5"
+                  className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder-gf-text-placeholder focus:border-gf-primary focus:outline-none mb-5"
                   autoFocus
                 />
               </>
@@ -717,7 +717,7 @@ export function WorkOrderDetailPage() {
                     value={modal.categoryValue}
                     onChange={(e) => setModal((m) => ({ ...m, categoryValue: e.target.value }))}
                     autoFocus
-                    className="w-full rounded-lg border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none"
+                    className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none"
                   >
                     <option value="">— Kategorie wählen —</option>
                     <option value="datos incorrectos">Datos incorrectos</option>
@@ -736,7 +736,7 @@ export function WorkOrderDetailPage() {
                     onChange={(e) => setModal((m) => ({ ...m, inputValue: e.target.value }))}
                     placeholder="Detaillierte Beschreibung der Nichtkonformität…"
                     rows={4}
-                    className="w-full rounded-lg border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder-gf-text-placeholder focus:border-gf-primary focus:outline-none resize-none"
+                    className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder-gf-text-placeholder focus:border-gf-primary focus:outline-none resize-none"
                   />
                   {modal.inputValue.length > 0 && modal.inputValue.length < 20 && (
                     <p className="mt-1 text-xs text-rose-600">{20 - modal.inputValue.length} Zeichen fehlen</p>
@@ -750,7 +750,7 @@ export function WorkOrderDetailPage() {
               <button
                 onClick={closeModal}
                 disabled={isTransitioning}
-                className="rounded-lg border border-gf-border px-4 py-2 text-sm font-medium text-gf-text-muted hover:border-gf-primary hover:text-gf-primary disabled:opacity-50 transition-colors"
+                className="rounded-gf-btn border border-gf-border px-4 py-2 text-sm font-medium text-gf-text-muted hover:border-gf-primary hover:text-gf-primary disabled:opacity-50 transition-colors"
               >
                 Abbrechen
               </button>
@@ -761,7 +761,7 @@ export function WorkOrderDetailPage() {
                   ((modal.type === 'reject' || modal.type === 'invoice') && !modal.inputValue.trim()) ||
                   (modal.type === 'return_nonconformity' && (!modal.categoryValue || modal.inputValue.trim().length < 20))
                 }
-                className="rounded-lg bg-gf-primary px-4 py-2 text-sm font-semibold text-gf-base hover:bg-gf-primary-light disabled:opacity-50 transition-colors"
+                className="rounded-gf-btn bg-gf-primary px-4 py-2 text-sm font-semibold text-gf-base hover:bg-gf-primary-light disabled:opacity-50 transition-colors"
               >
                 {isTransitioning ? '…' : 'Bestätigen'}
               </button>

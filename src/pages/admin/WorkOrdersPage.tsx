@@ -132,7 +132,7 @@ export function WorkOrdersPage() {
         </div>
         <button
           onClick={() => navigate('/admin/orders/new')}
-          className="flex items-center gap-2 rounded-gf-btn bg-gf-primary px-4 py-2 text-sm font-semibold text-white hover:bg-gf-primary-dark transition-colors"
+          className="flex items-center gap-2 rounded-gf-btn bg-gf-primary px-4 py-2 text-sm font-semibold text-gf-base hover:bg-gf-primary-dark transition-colors"
         >
           <span className="text-base leading-none">+</span> Neuer Auftrag
         </button>

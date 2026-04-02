@@ -224,7 +224,7 @@ export function WorkOrderAssignPage() {
           <button
             type="submit"
             disabled={!selectedTeam || isSaving}
-            className="flex-1 rounded-gf-btn bg-gf-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-gf-primary-dark disabled:opacity-50 transition-colors"
+            className="flex-1 rounded-gf-btn bg-gf-primary px-4 py-2.5 text-sm font-semibold text-gf-base hover:bg-gf-primary-dark disabled:opacity-50 transition-colors"
           >
             {isSaving ? 'Zuweisen…' : 'Zuweisen & Status → Assigned'}
           </button>

@@ -10,7 +10,7 @@ export function OfflineFallback() {
       </p>
       <button
         onClick={() => window.location.reload()}
-        className="mt-6 rounded-gf-btn bg-gf-primary px-6 py-2.5 text-sm font-medium text-white hover:bg-gf-primary-light transition-colors"
+        className="mt-6 rounded-gf-btn bg-gf-primary px-6 py-2.5 text-sm font-medium text-gf-base hover:bg-gf-primary-light transition-colors"
       >
         Erneut versuchen
       </button>

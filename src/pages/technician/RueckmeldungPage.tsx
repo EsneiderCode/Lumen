@@ -18,7 +18,7 @@ function TimePickerField({ label, value, onChange }: {
       <div className="relative">
         {/* Visual layer — pointer-events-none so the input overlay catches the tap */}
         <div
-          className={`flex items-center gap-3 rounded-xl border-2 px-4 py-3.5 transition-colors pointer-events-none ${
+          className={`flex items-center gap-3 rounded-gf-card border-2 px-4 py-3.5 transition-colors pointer-events-none ${
             value
               ? 'border-gf-primary/50 bg-gf-primary/5'
               : 'border-gf-border bg-gf-surface'
@@ -304,7 +304,7 @@ export function RueckmeldungPage() {
 
   if (!order) {
     return (
-      <div className="rounded-lg border border-gf-danger/30 bg-gf-danger/10 px-4 py-3 text-sm text-rose-700">
+      <div className="rounded-gf-btn border border-gf-danger/30 bg-gf-danger/10 px-4 py-3 text-sm text-rose-700">
         {error ?? 'Auftrag nicht gefunden'}
       </div>
     )
@@ -319,7 +319,7 @@ export function RueckmeldungPage() {
       <div className="flex items-center gap-3">
         <button
           onClick={() => navigate(`/tech/orders/${id}`)}
-          className="flex h-8 w-8 items-center justify-center rounded-lg border border-gf-border text-gf-text-muted hover:border-gf-primary hover:text-gf-primary transition-colors"
+          className="flex h-8 w-8 items-center justify-center rounded-gf-btn border border-gf-border text-gf-text-muted hover:border-gf-primary hover:text-gf-primary transition-colors"
         >
           ←
         </button>
@@ -331,7 +331,7 @@ export function RueckmeldungPage() {
 
       {/* Non-conformity banner */}
       {order.status === 'returned' && returnedNote && (
-        <div className="rounded-xl border border-gf-danger/50 bg-gf-danger/10 p-4">
+        <div className="rounded-gf-card border border-gf-danger/50 bg-gf-danger/10 p-4">
           <p className="font-semibold text-rose-700">⚠ Auftrag zurückgegeben — Nichtkonformität</p>
           <p className="mt-1 text-sm text-rose-600">{returnedNote}</p>
           <p className="mt-2 text-xs text-rose-500">Korrekturen vornehmen und die Rückmeldung erneut senden.</p>
@@ -339,7 +339,7 @@ export function RueckmeldungPage() {
       )}
 
       {/* Order summary */}
-      <div className="rounded-xl border border-gf-border bg-gf-card p-4">
+      <div className="rounded-gf-card border border-gf-border bg-gf-card p-4">
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div>
             <p className="text-xs text-gf-text-muted">Kunde</p>
@@ -359,7 +359,7 @@ export function RueckmeldungPage() {
       </div>
 
       {/* Time inputs */}
-      <div className="rounded-xl border border-gf-border bg-gf-card p-4">
+      <div className="rounded-gf-card border border-gf-border bg-gf-card p-4">
         <h3 className="mb-3 font-display text-sm font-semibold text-gf-text">Einsatzzeiten</h3>
         <div className="grid grid-cols-2 gap-3">
           <TimePickerField label="Beginn" value={startTime} onChange={setStartTime} />
@@ -369,7 +369,7 @@ export function RueckmeldungPage() {
 
       {/* Dynamic detail fields */}
       {detailFields.length > 0 && (
-        <div className="rounded-xl border border-gf-primary/30 bg-gf-card p-4">
+        <div className="rounded-gf-card border border-gf-primary/30 bg-gf-card p-4">
           <h3 className="mb-1 font-display text-sm font-semibold text-gf-text">
             Technische Daten — {WORK_TYPE_LABELS[order.work_type]}
           </h3>
@@ -396,7 +396,7 @@ export function RueckmeldungPage() {
                     <select
                       value={String(detail[field.key] ?? '')}
                       onChange={(e) => setDetailField(field.key, e.target.value)}
-                      className="w-full rounded-lg border border-gf-border bg-gf-surface px-3 py-2.5 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+                      className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2.5 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
                     >
                       <option value="">— wählen —</option>
                       {field.options?.map((opt) => (
@@ -414,7 +414,7 @@ export function RueckmeldungPage() {
                         setDetailField(field.key, field.type === 'number' ? Number(e.target.value) : e.target.value)
                       }
                       placeholder={field.placeholder}
-                      className="w-full rounded-lg border border-gf-border bg-gf-surface px-3 py-2.5 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+                      className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2.5 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
                     />
                   </>
                 )}
@@ -425,7 +425,7 @@ export function RueckmeldungPage() {
       )}
 
       {/* Photos */}
-      <div className="rounded-xl border border-gf-border bg-gf-card p-4">
+      <div className="rounded-gf-card border border-gf-border bg-gf-card p-4">
         <h3 className="mb-3 font-display text-sm font-semibold text-gf-text">Fotos</h3>
         <div className="space-y-4">
           {(['before', 'during', 'after'] as PhotoType[]).map((type) => {
@@ -440,7 +440,7 @@ export function RueckmeldungPage() {
                     type="button"
                     disabled={uploadingType === type}
                     onClick={() => fileInputRefs[type].current?.click()}
-                    className="rounded-lg border border-gf-border px-2.5 py-1 text-xs font-medium text-gf-text-muted hover:border-gf-primary hover:text-gf-primary transition-colors disabled:opacity-50"
+                    className="rounded-gf-btn border border-gf-border px-2.5 py-1 text-xs font-medium text-gf-text-muted hover:border-gf-primary hover:text-gf-primary transition-colors disabled:opacity-50"
                   >
                     {uploadingType === type ? 'Lädt…' : '+ Foto'}
                   </button>
@@ -457,7 +457,7 @@ export function RueckmeldungPage() {
                 {typePhotos.length > 0 ? (
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                     {typePhotos.map((photo) => (
-                      <div key={photo.id} className="relative aspect-square overflow-hidden rounded-lg bg-gf-surface">
+                      <div key={photo.id} className="relative aspect-square overflow-hidden rounded-gf-btn bg-gf-surface">
                         <img
                           src={getPhotoPublicUrl(photo.storage_path)}
                           alt={photo.caption ?? PHOTO_LABELS[type]}
@@ -483,7 +483,7 @@ export function RueckmeldungPage() {
                   </div>
                 ) : (
                   <div
-                    className="flex h-16 cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-gf-border text-xs text-gf-text-muted hover:border-gf-primary/50 transition-colors"
+                    className="flex h-16 cursor-pointer items-center justify-center rounded-gf-btn border-2 border-dashed border-gf-border text-xs text-gf-text-muted hover:border-gf-primary/50 transition-colors"
                     onClick={() => fileInputRefs[type].current?.click()}
                   >
                     Keine Fotos · Tippen um hinzuzufügen
@@ -496,7 +496,7 @@ export function RueckmeldungPage() {
       </div>
 
       {/* Technician notes */}
-      <div className="rounded-xl border border-gf-border bg-gf-card p-4">
+      <div className="rounded-gf-card border border-gf-border bg-gf-card p-4">
         <label className="mb-1 block text-xs font-medium text-gf-text-muted">
           Notizen / Besonderheiten
         </label>
@@ -505,18 +505,18 @@ export function RueckmeldungPage() {
           onChange={(e) => setTechNotes(e.target.value)}
           rows={3}
           placeholder="Besonderheiten, Probleme, Hinweise für Admin…"
-          className="w-full rounded-lg border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary resize-none"
+          className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary resize-none"
         />
       </div>
 
       {/* Error / success */}
       {error && (
-        <div className="rounded-lg border border-gf-danger/30 bg-gf-danger/10 px-4 py-3 text-sm text-rose-700">
+        <div className="rounded-gf-btn border border-gf-danger/30 bg-gf-danger/10 px-4 py-3 text-sm text-rose-700">
           {error}
         </div>
       )}
       {savedOk && (
-        <div className="rounded-lg border border-gf-success/30 bg-gf-success/10 px-4 py-3 text-sm text-emerald-700">
+        <div className="rounded-gf-btn border border-gf-success/30 bg-gf-success/10 px-4 py-3 text-sm text-emerald-700">
           Daten gespeichert.
         </div>
       )}
@@ -526,14 +526,14 @@ export function RueckmeldungPage() {
         <button
           disabled={isSaving || isSending}
           onClick={handleSave}
-          className="rounded-xl border border-gf-border px-4 py-3 text-sm font-semibold text-gf-text hover:bg-gf-surface disabled:opacity-50 transition-colors"
+          className="rounded-gf-card border border-gf-border px-4 py-3 text-sm font-semibold text-gf-text hover:bg-gf-surface disabled:opacity-50 transition-colors"
         >
           {isSaving ? 'Speichern…' : 'Zwischenspeichern'}
         </button>
         <button
           disabled={isSaving || isSending}
           onClick={handleSend}
-          className="rounded-xl bg-gf-primary px-4 py-3 text-sm font-semibold text-white hover:bg-gf-primary-dark disabled:opacity-50 transition-colors"
+          className="rounded-gf-card bg-gf-primary px-4 py-3 text-sm font-semibold text-gf-base hover:bg-gf-primary-dark disabled:opacity-50 transition-colors"
         >
           {isSending ? 'Wird gesendet…' : order.status === 'returned' ? 'Korrigierte RM senden' : 'Rückmeldung senden'}
         </button>

@@ -135,7 +135,7 @@ export function ContractorOrdersPage() {
 
   if (error) {
     return (
-      <div className="rounded-lg border border-gf-danger/30 bg-gf-danger/10 px-4 py-3 text-sm text-rose-700">
+      <div className="rounded-gf-btn border border-gf-danger/30 bg-gf-danger/10 px-4 py-3 text-sm text-rose-700">
         {error}
       </div>
     )
@@ -158,13 +158,13 @@ export function ContractorOrdersPage() {
             placeholder="Auftrag suchen…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-gf-border bg-gf-card px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+            className="w-full rounded-gf-btn border border-gf-border bg-gf-card px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
           />
         </div>
       )}
 
       {orders.length === 0 ? (
-        <div className="rounded-xl border border-gf-border bg-gf-card py-16 text-center">
+        <div className="rounded-gf-card border border-gf-border bg-gf-card py-16 text-center">
           <p className="text-2xl">📋</p>
           <p className="mt-2 text-sm font-medium text-gf-text">Keine Aufträge</p>
           <p className="text-xs text-gf-text-muted">Ihnen wurden noch keine Aufträge zugewiesen.</p>
@@ -206,7 +206,7 @@ function OrderCard({ order }: { order: WorkOrderRow }) {
   const isActive = ACTIVE_STATUSES.includes(order.status)
   return (
     <div
-      className={`rounded-xl border p-4 ${
+      className={`rounded-gf-card border p-4 ${
         isActive
           ? 'border-gf-primary/40 bg-gf-card'
           : 'border-gf-border bg-gf-card opacity-80'

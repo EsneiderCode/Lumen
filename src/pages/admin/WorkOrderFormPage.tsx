@@ -247,7 +247,7 @@ export function WorkOrderFormPage() {
       <div className="mb-6 flex items-center gap-3">
         <button
           onClick={() => navigate('/admin/orders')}
-          className="flex h-8 w-8 items-center justify-center rounded-lg border border-gf-border text-gf-text-muted hover:border-gf-primary hover:text-gf-primary transition-colors"
+          className="flex h-8 w-8 items-center justify-center rounded-gf-btn border border-gf-border text-gf-text-muted hover:border-gf-primary hover:text-gf-primary transition-colors"
         >
           ←
         </button>
@@ -261,7 +261,7 @@ export function WorkOrderFormPage() {
 
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Core info card */}
-        <div className="rounded-xl border border-gf-border bg-gf-card p-5">
+        <div className="rounded-gf-card border border-gf-border bg-gf-card p-5">
           <h3 className="mb-4 font-display text-sm font-semibold text-gf-text">Allgemeine Daten</h3>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 
@@ -273,7 +273,7 @@ export function WorkOrderFormPage() {
               <select
                 value={form.client_id}
                 onChange={(e) => setField('client_id', e.target.value)}
-                className={`w-full rounded-lg border px-3 py-2 text-sm text-gf-text focus:outline-none focus:ring-1 focus:ring-gf-primary ${errors.client_id ? 'border-gf-danger bg-gf-danger/5' : 'border-gf-border bg-gf-surface'}`}
+                className={`w-full rounded-gf-btn border px-3 py-2 text-sm text-gf-text focus:outline-none focus:ring-1 focus:ring-gf-primary ${errors.client_id ? 'border-gf-danger bg-gf-danger/5' : 'border-gf-border bg-gf-surface'}`}
               >
                 <option value="">— Kunde wählen —</option>
                 {clients.map((c) => (
@@ -291,7 +291,7 @@ export function WorkOrderFormPage() {
               <select
                 value={form.project_id}
                 onChange={(e) => setField('project_id', e.target.value)}
-                className={`w-full rounded-lg border px-3 py-2 text-sm text-gf-text focus:outline-none focus:ring-1 focus:ring-gf-primary ${errors.project_id ? 'border-gf-danger bg-gf-danger/5' : 'border-gf-border bg-gf-surface'}`}
+                className={`w-full rounded-gf-btn border px-3 py-2 text-sm text-gf-text focus:outline-none focus:ring-1 focus:ring-gf-primary ${errors.project_id ? 'border-gf-danger bg-gf-danger/5' : 'border-gf-border bg-gf-surface'}`}
               >
                 <option value="">— Projekt wählen —</option>
                 {filteredProjects.map((p) => (
@@ -309,7 +309,7 @@ export function WorkOrderFormPage() {
               <select
                 value={form.operator_id}
                 onChange={(e) => setField('operator_id', e.target.value)}
-                className={`w-full rounded-lg border px-3 py-2 text-sm text-gf-text focus:outline-none focus:ring-1 focus:ring-gf-primary ${errors.operator_id ? 'border-gf-danger bg-gf-danger/5' : 'border-gf-border bg-gf-surface'}`}
+                className={`w-full rounded-gf-btn border px-3 py-2 text-sm text-gf-text focus:outline-none focus:ring-1 focus:ring-gf-primary ${errors.operator_id ? 'border-gf-danger bg-gf-danger/5' : 'border-gf-border bg-gf-surface'}`}
               >
                 <option value="">— Betreiber wählen —</option>
                 {operators.map((o) => (
@@ -325,7 +325,7 @@ export function WorkOrderFormPage() {
               <select
                 value={form.line}
                 onChange={(e) => setField('line', e.target.value)}
-                className="w-full rounded-lg border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:outline-none focus:ring-1 focus:ring-gf-primary"
+                className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:outline-none focus:ring-1 focus:ring-gf-primary"
               >
                 <option value="NE3">NE3</option>
                 <option value="NE4">NE4</option>
@@ -340,7 +340,7 @@ export function WorkOrderFormPage() {
               <select
                 value={form.work_type}
                 onChange={(e) => { setField('work_type', e.target.value as WorkType); setDetail({}) }}
-                className={`w-full rounded-lg border px-3 py-2 text-sm text-gf-text focus:outline-none focus:ring-1 focus:ring-gf-primary ${errors.work_type ? 'border-gf-danger bg-gf-danger/5' : 'border-gf-border bg-gf-surface'}`}
+                className={`w-full rounded-gf-btn border px-3 py-2 text-sm text-gf-text focus:outline-none focus:ring-1 focus:ring-gf-primary ${errors.work_type ? 'border-gf-danger bg-gf-danger/5' : 'border-gf-border bg-gf-surface'}`}
               >
                 <option value="">— Typ wählen —</option>
                 {Object.entries(WORK_TYPE_LABELS).map(([val, label]) => (
@@ -356,7 +356,7 @@ export function WorkOrderFormPage() {
               <select
                 value={form.priority}
                 onChange={(e) => setField('priority', e.target.value as 'normal' | 'alta' | 'urgente')}
-                className="w-full rounded-lg border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:outline-none focus:ring-1 focus:ring-gf-primary"
+                className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:outline-none focus:ring-1 focus:ring-gf-primary"
               >
                 <option value="normal">Normal</option>
                 <option value="alta">Hoch</option>
@@ -367,7 +367,7 @@ export function WorkOrderFormPage() {
         </div>
 
         {/* Address card */}
-        <div className="rounded-xl border border-gf-border bg-gf-card p-5">
+        <div className="rounded-gf-card border border-gf-border bg-gf-card p-5">
           <h3 className="mb-4 font-display text-sm font-semibold text-gf-text">Adresse</h3>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="sm:col-span-3">
@@ -377,7 +377,7 @@ export function WorkOrderFormPage() {
                 value={form.address}
                 onChange={(e) => setField('address', e.target.value)}
                 placeholder="Musterstraße 12"
-                className="w-full rounded-lg border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+                className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
               />
             </div>
             <div>
@@ -387,7 +387,7 @@ export function WorkOrderFormPage() {
                 value={form.postal_code}
                 onChange={(e) => setField('postal_code', e.target.value)}
                 placeholder="10115"
-                className="w-full rounded-lg border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+                className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
               />
             </div>
             <div className="sm:col-span-2">
@@ -397,7 +397,7 @@ export function WorkOrderFormPage() {
                 value={form.city}
                 onChange={(e) => setField('city', e.target.value)}
                 placeholder="Berlin"
-                className="w-full rounded-lg border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+                className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
               />
             </div>
           </div>
@@ -405,7 +405,7 @@ export function WorkOrderFormPage() {
 
         {/* Dynamic detail fields */}
         {detailFields.length > 0 && (
-          <div className="rounded-xl border border-gf-primary/30 bg-gf-card p-5">
+          <div className="rounded-gf-card border border-gf-primary/30 bg-gf-card p-5">
             <h3 className="mb-1 font-display text-sm font-semibold text-gf-text">
               Details: {WORK_TYPE_LABELS[form.work_type as WorkType]}
             </h3>
@@ -432,7 +432,7 @@ export function WorkOrderFormPage() {
                       <select
                         value={String(detail[field.key] ?? '')}
                         onChange={(e) => setDetailField(field.key, e.target.value)}
-                        className="w-full rounded-lg border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+                        className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
                       >
                         <option value="">— wählen —</option>
                         {field.options?.map((opt) => (
@@ -450,7 +450,7 @@ export function WorkOrderFormPage() {
                           setDetailField(field.key, field.type === 'number' ? Number(e.target.value) : e.target.value)
                         }
                         placeholder={field.placeholder}
-                        className="w-full rounded-lg border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+                        className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
                       />
                     </>
                   )}
@@ -461,20 +461,20 @@ export function WorkOrderFormPage() {
         )}
 
         {/* Notes */}
-        <div className="rounded-xl border border-gf-border bg-gf-card p-5">
+        <div className="rounded-gf-card border border-gf-border bg-gf-card p-5">
           <label className="mb-1 block text-xs font-medium text-gf-text-muted">Interne Notizen</label>
           <textarea
             value={form.internal_notes}
             onChange={(e) => setField('internal_notes', e.target.value)}
             rows={3}
             placeholder="Interne Hinweise für das Team…"
-            className="w-full rounded-lg border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary resize-none"
+            className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary resize-none"
           />
         </div>
 
         {/* Save error */}
         {saveError && (
-          <div className="rounded-lg border border-gf-danger/30 bg-gf-danger/10 px-4 py-3 text-sm text-rose-700">
+          <div className="rounded-gf-btn border border-gf-danger/30 bg-gf-danger/10 px-4 py-3 text-sm text-rose-700">
             {saveError}
           </div>
         )}
@@ -484,14 +484,14 @@ export function WorkOrderFormPage() {
           <button
             type="button"
             onClick={() => navigate('/admin/orders')}
-            className="flex-1 rounded-lg border border-gf-border px-4 py-2.5 text-sm font-medium text-gf-text hover:bg-gf-surface transition-colors"
+            className="flex-1 rounded-gf-btn border border-gf-border px-4 py-2.5 text-sm font-medium text-gf-text hover:bg-gf-surface transition-colors"
           >
             Abbrechen
           </button>
           <button
             type="submit"
             disabled={isSaving}
-            className="flex-1 rounded-lg bg-gf-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-gf-primary-dark disabled:opacity-50 transition-colors"
+            className="flex-1 rounded-gf-btn bg-gf-primary px-4 py-2.5 text-sm font-semibold text-gf-base hover:bg-gf-primary-dark disabled:opacity-50 transition-colors"
           >
             {isSaving ? 'Speichern…' : isEdit ? 'Änderungen speichern' : 'Auftrag erstellen'}
           </button>

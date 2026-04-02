@@ -203,7 +203,7 @@ export function TechOrderDetailPage() {
       {order.status === 'executed' && (
         <button
           onClick={() => navigate(`/tech/orders/${order.id}/rueckmeldung`)}
-          className="w-full rounded-gf-btn bg-gf-primary px-4 py-3.5 text-sm font-semibold text-white hover:bg-gf-primary-dark transition-colors"
+          className="w-full rounded-gf-btn bg-gf-primary px-4 py-3.5 text-sm font-semibold text-gf-base hover:bg-gf-primary-dark transition-colors"
         >
           📝 Rückmeldung ausfüllen
         </button>
