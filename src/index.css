@@ -1,79 +1,87 @@
 @import 'tailwindcss';
 
 @theme {
-  /* ─── Glasfaser Design System ─── */
+  /* ─────────────────────────────────────────────────────────────────────── */
+  /* Nothing Design System — LUMEN                                           */
+  /* Based on: Nothing Design Skill by dominikmartn                         */
+  /* Philosophy: "Subtract, don't add. Every element must earn its pixel."  */
+  /* ─────────────────────────────────────────────────────────────────────── */
 
-  /* Primary — electric cyan (fiber optic light) */
-  --color-gf-primary: #06b6d4;
-  --color-gf-primary-light: #22d3ee;
-  --color-gf-primary-dark: #0891b2;
+  /* ── Core surfaces (dark-first) ── */
+  --color-gf-base:        #000000;  /* absolute black                      */
+  --color-gf-surface:     #111111;  /* page / app background               */
+  --color-gf-base-light:  #1A1A1A;  /* raised surface — sidebars, panels   */
+  --color-gf-card:        #1A1A1A;  /* card / modal background             */
+  --color-gf-surface-end: #111111;  /* no gradients — flat surface         */
 
-  /* Accent — purple for badges, secondary highlights */
-  --color-gf-accent: #a855f7;
-  --color-gf-accent-light: #c084fc;
+  /* ── Borders ── */
+  --color-gf-border:            #333333;               /* visible border   */
+  --color-gf-border-dark:       rgba(255, 255, 255, 0.12);
+  --color-gf-border-dark-hover: rgba(255, 255, 255, 0.20);
 
-  /* Semantic */
-  --color-gf-success: #34d399;
-  --color-gf-danger: #f43f5e;
-  --color-gf-warning: #fbbf24;
+  /* ── Text ── */
+  --color-gf-text:             #E8E8E8;  /* primary text                   */
+  --color-gf-text-muted:       #999999;  /* secondary / supporting text    */
+  --color-gf-text-inverse:     #FFFFFF;  /* display / max contrast         */
+  --color-gf-text-label:       #999999;  /* labels, metadata, nav items    */
+  --color-gf-text-placeholder: #666666;  /* disabled / placeholder         */
 
-  /* Surfaces */
-  --color-gf-base: #0c0f1a;
-  --color-gf-base-light: #1e2235;
-  --color-gf-surface: #f0f2f5;
-  --color-gf-card: #ffffff;
-  --color-gf-border: #e2e5ea;
+  /* ── Interactive (primary actions — not an accent, it's functional) ── */
+  --color-gf-primary:       #5B9BF6;  /* interactive blue                  */
+  --color-gf-primary-light: #7FB3FF;
+  --color-gf-primary-dark:  #3B7DE8;
 
-  /* Text */
-  --color-gf-text: #1e293b;
-  --color-gf-text-muted: #94a3b8;
-  --color-gf-text-inverse: #f1f5f9;
-  --color-gf-text-label: #c8d1e0;
-  --color-gf-text-placeholder: #7a8599;
+  /* ── Accent (interrupt signal — use ONLY for critical/urgent UI) ── */
+  --color-gf-accent:       #D71921;                   /* red signal light  */
+  --color-gf-accent-light: rgba(215, 25, 33, 0.15);   /* red subtle bg     */
 
-  /* Borders for dark surfaces */
-  --color-gf-border-dark: rgba(255, 255, 255, 0.12);
-  --color-gf-border-dark-hover: rgba(255, 255, 255, 0.2);
+  /* ── Semantic status (data-status colors — encode values, not bgs) ── */
+  --color-gf-success: #4A9E5C;  /* positive / confirmed                    */
+  --color-gf-danger:  #D71921;  /* error / destructive                     */
+  --color-gf-warning: #D4A843;  /* caution                                 */
 
-  /* ─── Nexus Design System — semantic palette ─── */
-  --color-primary-500: #3b82f6;
-  --color-nexus-success: #16a34a;
-  --color-nexus-warning: #d97706;
-  --color-nexus-danger: #dc2626;
+  /* ── Nexus semantic aliases ── */
+  --color-primary-500:   #5B9BF6;
+  --color-nexus-success: #4A9E5C;
+  --color-nexus-warning: #D4A843;
+  --color-nexus-danger:  #D71921;
 
-  /* Gradient endpoint (nexus-bg linear tail) */
-  --color-gf-surface-end: #eaecf0;
+  /* ── Scrollbar ── */
+  --color-gf-scrollbar:       #333333;
+  --color-gf-scrollbar-hover: #666666;
 
-  /* Scrollbar */
-  --color-gf-scrollbar: #cbd5e1;
-  --color-gf-scrollbar-hover: #94a3b8;
-
-  /* Team colors */
-  --color-team-rot: #ef4444;
+  /* ── Team colors (status encoding — unchanged) ── */
+  --color-team-rot:   #ef4444;
   --color-team-gruen: #22c55e;
-  --color-team-blau: var(--color-primary-500);
-  --color-team-gelb: #eab308;
+  --color-team-blau:  var(--color-primary-500);
+  --color-team-gelb:  #eab308;
 
-  /* Typography */
-  --font-sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
-  --font-display: 'Syne', 'IBM Plex Sans', system-ui, sans-serif;
+  /* ── Typography ── */
+  /* Space Grotesk — body and UI text (300 / 400 / 500 / 700)              */
+  /* Doto          — display / hero moments (variable weight)              */
+  /* Space Mono    — data labels, small caps, numeric values               */
+  --font-sans:    'Space Grotesk', system-ui, -apple-system, sans-serif;
+  --font-display: 'Doto', 'Space Grotesk', system-ui, sans-serif;
+  --font-mono:    'Space Mono', 'Courier New', monospace;
 
-  /* ─── Border radius scale ─── */
-  /* badge / dots: use rounded-full (9999px) — no custom token needed */
-  --radius-gf-btn:     0.5rem;   /* 8px  — buttons, inputs, small rows  */
-  --radius-gf-card:    1.25rem;  /* 20px — cards, panels, alerts        */
-  --radius-gf-card-lg: 1.75rem;  /* 28px — large cards, auth icon boxes */
+  /* ── Border radius ── */
+  /* Nothing system: sharp (0px) or pill (9999px); max 16px on cards.      */
+  /* Anti-pattern: border-radius > 16px on cards.                          */
+  --radius-gf-btn:     0px;     /* sharp — mechanical/industrial aesthetic */
+  --radius-gf-card:    0.75rem; /* 12px — cards, panels, alerts            */
+  --radius-gf-card-lg: 1rem;    /* 16px — large cards (system maximum)     */
 
-  /* ─── Shadow (elevation) scale ─── */
-  --shadow-gf-sm:    0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-gf-md:    0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.05);
-  --shadow-gf-modal: 0 20px 40px rgba(0, 0, 0, 0.12), 0 8px 16px rgba(0, 0, 0, 0.08);
+  /* ── Elevation ── */
+  /* Nothing system: NO shadows. Use visible borders instead of depth.     */
+  --shadow-gf-sm:    none;
+  --shadow-gf-md:    none;
+  --shadow-gf-modal: none;
 }
 
-/* ─── Base styles ─── */
+/* ─── Base styles ──────────────────────────────────────────────────────── */
 body {
   margin: 0;
-  font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
   background-color: var(--color-gf-surface);
   color: var(--color-gf-text);
   -webkit-font-smoothing: antialiased;
@@ -81,11 +89,11 @@ body {
 }
 
 h1, h2, h3 {
-  font-family: 'Syne', system-ui, sans-serif;
-  letter-spacing: -0.03em;
+  font-family: 'Doto', 'Space Grotesk', system-ui, sans-serif;
+  letter-spacing: -0.02em;
 }
 
-/* ─── Scrollbar styling (webkit) ─── */
+/* ─── Scrollbar styling (webkit) ──────────────────────────────────────── */
 ::-webkit-scrollbar {
   width: 6px;
 }
@@ -94,49 +102,41 @@ h1, h2, h3 {
 }
 ::-webkit-scrollbar-thumb {
   background: var(--color-gf-scrollbar);
-  border-radius: 3px;
+  border-radius: 0;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-gf-scrollbar-hover);
 }
 
-/* ─── Selection ─── */
+/* ─── Selection ────────────────────────────────────────────────────────── */
 ::selection {
-  background-color: color-mix(in srgb, var(--color-gf-primary) 25%, transparent);
-  color: var(--color-gf-text);
+  background-color: rgba(91, 155, 246, 0.25);
+  color: var(--color-gf-text-inverse);
 }
 
-/* ─── Nexus background gradient ─────────────────────────────────────────── */
-/* Standard page background for all layouts: radial blue + green + linear   */
+/* ─── Page background ──────────────────────────────────────────────────── */
+/* Nothing system: no gradients. Flat dark surface only.                   */
 .nexus-bg {
-  background:
-    radial-gradient(ellipse 70% 50% at 0% 0%,
-      color-mix(in srgb, var(--color-gf-primary) 7%, transparent),
-      transparent),
-    radial-gradient(ellipse 60% 50% at 100% 100%,
-      color-mix(in srgb, var(--color-gf-success) 6%, transparent),
-      transparent),
-    linear-gradient(180deg, var(--color-gf-surface) 0%, var(--color-gf-surface-end) 100%);
+  background-color: var(--color-gf-surface);
 }
 
-/* ─── Transition standards ───────────────────────────────────────────────  */
-/* Standard interactive elements: 200ms ease                                 */
-/* Route / page fades:            150ms ease                                 */
+/* ─── Transition standards ─────────────────────────────────────────────── */
+/* Micro interactions:  150–250ms cubic-bezier(0.25, 0.1, 0.25, 1)        */
+/* Page transitions:    150ms ease                                          */
 
-/* Route fade-in — apply to <Outlet> wrapper for page transitions */
 @keyframes pageFadeIn {
   from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
 .page-fade-in {
-  animation: pageFadeIn 150ms ease forwards;
+  animation: pageFadeIn 150ms cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
 }
 
-/* ─── Card hover lift ────────────────────────────────────────────────────  */
-/* Add .card-lift to any interactive card */
+/* ─── Card hover ────────────────────────────────────────────────────────── */
+/* Subtle translate — no shadow per Nothing system rules.                   */
 .card-lift {
-  transition: transform 200ms ease;
+  transition: transform 200ms cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 .card-lift:hover {
