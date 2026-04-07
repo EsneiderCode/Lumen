@@ -395,3 +395,77 @@ export async function deleteWorkOrderPhoto(photoId: string, storagePath: string)
     .eq('id', photoId)
   return { error: dbError?.message ?? null }
 }
+
+// ── Sprint 7 — Certification Review (LUM-023 / LUM-024) ──────────────────
+
+/**
+ * LUM-023: Save the admin-assigned detail snapshot once on order creation.
+ * Uses .is('assigned_detail_snapshot', null) guard — never overwrites.
+ */
+export async function saveAssignedDetailSnapshot(
+  workOrderId: string,
+  detail: Record<string, unknown>,
+) {
+  const { error } = await supabase
+    .from('work_orders')
+    .update({ assigned_detail_snapshot: detail })
+    .eq('id', workOrderId)
+    .is('assigned_detail_snapshot', null)
+  return { error: error?.message ?? null }
+}
+
+/**
+ * LUM-024: Generate a SHA-256 hex digest of the provided data object.
+ * Keys are sorted for determinism. Used for certification audit hashes.
+ */
+export async function generateDataHash(data: Record<string, unknown>): Promise<string> {
+  const str = JSON.stringify(data, Object.keys(data).sort())
+  const buffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str))
+  return Array.from(new Uint8Array(buffer))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+}
+
+/**
+ * LUM-024: Insert a certification audit record.
+ */
+export async function insertCertificationAudit(
+  workOrderId: string,
+  certType: 'internal' | 'client',
+  certifiedBy: string,
+  dataHash: string,
+  notes?: string,
+) {
+  const { error } = await supabase
+    .from('certification_audits' as 'work_orders') // cast — table added in migration 002
+    .insert({
+      work_order_id: workOrderId,
+      cert_type: certType,
+      certified_by: certifiedBy,
+      data_hash: dataHash,
+      notes: notes ?? null,
+    } as never)
+  return { error: error?.message ?? null }
+}
+
+/**
+ * LUM-024: Fetch all certification audits for a work order.
+ */
+export async function fetchCertificationAudits(workOrderId: string) {
+  const { data, error } = await supabase
+    .from('certification_audits' as 'work_orders') // cast — table added in migration 002
+    .select('*, profiles ( full_name )')
+    .eq('work_order_id', workOrderId)
+    .order('certified_at', { ascending: true })
+  return {
+    data: (data ?? []) as Array<{
+      id: string
+      cert_type: 'internal' | 'client'
+      certified_at: string
+      data_hash: string
+      notes: string | null
+      profiles: { full_name: string } | null
+    }>,
+    error: error?.message ?? null,
+  }
+}

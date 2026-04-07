@@ -11,6 +11,7 @@ import {
   upsertWorkOrderDetail,
   fetchWorkOrderDetail,
   workTypeToDetailTable,
+  saveAssignedDetailSnapshot,
 } from '@/services/workOrderService'
 import type { WorkType } from '@/types/enums'
 
@@ -226,6 +227,10 @@ export function WorkOrderFormPage() {
     if (orderId && Object.keys(detail).length > 0) {
       const table = workTypeToDetailTable(form.work_type)
       await upsertWorkOrderDetail(table, orderId, detail)
+      // LUM-023: on creation only, save admin's assigned values as immutable snapshot
+      if (!isEdit) {
+        await saveAssignedDetailSnapshot(orderId, detail)
+      }
     }
 
     navigate('/admin/orders')

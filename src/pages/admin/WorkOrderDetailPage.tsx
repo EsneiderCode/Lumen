@@ -9,6 +9,9 @@ import {
   transitionWorkOrderStatus,
   workTypeToDetailTable,
   getPhotoPublicUrl,
+  generateDataHash,
+  insertCertificationAudit,
+  fetchCertificationAudits,
 } from '@/services/workOrderService'
 import { generateCertificatePdf } from '@/services/pdfService'
 import type { WorkOrderStatus, WorkType, TeamColor } from '@/types/enums'
@@ -146,6 +149,7 @@ export function WorkOrderDetailPage() {
     internal_notes: string | null
     assigned_date: string | null
     assigned_team: TeamColor | null
+    assigned_detail_snapshot: Record<string, unknown> | null
     clients: { name: string; code: string } | null
     projects: { name: string; code: string } | null
     operators: { name: string; code: string } | null
@@ -153,6 +157,14 @@ export function WorkOrderDetailPage() {
   const [detail, setDetail] = useState<Record<string, unknown>>({})
   const [photos, setPhotos] = useState<Photo[]>([])
   const [history, setHistory] = useState<StateEntry[]>([])
+  const [certAudits, setCertAudits] = useState<Array<{
+    id: string
+    cert_type: 'internal' | 'client'
+    certified_at: string
+    data_hash: string
+    notes: string | null
+    profiles: { full_name: string } | null
+  }>>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -164,7 +176,13 @@ export function WorkOrderDetailPage() {
       fetchWorkOrder(id),
       fetchWorkOrderPhotos(id),
       fetchStateHistory(id),
-    ]).then(async ([{ data: orderData, error: orderErr }, { data: photoData }, { data: histData }]) => {
+      fetchCertificationAudits(id),
+    ]).then(async ([
+      { data: orderData, error: orderErr },
+      { data: photoData },
+      { data: histData },
+      { data: auditData },
+    ]) => {
       if (orderErr || !orderData) {
         setError(orderErr ?? 'Auftrag nicht gefunden')
         setIsLoading(false)
@@ -173,6 +191,7 @@ export function WorkOrderDetailPage() {
       setOrder(orderData as unknown as typeof order)
       setPhotos((photoData ?? []) as Photo[])
       setHistory((histData ?? []) as unknown as StateEntry[])
+      setCertAudits(auditData)
 
       const table = workTypeToDetailTable(orderData.work_type)
       const { data: detailData } = await fetchWorkOrderDetail(table, id)
@@ -201,8 +220,21 @@ export function WorkOrderDetailPage() {
     setIsTransitioning(false)
   }
 
-  function handleCertify() {
-    void doTransition('internally_certified', 'Intern zertifiziert durch Admin')
+  async function handleCertify() {
+    if (!order || !user) return
+    // LUM-024: generate audit hash before transitioning
+    const hashData = {
+      order_number: order.order_number,
+      work_type: order.work_type,
+      detail,
+      certified_by: user.id,
+      certified_at: new Date().toISOString(),
+    }
+    const hash = await generateDataHash(hashData)
+    await doTransition('internally_certified', 'Intern zertifiziert durch Admin')
+    await insertCertificationAudit(order.id, 'internal', user.id, hash, 'Interne Zertifizierung')
+    const { data: auditData } = await fetchCertificationAudits(order.id)
+    setCertAudits(auditData)
   }
 
   function handlePdfDownload() {
@@ -264,6 +296,14 @@ export function WorkOrderDetailPage() {
   const hasDetail = Object.keys(detail).length > 0
   const photosByType = (type: PhotoType) => photos.filter((p) => p.photo_type === type)
   const showPdfButton = PDF_VISIBLE_STATUSES.includes(order.status)
+  const snapshot = order.assigned_detail_snapshot
+  // Show comparison only once the technician has submitted their report
+  const showComparison = Boolean(
+    snapshot &&
+    hasDetail &&
+    ['rueckmeldung_sent', 'internally_certified', 'sent_to_client',
+     'client_accepted', 'client_rejected', 'invoiced', 'paid'].includes(order.status)
+  )
 
   // Get the rejection reason from history
   const rejectionEntry = history.findLast((e) => e.to_status === 'client_rejected')
@@ -521,9 +561,56 @@ export function WorkOrderDetailPage() {
         </div>
       </div>
 
-      {/* Rückmeldung technical data */}
-      {hasDetail && (
-        <div className="rounded-gf-card border border-gf-primary/30 bg-gf-card p-5">
+      {/* LUM-023: Side-by-side comparison — Beauftragt vs. Gemeldet */}
+      {showComparison ? (
+        <div className="rounded-gf-card border border-gf-border bg-gf-card p-5">
+          <h3 className="mb-1 font-display text-sm font-semibold text-gf-text">
+            Vergleich — {WORK_TYPE_LABELS[order.work_type]}
+          </h3>
+          <p className="mb-4 text-xs text-gf-text-muted">Beauftragte Werte vs. gemeldete Istwerte</p>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-0 text-sm">
+            {/* Column headers */}
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gf-text-muted border-b border-gf-border pb-1">
+              Beauftragt
+            </p>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gf-primary border-b border-gf-border pb-1">
+              Gemeldet
+            </p>
+            {/* Field rows — iterate over the union of keys */}
+            {Array.from(new Set([
+              ...Object.keys(snapshot!),
+              ...Object.keys(detail),
+            ])).map((key) => {
+              const label = DETAIL_FIELD_LABELS[key] ?? key.replace(/_/g, ' ')
+              const assignedVal = snapshot![key]
+              const reportedVal = detail[key]
+              const isDiff = String(assignedVal ?? '') !== String(reportedVal ?? '')
+              const fmt = (v: unknown) => {
+                if (v === null || v === undefined || v === '') return '—'
+                if (typeof v === 'boolean') return v ? 'Ja ✓' : 'Nein ✗'
+                return String(v)
+              }
+              return (
+                <>
+                  <div key={`${key}-assigned`} className="py-2 border-b border-gf-border/50">
+                    <p className="text-xs text-gf-text-muted capitalize">{label}</p>
+                    <p className="font-medium text-gf-text">{fmt(assignedVal)}</p>
+                  </div>
+                  <div key={`${key}-reported`} className={`py-2 border-b border-gf-border/50 ${isDiff ? 'bg-gf-warning/5 rounded' : ''}`}>
+                    <p className="text-xs text-gf-text-muted capitalize">{label}</p>
+                    <p className={`font-medium ${isDiff ? 'text-gf-warning' : 'text-gf-text'}`}>
+                      {fmt(reportedVal)}
+                      {isDiff && <span className="ml-1.5 text-xs">↕</span>}
+                    </p>
+                  </div>
+                </>
+              )
+            })}
+          </div>
+        </div>
+      ) : hasDetail ? (
+        /* Simple view when no snapshot available (old orders) */
+        <div className="rounded-gf-card border border-gf-border bg-gf-card p-5">
           <h3 className="mb-1 font-display text-sm font-semibold text-gf-text">
             Rückmeldung — {WORK_TYPE_LABELS[order.work_type]}
           </h3>
@@ -547,7 +634,7 @@ export function WorkOrderDetailPage() {
             })}
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Technician notes */}
       {(() => {
@@ -602,6 +689,47 @@ export function WorkOrderDetailPage() {
         <div className="rounded-gf-card border border-gf-border bg-gf-card p-5">
           <h3 className="mb-2 font-display text-sm font-semibold text-gf-text">Fotos</h3>
           <p className="text-sm text-gf-text-muted">Noch keine Fotos hochgeladen.</p>
+        </div>
+      )}
+
+      {/* LUM-024: Certification audit trail */}
+      {certAudits.length > 0 && (
+        <div className="rounded-gf-card border border-gf-border bg-gf-card p-5">
+          <h3 className="mb-1 font-display text-sm font-semibold text-gf-text">Zertifizierungsprotokoll</h3>
+          <p className="mb-4 text-xs text-gf-text-muted">Kryptografischer Nachweis — manipulationssicher</p>
+          <div className="space-y-3">
+            {certAudits.map((audit) => (
+              <div key={audit.id} className="border border-gf-border/60 p-3">
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                  <div>
+                    <span className={`inline-flex px-2 py-0.5 text-xs font-semibold ${
+                      audit.cert_type === 'internal'
+                        ? 'bg-gf-success/15 text-gf-success'
+                        : 'bg-gf-primary/15 text-gf-primary'
+                    }`}>
+                      {audit.cert_type === 'internal' ? 'Interne Zertifizierung' : 'Kundenzertifizierung'}
+                    </span>
+                    <p className="mt-1 text-xs text-gf-text-muted">
+                      {new Date(audit.certified_at).toLocaleString('de-DE')}
+                      {audit.profiles?.full_name && (
+                        <span className="ml-1.5">· {audit.profiles.full_name}</span>
+                      )}
+                    </p>
+                    {audit.notes && (
+                      <p className="mt-0.5 text-xs text-gf-text">{audit.notes}</p>
+                    )}
+                  </div>
+                </div>
+                {/* Hash */}
+                <div className="mt-2 border-t border-gf-border/40 pt-2">
+                  <p className="mb-0.5 text-xs text-gf-text-muted">SHA-256</p>
+                  <p className="font-mono text-xs text-gf-text-muted break-all">
+                    {audit.data_hash}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
