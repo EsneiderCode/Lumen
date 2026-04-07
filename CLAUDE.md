@@ -115,6 +115,85 @@ Client Accepted → Invoiced → Paid
 - PDF payroll statements
 - PWA offline capabilities
 
+## Design System — Nothing Design System (Normative)
+
+> Source: [nothing-design-skill](https://github.com/dominikmartn/nothing-design-skill)
+> Philosophy: **"Subtract, don't add. Every element must earn its pixel."**
+
+All new UI MUST follow this system. All tokens live in `src/index.css @theme`.
+
+### Fonts
+| Token | Family | Use |
+|---|---|---|
+| `font-sans` | Space Grotesk 300/400/500/700 | Body, UI text, labels, inputs |
+| `font-display` | Doto 400/700 | Display, hero headings, page titles |
+| `font-mono` | Space Mono 400/700 | Data labels, numeric values, small caps |
+
+### Color Tokens (`gf-*` prefix)
+| Token | Value | Use |
+|---|---|---|
+| `gf-base` | #000000 | Absolute black |
+| `gf-surface` | #111111 | Page / app background |
+| `gf-base-light` | #1A1A1A | Sidebars, raised panels |
+| `gf-card` | #1A1A1A | Card / modal background |
+| `gf-border` | #333333 | Visible border |
+| `gf-text` | #E8E8E8 | Primary text |
+| `gf-text-muted` | #999999 | Secondary / supporting |
+| `gf-text-inverse` | #FFFFFF | Display / max contrast |
+| `gf-text-label` | #999999 | Metadata, nav labels |
+| `gf-text-placeholder` | #666666 | Disabled / placeholder |
+| `gf-primary` | #5B9BF6 | Interactive (buttons, links, focus) |
+| `gf-accent` | #D71921 | **Interrupt signal only** — urgent/critical UI |
+| `gf-accent-light` | rgba(215,25,33,0.15) | Red subtle backgrounds |
+| `gf-success` | #4A9E5C | Positive / confirmed status |
+| `gf-danger` | #D71921 | Error / destructive actions |
+| `gf-warning` | #D4A843 | Caution |
+
+### Border Radius (Nothing: sharp or pill, max 16px on cards)
+| Token | Value | Use |
+|---|---|---|
+| `rounded-full` | 9999px | Badges, status pills, team dots |
+| `rounded-gf-btn` | 0px | Buttons, inputs — sharp mechanical style |
+| `rounded-gf-card` | 12px | Cards, panels, alerts, modals |
+| `rounded-gf-card-lg` | 16px | Large cards (system maximum) |
+
+**No `rounded-lg`, `rounded-xl`, `rounded-2xl`. Never exceed 16px on cards.**
+
+### Shadows
+Nothing system: **NO shadows.** Use `border border-gf-border` instead.
+`shadow-gf-sm`, `shadow-gf-md`, `shadow-gf-modal` resolve to `none`.
+
+### Background
+- All layout pages use `.nexus-bg` — flat `background-color: var(--color-gf-surface)` (no gradients)
+- **No gradients anywhere** — anti-pattern in Nothing system
+
+### Transitions
+- Micro interactions: `150–250ms cubic-bezier(0.25, 0.1, 0.25, 1)`
+- Page fades: `150ms` — use `.page-fade-in` on `<Outlet>` wrappers
+- Interactive cards: `.card-lift` → `translateY(-1px)` at 200ms
+
+### Hard Rules — Never Violate
+- No hardcoded hex values in components — always `var(--color-gf-*)` or Tailwind `gf-*` utilities
+- No generic Tailwind colors (`bg-gray-50`, `text-gray-900`, `bg-blue-500`)
+- No gradients
+- No `box-shadow` (except `shadow-gf-*` tokens which resolve to `none`)
+- No blur or backdrop-filter effects
+- No skeleton loaders (use `[LOADING]` text or hardware-style spinner)
+- No toast notifications
+- No filled icons (use outline/stroke icons only — 1.5px monoline, 24×24px)
+- No parallax
+- No border-radius > 16px on cards
+- No zebra striping in tables
+- Max 2 font families per screen
+- Max 3 font sizes per screen
+- Red (`gf-accent`) ONLY for urgent/critical interrupt signals — not for branding
+
+### Spacing
+Tailwind 4px base scale only: `p-1`(4px), `p-2`(8px), `p-3`(12px), `p-4`(16px), etc.
+No arbitrary values like `p-[18px]`.
+
+---
+
 ## Important Notes
 
 - **Tax consultant validation required**: Janet Martinez de Peglow must validate payroll calculations before HR module goes live
