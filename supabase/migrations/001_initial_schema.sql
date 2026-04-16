@@ -388,6 +388,24 @@ CREATE POLICY "Users can view own order soplado details"
     WHERE wo.id = work_order_id AND wo.assigned_technician = auth.uid()
   ));
 
+CREATE POLICY "Technicians can insert soplado details for assigned orders"
+  ON public.wo_detail_soplado FOR INSERT
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM public.work_orders wo
+    WHERE wo.id = work_order_id AND wo.assigned_technician = auth.uid()
+  ));
+
+CREATE POLICY "Technicians can update soplado details for assigned orders"
+  ON public.wo_detail_soplado FOR UPDATE
+  USING (EXISTS (
+    SELECT 1 FROM public.work_orders wo
+    WHERE wo.id = work_order_id AND wo.assigned_technician = auth.uid()
+  ))
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM public.work_orders wo
+    WHERE wo.id = work_order_id AND wo.assigned_technician = auth.uid()
+  ));
+
 CREATE POLICY "Admins full access to fusion_ap details"
   ON public.wo_detail_fusion_ap FOR ALL
   USING (public.get_user_role() = 'admin');
@@ -395,6 +413,24 @@ CREATE POLICY "Admins full access to fusion_ap details"
 CREATE POLICY "Users can view own order fusion_ap details"
   ON public.wo_detail_fusion_ap FOR SELECT
   USING (EXISTS (
+    SELECT 1 FROM public.work_orders wo
+    WHERE wo.id = work_order_id AND wo.assigned_technician = auth.uid()
+  ));
+
+CREATE POLICY "Technicians can insert fusion_ap details for assigned orders"
+  ON public.wo_detail_fusion_ap FOR INSERT
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM public.work_orders wo
+    WHERE wo.id = work_order_id AND wo.assigned_technician = auth.uid()
+  ));
+
+CREATE POLICY "Technicians can update fusion_ap details for assigned orders"
+  ON public.wo_detail_fusion_ap FOR UPDATE
+  USING (EXISTS (
+    SELECT 1 FROM public.work_orders wo
+    WHERE wo.id = work_order_id AND wo.assigned_technician = auth.uid()
+  ))
+  WITH CHECK (EXISTS (
     SELECT 1 FROM public.work_orders wo
     WHERE wo.id = work_order_id AND wo.assigned_technician = auth.uid()
   ));
@@ -410,6 +446,24 @@ CREATE POLICY "Users can view own order fusion_dp details"
     WHERE wo.id = work_order_id AND wo.assigned_technician = auth.uid()
   ));
 
+CREATE POLICY "Technicians can insert fusion_dp details for assigned orders"
+  ON public.wo_detail_fusion_dp FOR INSERT
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM public.work_orders wo
+    WHERE wo.id = work_order_id AND wo.assigned_technician = auth.uid()
+  ));
+
+CREATE POLICY "Technicians can update fusion_dp details for assigned orders"
+  ON public.wo_detail_fusion_dp FOR UPDATE
+  USING (EXISTS (
+    SELECT 1 FROM public.work_orders wo
+    WHERE wo.id = work_order_id AND wo.assigned_technician = auth.uid()
+  ))
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM public.work_orders wo
+    WHERE wo.id = work_order_id AND wo.assigned_technician = auth.uid()
+  ));
+
 CREATE POLICY "Admins full access to alta details"
   ON public.wo_detail_alta FOR ALL
   USING (public.get_user_role() = 'admin');
@@ -417,6 +471,24 @@ CREATE POLICY "Admins full access to alta details"
 CREATE POLICY "Users can view own order alta details"
   ON public.wo_detail_alta FOR SELECT
   USING (EXISTS (
+    SELECT 1 FROM public.work_orders wo
+    WHERE wo.id = work_order_id AND wo.assigned_technician = auth.uid()
+  ));
+
+CREATE POLICY "Technicians can insert alta details for assigned orders"
+  ON public.wo_detail_alta FOR INSERT
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM public.work_orders wo
+    WHERE wo.id = work_order_id AND wo.assigned_technician = auth.uid()
+  ));
+
+CREATE POLICY "Technicians can update alta details for assigned orders"
+  ON public.wo_detail_alta FOR UPDATE
+  USING (EXISTS (
+    SELECT 1 FROM public.work_orders wo
+    WHERE wo.id = work_order_id AND wo.assigned_technician = auth.uid()
+  ))
+  WITH CHECK (EXISTS (
     SELECT 1 FROM public.work_orders wo
     WHERE wo.id = work_order_id AND wo.assigned_technician = auth.uid()
   ));
@@ -432,6 +504,24 @@ CREATE POLICY "Users can view own order nt details"
     WHERE wo.id = work_order_id AND wo.assigned_technician = auth.uid()
   ));
 
+CREATE POLICY "Technicians can insert nt details for assigned orders"
+  ON public.wo_detail_nt FOR INSERT
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM public.work_orders wo
+    WHERE wo.id = work_order_id AND wo.assigned_technician = auth.uid()
+  ));
+
+CREATE POLICY "Technicians can update nt details for assigned orders"
+  ON public.wo_detail_nt FOR UPDATE
+  USING (EXISTS (
+    SELECT 1 FROM public.work_orders wo
+    WHERE wo.id = work_order_id AND wo.assigned_technician = auth.uid()
+  ))
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM public.work_orders wo
+    WHERE wo.id = work_order_id AND wo.assigned_technician = auth.uid()
+  ));
+
 CREATE POLICY "Admins full access to patchkabel details"
   ON public.wo_detail_patchkabel FOR ALL
   USING (public.get_user_role() = 'admin');
@@ -439,6 +529,24 @@ CREATE POLICY "Admins full access to patchkabel details"
 CREATE POLICY "Users can view own order patchkabel details"
   ON public.wo_detail_patchkabel FOR SELECT
   USING (EXISTS (
+    SELECT 1 FROM public.work_orders wo
+    WHERE wo.id = work_order_id AND wo.assigned_technician = auth.uid()
+  ));
+
+CREATE POLICY "Technicians can insert patchkabel details for assigned orders"
+  ON public.wo_detail_patchkabel FOR INSERT
+  WITH CHECK (EXISTS (
+    SELECT 1 FROM public.work_orders wo
+    WHERE wo.id = work_order_id AND wo.assigned_technician = auth.uid()
+  ));
+
+CREATE POLICY "Technicians can update patchkabel details for assigned orders"
+  ON public.wo_detail_patchkabel FOR UPDATE
+  USING (EXISTS (
+    SELECT 1 FROM public.work_orders wo
+    WHERE wo.id = work_order_id AND wo.assigned_technician = auth.uid()
+  ))
+  WITH CHECK (EXISTS (
     SELECT 1 FROM public.work_orders wo
     WHERE wo.id = work_order_id AND wo.assigned_technician = auth.uid()
   ));
@@ -475,6 +583,13 @@ CREATE POLICY "Admins full access to state history"
 CREATE POLICY "Users can view state history of assigned orders"
   ON public.work_order_state_history FOR SELECT
   USING (EXISTS (
+    SELECT 1 FROM public.work_orders wo
+    WHERE wo.id = work_order_id AND wo.assigned_technician = auth.uid()
+  ));
+
+CREATE POLICY "Technicians can insert state history for assigned orders"
+  ON public.work_order_state_history FOR INSERT
+  WITH CHECK (EXISTS (
     SELECT 1 FROM public.work_orders wo
     WHERE wo.id = work_order_id AND wo.assigned_technician = auth.uid()
   ));

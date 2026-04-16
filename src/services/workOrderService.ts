@@ -138,8 +138,10 @@ export async function fetchWorkOrders(filters: WorkOrderFilters = {}) {
   if (filters.project_id) query = query.eq('project_id', filters.project_id)
   if (filters.client_id) query = query.eq('client_id', filters.client_id)
   if (filters.search) {
+    // Strip PostgREST operator characters to prevent filter-string injection
+    const term = filters.search.replace(/[.,()]/g, '')
     query = query.or(
-      `order_number.ilike.%${filters.search}%,address.ilike.%${filters.search}%`,
+      `order_number.ilike.%${term}%,address.ilike.%${term}%`,
     )
   }
   if (filters.date_from) query = query.gte('assigned_date', filters.date_from)

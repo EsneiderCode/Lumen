@@ -72,63 +72,8 @@ import {
   getPhotoSignedUrls,
 } from '@/services/workOrderService'
 import type { WorkType } from '@/types/enums'
-
-// ── Detail field config (same as admin form, result-focused) ───
-
-interface DetailField {
-  key: string
-  label: string
-  type: 'text' | 'number' | 'select' | 'checkbox'
-  options?: string[]
-  placeholder?: string
-}
-
-const DETAIL_FIELDS: Record<WorkType, DetailField[]> = {
-  soplado: [
-    { key: 'meters', label: 'Meter geblasen', type: 'number', placeholder: '0' },
-    { key: 'section', label: 'Abschnitt', type: 'text', placeholder: 'z.B. A1-B3' },
-    { key: 'tube_diameter', label: 'Rohrdurchmesser', type: 'text', placeholder: 'z.B. 7/3.5' },
-    { key: 'result', label: 'Ergebnis', type: 'select', options: ['OK', 'NOK', 'Ausstehend'] },
-  ],
-  fusion_ap: [
-    { key: 'splice_count', label: 'Spleiß-Anzahl', type: 'number', placeholder: '0' },
-    { key: 'fiber_type', label: 'Fasertyp', type: 'text', placeholder: 'z.B. G.657.A2' },
-    { key: 'fusion_losses', label: 'Schmelzverluste (dB)', type: 'number', placeholder: '0.00' },
-    { key: 'has_measurement_cert', label: 'Meßprotokoll erstellt', type: 'checkbox' },
-  ],
-  fusion_dp: [
-    { key: 'splice_count', label: 'Spleiß-Anzahl', type: 'number', placeholder: '0' },
-    { key: 'fiber_type', label: 'Fasertyp', type: 'text', placeholder: 'z.B. G.657.A2' },
-    { key: 'fusion_losses', label: 'Schmelzverluste (dB)', type: 'number', placeholder: '0.00' },
-    { key: 'has_measurement_cert', label: 'Meßprotokoll erstellt', type: 'checkbox' },
-  ],
-  alta: [
-    { key: 'access_type', label: 'Zugangstyp', type: 'select', options: ['Keller', 'Erdgeschoss', 'Obergeschoss', 'Dach', 'Außen'] },
-    { key: 'equipment_installed', label: 'Installierte Geräte', type: 'text', placeholder: 'z.B. NT-100, Splitter' },
-    { key: 'client_signature', label: 'Kundenunterschrift erhalten', type: 'checkbox' },
-  ],
-  nt_installation: [
-    { key: 'nt_type', label: 'NT-Typ', type: 'select', options: ['NT-100', 'NT-200', 'NT-300', 'ONT', 'ONU'] },
-    { key: 'serial_number', label: 'Seriennummer', type: 'text', placeholder: 'SN-XXXXXXXX' },
-    { key: 'location', label: 'Standort', type: 'text', placeholder: 'z.B. Keller Raum 1' },
-    { key: 'configuration', label: 'Konfiguration', type: 'text', placeholder: 'VLAN, IP…' },
-  ],
-  patchkabel: [
-    { key: 'connected_section', label: 'Verbundener Abschnitt', type: 'text', placeholder: 'z.B. ODF-1 → ODF-2' },
-    { key: 'cable_length', label: 'Kabellänge (m)', type: 'number', placeholder: '0' },
-    { key: 'connector_type', label: 'Steckertyp', type: 'select', options: ['SC/APC', 'SC/UPC', 'LC/APC', 'LC/UPC', 'FC/APC'] },
-    { key: 'test_result', label: 'Testergebnis', type: 'select', options: ['OK', 'NOK', 'Ausstehend'] },
-  ],
-}
-
-const WORK_TYPE_LABELS: Record<WorkType, string> = {
-  soplado: 'Soplado',
-  fusion_ap: 'Fusión AP',
-  fusion_dp: 'Fusión DP',
-  alta: 'Alta',
-  nt_installation: 'NT-Installation',
-  patchkabel: 'Patchkabel',
-}
+import { WORK_TYPE_LABELS } from '@/constants/labels'
+import { DETAIL_FIELDS } from '@/constants/detail-fields'
 
 type PhotoType = 'before' | 'during' | 'after'
 

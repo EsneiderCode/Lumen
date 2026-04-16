@@ -1,4 +1,5 @@
 import jsPDF from 'jspdf'
+import { STATUS_LABELS, WORK_TYPE_LABELS, DETAIL_FIELD_LABELS } from '@/constants/labels'
 
 interface OrderData {
   order_number: string
@@ -28,53 +29,6 @@ interface PhotoItem {
   photo_type: string
 }
 
-const WORK_TYPE_LABELS: Record<string, string> = {
-  soplado: 'Soplado',
-  fusion_ap: 'Fusión AP',
-  fusion_dp: 'Fusión DP',
-  alta: 'Alta',
-  nt_installation: 'NT-Installation',
-  patchkabel: 'Patchkabel',
-}
-
-const STATUS_LABELS: Record<string, string> = {
-  created: 'Erstellt',
-  assigned: 'Zugewiesen',
-  in_progress: 'In Bearbeitung',
-  executed: 'Ausgeführt',
-  rueckmeldung_pending: 'RM ausstehend',
-  rueckmeldung_sent: 'RM gesendet',
-  internally_certified: 'Intern zertifiziert',
-  sent_to_client: 'An Kunden gesendet',
-  client_accepted: 'Akzeptiert',
-  client_rejected: 'Abgelehnt',
-  invoiced: 'Fakturiert',
-  paid: 'Bezahlt',
-  returned: 'Zurückgegeben',
-  cancelled: 'Storniert',
-}
-
-const DETAIL_FIELD_LABELS: Record<string, string> = {
-  meters: 'Meter',
-  section: 'Abschnitt',
-  tube_diameter: 'Rohrdurchmesser',
-  result: 'Ergebnis',
-  splice_count: 'Spleiß-Anzahl',
-  fiber_type: 'Fasertyp',
-  fusion_losses: 'Schmelzverluste (dB)',
-  has_measurement_cert: 'Meßprotokoll',
-  access_type: 'Zugangstyp',
-  equipment_installed: 'Installierte Geräte',
-  client_signature: 'Kundenunterschrift',
-  nt_type: 'NT-Typ',
-  serial_number: 'Seriennummer',
-  location: 'Standort',
-  configuration: 'Konfiguration',
-  connected_section: 'Verbundener Abschnitt',
-  cable_length: 'Kabellänge (m)',
-  connector_type: 'Steckertyp',
-  test_result: 'Testergebnis',
-}
 
 export function generateCertificatePdf(
   order: OrderData,

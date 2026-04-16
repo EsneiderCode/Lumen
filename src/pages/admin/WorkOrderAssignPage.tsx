@@ -7,22 +7,8 @@ import {
   assignWorkOrder,
 } from '@/services/workOrderService'
 import type { TeamColor } from '@/types/enums'
-
-const TEAMS: { value: TeamColor; label: string; dot: string }[] = [
-  { value: 'rot', label: 'Team Rot', dot: 'bg-team-rot' },
-  { value: 'gruen', label: 'Team Grün', dot: 'bg-team-gruen' },
-  { value: 'blau', label: 'Team Blau', dot: 'bg-team-blau' },
-  { value: 'gelb', label: 'Team Gelb', dot: 'bg-team-gelb' },
-]
-
-const WORK_TYPE_LABELS: Record<string, string> = {
-  soplado: 'Soplado',
-  fusion_ap: 'Fusión AP',
-  fusion_dp: 'Fusión DP',
-  alta: 'Alta',
-  nt_installation: 'NT-Installation',
-  patchkabel: 'Patchkabel',
-}
+import { WORK_TYPE_LABELS } from '@/constants/labels'
+import { TEAMS } from '@/constants/styles'
 
 export function WorkOrderAssignPage() {
   const { id } = useParams()

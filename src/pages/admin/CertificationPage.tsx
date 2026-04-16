@@ -4,6 +4,8 @@ import * as XLSX from 'xlsx'
 import { fetchWorkOrders, transitionWorkOrderStatus, fetchProjects } from '@/services/workOrderService'
 import { useAuth } from '@/hooks/useAuth'
 import type { WorkOrderStatus, WorkType, TeamColor } from '@/types/enums'
+import { STATUS_LABELS, WORK_TYPE_LABELS } from '@/constants/labels'
+import { STATUS_COLORS, TEAM_DOT } from '@/constants/styles'
 
 interface Order {
   id: string
@@ -21,40 +23,6 @@ interface Project {
   id: string
   name: string
   code: string
-}
-
-const STATUS_LABELS: Record<string, string> = {
-  rueckmeldung_sent: 'RM gesendet',
-  internally_certified: 'Int. zertifiziert',
-  sent_to_client: 'An Kunden gesendet',
-  client_accepted: 'Akzeptiert',
-  client_rejected: 'Abgelehnt',
-  invoiced: 'Fakturiert',
-}
-
-const STATUS_COLORS: Record<string, string> = {
-  rueckmeldung_sent: 'bg-gf-warning/10 text-amber-600',
-  internally_certified: 'bg-gf-success/15 text-emerald-700',
-  sent_to_client: 'bg-gf-primary/10 text-gf-primary-dark',
-  client_accepted: 'bg-gf-success/20 text-emerald-700',
-  client_rejected: 'bg-gf-danger/15 text-rose-700',
-  invoiced: 'bg-gf-accent/10 text-purple-700',
-}
-
-const WORK_TYPE_LABELS: Record<WorkType, string> = {
-  soplado: 'Soplado',
-  fusion_ap: 'Fusión AP',
-  fusion_dp: 'Fusión DP',
-  alta: 'Alta',
-  nt_installation: 'NT-Installation',
-  patchkabel: 'Patchkabel',
-}
-
-const TEAM_DOT: Record<TeamColor, string> = {
-  rot: 'bg-team-rot',
-  gruen: 'bg-team-gruen',
-  blau: 'bg-team-blau',
-  gelb: 'bg-team-gelb',
 }
 
 const CERT_STATUSES: WorkOrderStatus[] = [

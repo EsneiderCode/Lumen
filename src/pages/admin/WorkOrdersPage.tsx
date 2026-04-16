@@ -8,75 +8,14 @@ import {
   type WorkOrderFilters,
 } from '@/services/workOrderService'
 import type { WorkOrderStatus, WorkType, TeamColor } from '@/types/enums'
-
-const PRIORITY_FILTER_LABELS = {
-  normal: 'Normal',
-  alta: 'Hoch',
-  urgente: 'Dringend',
-} as const
 import type { Database } from '@/types/database.types'
+import { STATUS_LABELS, WORK_TYPE_LABELS, PRIORITY_LABELS } from '@/constants/labels'
+import { STATUS_COLORS, TEAM_DOT, PRIORITY_COLORS } from '@/constants/styles'
 
 type WorkOrderRow = Database['public']['Tables']['work_orders']['Row'] & {
   clients: { name: string; code: string } | null
   projects: { name: string; code: string } | null
   operators: { name: string; code: string } | null
-}
-
-const STATUS_LABELS: Record<WorkOrderStatus, string> = {
-  created: 'Erstellt',
-  assigned: 'Zugewiesen',
-  in_progress: 'In Bearbeitung',
-  executed: 'Ausgeführt',
-  rueckmeldung_pending: 'RM ausstehend',
-  rueckmeldung_sent: 'RM gesendet',
-  internally_certified: 'Int. zertifiziert',
-  sent_to_client: 'An Kunden gesendet',
-  client_accepted: 'Akzeptiert',
-  client_rejected: 'Abgelehnt',
-  invoiced: 'Fakturiert',
-  paid: 'Bezahlt',
-  returned: 'Zurückgegeben',
-  cancelled: 'Storniert',
-}
-
-const STATUS_COLORS: Record<WorkOrderStatus, string> = {
-  created: 'bg-gf-text-muted/20 text-gf-text-muted',
-  assigned: 'bg-gf-primary/15 text-gf-primary-dark',
-  in_progress: 'bg-gf-accent/15 text-gf-accent',
-  executed: 'bg-gf-warning/15 text-amber-700',
-  rueckmeldung_pending: 'bg-gf-warning/20 text-amber-700',
-  rueckmeldung_sent: 'bg-gf-warning/10 text-amber-600',
-  internally_certified: 'bg-gf-success/15 text-emerald-700',
-  sent_to_client: 'bg-gf-primary/10 text-gf-primary-dark',
-  client_accepted: 'bg-gf-success/20 text-emerald-700',
-  client_rejected: 'bg-gf-danger/15 text-rose-700',
-  invoiced: 'bg-gf-accent/10 text-purple-700',
-  paid: 'bg-gf-success/25 text-emerald-800',
-  returned: 'bg-gf-warning/15 text-amber-700',
-  cancelled: 'bg-gf-danger/10 text-rose-600',
-}
-
-const WORK_TYPE_LABELS: Record<WorkType, string> = {
-  soplado: 'Soplado',
-  fusion_ap: 'Fusión AP',
-  fusion_dp: 'Fusión DP',
-  alta: 'Alta',
-  nt_installation: 'NT-Installation',
-  patchkabel: 'Patchkabel',
-}
-
-const TEAM_DOT: Record<TeamColor, string> = {
-  rot: 'bg-team-rot',
-  gruen: 'bg-team-gruen',
-  blau: 'bg-team-blau',
-  gelb: 'bg-team-gelb',
-}
-
-const PRIORITY_LABELS = { normal: 'Normal', alta: 'Hoch', urgente: 'Dringend' }
-const PRIORITY_COLORS = {
-  normal: 'text-gf-text-muted',
-  alta: 'text-gf-warning',
-  urgente: 'text-gf-danger',
 }
 
 export function WorkOrdersPage() {
