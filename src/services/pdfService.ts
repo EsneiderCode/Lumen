@@ -94,7 +94,7 @@ export function generateCertificatePdf(
   doc.setFontSize(9)
   doc.setFont('helvetica', 'normal')
   doc.setTextColor(100, 100, 100)
-  doc.text(STATUS_LABELS[order.status] ?? order.status, pageW - 14, y + 7, { align: 'right' })
+  doc.text(STATUS_LABELS[order.status as keyof typeof STATUS_LABELS] ?? order.status, pageW - 14, y + 7, { align: 'right' })
 
   y += 20
   doc.setDrawColor(180, 200, 220)
@@ -103,7 +103,7 @@ export function generateCertificatePdf(
 
   // ── Auftragsdaten ─────────────────────────────────────────────
   addSection('Auftragsdaten')
-  addRow('Auftragstyp', WORK_TYPE_LABELS[order.work_type] ?? order.work_type)
+  addRow('Auftragstyp', WORK_TYPE_LABELS[order.work_type as keyof typeof WORK_TYPE_LABELS] ?? order.work_type)
   addRow('Linie', order.line)
   addRow('Priorität', order.priority)
   addRow('Kunde', `${order.clients?.name ?? '—'} (${order.clients?.code ?? '—'})`)
@@ -123,7 +123,7 @@ export function generateCertificatePdf(
     ([, v]) => v !== null && v !== undefined && v !== '',
   )
   if (detailEntries.length > 0) {
-    addSection(`Technische Daten — ${WORK_TYPE_LABELS[order.work_type] ?? order.work_type}`)
+    addSection(`Technische Daten — ${WORK_TYPE_LABELS[order.work_type as keyof typeof WORK_TYPE_LABELS] ?? order.work_type}`)
     for (const [key, value] of detailEntries) {
       const label = DETAIL_FIELD_LABELS[key] ?? key.replace(/_/g, ' ')
       const strValue = typeof value === 'boolean' ? (value ? 'Ja' : 'Nein') : String(value)
@@ -166,7 +166,7 @@ export function generateCertificatePdf(
   if (history.length > 0) {
     addSection('Statusverlauf')
     for (const entry of history) {
-      const statusLabel = STATUS_LABELS[entry.to_status] ?? entry.to_status
+      const statusLabel = STATUS_LABELS[entry.to_status as keyof typeof STATUS_LABELS] ?? entry.to_status
       const date = new Date(entry.created_at).toLocaleString('de-DE')
       checkPage(entry.notes ? 10 : 6)
       doc.setFontSize(8.5)

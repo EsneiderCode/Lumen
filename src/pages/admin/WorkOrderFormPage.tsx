@@ -16,7 +16,6 @@ import {
 import type { WorkType } from '@/types/enums'
 import { WORK_TYPE_LABELS } from '@/constants/labels'
 import { DETAIL_FIELDS } from '@/constants/detail-fields'
-import type { DetailField } from '@/constants/detail-fields'
 
 // ── Form ─────────────────────────────────────────────────────
 

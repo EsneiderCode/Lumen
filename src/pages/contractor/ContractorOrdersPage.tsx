@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { fetchContractorWorkOrders } from '@/services/workOrderService'
-import type { WorkOrderStatus, WorkType, TeamColor } from '@/types/enums'
+import type { WorkOrderStatus, TeamColor } from '@/types/enums'
 import type { Database } from '@/types/database.types'
 import { STATUS_LABELS, WORK_TYPE_LABELS } from '@/constants/labels'
 import { STATUS_COLORS, TEAM_DOT } from '@/constants/styles'

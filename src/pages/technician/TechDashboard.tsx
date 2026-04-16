@@ -77,7 +77,7 @@ export function TechDashboard() {
           {team && teamStyle && (
             <span className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${teamStyle.badge}`}>
               <span className={`h-2 w-2 rounded-full ${teamStyle.dot}`} />
-              Team {TEAM_LABELS[team]}
+              Team {TEAM_LABELS[team as keyof typeof TEAM_LABELS]}
             </span>
           )}
         </div>

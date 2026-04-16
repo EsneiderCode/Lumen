@@ -182,8 +182,8 @@ export function WorkOrdersPage() {
             className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
           >
             <option value="">Alle Prioritäten</option>
-            {Object.entries(PRIORITY_FILTER_LABELS).map(([val, label]) => (
-              <option key={val} value={val}>{label}</option>
+            {Object.entries(PRIORITY_LABELS).map(([val, label]) => (
+              <option key={val} value={val}>{label as string}</option>
             ))}
           </select>
 
