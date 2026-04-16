@@ -8,7 +8,7 @@ import {
   fetchStateHistory,
   transitionWorkOrderStatus,
   workTypeToDetailTable,
-  getPhotoPublicUrl,
+  getPhotoSignedUrls,
   generateDataHash,
   insertCertificationAudit,
   fetchCertificationAudits,
@@ -156,6 +156,7 @@ export function WorkOrderDetailPage() {
   } | null>(null)
   const [detail, setDetail] = useState<Record<string, unknown>>({})
   const [photos, setPhotos] = useState<Photo[]>([])
+  const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({})
   const [history, setHistory] = useState<StateEntry[]>([])
   const [certAudits, setCertAudits] = useState<Array<{
     id: string
@@ -189,7 +190,9 @@ export function WorkOrderDetailPage() {
         return
       }
       setOrder(orderData as unknown as typeof order)
-      setPhotos((photoData ?? []) as Photo[])
+      const loadedPhotos = (photoData ?? []) as Photo[]
+      setPhotos(loadedPhotos)
+      getPhotoSignedUrls(loadedPhotos.map((p) => p.storage_path)).then(setPhotoUrls)
       setHistory((histData ?? []) as unknown as StateEntry[])
       setCertAudits(auditData)
 
@@ -208,7 +211,7 @@ export function WorkOrderDetailPage() {
     if (!id || !user || !order) return
     setIsTransitioning(true)
     setError(null)
-    const { data: updated, error: err } = await transitionWorkOrderStatus(id, toStatus, user.id, notes)
+    const { data: updated, error: err } = await transitionWorkOrderStatus(id, toStatus, user.id, notes, user.role)
     if (err) {
       setError(err)
     } else {
@@ -237,9 +240,11 @@ export function WorkOrderDetailPage() {
     setCertAudits(auditData)
   }
 
-  function handlePdfDownload() {
+  async function handlePdfDownload() {
     if (!order) return
-    generateCertificatePdf(order, detail, photos, history, getPhotoPublicUrl)
+    const paths = photos.map((p) => p.storage_path)
+    const urls = paths.length > 0 ? await getPhotoSignedUrls(paths) : {}
+    generateCertificatePdf(order, detail, photos, history, (path) => urls[path] ?? '')
   }
 
   function openModal(type: ModalType) {
@@ -665,13 +670,13 @@ export function WorkOrderDetailPage() {
                     {typePhotos.map((photo) => (
                       <a
                         key={photo.id}
-                        href={getPhotoPublicUrl(photo.storage_path)}
+                        href={photoUrls[photo.storage_path] ?? '#'}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="aspect-square overflow-hidden rounded-gf-btn bg-gf-surface ring-1 ring-gf-border hover:ring-gf-primary transition-all"
                       >
                         <img
-                          src={getPhotoPublicUrl(photo.storage_path)}
+                          src={photoUrls[photo.storage_path] ?? ''}
                           alt={photo.caption ?? PHOTO_LABELS[type]}
                           className="h-full w-full object-cover"
                         />

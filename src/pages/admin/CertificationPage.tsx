@@ -154,7 +154,7 @@ export function CertificationPage() {
   async function bulkTransition(ids: string[], toStatus: WorkOrderStatus, notes: string) {
     if (!user) return
     setIsBulkWorking(true)
-    await Promise.all(ids.map((id) => transitionWorkOrderStatus(id, toStatus, user.id, notes)))
+    await Promise.all(ids.map((id) => transitionWorkOrderStatus(id, toStatus, user.id, notes, user.role)))
     setIsBulkWorking(false)
     setRefreshKey((k) => k + 1)
   }

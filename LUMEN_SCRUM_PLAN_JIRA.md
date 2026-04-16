@@ -165,6 +165,21 @@ alerts_log
 
 ---
 
+#### Sprint 6.5 — Non-Conformity & Photo Management ✅ (2026-03-30, branch: develop)
+**Goal**: Flujo completo de devolución por no-conformidad + gestión de fotos en campo
+
+| Story | Title | Pts |
+|-------|-------|-----|
+| LUM-025a | Admin: Return work order for non-conformity (modal con categoría + descripción obligatoria ≥20 chars) desde `rueckmeldung_sent` o `internally_certified` → status `returned` | 5 |
+| LUM-025b | Technician: Red banner with non-conformity reason + "Korrigierte RM senden" button on RueckmeldungPage; returned orders appear in dedicated top section of TechOrdersPage; TechOrderDetailPage shows banner + "Rückmeldung korrigieren" button | 5 |
+| LUM-025c | Technician: Delete photo button (✕ overlay) on each uploaded photo in RueckmeldungPage — removes from Supabase Storage + DB | 3 |
+
+**Total**: 13 pts ✅
+
+**Commits**: `83deb4b`, `4b194d6`, `5869638` (branch `develop`)
+
+---
+
 ### FASE 2 — CERTIFICACIÓN AVANZADA (Semanas 7–10)
 
 ---
@@ -176,7 +191,7 @@ alerts_log
 |-------|-------|-----|
 | LUM-023 | Side-by-side assigned vs. reported (photos, materials, times) | 13 |
 | LUM-024 | Certification audit trail (timestamps, admin ID, cryptographic hash) | 5 |
-| LUM-025 | Return to technician with comments → status: `requiere_corrección` | 5 |
+| LUM-025 | Return to technician with comments → status: `returned` ✅ (implemented in Sprint 6.5) | 5 |
 
 **Total**: 23 pts
 

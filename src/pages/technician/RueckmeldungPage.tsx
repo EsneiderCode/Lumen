@@ -69,7 +69,7 @@ import {
   deleteWorkOrderPhoto,
   transitionWorkOrderStatus,
   workTypeToDetailTable,
-  getPhotoPublicUrl,
+  getPhotoSignedUrls,
 } from '@/services/workOrderService'
 import type { WorkType } from '@/types/enums'
 
@@ -163,6 +163,7 @@ export function RueckmeldungPage() {
 
   const [detail, setDetail] = useState<Record<string, unknown>>({})
   const [photos, setPhotos] = useState<Photo[]>([])
+  const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({})
   const [techNotes, setTechNotes] = useState('')
   const [startTime, setStartTime] = useState('')
   const [endTime, setEndTime] = useState('')
@@ -194,7 +195,9 @@ export function RueckmeldungPage() {
         return
       }
       setOrder(orderData as unknown as typeof order)
-      setPhotos((photoData ?? []) as Photo[])
+      const loadedPhotos = (photoData ?? []) as Photo[]
+      setPhotos(loadedPhotos)
+      getPhotoSignedUrls(loadedPhotos.map((p) => p.storage_path)).then(setPhotoUrls)
 
       const histEntries = (histData ?? []) as Array<{ to_status: string; notes: string | null }>
       const returnEntry = [...histEntries].reverse().find((e) => e.to_status === 'returned')
@@ -228,7 +231,11 @@ export function RueckmeldungPage() {
         break
       }
       if (data) {
-        setPhotos((prev) => [...prev, data as Photo])
+        const newPhoto = data as Photo
+        setPhotos((prev) => [...prev, newPhoto])
+        getPhotoSignedUrls([newPhoto.storage_path]).then((urls) =>
+          setPhotoUrls((prev) => ({ ...prev, ...urls })),
+        )
       }
     }
     setUploadingType(null)
@@ -241,7 +248,18 @@ export function RueckmeldungPage() {
     if (error) {
       setError(`Foto löschen fehlgeschlagen: ${error}`)
     } else {
-      setPhotos((prev) => prev.filter((p) => p.id !== photoId))
+      setPhotos((prev) => {
+        const updated = prev.filter((p) => p.id !== photoId)
+        const removed = prev.find((p) => p.id === photoId)
+        if (removed) {
+          setPhotoUrls((urls) => {
+            const next = { ...urls }
+            delete next[removed.storage_path]
+            return next
+          })
+        }
+        return updated
+      })
     }
     setDeletingPhotoId(null)
   }
@@ -285,7 +303,7 @@ export function RueckmeldungPage() {
     if (endTime) noteParts.push(`Ende: ${endTime}`)
     const notes = noteParts.length > 0 ? noteParts.join(' | ') : 'Rückmeldung gesendet'
 
-    const { error } = await transitionWorkOrderStatus(id, 'rueckmeldung_sent', user.id, notes)
+    const { error } = await transitionWorkOrderStatus(id, 'rueckmeldung_sent', user.id, notes, user.role)
     if (error) {
       setError(error)
       setIsSending(false)
@@ -459,7 +477,7 @@ export function RueckmeldungPage() {
                     {typePhotos.map((photo) => (
                       <div key={photo.id} className="relative aspect-square overflow-hidden rounded-gf-btn bg-gf-surface">
                         <img
-                          src={getPhotoPublicUrl(photo.storage_path)}
+                          src={photoUrls[photo.storage_path] ?? ''}
                           alt={photo.caption ?? PHOTO_LABELS[type]}
                           className="h-full w-full object-cover"
                         />

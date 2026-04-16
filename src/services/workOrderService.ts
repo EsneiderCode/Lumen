@@ -1,6 +1,63 @@
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/types/database.types'
-import type { WorkOrderStatus, WorkType, TeamColor } from '@/types/enums'
+import type { WorkOrderStatus, WorkType, TeamColor, UserRole } from '@/types/enums'
+
+// ── State machine ──────────────────────────────────────────────────────────
+
+/**
+ * Canonical valid transitions for the work order state machine.
+ * Any transition not listed here is illegal.
+ */
+export const VALID_TRANSITIONS: Record<WorkOrderStatus, readonly WorkOrderStatus[]> = {
+  created:              ['assigned', 'cancelled'],
+  assigned:             ['in_progress', 'cancelled'],
+  in_progress:          ['executed', 'cancelled'],
+  executed:             ['rueckmeldung_pending', 'cancelled'],
+  rueckmeldung_pending: ['rueckmeldung_sent', 'cancelled'],
+  rueckmeldung_sent:    ['internally_certified', 'returned', 'cancelled'],
+  internally_certified: ['sent_to_client', 'cancelled'],
+  sent_to_client:       ['client_accepted', 'client_rejected'],
+  client_accepted:      ['invoiced'],
+  client_rejected:      ['internally_certified'],
+  invoiced:             ['paid'],
+  returned:             ['rueckmeldung_pending'],
+  paid:                 [],
+  cancelled:            [],
+}
+
+/**
+ * Statuses that only an admin may transition to.
+ * Technicians are limited to the field-reporting portion of the pipeline.
+ */
+const ADMIN_ONLY_TARGETS = new Set<WorkOrderStatus>([
+  'internally_certified',
+  'sent_to_client',
+  'client_accepted',
+  'client_rejected',
+  'invoiced',
+  'paid',
+  'returned',
+  'cancelled',
+])
+
+/**
+ * Validates a proposed status transition.
+ * Returns an error string if invalid, or null if allowed.
+ */
+export function validateStatusTransition(
+  from: WorkOrderStatus,
+  to: WorkOrderStatus,
+  userRole?: UserRole,
+): string | null {
+  const allowed = VALID_TRANSITIONS[from]
+  if (!allowed.includes(to)) {
+    return `Ungültiger Statusübergang: ${from} → ${to}`
+  }
+  if (userRole && userRole !== 'admin' && ADMIN_ONLY_TARGETS.has(to)) {
+    return `Keine Berechtigung: Nur Admins können den Status auf "${to}" setzen`
+  }
+  return null
+}
 
 type WorkOrderRow = Database['public']['Tables']['work_orders']['Row']
 type WorkOrderInsert = Database['public']['Tables']['work_orders']['Insert']
@@ -111,11 +168,13 @@ export async function createWorkOrder(
   payload: Omit<WorkOrderInsert, 'order_number' | 'created_by'>,
   userId: string,
 ) {
-  // Generate order number: LUM-YYYYMMDD-XXXX
-  const date = new Date()
-  const datePart = `${date.getFullYear()}${String(date.getMonth() + 1).padStart(2, '0')}${String(date.getDate()).padStart(2, '0')}`
-  const rand = Math.floor(1000 + Math.random() * 9000)
-  const order_number = `LUM-${datePart}-${rand}`
+  // Generate order number atomically via DB sequence (migration 003)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: seqData, error: seqError } = await (supabase as any).rpc('generate_order_number')
+  if (seqError || !seqData) {
+    return { data: null, error: seqError?.message ?? 'Auftragsnummer konnte nicht generiert werden' }
+  }
+  const order_number = seqData as string
 
   const { data, error } = await supabase
     .from('work_orders')
@@ -285,6 +344,7 @@ export async function transitionWorkOrderStatus(
   toStatus: WorkOrderStatus,
   changedBy: string,
   notes?: string,
+  userRole?: UserRole,
 ) {
   const { data: current } = await supabase
     .from('work_orders')
@@ -293,6 +353,11 @@ export async function transitionWorkOrderStatus(
     .single()
 
   const fromStatus = current?.status ?? null
+
+  if (fromStatus) {
+    const validationError = validateStatusTransition(fromStatus as WorkOrderStatus, toStatus, userRole)
+    if (validationError) return { data: null, error: validationError }
+  }
 
   const { data, error } = await supabase
     .from('work_orders')
@@ -378,9 +443,33 @@ export async function uploadWorkOrderPhoto(
   return { data, error: error?.message ?? null }
 }
 
-export function getPhotoPublicUrl(storagePath: string): string {
-  const { data } = supabase.storage.from('work-order-photos').getPublicUrl(storagePath)
-  return data.publicUrl
+/** Returns a short-lived signed URL (1 hour) for a single photo. */
+export async function getPhotoSignedUrl(storagePath: string, expiresIn = 3600): Promise<string> {
+  const { data, error } = await supabase.storage
+    .from('work-order-photos')
+    .createSignedUrl(storagePath, expiresIn)
+  if (error || !data) return ''
+  return data.signedUrl
+}
+
+/**
+ * Batch-resolves signed URLs for multiple photos.
+ * Returns a map of storagePath → signedUrl.
+ */
+export async function getPhotoSignedUrls(
+  storagePaths: string[],
+  expiresIn = 3600,
+): Promise<Record<string, string>> {
+  if (storagePaths.length === 0) return {}
+  const { data, error } = await supabase.storage
+    .from('work-order-photos')
+    .createSignedUrls(storagePaths, expiresIn)
+  if (error || !data) return {}
+  return Object.fromEntries(
+    data
+      .filter((item) => item.signedUrl)
+      .map((item) => [item.path, item.signedUrl]),
+  )
 }
 
 export async function deleteWorkOrderPhoto(photoId: string, storagePath: string) {

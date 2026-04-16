@@ -127,7 +127,7 @@ export function TechOrderDetailPage() {
     if (!id || !user) return
     setIsTransitioning(true)
     setError(null)
-    const { data: updated, error } = await transitionWorkOrderStatus(id, toStatus, user.id, notes)
+    const { data: updated, error } = await transitionWorkOrderStatus(id, toStatus, user.id, notes, user.role)
     if (error) {
       setError(error)
       setIsTransitioning(false)
