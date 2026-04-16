@@ -1,16 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useAuth } from '@/hooks/useAuth'
-import { fetchMyWorkOrders } from '@/services/workOrderService'
+import { fetchMyWorkOrders, type WorkOrderWithRelations } from '@/services/workOrderService'
 import type { WorkOrderStatus, WorkType, TeamColor } from '@/types/enums'
-import type { Database } from '@/types/database.types'
 import { STATUS_LABELS, WORK_TYPE_LABELS, TEAM_LABELS } from '@/constants/labels'
 import { STATUS_COLORS, TEAM_DOT } from '@/constants/styles'
-
-type WorkOrderRow = Database['public']['Tables']['work_orders']['Row'] & {
-  clients: { name: string; code: string } | null
-  projects: { name: string; code: string } | null
-}
 
 const ACTIVE_STATUSES: WorkOrderStatus[] = ['assigned', 'in_progress', 'executed', 'rueckmeldung_pending']
 const DONE_STATUSES: WorkOrderStatus[] = ['rueckmeldung_sent', 'internally_certified', 'sent_to_client', 'client_accepted', 'invoiced', 'paid']
@@ -35,7 +29,7 @@ export function TechDashboard() {
   })
   const todayIso = new Date().toISOString().slice(0, 10)
 
-  const [orders, setOrders] = useState<WorkOrderRow[]>([])
+  const [orders, setOrders] = useState<WorkOrderWithRelations[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -45,7 +39,7 @@ export function TechDashboard() {
       setIsLoading(true)
       const { data } = await fetchMyWorkOrders(user!.id, user!.team)
       if (!cancelled) {
-        setOrders(data as unknown as WorkOrderRow[])
+        setOrders(data)
         setIsLoading(false)
       }
     }

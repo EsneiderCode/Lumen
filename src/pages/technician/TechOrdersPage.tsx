@@ -1,21 +1,19 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { useAuth } from '@/hooks/useAuth'
-import { fetchMyWorkOrders } from '@/services/workOrderService'
+import { fetchMyWorkOrders, type WorkOrderWithRelations } from '@/services/workOrderService'
 import type { TeamColor } from '@/types/enums'
-import type { Database } from '@/types/database.types'
 import { STATUS_LABELS, WORK_TYPE_LABELS, PRIORITY_LABELS } from '@/constants/labels'
 import { STATUS_COLORS, TEAM_DOT, PRIORITY_COLORS } from '@/constants/styles'
 
-type WorkOrderRow = Database['public']['Tables']['work_orders']['Row'] & {
-  clients: { name: string; code: string } | null
-  projects: { name: string; code: string } | null
-}
+const PAGE_SIZE = 20
 
 export function TechOrdersPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const [orders, setOrders] = useState<WorkOrderRow[]>([])
+  const [orders, setOrders] = useState<WorkOrderWithRelations[]>([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
@@ -27,15 +25,15 @@ export function TechOrdersPage() {
     let cancelled = false
     async function load() {
       setIsLoading(true)
-      const { data, error } = await fetchMyWorkOrders(userId, team)
+      const { data, total, error } = await fetchMyWorkOrders(userId, team, page, PAGE_SIZE)
       if (cancelled) return
       if (error) setError(error)
-      else setOrders(data as unknown as WorkOrderRow[])
+      else { setOrders(data); setTotal(total) }
       setIsLoading(false)
     }
     void load()
     return () => { cancelled = true }
-  }, [user])
+  }, [user, page])
 
   const filtered = search.trim()
     ? orders.filter(
@@ -126,7 +124,7 @@ export function TechOrdersPage() {
       <div className="mb-4 flex items-center justify-between">
         <div>
           <h2 className="font-display text-xl font-bold text-gf-text">Meine Aufträge</h2>
-          <p className="text-sm text-gf-text-muted">{orders.length} Aufträge zugewiesen</p>
+          <p className="text-sm text-gf-text-muted">{total} Aufträge zugewiesen</p>
         </div>
       </div>
 
@@ -176,6 +174,29 @@ export function TechOrdersPage() {
               </p>
               <div className="space-y-2">
                 {otherOrders.map((o) => <OrderCard key={o.id} order={o} />)}
+              </div>
+            </div>
+          )}
+          {total > PAGE_SIZE && (
+            <div className="flex items-center justify-between pt-2">
+              <span className="font-mono text-xs text-gf-text-muted">
+                {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} von {total}
+              </span>
+              <div className="flex gap-2">
+                <button
+                  disabled={page === 0}
+                  onClick={() => setPage((p) => p - 1)}
+                  className="rounded-gf-btn border border-gf-border px-3 py-1.5 text-xs text-gf-text transition-colors hover:border-gf-primary hover:text-gf-primary disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  ← Zurück
+                </button>
+                <button
+                  disabled={(page + 1) * PAGE_SIZE >= total}
+                  onClick={() => setPage((p) => p + 1)}
+                  className="rounded-gf-btn border border-gf-border px-3 py-1.5 text-xs text-gf-text transition-colors hover:border-gf-primary hover:text-gf-primary disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Weiter →
+                </button>
               </div>
             </div>
           )}

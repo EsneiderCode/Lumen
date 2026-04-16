@@ -1,15 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { fetchContractorWorkOrders } from '@/services/workOrderService'
+import { fetchContractorWorkOrders, type WorkOrderWithRelations } from '@/services/workOrderService'
 import type { WorkOrderStatus, TeamColor } from '@/types/enums'
-import type { Database } from '@/types/database.types'
 import { STATUS_LABELS, WORK_TYPE_LABELS } from '@/constants/labels'
 import { STATUS_COLORS, TEAM_DOT } from '@/constants/styles'
-
-type WorkOrderRow = Database['public']['Tables']['work_orders']['Row'] & {
-  clients: { name: string; code: string } | null
-  projects: { name: string; code: string } | null
-}
 
 // Payment indicator based on status
 function PaymentBadge({ status }: { status: WorkOrderStatus }) {
@@ -44,7 +38,7 @@ const ACTIVE_STATUSES: WorkOrderStatus[] = [
 
 export function ContractorOrdersPage() {
   const { user } = useAuth()
-  const [orders, setOrders] = useState<WorkOrderRow[]>([])
+  const [orders, setOrders] = useState<WorkOrderWithRelations[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
@@ -58,7 +52,7 @@ export function ContractorOrdersPage() {
       const { data, error } = await fetchContractorWorkOrders(userId)
       if (cancelled) return
       if (error) setError(error)
-      else setOrders(data as unknown as WorkOrderRow[])
+      else setOrders(data)
       setIsLoading(false)
     }
     void load()

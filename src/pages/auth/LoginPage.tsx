@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router'
+import { Navigate, useNavigate } from 'react-router'
 import { useAuth } from '@/hooks/useAuth'
 import { ROUTES } from '@/config/routes'
 import type { UserRole } from '@/types/enums'
@@ -19,8 +19,7 @@ export function LoginPage() {
   const { signInWithEmail, user } = useAuth()
 
   if (user) {
-    navigate(ROLE_ROUTES[user.role])
-    return null
+    return <Navigate to={ROLE_ROUTES[user.role]} replace />
   }
 
   const handleLogin = async (e: React.FormEvent) => {

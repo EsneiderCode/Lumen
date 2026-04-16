@@ -2,6 +2,8 @@ import { Outlet } from 'react-router'
 import { BottomNav, type BottomNavItem } from './BottomNav'
 import { ROUTES } from '@/config/routes'
 import { useAuth } from '@/hooks/useAuth'
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
+import { OfflineBanner } from '@/components/ui/OfflineBanner'
 
 const TEAM_COLORS: Record<string, string> = {
   rot: 'bg-team-rot',
@@ -21,6 +23,7 @@ export function TechnicianLayout() {
 
   return (
     <div className="flex min-h-screen flex-col nexus-bg">
+      <OfflineBanner />
       <header className="flex h-14 items-center gap-3 border-b border-gf-border bg-gf-card px-4">
         <div className={`h-3 w-3 rounded-full ${teamColorClass}`} />
         <span className="font-display text-sm font-semibold text-gf-text">LUMEN</span>
@@ -35,7 +38,9 @@ export function TechnicianLayout() {
 
       <main className="flex-1 p-4 pb-20">
         <div className="page-fade-in">
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </div>
       </main>
 

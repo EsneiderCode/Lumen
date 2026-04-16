@@ -70,8 +70,8 @@ import {
   transitionWorkOrderStatus,
   workTypeToDetailTable,
   getPhotoSignedUrls,
+  type WorkOrderWithRelations,
 } from '@/services/workOrderService'
-import type { WorkType } from '@/types/enums'
 import { WORK_TYPE_LABELS } from '@/constants/labels'
 import { DETAIL_FIELDS } from '@/constants/detail-fields'
 
@@ -95,16 +95,7 @@ export function RueckmeldungPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
 
-  const [order, setOrder] = useState<{
-    id: string
-    order_number: string
-    work_type: WorkType
-    status: string
-    address: string | null
-    city: string | null
-    clients: { name: string } | null
-    projects: { code: string } | null
-  } | null>(null)
+  const [order, setOrder] = useState<WorkOrderWithRelations | null>(null)
 
   const [detail, setDetail] = useState<Record<string, unknown>>({})
   const [photos, setPhotos] = useState<Photo[]>([])
@@ -139,7 +130,7 @@ export function RueckmeldungPage() {
         setIsLoading(false)
         return
       }
-      setOrder(orderData as unknown as typeof order)
+      setOrder(orderData)
       const loadedPhotos = (photoData ?? []) as Photo[]
       setPhotos(loadedPhotos)
       getPhotoSignedUrls(loadedPhotos.map((p) => p.storage_path)).then(setPhotoUrls)

@@ -1,23 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import * as XLSX from 'xlsx'
-import { fetchWorkOrders, transitionWorkOrderStatus, fetchProjects } from '@/services/workOrderService'
+import { fetchWorkOrders, transitionWorkOrderStatus, fetchProjects, type WorkOrderWithRelations } from '@/services/workOrderService'
 import { useAuth } from '@/hooks/useAuth'
-import type { WorkOrderStatus, WorkType, TeamColor } from '@/types/enums'
+import type { WorkOrderStatus, TeamColor } from '@/types/enums'
 import { STATUS_LABELS, WORK_TYPE_LABELS } from '@/constants/labels'
 import { STATUS_COLORS, TEAM_DOT } from '@/constants/styles'
-
-interface Order {
-  id: string
-  order_number: string
-  work_type: WorkType
-  status: WorkOrderStatus
-  priority: string
-  assigned_team: TeamColor | null
-  assigned_date: string | null
-  clients: { name: string; code: string } | null
-  projects: { name: string; code: string } | null
-}
 
 interface Project {
   id: string
@@ -52,7 +40,7 @@ export function CertificationPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
 
-  const [orders, setOrders] = useState<Order[]>([])
+  const [orders, setOrders] = useState<WorkOrderWithRelations[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isBulkWorking, setIsBulkWorking] = useState(false)
 
@@ -84,7 +72,7 @@ export function CertificationPage() {
       }
       const results = await Promise.all(CERT_STATUSES.map((s) => fetchWorkOrders({ ...filters, status: s })))
       if (cancelled) return
-      const all = results.flatMap((r) => (r.data as unknown as Order[]) ?? [])
+      const all = results.flatMap((r) => r.data)
       setOrders(all)
       setSelected(new Set())
       setIsLoading(false)

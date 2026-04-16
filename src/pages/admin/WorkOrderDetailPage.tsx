@@ -12,9 +12,10 @@ import {
   generateDataHash,
   insertCertificationAudit,
   fetchCertificationAudits,
+  type WorkOrderWithRelations,
 } from '@/services/workOrderService'
 import { generateCertificatePdf } from '@/services/pdfService'
-import type { WorkOrderStatus, WorkType, TeamColor } from '@/types/enums'
+import type { WorkOrderStatus } from '@/types/enums'
 import { STATUS_LABELS, WORK_TYPE_LABELS, DETAIL_FIELD_LABELS, PHOTO_LABELS } from '@/constants/labels'
 import { STATUS_COLORS, TEAM_DOT } from '@/constants/styles'
 
@@ -60,24 +61,7 @@ export function WorkOrderDetailPage() {
   const navigate = useNavigate()
   const { user } = useAuth()
 
-  const [order, setOrder] = useState<{
-    id: string
-    order_number: string
-    work_type: WorkType
-    status: WorkOrderStatus
-    priority: string
-    line: string
-    address: string | null
-    postal_code: string | null
-    city: string | null
-    internal_notes: string | null
-    assigned_date: string | null
-    assigned_team: TeamColor | null
-    assigned_detail_snapshot: Record<string, unknown> | null
-    clients: { name: string; code: string } | null
-    projects: { name: string; code: string } | null
-    operators: { name: string; code: string } | null
-  } | null>(null)
+  const [order, setOrder] = useState<WorkOrderWithRelations | null>(null)
   const [detail, setDetail] = useState<Record<string, unknown>>({})
   const [photos, setPhotos] = useState<Photo[]>([])
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({})
@@ -113,7 +97,7 @@ export function WorkOrderDetailPage() {
         setIsLoading(false)
         return
       }
-      setOrder(orderData as unknown as typeof order)
+      setOrder(orderData)
       const loadedPhotos = (photoData ?? []) as Photo[]
       setPhotos(loadedPhotos)
       getPhotoSignedUrls(loadedPhotos.map((p) => p.storage_path)).then(setPhotoUrls)

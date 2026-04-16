@@ -6,21 +6,19 @@ import {
   fetchProjects,
   deleteWorkOrder,
   type WorkOrderFilters,
+  type WorkOrderWithRelations,
 } from '@/services/workOrderService'
 import type { WorkOrderStatus, WorkType, TeamColor } from '@/types/enums'
-import type { Database } from '@/types/database.types'
 import { STATUS_LABELS, WORK_TYPE_LABELS, PRIORITY_LABELS } from '@/constants/labels'
 import { STATUS_COLORS, TEAM_DOT, PRIORITY_COLORS } from '@/constants/styles'
 
-type WorkOrderRow = Database['public']['Tables']['work_orders']['Row'] & {
-  clients: { name: string; code: string } | null
-  projects: { name: string; code: string } | null
-  operators: { name: string; code: string } | null
-}
+const PAGE_SIZE = 25
 
 export function WorkOrdersPage() {
   const navigate = useNavigate()
-  const [orders, setOrders] = useState<WorkOrderRow[]>([])
+  const [orders, setOrders] = useState<WorkOrderWithRelations[]>([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(0)
   const [clients, setClients] = useState<{ id: string; name: string; code: string }[]>([])
   const [projects, setProjects] = useState<{ id: string; name: string; code: string }[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -29,22 +27,28 @@ export function WorkOrdersPage() {
 
   const [filters, setFilters] = useState<WorkOrderFilters>({})
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300)
+    return () => clearTimeout(timer)
+  }, [search])
 
   useEffect(() => {
     let cancelled = false
     async function load() {
       setIsLoading(true)
       const activeFilters: WorkOrderFilters = { ...filters }
-      if (search.trim()) activeFilters.search = search.trim()
-      const { data, error } = await fetchWorkOrders(activeFilters)
+      if (debouncedSearch.trim()) activeFilters.search = debouncedSearch.trim()
+      const { data, total, error } = await fetchWorkOrders(activeFilters, page, PAGE_SIZE)
       if (cancelled) return
       if (error) setError(error)
-      else setOrders(data as unknown as WorkOrderRow[])
+      else { setOrders(data); setTotal(total) }
       setIsLoading(false)
     }
     void load()
     return () => { cancelled = true }
-  }, [filters, search])
+  }, [filters, debouncedSearch, page])
 
   useEffect(() => {
     fetchClients().then(({ data }) => setClients(data))
@@ -67,7 +71,7 @@ export function WorkOrdersPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h2 className="font-display text-xl font-bold text-gf-text">Aufträge</h2>
-          <p className="text-sm text-gf-text-muted">{orders.length} Aufträge</p>
+          <p className="text-sm text-gf-text-muted">{total} Aufträge</p>
         </div>
         <button
           onClick={() => navigate('/admin/orders/new')}
@@ -82,23 +86,28 @@ export function WorkOrdersPage() {
         {/* Row 1 */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {/* Search */}
-          <input
-            type="text"
-            placeholder="Suchen…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="col-span-2 rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary sm:col-span-1"
-          />
+          <div className="relative col-span-2 sm:col-span-1">
+            <input
+              type="text"
+              placeholder="Suchen…"
+              value={search}
+              onChange={(e) => { setPage(0); setSearch(e.target.value) }}
+              className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 pr-8 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+            />
+            {(search !== debouncedSearch || (isLoading && debouncedSearch !== '')) && (
+              <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2">
+                <span className="block h-3.5 w-3.5 animate-spin rounded-full border-2 border-gf-border border-t-gf-primary" />
+              </span>
+            )}
+          </div>
 
           {/* Status filter */}
           <select
             value={filters.status ?? ''}
-            onChange={(e) =>
-              setFilters((f) => ({
-                ...f,
-                status: (e.target.value as WorkOrderStatus) || undefined,
-              }))
-            }
+            onChange={(e) => {
+              setPage(0)
+              setFilters((f) => ({ ...f, status: (e.target.value as WorkOrderStatus) || undefined }))
+            }}
             className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
           >
             <option value="">Alle Status</option>
@@ -110,9 +119,10 @@ export function WorkOrdersPage() {
           {/* Team filter */}
           <select
             value={filters.team ?? ''}
-            onChange={(e) =>
+            onChange={(e) => {
+              setPage(0)
               setFilters((f) => ({ ...f, team: (e.target.value as TeamColor) || undefined }))
-            }
+            }}
             className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
           >
             <option value="">Alle Teams</option>
@@ -125,12 +135,10 @@ export function WorkOrdersPage() {
           {/* Work type filter */}
           <select
             value={filters.work_type ?? ''}
-            onChange={(e) =>
-              setFilters((f) => ({
-                ...f,
-                work_type: (e.target.value as WorkType) || undefined,
-              }))
-            }
+            onChange={(e) => {
+              setPage(0)
+              setFilters((f) => ({ ...f, work_type: (e.target.value as WorkType) || undefined }))
+            }}
             className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
           >
             <option value="">Alle Typen</option>
@@ -145,9 +153,10 @@ export function WorkOrdersPage() {
           {/* Client filter */}
           <select
             value={filters.client_id ?? ''}
-            onChange={(e) =>
+            onChange={(e) => {
+              setPage(0)
               setFilters((f) => ({ ...f, client_id: e.target.value || undefined }))
-            }
+            }}
             className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
           >
             <option value="">Alle Kunden</option>
@@ -159,9 +168,10 @@ export function WorkOrdersPage() {
           {/* Project filter */}
           <select
             value={filters.project_id ?? ''}
-            onChange={(e) =>
+            onChange={(e) => {
+              setPage(0)
               setFilters((f) => ({ ...f, project_id: e.target.value || undefined }))
-            }
+            }}
             className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
           >
             <option value="">Alle Projekte</option>
@@ -173,12 +183,10 @@ export function WorkOrdersPage() {
           {/* Priority filter */}
           <select
             value={filters.priority ?? ''}
-            onChange={(e) =>
-              setFilters((f) => ({
-                ...f,
-                priority: (e.target.value as 'normal' | 'alta' | 'urgente') || undefined,
-              }))
-            }
+            onChange={(e) => {
+              setPage(0)
+              setFilters((f) => ({ ...f, priority: (e.target.value as 'normal' | 'alta' | 'urgente') || undefined }))
+            }}
             className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
           >
             <option value="">Alle Prioritäten</option>
@@ -191,9 +199,10 @@ export function WorkOrdersPage() {
           <input
             type="date"
             value={filters.date_from ?? ''}
-            onChange={(e) =>
+            onChange={(e) => {
+              setPage(0)
               setFilters((f) => ({ ...f, date_from: e.target.value || undefined }))
-            }
+            }}
             className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
             title="Einsatzdatum von"
           />
@@ -202,16 +211,17 @@ export function WorkOrdersPage() {
           <input
             type="date"
             value={filters.date_to ?? ''}
-            onChange={(e) =>
+            onChange={(e) => {
+              setPage(0)
               setFilters((f) => ({ ...f, date_to: e.target.value || undefined }))
-            }
+            }}
             className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
             title="Einsatzdatum bis"
           />
 
           {/* Reset */}
           <button
-            onClick={() => { setFilters({}); setSearch('') }}
+            onClick={() => { setPage(0); setFilters({}); setSearch('') }}
             className="rounded-gf-btn border border-gf-border px-3 py-2 text-sm text-gf-text-muted hover:border-gf-primary hover:text-gf-primary transition-colors"
           >
             Zurücksetzen
@@ -338,6 +348,31 @@ export function WorkOrdersPage() {
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {total > PAGE_SIZE && (
+        <div className="mt-4 flex items-center justify-between">
+          <span className="font-mono text-xs text-gf-text-muted">
+            {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} von {total}
+          </span>
+          <div className="flex gap-2">
+            <button
+              disabled={page === 0}
+              onClick={() => setPage((p) => p - 1)}
+              className="rounded-gf-btn border border-gf-border px-3 py-1.5 text-xs text-gf-text transition-colors hover:border-gf-primary hover:text-gf-primary disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              ← Zurück
+            </button>
+            <button
+              disabled={(page + 1) * PAGE_SIZE >= total}
+              onClick={() => setPage((p) => p + 1)}
+              className="rounded-gf-btn border border-gf-border px-3 py-1.5 text-xs text-gf-text transition-colors hover:border-gf-primary hover:text-gf-primary disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Weiter →
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Delete confirmation modal */}
       {deleteId && (

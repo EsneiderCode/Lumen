@@ -67,7 +67,9 @@ export interface WorkOrderWithRelations extends WorkOrderRow {
   clients: { name: string; code: string } | null
   projects: { name: string; code: string } | null
   operators: { name: string; code: string } | null
-  assignedProfile: { full_name: string } | null
+  assignedProfile?: { full_name: string } | null
+  // Added in migration 002; not yet reflected in database.types.ts
+  assigned_detail_snapshot?: Record<string, unknown> | null
 }
 
 export interface WorkOrderFilters {
@@ -121,7 +123,14 @@ export async function fetchTechnicians() {
 
 // ── Work Orders CRUD ─────────────────────────────────────────
 
-export async function fetchWorkOrders(filters: WorkOrderFilters = {}) {
+export async function fetchWorkOrders(
+  filters: WorkOrderFilters = {},
+  page = 0,
+  pageSize = 25,
+) {
+  const from = page * pageSize
+  const to = from + pageSize - 1
+
   let query = supabase
     .from('work_orders')
     .select(`
@@ -129,8 +138,9 @@ export async function fetchWorkOrders(filters: WorkOrderFilters = {}) {
       clients ( name, code ),
       projects ( name, code ),
       operators ( name, code )
-    `)
+    `, { count: 'exact' })
     .order('created_at', { ascending: false })
+    .range(from, to)
 
   if (filters.status) query = query.eq('status', filters.status)
   if (filters.team) query = query.eq('assigned_team', filters.team)
@@ -148,8 +158,12 @@ export async function fetchWorkOrders(filters: WorkOrderFilters = {}) {
   if (filters.date_to) query = query.lte('assigned_date', filters.date_to)
   if (filters.priority) query = query.eq('priority', filters.priority)
 
-  const { data, error } = await query
-  return { data: data ?? [], error: error?.message ?? null }
+  const { data, error, count } = await query
+  return {
+    data: (data ?? []) as unknown as WorkOrderWithRelations[],
+    total: count ?? 0,
+    error: error?.message ?? null,
+  }
 }
 
 export async function fetchWorkOrder(id: string) {
@@ -163,7 +177,7 @@ export async function fetchWorkOrder(id: string) {
     `)
     .eq('id', id)
     .single()
-  return { data, error: error?.message ?? null }
+  return { data: data as unknown as WorkOrderWithRelations | null, error: error?.message ?? null }
 }
 
 export async function createWorkOrder(
@@ -319,7 +333,15 @@ export async function fetchWorkOrderDetail(table: DetailTable, workOrderId: stri
 
 // ── Technician / Sprint 4 ──────────────────────────────────────
 
-export async function fetchMyWorkOrders(userId: string, team: string | null) {
+export async function fetchMyWorkOrders(
+  userId: string,
+  team: string | null,
+  page = 0,
+  pageSize = 20,
+) {
+  const from = page * pageSize
+  const to = from + pageSize - 1
+
   let query = supabase
     .from('work_orders')
     .select(`
@@ -327,9 +349,10 @@ export async function fetchMyWorkOrders(userId: string, team: string | null) {
       clients ( name, code ),
       projects ( name, code ),
       operators ( name, code )
-    `)
+    `, { count: 'exact' })
     .not('status', 'in', '("cancelled","paid")')
     .order('assigned_date', { ascending: true, nullsFirst: false })
+    .range(from, to)
 
   if (team) {
     query = query.or(`assigned_technician.eq.${userId},assigned_team.eq.${team}`)
@@ -337,8 +360,12 @@ export async function fetchMyWorkOrders(userId: string, team: string | null) {
     query = query.eq('assigned_technician', userId)
   }
 
-  const { data, error } = await query
-  return { data: data ?? [], error: error?.message ?? null }
+  const { data, error, count } = await query
+  return {
+    data: (data ?? []) as unknown as WorkOrderWithRelations[],
+    total: count ?? 0,
+    error: error?.message ?? null,
+  }
 }
 
 export async function transitionWorkOrderStatus(
@@ -403,7 +430,7 @@ export async function fetchContractorWorkOrders(userId: string) {
     `)
     .eq('assigned_technician', userId)
     .order('assigned_date', { ascending: false, nullsFirst: false })
-  return { data: data ?? [], error: error?.message ?? null }
+  return { data: (data ?? []) as unknown as WorkOrderWithRelations[], error: error?.message ?? null }
 }
 
 export async function fetchWorkOrderPhotos(workOrderId: string) {
