@@ -52,7 +52,7 @@ export function TechOrdersPage() {
     (o) => !['assigned', 'in_progress', 'executed', 'rueckmeldung_pending', 'returned'].includes(o.status),
   )
 
-  function OrderCard({ order }: { order: WorkOrderRow }) {
+  function OrderCard({ order }: { order: WorkOrderWithRelations }) {
     const isActive = ['assigned', 'in_progress', 'executed', 'rueckmeldung_pending'].includes(order.status)
     return (
       <button

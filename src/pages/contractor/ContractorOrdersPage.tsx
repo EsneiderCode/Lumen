@@ -147,7 +147,7 @@ export function ContractorOrdersPage() {
   )
 }
 
-function OrderCard({ order }: { order: WorkOrderRow }) {
+function OrderCard({ order }: { order: WorkOrderWithRelations }) {
   const isActive = ACTIVE_STATUSES.includes(order.status)
   return (
     <div
