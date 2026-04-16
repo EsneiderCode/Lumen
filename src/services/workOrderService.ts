@@ -497,7 +497,7 @@ export async function saveAssignedDetailSnapshot(
 ) {
   const { error } = await supabase
     .from('work_orders')
-    .update({ assigned_detail_snapshot: detail })
+    .update({ assigned_detail_snapshot: detail } as never)
     .eq('id', workOrderId)
     .is('assigned_detail_snapshot', null)
   return { error: error?.message ?? null }
@@ -547,7 +547,7 @@ export async function fetchCertificationAudits(workOrderId: string) {
     .eq('work_order_id', workOrderId)
     .order('certified_at', { ascending: true })
   return {
-    data: (data ?? []) as Array<{
+    data: (data ?? []) as unknown as Array<{
       id: string
       cert_type: 'internal' | 'client'
       certified_at: string
