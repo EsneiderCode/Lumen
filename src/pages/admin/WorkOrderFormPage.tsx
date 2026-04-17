@@ -14,7 +14,7 @@ import {
   saveAssignedDetailSnapshot,
 } from '@/services/workOrderService'
 import type { WorkType } from '@/types/enums'
-import { WORK_TYPE_LABELS } from '@/constants/labels'
+import { useLabels } from '@/i18n/labels'
 import { DETAIL_FIELDS } from '@/constants/detail-fields'
 
 // ── Form ─────────────────────────────────────────────────────
@@ -46,6 +46,7 @@ const EMPTY_FORM: FormValues = {
 }
 
 export function WorkOrderFormPage() {
+  const L = useLabels()
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -278,7 +279,7 @@ export function WorkOrderFormPage() {
                 className={`w-full rounded-gf-btn border px-3 py-2 text-sm text-gf-text focus:outline-none focus:ring-1 focus:ring-gf-primary ${errors.work_type ? 'border-gf-danger bg-gf-danger/5' : 'border-gf-border bg-gf-surface'}`}
               >
                 <option value="">— Typ wählen —</option>
-                {Object.entries(WORK_TYPE_LABELS).map(([val, label]) => (
+                {L.workTypeOptions().map(({ value: val, label }) => (
                   <option key={val} value={val}>{label}</option>
                 ))}
               </select>
@@ -342,7 +343,7 @@ export function WorkOrderFormPage() {
         {detailFields.length > 0 && (
           <div className="rounded-gf-card border border-gf-primary/30 bg-gf-card p-5">
             <h3 className="mb-1 font-display text-sm font-semibold text-gf-text">
-              Details: {WORK_TYPE_LABELS[form.work_type as WorkType]}
+              Details: {L.workType(form.work_type as WorkType)}
             </h3>
             <p className="mb-4 text-xs text-gf-text-muted">Arbeitstyp-spezifische Felder</p>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

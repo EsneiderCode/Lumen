@@ -9,12 +9,13 @@ import {
   type WorkOrderWithRelations,
 } from '@/services/workOrderService'
 import type { WorkOrderStatus, WorkType, TeamColor } from '@/types/enums'
-import { STATUS_LABELS, WORK_TYPE_LABELS, PRIORITY_LABELS } from '@/constants/labels'
+import { useLabels } from '@/i18n/labels'
 import { STATUS_COLORS, TEAM_DOT, PRIORITY_COLORS } from '@/constants/styles'
 
 const PAGE_SIZE = 25
 
 export function WorkOrdersPage() {
+  const L = useLabels()
   const navigate = useNavigate()
   const [orders, setOrders] = useState<WorkOrderWithRelations[]>([])
   const [total, setTotal] = useState(0)
@@ -111,8 +112,8 @@ export function WorkOrdersPage() {
             className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
           >
             <option value="">Alle Status</option>
-            {Object.entries(STATUS_LABELS).map(([val, label]) => (
-              <option key={val} value={val}>{label}</option>
+            {L.statusOptions().map(({ value, label }) => (
+              <option key={value} value={value}>{label}</option>
             ))}
           </select>
 
@@ -142,8 +143,8 @@ export function WorkOrdersPage() {
             className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
           >
             <option value="">Alle Typen</option>
-            {Object.entries(WORK_TYPE_LABELS).map(([val, label]) => (
-              <option key={val} value={val}>{label}</option>
+            {L.workTypeOptions().map(({ value, label }) => (
+              <option key={value} value={value}>{label}</option>
             ))}
           </select>
         </div>
@@ -190,8 +191,8 @@ export function WorkOrdersPage() {
             className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
           >
             <option value="">Alle Prioritäten</option>
-            {Object.entries(PRIORITY_LABELS).map(([val, label]) => (
-              <option key={val} value={val}>{label as string}</option>
+            {L.priorityOptions().map(({ value, label }) => (
+              <option key={value} value={value}>{label}</option>
             ))}
           </select>
 
@@ -273,7 +274,7 @@ export function WorkOrdersPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-gf-text">
-                      {WORK_TYPE_LABELS[order.work_type]}
+                      {L.workType(order.work_type)}
                       <div className="text-xs text-gf-text-muted">{order.line}</div>
                     </td>
                     <td className="px-4 py-3">
@@ -292,12 +293,12 @@ export function WorkOrdersPage() {
                     </td>
                     <td className="px-4 py-3">
                       <span className={`text-xs font-medium ${PRIORITY_COLORS[order.priority]}`}>
-                        {PRIORITY_LABELS[order.priority]}
+                        {L.priority(order.priority)}
                       </span>
                     </td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[order.status]}`}>
-                        {STATUS_LABELS[order.status]}
+                        {L.status(order.status)}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-xs text-gf-text-muted">

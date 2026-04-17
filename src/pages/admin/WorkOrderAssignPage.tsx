@@ -6,11 +6,12 @@ import {
   fetchTechnicians,
   assignWorkOrder,
 } from '@/services/workOrderService'
-import type { TeamColor } from '@/types/enums'
-import { WORK_TYPE_LABELS } from '@/constants/labels'
+import type { TeamColor, WorkType } from '@/types/enums'
+import { useLabels } from '@/i18n/labels'
 import { TEAMS } from '@/constants/styles'
 
 export function WorkOrderAssignPage() {
+  const L = useLabels()
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -114,7 +115,7 @@ export function WorkOrderAssignPage() {
             </div>
             <div>
               <p className="text-xs text-gf-text-muted">Arbeitstyp</p>
-              <p className="font-medium text-gf-text">{WORK_TYPE_LABELS[order.work_type as keyof typeof WORK_TYPE_LABELS] ?? order.work_type}</p>
+              <p className="font-medium text-gf-text">{L.workType(order.work_type as WorkType) || order.work_type}</p>
             </div>
             <div>
               <p className="text-xs text-gf-text-muted">Adresse</p>

@@ -16,7 +16,7 @@ import {
 } from '@/services/workOrderService'
 import { generateCertificatePdf } from '@/services/pdfService'
 import type { WorkOrderStatus } from '@/types/enums'
-import { STATUS_LABELS, WORK_TYPE_LABELS, DETAIL_FIELD_LABELS, PHOTO_LABELS } from '@/constants/labels'
+import { useLabels } from '@/i18n/labels'
 import { STATUS_COLORS, TEAM_DOT } from '@/constants/styles'
 
 type PhotoType = 'before' | 'during' | 'after'
@@ -57,6 +57,7 @@ interface ModalState {
 }
 
 export function WorkOrderDetailPage() {
+  const L = useLabels()
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -236,10 +237,10 @@ export function WorkOrderDetailPage() {
             <div className="flex items-center gap-2">
               <h2 className="font-display text-xl font-bold text-gf-text">{order.order_number}</h2>
               <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[order.status]}`}>
-                {STATUS_LABELS[order.status]}
+                {L.status(order.status)}
               </span>
             </div>
-            <p className="text-sm text-gf-text-muted">{WORK_TYPE_LABELS[order.work_type]} · Linie {order.line}</p>
+            <p className="text-sm text-gf-text-muted">{L.workType(order.work_type)} · Linie {order.line}</p>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -478,7 +479,7 @@ export function WorkOrderDetailPage() {
       {showComparison ? (
         <div className="rounded-gf-card border border-gf-border bg-gf-card p-5">
           <h3 className="mb-1 font-display text-sm font-semibold text-gf-text">
-            Vergleich — {WORK_TYPE_LABELS[order.work_type]}
+            Vergleich — {L.workType(order.work_type)}
           </h3>
           <p className="mb-4 text-xs text-gf-text-muted">Beauftragte Werte vs. gemeldete Istwerte</p>
           <div className="grid grid-cols-2 gap-x-6 gap-y-0 text-sm">
@@ -494,7 +495,7 @@ export function WorkOrderDetailPage() {
               ...Object.keys(snapshot!),
               ...Object.keys(detail),
             ])).map((key) => {
-              const label = DETAIL_FIELD_LABELS[key] ?? key.replace(/_/g, ' ')
+              const label = L.detailField(key)
               const assignedVal = snapshot![key]
               const reportedVal = detail[key]
               const isDiff = String(assignedVal ?? '') !== String(reportedVal ?? '')
@@ -525,12 +526,12 @@ export function WorkOrderDetailPage() {
         /* Simple view when no snapshot available (old orders) */
         <div className="rounded-gf-card border border-gf-border bg-gf-card p-5">
           <h3 className="mb-1 font-display text-sm font-semibold text-gf-text">
-            Rückmeldung — {WORK_TYPE_LABELS[order.work_type]}
+            Rückmeldung — {L.workType(order.work_type)}
           </h3>
           <p className="mb-4 text-xs text-gf-text-muted">Vom Techniker eingetragene Daten</p>
           <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
             {Object.entries(detail).map(([key, value]) => {
-              const label = DETAIL_FIELD_LABELS[key] ?? key.replace(/_/g, ' ')
+              const label = L.detailField(key)
               const isEmpty = value === null || value === undefined || value === ''
               return (
                 <div key={key}>
@@ -572,7 +573,7 @@ export function WorkOrderDetailPage() {
               return (
                 <div key={type}>
                   <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gf-text-muted">
-                    {PHOTO_LABELS[type]} ({typePhotos.length})
+                    {L.photo(type)} ({typePhotos.length})
                   </p>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                     {typePhotos.map((photo) => (
@@ -585,7 +586,7 @@ export function WorkOrderDetailPage() {
                       >
                         <img
                           src={photoUrls[photo.storage_path] ?? ''}
-                          alt={photo.caption ?? PHOTO_LABELS[type]}
+                          alt={photo.caption ?? L.photo(type)}
                           className="h-full w-full object-cover"
                         />
                       </a>
@@ -660,11 +661,11 @@ export function WorkOrderDetailPage() {
                 <div className="flex-1 pb-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[entry.to_status]}`}>
-                      {STATUS_LABELS[entry.to_status]}
+                      {L.status(entry.to_status)}
                     </span>
                     {entry.from_status && (
                       <span className="text-xs text-gf-text-muted">
-                        ← {STATUS_LABELS[entry.from_status]}
+                        ← {L.status(entry.from_status)}
                       </span>
                     )}
                   </div>

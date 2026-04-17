@@ -4,7 +4,7 @@ import * as XLSX from 'xlsx'
 import { fetchWorkOrders, transitionWorkOrderStatus, fetchProjects, type WorkOrderWithRelations } from '@/services/workOrderService'
 import { useAuth } from '@/hooks/useAuth'
 import type { WorkOrderStatus, TeamColor } from '@/types/enums'
-import { STATUS_LABELS, WORK_TYPE_LABELS } from '@/constants/labels'
+import { useLabels } from '@/i18n/labels'
 import { STATUS_COLORS, TEAM_DOT } from '@/constants/styles'
 
 interface Project {
@@ -37,6 +37,7 @@ interface BulkInvoiceModal {
 }
 
 export function CertificationPage() {
+  const L = useLabels()
   const navigate = useNavigate()
   const { user } = useAuth()
 
@@ -143,8 +144,8 @@ export function CertificationPage() {
 
     const rows = selectedOrders.map((o) => ({
       'Auftragsnummer': o.order_number,
-      'Typ': WORK_TYPE_LABELS[o.work_type],
-      'Status': STATUS_LABELS[o.status] ?? o.status,
+      'Typ': L.workType(o.work_type),
+      'Status': L.status(o.status) || o.status,
       'Kunde': o.clients?.name ?? '',
       'Projekt': o.projects?.code ?? '',
       'Team': o.assigned_team ?? '',
@@ -307,7 +308,7 @@ export function CertificationPage() {
                     className="h-3.5 w-3.5 rounded accent-gf-primary cursor-pointer"
                   />
                   <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[status]}`}>
-                    {STATUS_LABELS[status]}
+                    {L.status(status)}
                   </span>
                   <span className="text-sm font-semibold text-gf-text">{label}</span>
                   <span className="text-xs text-gf-text-muted">— {description}</span>
@@ -335,7 +336,7 @@ export function CertificationPage() {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <span className="font-mono text-sm font-semibold text-gf-text">{order.order_number}</span>
-                            <span className="text-xs text-gf-text-muted">{WORK_TYPE_LABELS[order.work_type]}</span>
+                            <span className="text-xs text-gf-text-muted">{L.workType(order.work_type)}</span>
                           </div>
                           <p className="text-xs text-gf-text-muted">
                             {order.clients?.name ?? '—'} · {order.projects?.code ?? '—'}

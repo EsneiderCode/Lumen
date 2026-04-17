@@ -72,7 +72,7 @@ import {
   getPhotoSignedUrls,
   type WorkOrderWithRelations,
 } from '@/services/workOrderService'
-import { WORK_TYPE_LABELS } from '@/constants/labels'
+import { useLabels } from '@/i18n/labels'
 import { DETAIL_FIELDS } from '@/constants/detail-fields'
 
 type PhotoType = 'before' | 'during' | 'after'
@@ -84,13 +84,8 @@ interface Photo {
   caption: string | null
 }
 
-const PHOTO_LABELS: Record<PhotoType, string> = {
-  before: 'Vorher',
-  during: 'Während',
-  after: 'Nachher',
-}
-
 export function RueckmeldungPage() {
+  const L = useLabels()
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -279,7 +274,7 @@ export function RueckmeldungPage() {
         </button>
         <div>
           <h2 className="font-display text-lg font-bold text-gf-text">Rückmeldung</h2>
-          <p className="text-xs text-gf-text-muted font-mono">{order.order_number} · {WORK_TYPE_LABELS[order.work_type]}</p>
+          <p className="text-xs text-gf-text-muted font-mono">{order.order_number} · {L.workType(order.work_type)}</p>
         </div>
       </div>
 
@@ -325,7 +320,7 @@ export function RueckmeldungPage() {
       {detailFields.length > 0 && (
         <div className="rounded-gf-card border border-gf-primary/30 bg-gf-card p-4">
           <h3 className="mb-1 font-display text-sm font-semibold text-gf-text">
-            Technische Daten — {WORK_TYPE_LABELS[order.work_type]}
+            Technische Daten — {L.workType(order.work_type)}
           </h3>
           <p className="mb-3 text-xs text-gf-text-muted">Ausgeführte Arbeit dokumentieren</p>
           <div className="grid grid-cols-1 gap-4">
@@ -388,7 +383,7 @@ export function RueckmeldungPage() {
               <div key={type}>
                 <div className="mb-2 flex items-center justify-between">
                   <p className="text-xs font-semibold text-gf-text-muted uppercase tracking-wide">
-                    {PHOTO_LABELS[type]} ({typePhotos.length})
+                    {L.photo(type)} ({typePhotos.length})
                   </p>
                   <button
                     type="button"
@@ -414,7 +409,7 @@ export function RueckmeldungPage() {
                       <div key={photo.id} className="relative aspect-square overflow-hidden rounded-gf-btn bg-gf-surface">
                         <img
                           src={photoUrls[photo.storage_path] ?? ''}
-                          alt={photo.caption ?? PHOTO_LABELS[type]}
+                          alt={photo.caption ?? L.photo(type)}
                           className="h-full w-full object-cover"
                         />
                         <button
