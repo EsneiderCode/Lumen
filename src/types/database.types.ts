@@ -132,6 +132,8 @@ export type Database = {
           postal_code: string | null
           city: string | null
           internal_notes: string | null
+          assigned_detail_snapshot: Record<string, unknown> | null
+          service_item_id: string | null
           created_by: string
           created_at: string
           updated_at: string
@@ -153,6 +155,8 @@ export type Database = {
           postal_code?: string | null
           city?: string | null
           internal_notes?: string | null
+          assigned_detail_snapshot?: Record<string, unknown> | null
+          service_item_id?: string | null
           created_by: string
           created_at?: string
           updated_at?: string
@@ -174,9 +178,92 @@ export type Database = {
           postal_code?: string | null
           city?: string | null
           internal_notes?: string | null
+          assigned_detail_snapshot?: Record<string, unknown> | null
+          service_item_id?: string | null
           created_by?: string
           created_at?: string
           updated_at?: string
+        }
+        Relationships: never[]
+      }
+
+      service_items: {
+        Row: {
+          id: string
+          code: string
+          description_de: string
+          description_es: string | null
+          unit: string | null
+          unit_price: number | null
+          operator_id: string | null
+          client_id: string | null
+          detail_form: string | null
+          display_order: number
+          active: boolean
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          code: string
+          description_de: string
+          description_es?: string | null
+          unit?: string | null
+          unit_price?: number | null
+          operator_id?: string | null
+          client_id?: string | null
+          detail_form?: string | null
+          display_order?: number
+          active?: boolean
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          description_de?: string
+          description_es?: string | null
+          unit?: string | null
+          unit_price?: number | null
+          operator_id?: string | null
+          client_id?: string | null
+          detail_form?: string | null
+          display_order?: number
+          active?: boolean
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: never[]
+      }
+
+      certification_audits: {
+        Row: {
+          id: string
+          work_order_id: string
+          cert_type: string
+          certified_by: string
+          certified_at: string
+          data_hash: string
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          work_order_id: string
+          cert_type: string
+          certified_by: string
+          certified_at?: string
+          data_hash: string
+          notes?: string | null
+          created_at?: string
+        }
+        Update: {
+          cert_type?: string
+          certified_by?: string
+          certified_at?: string
+          data_hash?: string
+          notes?: string | null
         }
         Relationships: never[]
       }

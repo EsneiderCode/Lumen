@@ -68,10 +68,7 @@ export interface WorkOrderWithRelations extends WorkOrderRow {
   projects: { name: string; code: string } | null
   operators: { name: string; code: string } | null
   assignedProfile?: { full_name: string } | null
-  // Added in migration 002; not yet reflected in database.types.ts
-  assigned_detail_snapshot?: Record<string, unknown> | null
-  // Added in service_catalog_v1 migration
-  service_item_id?: string | null
+  // service_items join populated by fetchWorkOrder + list fetches
   service_items?: {
     id: string
     code: string
