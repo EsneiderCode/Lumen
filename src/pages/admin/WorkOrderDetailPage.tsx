@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { useAuth } from '@/hooks/useAuth'
 import {
@@ -504,19 +504,19 @@ export function WorkOrderDetailPage() {
                 return String(v)
               }
               return (
-                <>
-                  <div key={`${key}-assigned`} className="py-2 border-b border-gf-border/50">
+                <Fragment key={key}>
+                  <div className="py-2 border-b border-gf-border/50">
                     <p className="text-xs text-gf-text-muted capitalize">{label}</p>
                     <p className="font-medium text-gf-text">{fmt(assignedVal)}</p>
                   </div>
-                  <div key={`${key}-reported`} className={`py-2 border-b border-gf-border/50 ${isDiff ? 'bg-gf-warning/5 rounded' : ''}`}>
+                  <div className={`py-2 border-b border-gf-border/50 ${isDiff ? 'bg-gf-warning/5 rounded' : ''}`}>
                     <p className="text-xs text-gf-text-muted capitalize">{label}</p>
                     <p className={`font-medium ${isDiff ? 'text-gf-warning' : 'text-gf-text'}`}>
                       {fmt(reportedVal)}
                       {isDiff && <span className="ml-1.5 text-xs">↕</span>}
                     </p>
                   </div>
-                </>
+                </Fragment>
               )
             })}
           </div>
