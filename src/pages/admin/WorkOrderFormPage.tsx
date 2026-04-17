@@ -19,6 +19,8 @@ import { DETAIL_FIELDS } from '@/constants/detail-fields'
 import { fetchServiceItems } from '@/services/serviceItemService'
 import type { ServiceItemWithRelations } from '@/types/service-items'
 import { DocumentUploader } from '@/components/ui/DocumentUploader'
+import { uploadWorkOrderDocument } from '@/services/workOrderDocumentService'
+import type { DocumentType } from '@/types/work-order-documents'
 
 // Work types where the order is linear / infra work (trenches, splice
 // boxes) rather than a street-address-based installation. For these,
@@ -85,6 +87,14 @@ export function WorkOrderFormPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [errors, setErrors] = useState<Partial<Record<keyof FormValues, string>>>({})
   const [saveError, setSaveError] = useState<string | null>(null)
+
+  // Staged documents — collected locally on new orders, uploaded after
+  // the order is created and we have an id to attach them to.
+  const [stagedDocs, setStagedDocs] = useState<Record<DocumentType, File[]>>({
+    plano: [],
+    cartas_empalme: [],
+    other: [],
+  })
 
   // Load lookups
   useEffect(() => {
@@ -203,6 +213,32 @@ export function WorkOrderFormPage() {
       // LUM-023: on creation only, save admin's assigned values as immutable snapshot
       if (!isEdit) {
         await saveAssignedDetailSnapshot(orderId, detail)
+      }
+    }
+
+    // Upload any staged supporting documents now that we have an order id
+    if (orderId && user) {
+      const allStaged: Array<[DocumentType, File]> = []
+      for (const [type, files] of Object.entries(stagedDocs) as Array<[DocumentType, File[]]>) {
+        for (const file of files) allStaged.push([type, file])
+      }
+      if (allStaged.length > 0) {
+        const uploadErrors: string[] = []
+        for (const [type, file] of allStaged) {
+          const { error: upErr } = await uploadWorkOrderDocument(orderId, type, file, user.id)
+          if (upErr) uploadErrors.push(`${file.name}: ${upErr}`)
+        }
+        if (uploadErrors.length > 0) {
+          // Order + detail saved, but some docs failed. Let the admin know,
+          // keep them on the page so they can retry or continue.
+          setSaveError(`Auftrag gespeichert, aber Upload-Fehler:\n${uploadErrors.join('\n')}`)
+          setIsSaving(false)
+          // Clear the successfully uploaded staged files so retry uploads
+          // the remaining ones cleanly — simplest: clear all and let the
+          // admin view the detail page for the partial state.
+          setStagedDocs({ plano: [], cartas_empalme: [], other: [] })
+          return
+        }
       }
     }
 
@@ -452,28 +488,47 @@ export function WorkOrderFormPage() {
                 anstelle einer Adresse relevant.
               </p>
             </div>
-            {isEdit && id && user ? (
-              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                <DocumentUploader
-                  workOrderId={id}
-                  uploadedBy={user.id}
-                  documentType="plano"
-                  label="Plan / Trassenplan"
-                  hint="PDF oder Excel"
-                />
-                <DocumentUploader
-                  workOrderId={id}
-                  uploadedBy={user.id}
-                  documentType="cartas_empalme"
-                  label="Spleißprotokolle (Cartas de empalme)"
-                  hint="PDF oder Excel"
-                />
-              </div>
-            ) : (
-              <p className="rounded-gf-btn border border-dashed border-gf-border bg-gf-surface px-4 py-3 text-xs text-gf-text-muted">
-                Auftrag zuerst speichern, danach können Plan und Spleißprotokolle hochgeladen werden.
-              </p>
-            )}
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+              {isEdit && id && user ? (
+                <>
+                  <DocumentUploader
+                    workOrderId={id}
+                    uploadedBy={user.id}
+                    documentType="plano"
+                    label="Plan / Trassenplan"
+                    hint="PDF oder Excel"
+                  />
+                  <DocumentUploader
+                    workOrderId={id}
+                    uploadedBy={user.id}
+                    documentType="cartas_empalme"
+                    label="Spleißprotokolle (Cartas de empalme)"
+                    hint="PDF oder Excel"
+                  />
+                </>
+              ) : (
+                <>
+                  <DocumentUploader
+                    documentType="plano"
+                    label="Plan / Trassenplan"
+                    hint="PDF oder Excel · wird beim Speichern hochgeladen"
+                    stagedFiles={stagedDocs.plano}
+                    onStagedFilesChange={(files) =>
+                      setStagedDocs((d) => ({ ...d, plano: files }))
+                    }
+                  />
+                  <DocumentUploader
+                    documentType="cartas_empalme"
+                    label="Spleißprotokolle (Cartas de empalme)"
+                    hint="PDF oder Excel · wird beim Speichern hochgeladen"
+                    stagedFiles={stagedDocs.cartas_empalme}
+                    onStagedFilesChange={(files) =>
+                      setStagedDocs((d) => ({ ...d, cartas_empalme: files }))
+                    }
+                  />
+                </>
+              )}
+            </div>
           </div>
         )}
 

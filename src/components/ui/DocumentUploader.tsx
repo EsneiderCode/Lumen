@@ -12,18 +12,38 @@ import {
   type WorkOrderDocument,
 } from '@/types/work-order-documents'
 
-interface DocumentUploaderProps {
-  workOrderId: string
-  uploadedBy: string
-  /** Which document bucket this uploader is for. */
+/**
+ * Two modes:
+ * - **Immediate** (workOrderId provided): uploads straight to Supabase
+ *   storage + inserts the row. Used on edit / detail pages where the
+ *   order already exists.
+ * - **Staged** (no workOrderId; stagedFiles + onStagedFilesChange
+ *   provided): holds File objects in the parent's state without touching
+ *   Supabase. The parent uploads after it saves the order (flow: save
+ *   order -> get id -> loop staged files through uploadWorkOrderDocument).
+ */
+interface BaseProps {
   documentType: DocumentType
-  /** Human-readable label shown above the uploader. */
   label: string
-  /** Short helper text describing what to upload. */
   hint?: string
-  /** Read-only mode — show docs but disable upload/delete. */
   readOnly?: boolean
 }
+
+interface ImmediateProps extends BaseProps {
+  workOrderId: string
+  uploadedBy: string
+  stagedFiles?: never
+  onStagedFilesChange?: never
+}
+
+interface StagedProps extends BaseProps {
+  workOrderId?: never
+  uploadedBy?: never
+  stagedFiles: File[]
+  onStagedFilesChange: (files: File[]) => void
+}
+
+export type DocumentUploaderProps = ImmediateProps | StagedProps
 
 function formatBytes(bytes: number | null): string {
   if (bytes == null) return '—'
@@ -39,22 +59,22 @@ function iconForMime(mime: string | null): string {
   return '📄'
 }
 
-export function DocumentUploader({
-  workOrderId,
-  uploadedBy,
-  documentType,
-  label,
-  hint,
-  readOnly = false,
-}: DocumentUploaderProps) {
+export function DocumentUploader(props: DocumentUploaderProps) {
+  const { documentType, label, hint, readOnly = false } = props
+  const isStaged = 'stagedFiles' in props && props.stagedFiles !== undefined
   const inputRef = useRef<HTMLInputElement>(null)
+
+  // Immediate-mode state (server-backed)
   const [docs, setDocs] = useState<WorkOrderDocument[]>([])
   const [urls, setUrls] = useState<Record<string, string>>({})
   const [isUploading, setIsUploading] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
+  // Load existing docs only in immediate mode
   useEffect(() => {
+    if (isStaged || readOnly) return
+    const workOrderId = (props as ImmediateProps).workOrderId
     if (!workOrderId) return
     let cancelled = false
     fetchWorkOrderDocuments(workOrderId).then(({ data }) => {
@@ -66,22 +86,43 @@ export function DocumentUploader({
       })
     })
     return () => { cancelled = true }
-  }, [workOrderId, documentType])
+  }, [isStaged, readOnly, documentType, props])
 
-  async function handleUpload(files: FileList | null) {
+  function validateFile(file: File): string | null {
+    if (!ALLOWED_DOCUMENT_MIME_TYPES.includes(file.type as typeof ALLOWED_DOCUMENT_MIME_TYPES[number])) {
+      return `Dateityp nicht unterstützt: ${file.name}. Nur PDF oder Excel.`
+    }
+    return null
+  }
+
+  async function handleFiles(files: FileList | null) {
     if (!files || files.length === 0 || readOnly) return
     setError(null)
+
+    // ── Staged mode — just push to parent state, no network ──
+    if (isStaged) {
+      const stagedProps = props as StagedProps
+      const incoming = Array.from(files)
+      for (const file of incoming) {
+        const err = validateFile(file)
+        if (err) { setError(err); return }
+      }
+      stagedProps.onStagedFilesChange([...stagedProps.stagedFiles, ...incoming])
+      if (inputRef.current) inputRef.current.value = ''
+      return
+    }
+
+    // ── Immediate mode — upload to storage + insert row ──
+    const immediateProps = props as ImmediateProps
     setIsUploading(true)
     for (const file of Array.from(files)) {
-      if (!ALLOWED_DOCUMENT_MIME_TYPES.includes(file.type as typeof ALLOWED_DOCUMENT_MIME_TYPES[number])) {
-        setError(`Dateityp nicht unterstützt: ${file.name}. Nur PDF oder Excel.`)
-        continue
-      }
+      const err = validateFile(file)
+      if (err) { setError(err); continue }
       const { data, error: uploadErr } = await uploadWorkOrderDocument(
-        workOrderId,
+        immediateProps.workOrderId,
         documentType,
         file,
-        uploadedBy,
+        immediateProps.uploadedBy,
       )
       if (uploadErr) {
         setError(uploadErr)
@@ -97,7 +138,7 @@ export function DocumentUploader({
     if (inputRef.current) inputRef.current.value = ''
   }
 
-  async function handleDelete(doc: WorkOrderDocument) {
+  async function handleDeleteImmediate(doc: WorkOrderDocument) {
     if (readOnly) return
     if (!confirm(`Dokument „${doc.file_name}" wirklich löschen?`)) return
     setDeletingId(doc.id)
@@ -109,6 +150,14 @@ export function DocumentUploader({
     }
     setDeletingId(null)
   }
+
+  function handleRemoveStaged(index: number) {
+    if (!isStaged || readOnly) return
+    const stagedProps = props as StagedProps
+    stagedProps.onStagedFilesChange(stagedProps.stagedFiles.filter((_, i) => i !== index))
+  }
+
+  const stagedFiles = isStaged ? (props as StagedProps).stagedFiles : []
 
   return (
     <div className="space-y-2">
@@ -131,7 +180,11 @@ export function DocumentUploader({
           ) : (
             <>
               <span>📎</span>
-              <span>PDF oder Excel hochladen ({ALLOWED_DOCUMENT_EXTENSIONS.join(', ')})</span>
+              <span>
+                {isStaged
+                  ? `Dokument auswählen (${ALLOWED_DOCUMENT_EXTENSIONS.join(', ')})`
+                  : `PDF oder Excel hochladen (${ALLOWED_DOCUMENT_EXTENSIONS.join(', ')})`}
+              </span>
             </>
           )}
           <input
@@ -141,18 +194,51 @@ export function DocumentUploader({
             accept={ALLOWED_DOCUMENT_EXTENSIONS.join(',')}
             multiple
             className="hidden"
-            onChange={(e) => handleUpload(e.target.files)}
+            onChange={(e) => handleFiles(e.target.files)}
             disabled={isUploading}
           />
         </label>
       )}
 
-      {error && (
-        <p className="text-xs text-gf-danger">{error}</p>
-      )}
+      {error && <p className="text-xs text-gf-danger">{error}</p>}
 
-      {/* List */}
-      {docs.length === 0 ? (
+      {isStaged ? (
+        /* Staged list */
+        stagedFiles.length === 0 ? (
+          <p className="text-xs italic text-gf-text-placeholder">
+            Noch keine Dateien ausgewählt
+          </p>
+        ) : (
+          <ul className="space-y-1">
+            {stagedFiles.map((file, idx) => (
+              <li
+                key={`${file.name}-${idx}`}
+                className="flex items-center gap-3 rounded-gf-btn border border-dashed border-gf-primary/30 bg-gf-primary/5 px-3 py-2"
+              >
+                <span className="text-lg" aria-hidden>{iconForMime(file.type)}</span>
+                <div className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium text-gf-text">
+                    {file.name}
+                  </span>
+                  <p className="text-[10px] text-gf-text-muted">
+                    {formatBytes(file.size)} · wird beim Speichern hochgeladen
+                  </p>
+                </div>
+                {!readOnly && (
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveStaged(idx)}
+                    className="rounded-gf-btn border border-gf-border px-2 py-1 text-xs text-gf-text-muted hover:border-gf-danger/40 hover:text-gf-danger transition-colors"
+                    aria-label="Entfernen"
+                  >
+                    ✕
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )
+      ) : docs.length === 0 ? (
         <p className="text-xs italic text-gf-text-placeholder">
           {readOnly ? 'Keine Dokumente' : 'Noch keine Dokumente hochgeladen'}
         </p>
@@ -188,7 +274,7 @@ export function DocumentUploader({
                 {!readOnly && (
                   <button
                     type="button"
-                    onClick={() => handleDelete(doc)}
+                    onClick={() => handleDeleteImmediate(doc)}
                     disabled={deletingId === doc.id}
                     className="rounded-gf-btn border border-gf-border px-2 py-1 text-xs text-gf-text-muted hover:border-gf-danger/40 hover:text-gf-danger disabled:opacity-50 transition-colors"
                     aria-label="Löschen"
