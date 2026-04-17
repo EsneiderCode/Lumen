@@ -18,6 +18,13 @@ import { WORK_TYPE_LABELS } from '@/constants/labels'
 import { DETAIL_FIELDS } from '@/constants/detail-fields'
 import { fetchServiceItems } from '@/services/serviceItemService'
 import type { ServiceItemWithRelations } from '@/types/service-items'
+import { DocumentUploader } from '@/components/ui/DocumentUploader'
+
+// Work types where the order is linear / infra work (trenches, splice
+// boxes) rather than a street-address-based installation. For these,
+// the address card is hidden; instead we require supporting documents
+// (plano, cartas de empalme).
+const INFRA_WORK_TYPES = new Set<WorkType>(['soplado', 'fusion_ap', 'fusion_dp'])
 
 // Map service-item detail_form -> legacy work_type enum value used by
 // wo_detail_* tables. 'pop' is a new category with no legacy detail table
@@ -389,42 +396,86 @@ export function WorkOrderFormPage() {
           </div>
         </div>
 
-        {/* Address card */}
-        <div className="rounded-gf-card border border-gf-border bg-gf-card p-5">
-          <h3 className="mb-4 font-display text-sm font-semibold text-gf-text">Adresse</h3>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="sm:col-span-3">
-              <label className="mb-1 block text-xs font-medium text-gf-text-muted">Straße / Hausnummer</label>
-              <input
-                type="text"
-                value={form.address}
-                onChange={(e) => setField('address', e.target.value)}
-                placeholder="Musterstraße 12"
-                className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-gf-text-muted">PLZ</label>
-              <input
-                type="text"
-                value={form.postal_code}
-                onChange={(e) => setField('postal_code', e.target.value)}
-                placeholder="10115"
-                className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-gf-text-muted">Stadt</label>
-              <input
-                type="text"
-                value={form.city}
-                onChange={(e) => setField('city', e.target.value)}
-                placeholder="Berlin"
-                className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
-              />
+        {/* Address card — hidden for linear / infra work types (soplado,
+            fusion_*). For those, the order is not tied to a specific
+            street address; supporting documents (plano, cartas de
+            empalme) carry the spatial context instead. */}
+        {form.work_type && !INFRA_WORK_TYPES.has(form.work_type as WorkType) && (
+          <div className="rounded-gf-card border border-gf-border bg-gf-card p-5">
+            <h3 className="mb-4 font-display text-sm font-semibold text-gf-text">Adresse</h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="sm:col-span-3">
+                <label className="mb-1 block text-xs font-medium text-gf-text-muted">Straße / Hausnummer</label>
+                <input
+                  type="text"
+                  value={form.address}
+                  onChange={(e) => setField('address', e.target.value)}
+                  placeholder="Musterstraße 12"
+                  className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gf-text-muted">PLZ</label>
+                <input
+                  type="text"
+                  value={form.postal_code}
+                  onChange={(e) => setField('postal_code', e.target.value)}
+                  placeholder="10115"
+                  className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="mb-1 block text-xs font-medium text-gf-text-muted">Stadt</label>
+                <input
+                  type="text"
+                  value={form.city}
+                  onChange={(e) => setField('city', e.target.value)}
+                  placeholder="Berlin"
+                  className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+                />
+              </div>
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Supporting documents — for infra work types admins attach the
+            plano when creating the order. Cartas de empalme are usually
+            the technician's output and can be added from the Rückmeldung
+            side. Uploader is live only after the order exists (edit mode);
+            on new orders a hint tells the admin to save first. */}
+        {form.work_type && INFRA_WORK_TYPES.has(form.work_type as WorkType) && (
+          <div className="rounded-gf-card border border-gf-primary/30 bg-gf-card p-5 space-y-5">
+            <div>
+              <h3 className="font-display text-sm font-semibold text-gf-text">Unterstützende Dokumente</h3>
+              <p className="mt-0.5 text-xs text-gf-text-muted">
+                Bei linearen Arbeiten (Soplado / Fusion) sind Plan und Spleißprotokolle
+                anstelle einer Adresse relevant.
+              </p>
+            </div>
+            {isEdit && id && user ? (
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                <DocumentUploader
+                  workOrderId={id}
+                  uploadedBy={user.id}
+                  documentType="plano"
+                  label="Plan / Trassenplan"
+                  hint="PDF oder Excel"
+                />
+                <DocumentUploader
+                  workOrderId={id}
+                  uploadedBy={user.id}
+                  documentType="cartas_empalme"
+                  label="Spleißprotokolle (Cartas de empalme)"
+                  hint="PDF oder Excel"
+                />
+              </div>
+            ) : (
+              <p className="rounded-gf-btn border border-dashed border-gf-border bg-gf-surface px-4 py-3 text-xs text-gf-text-muted">
+                Auftrag zuerst speichern, danach können Plan und Spleißprotokolle hochgeladen werden.
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Dynamic detail fields */}
         {detailFields.length > 0 && (

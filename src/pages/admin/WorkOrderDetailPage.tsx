@@ -18,6 +18,9 @@ import { generateCertificatePdf } from '@/services/pdfService'
 import type { WorkOrderStatus } from '@/types/enums'
 import { STATUS_LABELS, WORK_TYPE_LABELS, DETAIL_FIELD_LABELS, PHOTO_LABELS } from '@/constants/labels'
 import { STATUS_COLORS, TEAM_DOT } from '@/constants/styles'
+import { DocumentUploader } from '@/components/ui/DocumentUploader'
+
+const INFRA_WORK_TYPES = new Set(['soplado', 'fusion_ap', 'fusion_dp'])
 
 type PhotoType = 'before' | 'during' | 'after'
 
@@ -417,6 +420,35 @@ export function WorkOrderDetailPage() {
       {error && (
         <div className="rounded-gf-btn border border-gf-danger/30 bg-gf-danger/10 px-4 py-3 text-sm text-rose-700">
           {error}
+        </div>
+      )}
+
+      {/* Supporting documents — for linear/infra work types (soplado, fusion)
+          show plano + cartas de empalme alongside the order data. */}
+      {INFRA_WORK_TYPES.has(order.work_type) && user && (
+        <div className="rounded-gf-card border border-gf-border bg-gf-card p-5">
+          <div className="mb-4">
+            <h3 className="font-display text-sm font-semibold text-gf-text">Unterstützende Dokumente</h3>
+            <p className="mt-0.5 text-xs text-gf-text-muted">
+              Plan und Spleißprotokolle — PDF oder Excel
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            <DocumentUploader
+              workOrderId={order.id}
+              uploadedBy={user.id}
+              documentType="plano"
+              label="Plan / Trassenplan"
+              hint="PDF oder Excel"
+            />
+            <DocumentUploader
+              workOrderId={order.id}
+              uploadedBy={user.id}
+              documentType="cartas_empalme"
+              label="Spleißprotokolle (Cartas de empalme)"
+              hint="PDF oder Excel"
+            />
+          </div>
         </div>
       )}
 

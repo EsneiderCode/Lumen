@@ -237,6 +237,39 @@ export type Database = {
         Relationships: never[]
       }
 
+      work_order_documents: {
+        Row: {
+          id: string
+          work_order_id: string
+          document_type: string
+          file_name: string
+          storage_path: string
+          mime_type: string | null
+          size_bytes: number | null
+          uploaded_by: string
+          uploaded_at: string
+        }
+        Insert: {
+          id?: string
+          work_order_id: string
+          document_type: string
+          file_name: string
+          storage_path: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          uploaded_by: string
+          uploaded_at?: string
+        }
+        Update: {
+          document_type?: string
+          file_name?: string
+          storage_path?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+        }
+        Relationships: never[]
+      }
+
       certification_audits: {
         Row: {
           id: string
