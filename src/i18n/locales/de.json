@@ -219,7 +219,7 @@
     "change": "Sprache ändern"
   },
   "offline": {
-    "banner": "Sie sind offline. Änderungen werden synchronisiert, sobald die Verbindung wiederhergestellt ist."
+    "banner": "Keine Verbindung — Änderungen werden lokal gespeichert"
   },
   "errors": {
     "boundary": "Ein unerwarteter Fehler ist aufgetreten.",

@@ -219,7 +219,7 @@
     "change": "Cambiar idioma"
   },
   "offline": {
-    "banner": "Estás sin conexión. Los cambios se sincronizarán cuando vuelva la conexión."
+    "banner": "Sin conexión — los cambios se guardan en el dispositivo"
   },
   "errors": {
     "boundary": "Ocurrió un error inesperado.",
