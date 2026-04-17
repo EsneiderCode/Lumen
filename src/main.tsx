@@ -10,6 +10,7 @@ import '@fontsource/space-mono/700.css'
 import '@fontsource/doto/400.css'
 import '@fontsource/doto/700.css'
 import './index.css'
+import './i18n'
 import App from './App'
 
 createRoot(document.getElementById('root')!).render(
