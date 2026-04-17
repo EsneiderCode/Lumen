@@ -22,11 +22,20 @@ import { DocumentUploader } from '@/components/ui/DocumentUploader'
 import { uploadWorkOrderDocument } from '@/services/workOrderDocumentService'
 import type { DocumentType } from '@/types/work-order-documents'
 
-// Work types where the order is linear / infra work (trenches, splice
-// boxes) rather than a street-address-based installation. For these,
-// the address card is hidden; instead we require supporting documents
-// (plano, cartas de empalme).
-const INFRA_WORK_TYPES = new Set<WorkType>(['soplado', 'fusion_ap', 'fusion_dp'])
+// Catalog detail_form values for infrastructure work (trenches, splice
+// boxes, POP central sites) rather than street-address-based customer
+// installations. For these we hide the address card and show the
+// supporting-document uploaders (plano, cartas de empalme). We key on
+// detail_form from the service catalog — not the legacy work_type enum —
+// because multiple catalog items can map to the same legacy work_type
+// (e.g. POP items route to 'alta' work_type for DB compat but must still
+// be treated as infra).
+const INFRA_DETAIL_FORMS = new Set(['soplado', 'fusion_ap', 'fusion_dp', 'pop'])
+
+// Catalog detail_form values that don't have a dedicated wo_detail_* table
+// and should not render the Details section. POP items currently fall here
+// until a wo_detail_pop schema is defined.
+const NO_DETAIL_FORMS = new Set(['pop'])
 
 // Map service-item detail_form -> legacy work_type enum value used by
 // wo_detail_* tables. 'pop' is a new category with no legacy detail table
@@ -253,7 +262,14 @@ export function WorkOrderFormPage() {
     )
   }
 
-  const detailFields = form.work_type ? DETAIL_FIELDS[form.work_type] : []
+  // Resolve the selected catalog item and its detail_form — this drives
+  // the UI shape (address visibility, detail fields, uploader visibility).
+  const selectedServiceItem = serviceItems.find((si) => si.id === form.service_item_id) ?? null
+  const selectedDetailForm = selectedServiceItem?.detail_form ?? null
+  const isInfra = selectedDetailForm ? INFRA_DETAIL_FORMS.has(selectedDetailForm) : false
+  const skipDetail = selectedDetailForm ? NO_DETAIL_FORMS.has(selectedDetailForm) : false
+
+  const detailFields = !skipDetail && form.work_type ? DETAIL_FIELDS[form.work_type] : []
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -432,11 +448,12 @@ export function WorkOrderFormPage() {
           </div>
         </div>
 
-        {/* Address card — hidden for linear / infra work types (soplado,
-            fusion_*). For those, the order is not tied to a specific
-            street address; supporting documents (plano, cartas de
-            empalme) carry the spatial context instead. */}
-        {form.work_type && !INFRA_WORK_TYPES.has(form.work_type as WorkType) && (
+        {/* Address card — hidden for infra work (soplado, fusion_*, POP).
+            These are not tied to a specific street address; supporting
+            documents (plano, cartas de empalme) carry the spatial context
+            instead. POP installations happen at central sites, not
+            customer addresses. */}
+        {selectedDetailForm && !isInfra && (
           <div className="rounded-gf-card border border-gf-border bg-gf-card p-5">
             <h3 className="mb-4 font-display text-sm font-semibold text-gf-text">Adresse</h3>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -474,12 +491,12 @@ export function WorkOrderFormPage() {
           </div>
         )}
 
-        {/* Supporting documents — for infra work types admins attach the
-            plano when creating the order. Cartas de empalme are usually
-            the technician's output and can be added from the Rückmeldung
-            side. Uploader is live only after the order exists (edit mode);
-            on new orders a hint tells the admin to save first. */}
-        {form.work_type && INFRA_WORK_TYPES.has(form.work_type as WorkType) && (
+        {/* Supporting documents — for infra work (soplado, fusion_*, POP)
+            admins attach the plano when creating the order. Cartas de
+            empalme are usually the technician's output but can be added
+            here too. On new orders files are staged locally and uploaded
+            after the order is created. */}
+        {isInfra && (
           <div className="rounded-gf-card border border-gf-primary/30 bg-gf-card p-5 space-y-5">
             <div>
               <h3 className="font-display text-sm font-semibold text-gf-text">Unterstützende Dokumente</h3>

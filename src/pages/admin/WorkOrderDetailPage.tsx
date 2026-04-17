@@ -20,7 +20,10 @@ import { STATUS_LABELS, WORK_TYPE_LABELS, DETAIL_FIELD_LABELS, PHOTO_LABELS } fr
 import { STATUS_COLORS, TEAM_DOT } from '@/constants/styles'
 import { DocumentUploader } from '@/components/ui/DocumentUploader'
 
-const INFRA_WORK_TYPES = new Set(['soplado', 'fusion_ap', 'fusion_dp'])
+// Catalog detail_form values for infra work — hide address, show
+// supporting-document uploaders. POP items live here too: they're
+// central-site installations, not customer installations.
+const INFRA_DETAIL_FORMS = new Set(['soplado', 'fusion_ap', 'fusion_dp', 'pop'])
 
 type PhotoType = 'before' | 'during' | 'after'
 
@@ -423,9 +426,9 @@ export function WorkOrderDetailPage() {
         </div>
       )}
 
-      {/* Supporting documents — for linear/infra work types (soplado, fusion)
+      {/* Supporting documents — for infra work (soplado, fusion, POP)
           show plano + cartas de empalme alongside the order data. */}
-      {INFRA_WORK_TYPES.has(order.work_type) && user && (
+      {order.service_items?.detail_form && INFRA_DETAIL_FORMS.has(order.service_items.detail_form) && user && (
         <div className="rounded-gf-card border border-gf-border bg-gf-card p-5">
           <div className="mb-4">
             <h3 className="font-display text-sm font-semibold text-gf-text">Unterstützende Dokumente</h3>
