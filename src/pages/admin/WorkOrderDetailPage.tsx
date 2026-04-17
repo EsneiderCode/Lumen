@@ -420,6 +420,34 @@ export function WorkOrderDetailPage() {
         </div>
       )}
 
+      {/* Service item — canonical rate-card reference */}
+      {order.service_items && (
+        <div className="rounded-gf-card border border-gf-primary/40 bg-gf-primary/5 p-4">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="min-w-0 flex-1">
+              <p className="font-mono text-xs font-semibold uppercase tracking-wide text-gf-primary">
+                Leistung (Katalog)
+              </p>
+              <p className="mt-1 flex items-center gap-2 flex-wrap">
+                <span className="font-mono text-sm font-bold text-gf-primary">{order.service_items.code}</span>
+                <span className="text-sm text-gf-text">{order.service_items.description_de}</span>
+              </p>
+              {order.service_items.description_es && (
+                <p className="mt-0.5 text-xs italic text-gf-text-muted">
+                  ES: {order.service_items.description_es}
+                </p>
+              )}
+            </div>
+            <div className="flex items-center gap-3 text-xs text-gf-text-muted font-mono">
+              {order.service_items.unit && <span>{order.service_items.unit}</span>}
+              {order.service_items.unit_price != null && (
+                <span className="text-gf-text">{order.service_items.unit_price.toFixed(2)} €</span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Order info */}
       <div className="rounded-gf-card border border-gf-border bg-gf-card p-5">
         <h3 className="mb-4 font-display text-sm font-semibold text-gf-text">Auftragsdaten</h3>

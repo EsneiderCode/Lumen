@@ -16,6 +16,21 @@ import {
 import type { WorkType } from '@/types/enums'
 import { WORK_TYPE_LABELS } from '@/constants/labels'
 import { DETAIL_FIELDS } from '@/constants/detail-fields'
+import { fetchServiceItems } from '@/services/serviceItemService'
+import type { ServiceItemWithRelations } from '@/types/service-items'
+
+// Map service-item detail_form -> legacy work_type enum value used by
+// wo_detail_* tables. 'pop' is a new category with no legacy detail table
+// yet, so it is rendered with a generic detail shape (alta-style).
+const DETAIL_FORM_TO_WORK_TYPE: Record<string, WorkType> = {
+  soplado:    'soplado',
+  fusion_ap:  'fusion_ap',
+  fusion_dp:  'fusion_dp',
+  alta:       'alta',
+  nt:         'nt_installation',
+  patchkabel: 'patchkabel',
+  pop:        'alta', // TODO: introduce wo_detail_pop once field set is defined
+}
 
 // ── Form ─────────────────────────────────────────────────────
 
@@ -25,6 +40,7 @@ interface FormValues {
   operator_id: string
   line: string
   work_type: WorkType | ''
+  service_item_id: string
   priority: 'normal' | 'alta' | 'urgente'
   address: string
   postal_code: string
@@ -38,6 +54,7 @@ const EMPTY_FORM: FormValues = {
   operator_id: '',
   line: 'NE3',
   work_type: '',
+  service_item_id: '',
   priority: 'normal',
   address: '',
   postal_code: '',
@@ -56,6 +73,7 @@ export function WorkOrderFormPage() {
   const [clients, setClients] = useState<{ id: string; name: string; code: string }[]>([])
   const [projects, setProjects] = useState<{ id: string; name: string; code: string; client_id: string | null }[]>([])
   const [operators, setOperators] = useState<{ id: string; name: string; code: string }[]>([])
+  const [serviceItems, setServiceItems] = useState<ServiceItemWithRelations[]>([])
   const [isLoading, setIsLoading] = useState(isEdit)
   const [isSaving, setIsSaving] = useState(false)
   const [errors, setErrors] = useState<Partial<Record<keyof FormValues, string>>>({})
@@ -68,6 +86,21 @@ export function WorkOrderFormPage() {
     fetchProjects().then(({ data }) => setProjects(data))
   }, [])
 
+  // Load service items scoped to the selected operator (global items
+  // always included; operator-specific items merge in when operator is set).
+  useEffect(() => {
+    const operatorId = form.operator_id || undefined
+    fetchServiceItems({ operatorId: operatorId ?? null }).then(({ data }) => {
+      // When no operator is selected we show all active items, not just globals,
+      // so the admin can pick before picking operator if needed.
+      if (!operatorId) {
+        fetchServiceItems().then(({ data: allData }) => setServiceItems(allData))
+      } else {
+        setServiceItems(data)
+      }
+    })
+  }, [form.operator_id])
+
   // Load existing order for edit
   useEffect(() => {
     if (!isEdit || !id) return
@@ -79,6 +112,7 @@ export function WorkOrderFormPage() {
         operator_id: data.operator_id,
         line: data.line,
         work_type: data.work_type,
+        service_item_id: (data as { service_item_id?: string | null }).service_item_id ?? '',
         priority: data.priority,
         address: data.address ?? '',
         postal_code: data.postal_code ?? '',
@@ -117,6 +151,7 @@ export function WorkOrderFormPage() {
     if (!form.client_id) e.client_id = 'Pflichtfeld'
     if (!form.project_id) e.project_id = 'Pflichtfeld'
     if (!form.operator_id) e.operator_id = 'Pflichtfeld'
+    if (!form.service_item_id) e.service_item_id = 'Pflichtfeld'
     if (!form.work_type) e.work_type = 'Pflichtfeld'
     setErrors(e)
     return Object.keys(e).length === 0
@@ -136,6 +171,7 @@ export function WorkOrderFormPage() {
       operator_id: form.operator_id,
       line: form.line,
       work_type: form.work_type,
+      service_item_id: form.service_item_id || null,
       priority: form.priority,
       address: form.address || null,
       postal_code: form.postal_code || null,
@@ -267,22 +303,74 @@ export function WorkOrderFormPage() {
               </select>
             </div>
 
-            {/* Work type */}
-            <div>
+            {/* Service item — canonical catalog selector.
+                Driven by the operator's rate-card; selecting an item sets
+                both service_item_id (for invoicing) and work_type (for the
+                wo_detail_* shape). */}
+            <div className="sm:col-span-2">
               <label className="mb-1 block text-xs font-medium text-gf-text-muted">
-                Arbeitstyp <span className="text-gf-danger">*</span>
+                Leistung (Katalog) <span className="text-gf-danger">*</span>
               </label>
               <select
-                value={form.work_type}
-                onChange={(e) => { setField('work_type', e.target.value as WorkType); setDetail({}) }}
-                className={`w-full rounded-gf-btn border px-3 py-2 text-sm text-gf-text focus:outline-none focus:ring-1 focus:ring-gf-primary ${errors.work_type ? 'border-gf-danger bg-gf-danger/5' : 'border-gf-border bg-gf-surface'}`}
+                value={form.service_item_id}
+                onChange={(e) => {
+                  const selectedId = e.target.value
+                  const selected = serviceItems.find((si) => si.id === selectedId) ?? null
+                  const derivedWorkType = selected?.detail_form
+                    ? DETAIL_FORM_TO_WORK_TYPE[selected.detail_form]
+                    : ''
+                  setForm((f) => ({
+                    ...f,
+                    service_item_id: selectedId,
+                    work_type: derivedWorkType as WorkType | '',
+                  }))
+                  setErrors((er) => ({ ...er, service_item_id: undefined, work_type: undefined }))
+                  setDetail({})
+                }}
+                className={`w-full rounded-gf-btn border px-3 py-2 text-sm text-gf-text focus:outline-none focus:ring-1 focus:ring-gf-primary ${errors.service_item_id ? 'border-gf-danger bg-gf-danger/5' : 'border-gf-border bg-gf-surface'}`}
               >
-                <option value="">— Typ wählen —</option>
-                {Object.entries(WORK_TYPE_LABELS).map(([val, label]) => (
-                  <option key={val} value={val}>{label}</option>
+                <option value="">— Leistung aus Katalog wählen —</option>
+                {serviceItems.map((si) => (
+                  <option key={si.id} value={si.id}>
+                    {si.code} — {si.description_de}
+                  </option>
                 ))}
               </select>
-              {errors.work_type && <p className="mt-1 text-xs text-gf-danger">{errors.work_type}</p>}
+              {form.service_item_id && (() => {
+                const selected = serviceItems.find((si) => si.id === form.service_item_id)
+                if (!selected) return null
+                return (
+                  <div className="mt-2 rounded-gf-btn border border-gf-primary/20 bg-gf-primary/5 p-2 text-xs text-gf-text-muted">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-semibold text-gf-primary">{selected.code}</span>
+                      {selected.unit && <span>· {selected.unit}</span>}
+                      {selected.unit_price != null && (
+                        <span>· {selected.unit_price.toFixed(2)} €</span>
+                      )}
+                      {selected.operators?.code && <span>· {selected.operators.code}</span>}
+                    </div>
+                    {selected.description_es && (
+                      <p className="mt-1 italic">ES: {selected.description_es}</p>
+                    )}
+                  </div>
+                )
+              })()}
+              {errors.service_item_id && <p className="mt-1 text-xs text-gf-danger">{errors.service_item_id}</p>}
+            </div>
+
+            {/* Legacy work_type — derived, kept for backwards compat with
+                existing wo_detail_* tables. Shown read-only so admins see
+                which detail form the catalog item routes to. */}
+            <div className="sm:col-span-2">
+              <label className="mb-1 block text-xs font-medium text-gf-text-muted">
+                Arbeitstyp (abgeleitet aus Katalog)
+              </label>
+              <input
+                type="text"
+                value={form.work_type ? (WORK_TYPE_LABELS[form.work_type as WorkType] ?? form.work_type) : '—'}
+                readOnly
+                className="w-full rounded-gf-btn border border-gf-border bg-gf-surface/50 px-3 py-2 text-sm text-gf-text-muted"
+              />
             </div>
 
             {/* Priority */}

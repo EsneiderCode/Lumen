@@ -5,6 +5,7 @@ const NAV_ITEMS = [
   { label: 'Dashboard', path: ROUTES.ADMIN.DASHBOARD, icon: '📊' },
   { label: 'Aufträge', path: ROUTES.ADMIN.ORDERS, icon: '📋' },
   { label: 'Zertifizierung', path: ROUTES.ADMIN.CERTIFICATION, icon: '✅' },
+  { label: 'Service-Katalog', path: ROUTES.ADMIN.SERVICE_ITEMS, icon: '📑' },
   { label: 'Personal', path: ROUTES.ADMIN.PERSONNEL, icon: '👥' },
   { label: 'Material', path: ROUTES.ADMIN.MATERIALS, icon: '📦' },
   { label: 'Einstellungen', path: ROUTES.ADMIN.SETTINGS, icon: '⚙️' },

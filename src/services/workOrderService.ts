@@ -70,6 +70,17 @@ export interface WorkOrderWithRelations extends WorkOrderRow {
   assignedProfile?: { full_name: string } | null
   // Added in migration 002; not yet reflected in database.types.ts
   assigned_detail_snapshot?: Record<string, unknown> | null
+  // Added in service_catalog_v1 migration
+  service_item_id?: string | null
+  service_items?: {
+    id: string
+    code: string
+    description_de: string
+    description_es: string | null
+    unit: string | null
+    unit_price: number | null
+    detail_form: string | null
+  } | null
 }
 
 export interface WorkOrderFilters {
@@ -173,7 +184,8 @@ export async function fetchWorkOrder(id: string) {
       *,
       clients ( name, code ),
       projects ( name, code ),
-      operators ( name, code )
+      operators ( name, code ),
+      service_items ( id, code, description_de, description_es, unit, unit_price, detail_form )
     `)
     .eq('id', id)
     .single()
