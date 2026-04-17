@@ -41,6 +41,7 @@ export const WorkType = {
   ALTA: 'alta',
   NT_INSTALLATION: 'nt_installation',
   PATCHKABEL: 'patchkabel',
+  POP: 'pop',
 } as const
 
 export type WorkType = (typeof WorkType)[keyof typeof WorkType]

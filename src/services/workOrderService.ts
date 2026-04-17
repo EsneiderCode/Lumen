@@ -289,6 +289,7 @@ type DetailTable =
   | 'wo_detail_alta'
   | 'wo_detail_nt'
   | 'wo_detail_patchkabel'
+  | 'wo_detail_pop'
 
 export function workTypeToDetailTable(workType: WorkType): DetailTable {
   const map: Record<WorkType, DetailTable> = {
@@ -298,6 +299,7 @@ export function workTypeToDetailTable(workType: WorkType): DetailTable {
     alta: 'wo_detail_alta',
     nt_installation: 'wo_detail_nt',
     patchkabel: 'wo_detail_patchkabel',
+    pop: 'wo_detail_pop',
   }
   return map[workType]
 }

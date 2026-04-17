@@ -8,9 +8,19 @@ import {
 import {
   ALLOWED_DOCUMENT_EXTENSIONS,
   ALLOWED_DOCUMENT_MIME_TYPES,
+  ALLOWED_DIAGRAM_EXTENSIONS,
+  ALLOWED_DIAGRAM_MIME_TYPES,
   type DocumentType,
   type WorkOrderDocument,
 } from '@/types/work-order-documents'
+
+/** Diagrams accept images too (rack layouts are often PNG/JPG). */
+function allowedMimesFor(type: DocumentType): readonly string[] {
+  return type === 'diagrama_routing' ? ALLOWED_DIAGRAM_MIME_TYPES : ALLOWED_DOCUMENT_MIME_TYPES
+}
+function allowedExtensionsFor(type: DocumentType): readonly string[] {
+  return type === 'diagrama_routing' ? ALLOWED_DIAGRAM_EXTENSIONS : ALLOWED_DOCUMENT_EXTENSIONS
+}
 
 /**
  * Two modes:
@@ -56,6 +66,7 @@ function iconForMime(mime: string | null): string {
   if (!mime) return '📄'
   if (mime.includes('pdf')) return '📕'
   if (mime.includes('spreadsheet') || mime.includes('excel')) return '📊'
+  if (mime.includes('image')) return '🖼️'
   return '📄'
 }
 
@@ -88,9 +99,12 @@ export function DocumentUploader(props: DocumentUploaderProps) {
     return () => { cancelled = true }
   }, [isStaged, readOnly, documentType, props])
 
+  const allowedMimes = allowedMimesFor(documentType)
+  const allowedExtensions = allowedExtensionsFor(documentType)
+
   function validateFile(file: File): string | null {
-    if (!ALLOWED_DOCUMENT_MIME_TYPES.includes(file.type as typeof ALLOWED_DOCUMENT_MIME_TYPES[number])) {
-      return `Dateityp nicht unterstützt: ${file.name}. Nur PDF oder Excel.`
+    if (!allowedMimes.includes(file.type)) {
+      return `Dateityp nicht unterstützt: ${file.name}. Erlaubt: ${allowedExtensions.join(', ')}.`
     }
     return null
   }
@@ -182,8 +196,8 @@ export function DocumentUploader(props: DocumentUploaderProps) {
               <span>📎</span>
               <span>
                 {isStaged
-                  ? `Dokument auswählen (${ALLOWED_DOCUMENT_EXTENSIONS.join(', ')})`
-                  : `PDF oder Excel hochladen (${ALLOWED_DOCUMENT_EXTENSIONS.join(', ')})`}
+                  ? `Dokument auswählen (${allowedExtensions.join(', ')})`
+                  : `Hochladen (${allowedExtensions.join(', ')})`}
               </span>
             </>
           )}
@@ -191,7 +205,7 @@ export function DocumentUploader(props: DocumentUploaderProps) {
             ref={inputRef}
             id={`doc-input-${documentType}`}
             type="file"
-            accept={ALLOWED_DOCUMENT_EXTENSIONS.join(',')}
+            accept={allowedExtensions.join(',')}
             multiple
             className="hidden"
             onChange={(e) => handleFiles(e.target.files)}

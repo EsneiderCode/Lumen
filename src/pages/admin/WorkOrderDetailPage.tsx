@@ -25,6 +25,30 @@ import { DocumentUploader } from '@/components/ui/DocumentUploader'
 // central-site installations, not customer installations.
 const INFRA_DETAIL_FORMS = new Set(['soplado', 'fusion_ap', 'fusion_dp', 'pop'])
 
+// detail_form -> document types to render on the detail page, matching
+// WorkOrderFormPage. Keep in sync.
+const DOCUMENT_TYPES_BY_DETAIL_FORM: Record<string, Array<{
+  type: 'plano' | 'cartas_empalme' | 'diagrama_routing'
+  label: string
+  hint: string
+}>> = {
+  soplado: [
+    { type: 'plano',          label: 'Plan / Trassenplan',                       hint: 'PDF oder Excel' },
+    { type: 'cartas_empalme', label: 'Spleißprotokolle (Cartas de empalme)',     hint: 'PDF oder Excel' },
+  ],
+  fusion_ap: [
+    { type: 'plano',          label: 'Plan / Trassenplan',                       hint: 'PDF oder Excel' },
+    { type: 'cartas_empalme', label: 'Spleißprotokolle (Cartas de empalme)',     hint: 'PDF oder Excel' },
+  ],
+  fusion_dp: [
+    { type: 'plano',          label: 'Plan / Trassenplan',                       hint: 'PDF oder Excel' },
+    { type: 'cartas_empalme', label: 'Spleißprotokolle (Cartas de empalme)',     hint: 'PDF oder Excel' },
+  ],
+  pop: [
+    { type: 'diagrama_routing', label: 'Diagramm Routing-Pipes',                 hint: 'PDF, Excel oder Bild' },
+  ],
+}
+
 type PhotoType = 'before' | 'during' | 'after'
 
 interface Photo {
@@ -426,34 +450,35 @@ export function WorkOrderDetailPage() {
         </div>
       )}
 
-      {/* Supporting documents — for infra work (soplado, fusion, POP)
-          show plano + cartas de empalme alongside the order data. */}
-      {order.service_items?.detail_form && INFRA_DETAIL_FORMS.has(order.service_items.detail_form) && user && (
-        <div className="rounded-gf-card border border-gf-border bg-gf-card p-5">
-          <div className="mb-4">
-            <h3 className="font-display text-sm font-semibold text-gf-text">Unterstützende Dokumente</h3>
-            <p className="mt-0.5 text-xs text-gf-text-muted">
-              Plan und Spleißprotokolle — PDF oder Excel
-            </p>
+      {/* Supporting documents — uploaders per catalog detail_form. */}
+      {(() => {
+        const detailForm = order.service_items?.detail_form
+        if (!detailForm || !INFRA_DETAIL_FORMS.has(detailForm) || !user) return null
+        const docTypes = DOCUMENT_TYPES_BY_DETAIL_FORM[detailForm] ?? []
+        if (docTypes.length === 0) return null
+        return (
+          <div className="rounded-gf-card border border-gf-border bg-gf-card p-5">
+            <div className="mb-4">
+              <h3 className="font-display text-sm font-semibold text-gf-text">Unterstützende Dokumente</h3>
+              <p className="mt-0.5 text-xs text-gf-text-muted">
+                {docTypes.map((d) => d.label).join(' · ')}
+              </p>
+            </div>
+            <div className={`grid grid-cols-1 gap-5 ${docTypes.length > 1 ? 'md:grid-cols-2' : ''}`}>
+              {docTypes.map((doc) => (
+                <DocumentUploader
+                  key={doc.type}
+                  workOrderId={order.id}
+                  uploadedBy={user.id}
+                  documentType={doc.type}
+                  label={doc.label}
+                  hint={doc.hint}
+                />
+              ))}
+            </div>
           </div>
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-            <DocumentUploader
-              workOrderId={order.id}
-              uploadedBy={user.id}
-              documentType="plano"
-              label="Plan / Trassenplan"
-              hint="PDF oder Excel"
-            />
-            <DocumentUploader
-              workOrderId={order.id}
-              uploadedBy={user.id}
-              documentType="cartas_empalme"
-              label="Spleißprotokolle (Cartas de empalme)"
-              hint="PDF oder Excel"
-            />
-          </div>
-        </div>
-      )}
+        )
+      })()}
 
       {/* Service item — canonical rate-card reference */}
       {order.service_items && (

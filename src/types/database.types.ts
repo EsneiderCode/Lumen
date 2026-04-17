@@ -448,6 +448,33 @@ export type Database = {
         Relationships: never[]
       }
 
+      wo_detail_pop: {
+        Row: {
+          id: string
+          work_order_id: string
+          rack_id: string | null
+          tray_count: number | null
+          cable_entry_points: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          work_order_id: string
+          rack_id?: string | null
+          tray_count?: number | null
+          cable_entry_points?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          work_order_id?: string
+          rack_id?: string | null
+          tray_count?: number | null
+          cable_entry_points?: string | null
+        }
+        Relationships: never[]
+      }
+
       wo_detail_patchkabel: {
         Row: {
           id: string

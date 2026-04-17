@@ -25,17 +25,35 @@ import type { DocumentType } from '@/types/work-order-documents'
 // Catalog detail_form values for infrastructure work (trenches, splice
 // boxes, POP central sites) rather than street-address-based customer
 // installations. For these we hide the address card and show the
-// supporting-document uploaders (plano, cartas de empalme). We key on
-// detail_form from the service catalog — not the legacy work_type enum —
-// because multiple catalog items can map to the same legacy work_type
-// (e.g. POP items route to 'alta' work_type for DB compat but must still
-// be treated as infra).
+// supporting-document uploaders. We key on detail_form from the service
+// catalog — not the legacy work_type enum — so the UI can split per
+// catalog class even if multiple classes share a work_type.
 const INFRA_DETAIL_FORMS = new Set(['soplado', 'fusion_ap', 'fusion_dp', 'pop'])
 
-// Catalog detail_form values that don't have a dedicated wo_detail_* table
-// and should not render the Details section. POP items currently fall here
-// until a wo_detail_pop schema is defined.
-const NO_DETAIL_FORMS = new Set(['pop'])
+// detail_form -> document types the admin should attach when creating
+// the order. Soplado/fusion carry plano (input) + cartas de empalme
+// (splice output). POP carries the routing-pipe diagram.
+const DOCUMENT_TYPES_BY_DETAIL_FORM: Record<string, Array<{
+  type: 'plano' | 'cartas_empalme' | 'diagrama_routing'
+  label: string
+  hint: string
+}>> = {
+  soplado: [
+    { type: 'plano',          label: 'Plan / Trassenplan',                       hint: 'PDF oder Excel' },
+    { type: 'cartas_empalme', label: 'Spleißprotokolle (Cartas de empalme)',     hint: 'PDF oder Excel' },
+  ],
+  fusion_ap: [
+    { type: 'plano',          label: 'Plan / Trassenplan',                       hint: 'PDF oder Excel' },
+    { type: 'cartas_empalme', label: 'Spleißprotokolle (Cartas de empalme)',     hint: 'PDF oder Excel' },
+  ],
+  fusion_dp: [
+    { type: 'plano',          label: 'Plan / Trassenplan',                       hint: 'PDF oder Excel' },
+    { type: 'cartas_empalme', label: 'Spleißprotokolle (Cartas de empalme)',     hint: 'PDF oder Excel' },
+  ],
+  pop: [
+    { type: 'diagrama_routing', label: 'Diagramm Routing-Pipes',                 hint: 'PDF, Excel oder Bild' },
+  ],
+}
 
 // Map service-item detail_form -> legacy work_type enum value used by
 // wo_detail_* tables. 'pop' is a new category with no legacy detail table
@@ -47,7 +65,7 @@ const DETAIL_FORM_TO_WORK_TYPE: Record<string, WorkType> = {
   alta:       'alta',
   nt:         'nt_installation',
   patchkabel: 'patchkabel',
-  pop:        'alta', // TODO: introduce wo_detail_pop once field set is defined
+  pop:        'pop',
 }
 
 // ── Form ─────────────────────────────────────────────────────
@@ -102,6 +120,7 @@ export function WorkOrderFormPage() {
   const [stagedDocs, setStagedDocs] = useState<Record<DocumentType, File[]>>({
     plano: [],
     cartas_empalme: [],
+    diagrama_routing: [],
     other: [],
   })
 
@@ -245,7 +264,7 @@ export function WorkOrderFormPage() {
           // Clear the successfully uploaded staged files so retry uploads
           // the remaining ones cleanly — simplest: clear all and let the
           // admin view the detail page for the partial state.
-          setStagedDocs({ plano: [], cartas_empalme: [], other: [] })
+          setStagedDocs({ plano: [], cartas_empalme: [], diagrama_routing: [], other: [] })
           return
         }
       }
@@ -267,9 +286,9 @@ export function WorkOrderFormPage() {
   const selectedServiceItem = serviceItems.find((si) => si.id === form.service_item_id) ?? null
   const selectedDetailForm = selectedServiceItem?.detail_form ?? null
   const isInfra = selectedDetailForm ? INFRA_DETAIL_FORMS.has(selectedDetailForm) : false
-  const skipDetail = selectedDetailForm ? NO_DETAIL_FORMS.has(selectedDetailForm) : false
+  const documentTypes = selectedDetailForm ? DOCUMENT_TYPES_BY_DETAIL_FORM[selectedDetailForm] ?? [] : []
 
-  const detailFields = !skipDetail && form.work_type ? DETAIL_FIELDS[form.work_type] : []
+  const detailFields = form.work_type ? DETAIL_FIELDS[form.work_type] ?? [] : []
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -505,46 +524,33 @@ export function WorkOrderFormPage() {
                 anstelle einer Adresse relevant.
               </p>
             </div>
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-              {isEdit && id && user ? (
-                <>
+            <div className={`grid grid-cols-1 gap-5 ${documentTypes.length > 1 ? 'md:grid-cols-2' : ''}`}>
+              {documentTypes.map((doc) => {
+                if (isEdit && id && user) {
+                  return (
+                    <DocumentUploader
+                      key={doc.type}
+                      workOrderId={id}
+                      uploadedBy={user.id}
+                      documentType={doc.type}
+                      label={doc.label}
+                      hint={doc.hint}
+                    />
+                  )
+                }
+                return (
                   <DocumentUploader
-                    workOrderId={id}
-                    uploadedBy={user.id}
-                    documentType="plano"
-                    label="Plan / Trassenplan"
-                    hint="PDF oder Excel"
-                  />
-                  <DocumentUploader
-                    workOrderId={id}
-                    uploadedBy={user.id}
-                    documentType="cartas_empalme"
-                    label="Spleißprotokolle (Cartas de empalme)"
-                    hint="PDF oder Excel"
-                  />
-                </>
-              ) : (
-                <>
-                  <DocumentUploader
-                    documentType="plano"
-                    label="Plan / Trassenplan"
-                    hint="PDF oder Excel · wird beim Speichern hochgeladen"
-                    stagedFiles={stagedDocs.plano}
+                    key={doc.type}
+                    documentType={doc.type}
+                    label={doc.label}
+                    hint={`${doc.hint} · wird beim Speichern hochgeladen`}
+                    stagedFiles={stagedDocs[doc.type]}
                     onStagedFilesChange={(files) =>
-                      setStagedDocs((d) => ({ ...d, plano: files }))
+                      setStagedDocs((d) => ({ ...d, [doc.type]: files }))
                     }
                   />
-                  <DocumentUploader
-                    documentType="cartas_empalme"
-                    label="Spleißprotokolle (Cartas de empalme)"
-                    hint="PDF oder Excel · wird beim Speichern hochgeladen"
-                    stagedFiles={stagedDocs.cartas_empalme}
-                    onStagedFilesChange={(files) =>
-                      setStagedDocs((d) => ({ ...d, cartas_empalme: files }))
-                    }
-                  />
-                </>
-              )}
+                )
+              })}
             </div>
           </div>
         )}
