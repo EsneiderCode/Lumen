@@ -133,11 +133,16 @@ export function WorkOrderDetailPage() {
 
   async function handleCertify() {
     if (!order || !user) return
-    // LUM-024: generate audit hash before transitioning
+    // LUM-024: generate audit hash before transitioning.
+    // Include sorted photo paths so swapping a photo post-certification
+    // invalidates the hash — photos are load-bearing evidence, they must
+    // be covered by the integrity seal.
+    const photoPaths = photos.map((p) => p.storage_path).sort()
     const hashData = {
       order_number: order.order_number,
       work_type: order.work_type,
       detail,
+      photo_paths: photoPaths,
       certified_by: user.id,
       certified_at: new Date().toISOString(),
     }
