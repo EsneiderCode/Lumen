@@ -18,6 +18,36 @@ import { generateCertificatePdf } from '@/services/pdfService'
 import type { WorkOrderStatus } from '@/types/enums'
 import { STATUS_LABELS, WORK_TYPE_LABELS, DETAIL_FIELD_LABELS, PHOTO_LABELS } from '@/constants/labels'
 import { STATUS_COLORS, TEAM_DOT } from '@/constants/styles'
+import { DocumentUploader } from '@/components/ui/DocumentUploader'
+
+// Catalog detail_form values for infra work — hide address, show
+// supporting-document uploaders. POP items live here too: they're
+// central-site installations, not customer installations.
+const INFRA_DETAIL_FORMS = new Set(['soplado', 'fusion_ap', 'fusion_dp', 'pop'])
+
+// detail_form -> document types to render on the detail page, matching
+// WorkOrderFormPage. Keep in sync.
+const DOCUMENT_TYPES_BY_DETAIL_FORM: Record<string, Array<{
+  type: 'plano' | 'cartas_empalme' | 'diagrama_routing'
+  label: string
+  hint: string
+}>> = {
+  soplado: [
+    { type: 'plano',          label: 'Plan / Trassenplan',                       hint: 'PDF oder Excel' },
+    { type: 'cartas_empalme', label: 'Spleißprotokolle (Cartas de empalme)',     hint: 'PDF oder Excel' },
+  ],
+  fusion_ap: [
+    { type: 'plano',          label: 'Plan / Trassenplan',                       hint: 'PDF oder Excel' },
+    { type: 'cartas_empalme', label: 'Spleißprotokolle (Cartas de empalme)',     hint: 'PDF oder Excel' },
+  ],
+  fusion_dp: [
+    { type: 'plano',          label: 'Plan / Trassenplan',                       hint: 'PDF oder Excel' },
+    { type: 'cartas_empalme', label: 'Spleißprotokolle (Cartas de empalme)',     hint: 'PDF oder Excel' },
+  ],
+  pop: [
+    { type: 'diagrama_routing', label: 'Diagramm Routing-Pipes',                 hint: 'PDF, Excel oder Bild' },
+  ],
+}
 
 type PhotoType = 'before' | 'during' | 'after'
 
@@ -417,6 +447,64 @@ export function WorkOrderDetailPage() {
       {error && (
         <div className="rounded-gf-btn border border-gf-danger/30 bg-gf-danger/10 px-4 py-3 text-sm text-rose-700">
           {error}
+        </div>
+      )}
+
+      {/* Supporting documents — uploaders per catalog detail_form. */}
+      {(() => {
+        const detailForm = order.service_items?.detail_form
+        if (!detailForm || !INFRA_DETAIL_FORMS.has(detailForm) || !user) return null
+        const docTypes = DOCUMENT_TYPES_BY_DETAIL_FORM[detailForm] ?? []
+        if (docTypes.length === 0) return null
+        return (
+          <div className="rounded-gf-card border border-gf-border bg-gf-card p-5">
+            <div className="mb-4">
+              <h3 className="font-display text-sm font-semibold text-gf-text">Unterstützende Dokumente</h3>
+              <p className="mt-0.5 text-xs text-gf-text-muted">
+                {docTypes.map((d) => d.label).join(' · ')}
+              </p>
+            </div>
+            <div className={`grid grid-cols-1 gap-5 ${docTypes.length > 1 ? 'md:grid-cols-2' : ''}`}>
+              {docTypes.map((doc) => (
+                <DocumentUploader
+                  key={doc.type}
+                  workOrderId={order.id}
+                  uploadedBy={user.id}
+                  documentType={doc.type}
+                  label={doc.label}
+                  hint={doc.hint}
+                />
+              ))}
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* Service item — canonical rate-card reference */}
+      {order.service_items && (
+        <div className="rounded-gf-card border border-gf-primary/40 bg-gf-primary/5 p-4">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="min-w-0 flex-1">
+              <p className="font-mono text-xs font-semibold uppercase tracking-wide text-gf-primary">
+                Leistung (Katalog)
+              </p>
+              <p className="mt-1 flex items-center gap-2 flex-wrap">
+                <span className="font-mono text-sm font-bold text-gf-primary">{order.service_items.code}</span>
+                <span className="text-sm text-gf-text">{order.service_items.description_de}</span>
+              </p>
+              {order.service_items.description_es && (
+                <p className="mt-0.5 text-xs italic text-gf-text-muted">
+                  ES: {order.service_items.description_es}
+                </p>
+              )}
+            </div>
+            <div className="flex items-center gap-3 text-xs text-gf-text-muted font-mono">
+              {order.service_items.unit && <span>{order.service_items.unit}</span>}
+              {order.service_items.unit_price != null && (
+                <span className="text-gf-text">{order.service_items.unit_price.toFixed(2)} €</span>
+              )}
+            </div>
+          </div>
         </div>
       )}
 

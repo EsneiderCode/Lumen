@@ -20,6 +20,7 @@ const WorkOrderFormPage  = lazy(() => import('@/pages/admin/WorkOrderFormPage').
 const WorkOrderAssignPage = lazy(() => import('@/pages/admin/WorkOrderAssignPage').then(m => ({ default: m.WorkOrderAssignPage })))
 const WorkOrderDetailPage = lazy(() => import('@/pages/admin/WorkOrderDetailPage').then(m => ({ default: m.WorkOrderDetailPage })))
 const CertificationPage  = lazy(() => import('@/pages/admin/CertificationPage').then(m => ({ default: m.CertificationPage })))
+const ServiceItemsPage   = lazy(() => import('@/pages/admin/ServiceItemsPage').then(m => ({ default: m.ServiceItemsPage })))
 
 // Technician chunk (field technicians on slow connections — keep lean)
 const TechDashboard      = lazy(() => import('@/pages/technician/TechDashboard').then(m => ({ default: m.TechDashboard })))
@@ -51,6 +52,7 @@ function App() {
                 <Route path={ROUTES.ADMIN.ORDERS_ASSIGN} element={<WorkOrderAssignPage />} />
                 <Route path={ROUTES.ADMIN.ORDERS_DETAIL} element={<WorkOrderDetailPage />} />
                 <Route path={ROUTES.ADMIN.CERTIFICATION} element={<CertificationPage />} />
+                <Route path={ROUTES.ADMIN.SERVICE_ITEMS} element={<ServiceItemsPage />} />
               </Route>
             </Route>
 

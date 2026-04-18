@@ -68,8 +68,16 @@ export interface WorkOrderWithRelations extends WorkOrderRow {
   projects: { name: string; code: string } | null
   operators: { name: string; code: string } | null
   assignedProfile?: { full_name: string } | null
-  // Added in migration 002; not yet reflected in database.types.ts
-  assigned_detail_snapshot?: Record<string, unknown> | null
+  // service_items join populated by fetchWorkOrder + list fetches
+  service_items?: {
+    id: string
+    code: string
+    description_de: string
+    description_es: string | null
+    unit: string | null
+    unit_price: number | null
+    detail_form: string | null
+  } | null
 }
 
 export interface WorkOrderFilters {
@@ -173,7 +181,8 @@ export async function fetchWorkOrder(id: string) {
       *,
       clients ( name, code ),
       projects ( name, code ),
-      operators ( name, code )
+      operators ( name, code ),
+      service_items ( id, code, description_de, description_es, unit, unit_price, detail_form )
     `)
     .eq('id', id)
     .single()
@@ -280,6 +289,7 @@ type DetailTable =
   | 'wo_detail_alta'
   | 'wo_detail_nt'
   | 'wo_detail_patchkabel'
+  | 'wo_detail_pop'
 
 export function workTypeToDetailTable(workType: WorkType): DetailTable {
   const map: Record<WorkType, DetailTable> = {
@@ -289,6 +299,7 @@ export function workTypeToDetailTable(workType: WorkType): DetailTable {
     alta: 'wo_detail_alta',
     nt_installation: 'wo_detail_nt',
     patchkabel: 'wo_detail_patchkabel',
+    pop: 'wo_detail_pop',
   }
   return map[workType]
 }

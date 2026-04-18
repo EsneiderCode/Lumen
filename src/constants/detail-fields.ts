@@ -59,4 +59,14 @@ export const DETAIL_FIELDS: Record<WorkType, DetailField[]> = {
     },
     { key: 'test_result', label: 'Testergebnis', type: 'select', options: ['OK', 'NOK', 'Ausstehend'] },
   ],
+  pop: [
+    { key: 'rack_id', label: 'Rack-ID', type: 'text', placeholder: 'z.B. RACK-A-04' },
+    { key: 'tray_count', label: 'Bandbahnen (Anzahl)', type: 'number', placeholder: '0' },
+    {
+      key: 'cable_entry_points',
+      label: 'Kabel-Eingangspunkte',
+      type: 'text',
+      placeholder: 'z.B. Nord: 12 Kabel · Süd: 8 Kabel · Boden: 4 Kabel',
+    },
+  ],
 }

@@ -16,6 +16,57 @@ import {
 import type { WorkType } from '@/types/enums'
 import { WORK_TYPE_LABELS } from '@/constants/labels'
 import { DETAIL_FIELDS } from '@/constants/detail-fields'
+import { fetchServiceItems } from '@/services/serviceItemService'
+import type { ServiceItemWithRelations } from '@/types/service-items'
+import { DocumentUploader } from '@/components/ui/DocumentUploader'
+import { uploadWorkOrderDocument } from '@/services/workOrderDocumentService'
+import type { DocumentType } from '@/types/work-order-documents'
+
+// Catalog detail_form values for infrastructure work (trenches, splice
+// boxes, POP central sites) rather than street-address-based customer
+// installations. For these we hide the address card and show the
+// supporting-document uploaders. We key on detail_form from the service
+// catalog — not the legacy work_type enum — so the UI can split per
+// catalog class even if multiple classes share a work_type.
+const INFRA_DETAIL_FORMS = new Set(['soplado', 'fusion_ap', 'fusion_dp', 'pop'])
+
+// detail_form -> document types the admin should attach when creating
+// the order. Soplado/fusion carry plano (input) + cartas de empalme
+// (splice output). POP carries the routing-pipe diagram.
+const DOCUMENT_TYPES_BY_DETAIL_FORM: Record<string, Array<{
+  type: 'plano' | 'cartas_empalme' | 'diagrama_routing'
+  label: string
+  hint: string
+}>> = {
+  soplado: [
+    { type: 'plano',          label: 'Plan / Trassenplan',                       hint: 'PDF oder Excel' },
+    { type: 'cartas_empalme', label: 'Spleißprotokolle (Cartas de empalme)',     hint: 'PDF oder Excel' },
+  ],
+  fusion_ap: [
+    { type: 'plano',          label: 'Plan / Trassenplan',                       hint: 'PDF oder Excel' },
+    { type: 'cartas_empalme', label: 'Spleißprotokolle (Cartas de empalme)',     hint: 'PDF oder Excel' },
+  ],
+  fusion_dp: [
+    { type: 'plano',          label: 'Plan / Trassenplan',                       hint: 'PDF oder Excel' },
+    { type: 'cartas_empalme', label: 'Spleißprotokolle (Cartas de empalme)',     hint: 'PDF oder Excel' },
+  ],
+  pop: [
+    { type: 'diagrama_routing', label: 'Diagramm Routing-Pipes',                 hint: 'PDF, Excel oder Bild' },
+  ],
+}
+
+// Map service-item detail_form -> legacy work_type enum value used by
+// wo_detail_* tables. 'pop' is a new category with no legacy detail table
+// yet, so it is rendered with a generic detail shape (alta-style).
+const DETAIL_FORM_TO_WORK_TYPE: Record<string, WorkType> = {
+  soplado:    'soplado',
+  fusion_ap:  'fusion_ap',
+  fusion_dp:  'fusion_dp',
+  alta:       'alta',
+  nt:         'nt_installation',
+  patchkabel: 'patchkabel',
+  pop:        'pop',
+}
 
 // ── Form ─────────────────────────────────────────────────────
 
@@ -25,6 +76,7 @@ interface FormValues {
   operator_id: string
   line: string
   work_type: WorkType | ''
+  service_item_id: string
   priority: 'normal' | 'alta' | 'urgente'
   address: string
   postal_code: string
@@ -38,6 +90,7 @@ const EMPTY_FORM: FormValues = {
   operator_id: '',
   line: 'NE3',
   work_type: '',
+  service_item_id: '',
   priority: 'normal',
   address: '',
   postal_code: '',
@@ -56,10 +109,20 @@ export function WorkOrderFormPage() {
   const [clients, setClients] = useState<{ id: string; name: string; code: string }[]>([])
   const [projects, setProjects] = useState<{ id: string; name: string; code: string; client_id: string | null }[]>([])
   const [operators, setOperators] = useState<{ id: string; name: string; code: string }[]>([])
+  const [serviceItems, setServiceItems] = useState<ServiceItemWithRelations[]>([])
   const [isLoading, setIsLoading] = useState(isEdit)
   const [isSaving, setIsSaving] = useState(false)
   const [errors, setErrors] = useState<Partial<Record<keyof FormValues, string>>>({})
   const [saveError, setSaveError] = useState<string | null>(null)
+
+  // Staged documents — collected locally on new orders, uploaded after
+  // the order is created and we have an id to attach them to.
+  const [stagedDocs, setStagedDocs] = useState<Record<DocumentType, File[]>>({
+    plano: [],
+    cartas_empalme: [],
+    diagrama_routing: [],
+    other: [],
+  })
 
   // Load lookups
   useEffect(() => {
@@ -67,6 +130,21 @@ export function WorkOrderFormPage() {
     fetchOperators().then(({ data }) => setOperators(data))
     fetchProjects().then(({ data }) => setProjects(data))
   }, [])
+
+  // Load service items scoped to the selected operator (global items
+  // always included; operator-specific items merge in when operator is set).
+  useEffect(() => {
+    const operatorId = form.operator_id || undefined
+    fetchServiceItems({ operatorId: operatorId ?? null }).then(({ data }) => {
+      // When no operator is selected we show all active items, not just globals,
+      // so the admin can pick before picking operator if needed.
+      if (!operatorId) {
+        fetchServiceItems().then(({ data: allData }) => setServiceItems(allData))
+      } else {
+        setServiceItems(data)
+      }
+    })
+  }, [form.operator_id])
 
   // Load existing order for edit
   useEffect(() => {
@@ -79,6 +157,7 @@ export function WorkOrderFormPage() {
         operator_id: data.operator_id,
         line: data.line,
         work_type: data.work_type,
+        service_item_id: (data as { service_item_id?: string | null }).service_item_id ?? '',
         priority: data.priority,
         address: data.address ?? '',
         postal_code: data.postal_code ?? '',
@@ -117,6 +196,7 @@ export function WorkOrderFormPage() {
     if (!form.client_id) e.client_id = 'Pflichtfeld'
     if (!form.project_id) e.project_id = 'Pflichtfeld'
     if (!form.operator_id) e.operator_id = 'Pflichtfeld'
+    if (!form.service_item_id) e.service_item_id = 'Pflichtfeld'
     if (!form.work_type) e.work_type = 'Pflichtfeld'
     setErrors(e)
     return Object.keys(e).length === 0
@@ -136,6 +216,7 @@ export function WorkOrderFormPage() {
       operator_id: form.operator_id,
       line: form.line,
       work_type: form.work_type,
+      service_item_id: form.service_item_id || null,
       priority: form.priority,
       address: form.address || null,
       postal_code: form.postal_code || null,
@@ -163,6 +244,32 @@ export function WorkOrderFormPage() {
       }
     }
 
+    // Upload any staged supporting documents now that we have an order id
+    if (orderId && user) {
+      const allStaged: Array<[DocumentType, File]> = []
+      for (const [type, files] of Object.entries(stagedDocs) as Array<[DocumentType, File[]]>) {
+        for (const file of files) allStaged.push([type, file])
+      }
+      if (allStaged.length > 0) {
+        const uploadErrors: string[] = []
+        for (const [type, file] of allStaged) {
+          const { error: upErr } = await uploadWorkOrderDocument(orderId, type, file, user.id)
+          if (upErr) uploadErrors.push(`${file.name}: ${upErr}`)
+        }
+        if (uploadErrors.length > 0) {
+          // Order + detail saved, but some docs failed. Let the admin know,
+          // keep them on the page so they can retry or continue.
+          setSaveError(`Auftrag gespeichert, aber Upload-Fehler:\n${uploadErrors.join('\n')}`)
+          setIsSaving(false)
+          // Clear the successfully uploaded staged files so retry uploads
+          // the remaining ones cleanly — simplest: clear all and let the
+          // admin view the detail page for the partial state.
+          setStagedDocs({ plano: [], cartas_empalme: [], diagrama_routing: [], other: [] })
+          return
+        }
+      }
+    }
+
     navigate('/admin/orders')
   }
 
@@ -174,7 +281,14 @@ export function WorkOrderFormPage() {
     )
   }
 
-  const detailFields = form.work_type ? DETAIL_FIELDS[form.work_type] : []
+  // Resolve the selected catalog item and its detail_form — this drives
+  // the UI shape (address visibility, detail fields, uploader visibility).
+  const selectedServiceItem = serviceItems.find((si) => si.id === form.service_item_id) ?? null
+  const selectedDetailForm = selectedServiceItem?.detail_form ?? null
+  const isInfra = selectedDetailForm ? INFRA_DETAIL_FORMS.has(selectedDetailForm) : false
+  const documentTypes = selectedDetailForm ? DOCUMENT_TYPES_BY_DETAIL_FORM[selectedDetailForm] ?? [] : []
+
+  const detailFields = form.work_type ? DETAIL_FIELDS[form.work_type] ?? [] : []
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -267,22 +381,74 @@ export function WorkOrderFormPage() {
               </select>
             </div>
 
-            {/* Work type */}
-            <div>
+            {/* Service item — canonical catalog selector.
+                Driven by the operator's rate-card; selecting an item sets
+                both service_item_id (for invoicing) and work_type (for the
+                wo_detail_* shape). */}
+            <div className="sm:col-span-2">
               <label className="mb-1 block text-xs font-medium text-gf-text-muted">
-                Arbeitstyp <span className="text-gf-danger">*</span>
+                Leistung (Katalog) <span className="text-gf-danger">*</span>
               </label>
               <select
-                value={form.work_type}
-                onChange={(e) => { setField('work_type', e.target.value as WorkType); setDetail({}) }}
-                className={`w-full rounded-gf-btn border px-3 py-2 text-sm text-gf-text focus:outline-none focus:ring-1 focus:ring-gf-primary ${errors.work_type ? 'border-gf-danger bg-gf-danger/5' : 'border-gf-border bg-gf-surface'}`}
+                value={form.service_item_id}
+                onChange={(e) => {
+                  const selectedId = e.target.value
+                  const selected = serviceItems.find((si) => si.id === selectedId) ?? null
+                  const derivedWorkType = selected?.detail_form
+                    ? DETAIL_FORM_TO_WORK_TYPE[selected.detail_form]
+                    : ''
+                  setForm((f) => ({
+                    ...f,
+                    service_item_id: selectedId,
+                    work_type: derivedWorkType as WorkType | '',
+                  }))
+                  setErrors((er) => ({ ...er, service_item_id: undefined, work_type: undefined }))
+                  setDetail({})
+                }}
+                className={`w-full rounded-gf-btn border px-3 py-2 text-sm text-gf-text focus:outline-none focus:ring-1 focus:ring-gf-primary ${errors.service_item_id ? 'border-gf-danger bg-gf-danger/5' : 'border-gf-border bg-gf-surface'}`}
               >
-                <option value="">— Typ wählen —</option>
-                {Object.entries(WORK_TYPE_LABELS).map(([val, label]) => (
-                  <option key={val} value={val}>{label}</option>
+                <option value="">— Leistung aus Katalog wählen —</option>
+                {serviceItems.map((si) => (
+                  <option key={si.id} value={si.id}>
+                    {si.code} — {si.description_de}
+                  </option>
                 ))}
               </select>
-              {errors.work_type && <p className="mt-1 text-xs text-gf-danger">{errors.work_type}</p>}
+              {form.service_item_id && (() => {
+                const selected = serviceItems.find((si) => si.id === form.service_item_id)
+                if (!selected) return null
+                return (
+                  <div className="mt-2 rounded-gf-btn border border-gf-primary/20 bg-gf-primary/5 p-2 text-xs text-gf-text-muted">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-semibold text-gf-primary">{selected.code}</span>
+                      {selected.unit && <span>· {selected.unit}</span>}
+                      {selected.unit_price != null && (
+                        <span>· {selected.unit_price.toFixed(2)} €</span>
+                      )}
+                      {selected.operators?.code && <span>· {selected.operators.code}</span>}
+                    </div>
+                    {selected.description_es && (
+                      <p className="mt-1 italic">ES: {selected.description_es}</p>
+                    )}
+                  </div>
+                )
+              })()}
+              {errors.service_item_id && <p className="mt-1 text-xs text-gf-danger">{errors.service_item_id}</p>}
+            </div>
+
+            {/* Legacy work_type — derived, kept for backwards compat with
+                existing wo_detail_* tables. Shown read-only so admins see
+                which detail form the catalog item routes to. */}
+            <div className="sm:col-span-2">
+              <label className="mb-1 block text-xs font-medium text-gf-text-muted">
+                Arbeitstyp (abgeleitet aus Katalog)
+              </label>
+              <input
+                type="text"
+                value={form.work_type ? (WORK_TYPE_LABELS[form.work_type as WorkType] ?? form.work_type) : '—'}
+                readOnly
+                className="w-full rounded-gf-btn border border-gf-border bg-gf-surface/50 px-3 py-2 text-sm text-gf-text-muted"
+              />
             </div>
 
             {/* Priority */}
@@ -301,42 +467,93 @@ export function WorkOrderFormPage() {
           </div>
         </div>
 
-        {/* Address card */}
-        <div className="rounded-gf-card border border-gf-border bg-gf-card p-5">
-          <h3 className="mb-4 font-display text-sm font-semibold text-gf-text">Adresse</h3>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="sm:col-span-3">
-              <label className="mb-1 block text-xs font-medium text-gf-text-muted">Straße / Hausnummer</label>
-              <input
-                type="text"
-                value={form.address}
-                onChange={(e) => setField('address', e.target.value)}
-                placeholder="Musterstraße 12"
-                className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-medium text-gf-text-muted">PLZ</label>
-              <input
-                type="text"
-                value={form.postal_code}
-                onChange={(e) => setField('postal_code', e.target.value)}
-                placeholder="10115"
-                className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-gf-text-muted">Stadt</label>
-              <input
-                type="text"
-                value={form.city}
-                onChange={(e) => setField('city', e.target.value)}
-                placeholder="Berlin"
-                className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
-              />
+        {/* Address card — hidden for infra work (soplado, fusion_*, POP).
+            These are not tied to a specific street address; supporting
+            documents (plano, cartas de empalme) carry the spatial context
+            instead. POP installations happen at central sites, not
+            customer addresses. */}
+        {selectedDetailForm && !isInfra && (
+          <div className="rounded-gf-card border border-gf-border bg-gf-card p-5">
+            <h3 className="mb-4 font-display text-sm font-semibold text-gf-text">Adresse</h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="sm:col-span-3">
+                <label className="mb-1 block text-xs font-medium text-gf-text-muted">Straße / Hausnummer</label>
+                <input
+                  type="text"
+                  value={form.address}
+                  onChange={(e) => setField('address', e.target.value)}
+                  placeholder="Musterstraße 12"
+                  className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gf-text-muted">PLZ</label>
+                <input
+                  type="text"
+                  value={form.postal_code}
+                  onChange={(e) => setField('postal_code', e.target.value)}
+                  placeholder="10115"
+                  className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="mb-1 block text-xs font-medium text-gf-text-muted">Stadt</label>
+                <input
+                  type="text"
+                  value={form.city}
+                  onChange={(e) => setField('city', e.target.value)}
+                  placeholder="Berlin"
+                  className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+                />
+              </div>
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Supporting documents — for infra work (soplado, fusion_*, POP)
+            admins attach the plano when creating the order. Cartas de
+            empalme are usually the technician's output but can be added
+            here too. On new orders files are staged locally and uploaded
+            after the order is created. */}
+        {isInfra && (
+          <div className="rounded-gf-card border border-gf-primary/30 bg-gf-card p-5 space-y-5">
+            <div>
+              <h3 className="font-display text-sm font-semibold text-gf-text">Unterstützende Dokumente</h3>
+              <p className="mt-0.5 text-xs text-gf-text-muted">
+                Bei linearen Arbeiten (Soplado / Fusion) sind Plan und Spleißprotokolle
+                anstelle einer Adresse relevant.
+              </p>
+            </div>
+            <div className={`grid grid-cols-1 gap-5 ${documentTypes.length > 1 ? 'md:grid-cols-2' : ''}`}>
+              {documentTypes.map((doc) => {
+                if (isEdit && id && user) {
+                  return (
+                    <DocumentUploader
+                      key={doc.type}
+                      workOrderId={id}
+                      uploadedBy={user.id}
+                      documentType={doc.type}
+                      label={doc.label}
+                      hint={doc.hint}
+                    />
+                  )
+                }
+                return (
+                  <DocumentUploader
+                    key={doc.type}
+                    documentType={doc.type}
+                    label={doc.label}
+                    hint={`${doc.hint} · wird beim Speichern hochgeladen`}
+                    stagedFiles={stagedDocs[doc.type]}
+                    onStagedFilesChange={(files) =>
+                      setStagedDocs((d) => ({ ...d, [doc.type]: files }))
+                    }
+                  />
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Dynamic detail fields */}
         {detailFields.length > 0 && (

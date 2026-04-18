@@ -24,6 +24,7 @@ export const WORK_TYPE_LABELS: Record<WorkType, string> = {
   alta: 'Alta',
   nt_installation: 'NT-Installation',
   patchkabel: 'Patchkabel',
+  pop: 'POP-Installation',
 }
 
 export const PRIORITY_LABELS: Record<'normal' | 'alta' | 'urgente', string> = {
