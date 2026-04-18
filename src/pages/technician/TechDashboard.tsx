@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router'
 import { useAuth } from '@/hooks/useAuth'
 import { fetchMyWorkOrders, type WorkOrderWithRelations } from '@/services/workOrderService'
 import type { WorkOrderStatus, WorkType, TeamColor } from '@/types/enums'
-import { STATUS_LABELS, WORK_TYPE_LABELS, TEAM_LABELS } from '@/constants/labels'
+import { useLabels } from '@/i18n/labels'
 import { STATUS_COLORS, TEAM_DOT } from '@/constants/styles'
 
 const ACTIVE_STATUSES: WorkOrderStatus[] = ['assigned', 'in_progress', 'executed', 'rueckmeldung_pending']
@@ -17,6 +17,7 @@ const TEAM_COLORS: Record<string, { dot: string; badge: string }> = {
 }
 
 export function TechDashboard() {
+  const L = useLabels()
   const navigate = useNavigate()
   const { user } = useAuth()
   const team = user?.team ?? null
@@ -71,7 +72,7 @@ export function TechDashboard() {
           {team && teamStyle && (
             <span className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${teamStyle.badge}`}>
               <span className={`h-2 w-2 rounded-full ${teamStyle.dot}`} />
-              Team {TEAM_LABELS[team as keyof typeof TEAM_LABELS]}
+              Team {L.team(team as TeamColor)}
             </span>
           )}
         </div>
@@ -139,11 +140,11 @@ export function TechDashboard() {
                 <div className="mb-1 flex items-center justify-between gap-2">
                   <span className="font-mono text-xs font-semibold text-gf-primary">{order.order_number}</span>
                   <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[order.status as WorkOrderStatus]}`}>
-                    {STATUS_LABELS[order.status as WorkOrderStatus]}
+                    {L.status(order.status as WorkOrderStatus)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-gf-text">{WORK_TYPE_LABELS[order.work_type as WorkType]}</span>
+                  <span className="text-xs font-medium text-gf-text">{L.workType(order.work_type as WorkType)}</span>
                   {order.assigned_team && (
                     <span className={`h-1.5 w-1.5 rounded-full ${TEAM_DOT[order.assigned_team as TeamColor]}`} />
                   )}

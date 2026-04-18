@@ -1,4 +1,4 @@
-import { PRIORITY_LABELS } from '@/constants/labels'
+import { useLabels } from '@/i18n/labels'
 import { PRIORITY_COLORS } from '@/constants/styles'
 
 type Priority = 'normal' | 'alta' | 'urgente'
@@ -9,9 +9,10 @@ interface Props {
 }
 
 export function PriorityBadge({ priority, className = '' }: Props) {
+  const L = useLabels()
   return (
     <span className={`text-xs font-medium ${PRIORITY_COLORS[priority]} ${className}`}>
-      {PRIORITY_LABELS[priority]}
+      {L.priority(priority)}
     </span>
   )
 }

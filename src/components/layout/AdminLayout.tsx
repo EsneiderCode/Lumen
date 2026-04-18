@@ -1,12 +1,15 @@
 import { useState } from 'react'
 import { Outlet } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { Sidebar } from './Sidebar'
+import { LanguageSelector } from '@/components/ui/LanguageSelector'
 import { useAuth } from '@/hooks/useAuth'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { OfflineBanner } from '@/components/ui/OfflineBanner'
 import { useInstallPrompt } from '@/hooks/useInstallPrompt'
 
 export function AdminLayout() {
+  const { t } = useTranslation()
   const { user, signOut } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { isInstallable, promptInstall } = useInstallPrompt()
@@ -23,7 +26,7 @@ export function AdminLayout() {
               <button
                 onClick={() => setSidebarOpen(true)}
                 className="flex h-9 w-9 items-center justify-center rounded-gf-btn border border-gf-border text-gf-text-muted transition-colors hover:border-gf-primary hover:text-gf-primary md:hidden"
-                aria-label="Menü öffnen"
+                aria-label={t('nav.menuOpen', { defaultValue: 'Menü öffnen' })}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -41,7 +44,7 @@ export function AdminLayout() {
                 </svg>
               </button>
               <h1 className="font-display text-base font-semibold text-gf-text md:text-lg">
-                Administration
+                {t('nav.admin')}
               </h1>
             </div>
             <div className="flex items-center gap-3">
@@ -50,15 +53,16 @@ export function AdminLayout() {
                   onClick={promptInstall}
                   className="hidden rounded-gf-btn border border-gf-primary px-3 py-1.5 text-sm text-gf-primary transition-colors hover:bg-gf-primary hover:text-gf-base sm:flex"
                 >
-                  App installieren
+                  {t('nav.installApp', { defaultValue: 'App installieren' })}
                 </button>
               )}
+              <LanguageSelector />
               <span className="hidden text-sm text-gf-text-muted sm:block">{user?.fullName}</span>
               <button
                 onClick={signOut}
                 className="rounded-gf-btn border border-gf-border px-3 py-1.5 text-sm text-gf-text-muted transition-colors hover:border-gf-danger/30 hover:text-gf-danger"
               >
-                Abmelden
+                {t('auth.signOut')}
               </button>
             </div>
           </header>

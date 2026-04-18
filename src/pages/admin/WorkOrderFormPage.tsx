@@ -14,7 +14,7 @@ import {
   saveAssignedDetailSnapshot,
 } from '@/services/workOrderService'
 import type { WorkType } from '@/types/enums'
-import { WORK_TYPE_LABELS } from '@/constants/labels'
+import { useLabels } from '@/i18n/labels'
 import { DETAIL_FIELDS } from '@/constants/detail-fields'
 import { fetchServiceItems } from '@/services/serviceItemService'
 import type { ServiceItemWithRelations } from '@/types/service-items'
@@ -99,6 +99,7 @@ const EMPTY_FORM: FormValues = {
 }
 
 export function WorkOrderFormPage() {
+  const L = useLabels()
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -445,7 +446,7 @@ export function WorkOrderFormPage() {
               </label>
               <input
                 type="text"
-                value={form.work_type ? (WORK_TYPE_LABELS[form.work_type as WorkType] ?? form.work_type) : '—'}
+                value={form.work_type ? (L.workType(form.work_type as WorkType) ?? form.work_type) : '—'}
                 readOnly
                 className="w-full rounded-gf-btn border border-gf-border bg-gf-surface/50 px-3 py-2 text-sm text-gf-text-muted"
               />
@@ -559,7 +560,7 @@ export function WorkOrderFormPage() {
         {detailFields.length > 0 && (
           <div className="rounded-gf-card border border-gf-primary/30 bg-gf-card p-5">
             <h3 className="mb-1 font-display text-sm font-semibold text-gf-text">
-              Details: {WORK_TYPE_LABELS[form.work_type as WorkType]}
+              Details: {L.workType(form.work_type as WorkType)}
             </h3>
             <p className="mb-4 text-xs text-gf-text-muted">Arbeitstyp-spezifische Felder</p>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

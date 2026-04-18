@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router'
 import { useAuth } from '@/hooks/useAuth'
 import { fetchMyWorkOrders, type WorkOrderWithRelations } from '@/services/workOrderService'
 import type { TeamColor } from '@/types/enums'
-import { STATUS_LABELS, WORK_TYPE_LABELS, PRIORITY_LABELS } from '@/constants/labels'
+import { useLabels } from '@/i18n/labels'
 import { STATUS_COLORS, TEAM_DOT, PRIORITY_COLORS } from '@/constants/styles'
 
 const PAGE_SIZE = 20
 
 export function TechOrdersPage() {
+  const L = useLabels()
   const navigate = useNavigate()
   const { user } = useAuth()
   const [orders, setOrders] = useState<WorkOrderWithRelations[]>([])
@@ -66,12 +67,12 @@ export function TechOrdersPage() {
         <div className="mb-2 flex items-start justify-between gap-2">
           <span className="font-mono text-xs font-semibold text-gf-primary">{order.order_number}</span>
           <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[order.status]}`}>
-            {STATUS_LABELS[order.status]}
+            {L.status(order.status)}
           </span>
         </div>
 
         <div className="mb-1 flex items-center gap-2">
-          <span className="text-sm font-semibold text-gf-text">{WORK_TYPE_LABELS[order.work_type]}</span>
+          <span className="text-sm font-semibold text-gf-text">{L.workType(order.work_type)}</span>
           <span className="text-xs text-gf-text-muted">{order.line}</span>
           {order.assigned_team && (
             <span className={`h-2 w-2 rounded-full ${TEAM_DOT[order.assigned_team as TeamColor]}`} />
@@ -90,7 +91,7 @@ export function TechOrdersPage() {
           </div>
           <div className="flex items-center gap-2">
             <span className={`text-xs font-medium ${PRIORITY_COLORS[order.priority]}`}>
-              {PRIORITY_LABELS[order.priority]}
+              {L.priority(order.priority)}
             </span>
             {order.assigned_date && (
               <span className="text-xs text-gf-text-muted">

@@ -10,7 +10,7 @@ import {
   type WorkOrderWithRelations,
 } from '@/services/workOrderService'
 import type { WorkOrderStatus } from '@/types/enums'
-import { STATUS_LABELS, WORK_TYPE_LABELS } from '@/constants/labels'
+import { useLabels } from '@/i18n/labels'
 import { STATUS_COLORS, TEAM_DOT } from '@/constants/styles'
 
 interface StateHistoryEntry {
@@ -23,6 +23,7 @@ interface StateHistoryEntry {
 }
 
 export function TechOrderDetailPage() {
+  const L = useLabels()
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -109,10 +110,10 @@ export function TechOrderDetailPage() {
           <div className="flex items-center gap-2">
             <h2 className="font-display text-lg font-bold text-gf-text truncate">{order.order_number}</h2>
             <span className={`shrink-0 inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[order.status]}`}>
-              {STATUS_LABELS[order.status]}
+              {L.status(order.status)}
             </span>
           </div>
-          <p className="text-xs text-gf-text-muted">{WORK_TYPE_LABELS[order.work_type]} · {order.line}</p>
+          <p className="text-xs text-gf-text-muted">{L.workType(order.work_type)} · {order.line}</p>
         </div>
       </div>
 
@@ -240,7 +241,7 @@ export function TechOrderDetailPage() {
       {hasDetail && (
         <div className="rounded-gf-card border border-gf-border bg-gf-card p-4">
           <h3 className="mb-3 font-display text-sm font-semibold text-gf-text">
-            Technische Vorgaben — {WORK_TYPE_LABELS[order.work_type]}
+            Technische Vorgaben — {L.workType(order.work_type)}
           </h3>
           <div className="grid grid-cols-2 gap-3 text-sm">
             {Object.entries(detail).map(([key, value]) => {
@@ -273,8 +274,8 @@ export function TechOrderDetailPage() {
                 <div className="flex-1 pb-1">
                   <p className="text-xs font-medium text-gf-text">
                     {entry.from_status
-                      ? `${STATUS_LABELS[entry.from_status]} → ${STATUS_LABELS[entry.to_status]}`
-                      : STATUS_LABELS[entry.to_status]}
+                      ? `${L.status(entry.from_status)} → ${L.status(entry.to_status)}`
+                      : L.status(entry.to_status)}
                   </p>
                   {entry.notes && <p className="text-xs text-gf-text-muted">{entry.notes}</p>}
                   <p className="text-xs text-gf-text-muted">

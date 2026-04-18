@@ -1,4 +1,4 @@
-import { STATUS_LABELS } from '@/constants/labels'
+import { useLabels } from '@/i18n/labels'
 import { STATUS_COLORS } from '@/constants/styles'
 import type { WorkOrderStatus } from '@/types/enums'
 
@@ -8,11 +8,12 @@ interface Props {
 }
 
 export function StatusBadge({ status, className = '' }: Props) {
+  const L = useLabels()
   return (
     <span
       className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[status]} ${className}`}
     >
-      {STATUS_LABELS[status]}
+      {L.status(status)}
     </span>
   )
 }

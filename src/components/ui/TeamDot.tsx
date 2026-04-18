@@ -1,5 +1,5 @@
+import { useLabels } from '@/i18n/labels'
 import { TEAM_DOT } from '@/constants/styles'
-import { TEAM_LABELS } from '@/constants/labels'
 import type { TeamColor } from '@/types/enums'
 
 interface Props {
@@ -9,10 +9,11 @@ interface Props {
 }
 
 export function TeamDot({ team, showLabel = false, className = '' }: Props) {
+  const L = useLabels()
   return (
     <div className={`flex items-center gap-1.5 ${className}`}>
       <span className={`h-2 w-2 rounded-full ${TEAM_DOT[team]}`} />
-      {showLabel && <span className="text-gf-text">{TEAM_LABELS[team]}</span>}
+      {showLabel && <span className="text-gf-text">{L.team(team)}</span>}
     </div>
   )
 }

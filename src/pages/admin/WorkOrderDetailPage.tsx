@@ -16,7 +16,8 @@ import {
 } from '@/services/workOrderService'
 import { generateCertificatePdf } from '@/services/pdfService'
 import type { WorkOrderStatus } from '@/types/enums'
-import { STATUS_LABELS, WORK_TYPE_LABELS, DETAIL_FIELD_LABELS, PHOTO_LABELS } from '@/constants/labels'
+import { useTranslation } from 'react-i18next'
+import { useLabels } from '@/i18n/labels'
 import { STATUS_COLORS, TEAM_DOT } from '@/constants/styles'
 import { DocumentUploader } from '@/components/ui/DocumentUploader'
 
@@ -87,6 +88,8 @@ interface ModalState {
 }
 
 export function WorkOrderDetailPage() {
+  const { t } = useTranslation()
+  const L = useLabels()
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -271,10 +274,10 @@ export function WorkOrderDetailPage() {
             <div className="flex items-center gap-2">
               <h2 className="font-display text-xl font-bold text-gf-text">{order.order_number}</h2>
               <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[order.status]}`}>
-                {STATUS_LABELS[order.status]}
+                {L.status(order.status)}
               </span>
             </div>
-            <p className="text-sm text-gf-text-muted">{WORK_TYPE_LABELS[order.work_type]} · Linie {order.line}</p>
+            <p className="text-sm text-gf-text-muted">{L.workType(order.work_type)} · Linie {order.line}</p>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -302,7 +305,7 @@ export function WorkOrderDetailPage() {
         <div className="rounded-gf-card border border-gf-warning/40 bg-gf-warning/10 p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="font-semibold text-amber-700">Rückmeldung liegt vor</p>
+              <p className="font-semibold text-amber-700">{t('workOrder.rueckmeldungPresent')}</p>
               <p className="text-sm text-amber-600">Technische Daten und Fotos geprüft? Intern zertifizieren.</p>
             </div>
             <div className="flex gap-2 sm:shrink-0">
@@ -330,7 +333,7 @@ export function WorkOrderDetailPage() {
         <div className="rounded-gf-card border border-gf-success/40 bg-gf-success/10 p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="font-semibold text-emerald-700">Intern zertifiziert</p>
+              <p className="font-semibold text-emerald-700">{t('workOrder.internallyCertified')}</p>
               <p className="text-sm text-emerald-600">Auftrag kann jetzt an den Kunden weitergeleitet werden.</p>
             </div>
             <div className="flex gap-2 sm:shrink-0">
@@ -571,23 +574,23 @@ export function WorkOrderDetailPage() {
       {showComparison ? (
         <div className="rounded-gf-card border border-gf-border bg-gf-card p-5">
           <h3 className="mb-1 font-display text-sm font-semibold text-gf-text">
-            Vergleich — {WORK_TYPE_LABELS[order.work_type]}
+            {t('comparison.title')} — {L.workType(order.work_type)}
           </h3>
-          <p className="mb-4 text-xs text-gf-text-muted">Beauftragte Werte vs. gemeldete Istwerte</p>
+          <p className="mb-4 text-xs text-gf-text-muted">{t('comparison.subtitle')}</p>
           <div className="grid grid-cols-2 gap-x-6 gap-y-0 text-sm">
             {/* Column headers */}
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gf-text-muted border-b border-gf-border pb-1">
-              Beauftragt
+              {t('comparison.assigned')}
             </p>
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gf-primary border-b border-gf-border pb-1">
-              Gemeldet
+              {t('comparison.reported')}
             </p>
             {/* Field rows — iterate over the union of keys */}
             {Array.from(new Set([
               ...Object.keys(snapshot!),
               ...Object.keys(detail),
             ])).map((key) => {
-              const label = DETAIL_FIELD_LABELS[key] ?? key.replace(/_/g, ' ')
+              const label = L.detailField(key)
               const assignedVal = snapshot![key]
               const reportedVal = detail[key]
               const isDiff = String(assignedVal ?? '') !== String(reportedVal ?? '')
@@ -618,12 +621,12 @@ export function WorkOrderDetailPage() {
         /* Simple view when no snapshot available (old orders) */
         <div className="rounded-gf-card border border-gf-border bg-gf-card p-5">
           <h3 className="mb-1 font-display text-sm font-semibold text-gf-text">
-            Rückmeldung — {WORK_TYPE_LABELS[order.work_type]}
+            Rückmeldung — {L.workType(order.work_type)}
           </h3>
           <p className="mb-4 text-xs text-gf-text-muted">Vom Techniker eingetragene Daten</p>
           <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
             {Object.entries(detail).map(([key, value]) => {
-              const label = DETAIL_FIELD_LABELS[key] ?? key.replace(/_/g, ' ')
+              const label = L.detailField(key)
               const isEmpty = value === null || value === undefined || value === ''
               return (
                 <div key={key}>
@@ -665,7 +668,7 @@ export function WorkOrderDetailPage() {
               return (
                 <div key={type}>
                   <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gf-text-muted">
-                    {PHOTO_LABELS[type]} ({typePhotos.length})
+                    {L.photo(type)} ({typePhotos.length})
                   </p>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                     {typePhotos.map((photo) => (
@@ -678,7 +681,7 @@ export function WorkOrderDetailPage() {
                       >
                         <img
                           src={photoUrls[photo.storage_path] ?? ''}
-                          alt={photo.caption ?? PHOTO_LABELS[type]}
+                          alt={photo.caption ?? L.photo(type)}
                           className="h-full w-full object-cover"
                         />
                       </a>
@@ -701,8 +704,8 @@ export function WorkOrderDetailPage() {
       {/* LUM-024: Certification audit trail */}
       {certAudits.length > 0 && (
         <div className="rounded-gf-card border border-gf-border bg-gf-card p-5">
-          <h3 className="mb-1 font-display text-sm font-semibold text-gf-text">Zertifizierungsprotokoll</h3>
-          <p className="mb-4 text-xs text-gf-text-muted">Kryptografischer Nachweis — manipulationssicher</p>
+          <h3 className="mb-1 font-display text-sm font-semibold text-gf-text">{t('certification.auditLog')}</h3>
+          <p className="mb-4 text-xs text-gf-text-muted">{t('certification.auditSubtitle')}</p>
           <div className="space-y-3">
             {certAudits.map((audit) => (
               <div key={audit.id} className="border border-gf-border/60 p-3">
@@ -713,7 +716,7 @@ export function WorkOrderDetailPage() {
                         ? 'bg-gf-success/15 text-gf-success'
                         : 'bg-gf-primary/15 text-gf-primary'
                     }`}>
-                      {audit.cert_type === 'internal' ? 'Interne Zertifizierung' : 'Kundenzertifizierung'}
+                      {audit.cert_type === 'internal' ? t('certification.internal') : t('certification.client')}
                     </span>
                     <p className="mt-1 text-xs text-gf-text-muted">
                       {new Date(audit.certified_at).toLocaleString('de-DE')}
@@ -753,11 +756,11 @@ export function WorkOrderDetailPage() {
                 <div className="flex-1 pb-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[entry.to_status]}`}>
-                      {STATUS_LABELS[entry.to_status]}
+                      {L.status(entry.to_status)}
                     </span>
                     {entry.from_status && (
                       <span className="text-xs text-gf-text-muted">
-                        ← {STATUS_LABELS[entry.from_status]}
+                        ← {L.status(entry.from_status)}
                       </span>
                     )}
                   </div>

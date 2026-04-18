@@ -1,6 +1,8 @@
+import { useTranslation } from 'react-i18next'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 
 export function OfflineBanner() {
+  const { t } = useTranslation()
   const isOnline = useOnlineStatus()
 
   if (isOnline) return null
@@ -33,7 +35,7 @@ export function OfflineBanner() {
         <line x1="12" y1="20" x2="12.01" y2="20" />
       </svg>
       <span className="text-xs font-medium text-gf-warning">
-        Keine Verbindung — Änderungen werden lokal gespeichert
+        {t('offline.banner', { defaultValue: 'Keine Verbindung — Änderungen werden lokal gespeichert' })}
       </span>
     </div>
   )

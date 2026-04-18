@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/hooks/useAuth'
+import { LanguageSelector } from '@/components/ui/LanguageSelector'
 import { ROUTES } from '@/config/routes'
 import type { UserRole } from '@/types/enums'
 
@@ -11,6 +13,7 @@ const ROLE_ROUTES: Record<UserRole, string> = {
 }
 
 export function LoginPage() {
+  const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -66,7 +69,7 @@ export function LoginPage() {
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gf-text-label">
-                E-Mail
+                {t('auth.email')}
               </label>
               <input
                 id="email"
@@ -81,7 +84,7 @@ export function LoginPage() {
             </div>
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gf-text-label">
-                Passwort
+                {t('auth.password')}
               </label>
               <input
                 id="password"
@@ -98,16 +101,21 @@ export function LoginPage() {
               disabled={isSubmitting}
               className="w-full rounded-gf-btn bg-gf-primary px-4 py-2.5 text-sm font-semibold text-gf-base transition-colors hover:bg-gf-primary-light disabled:opacity-50"
             >
-              {isSubmitting ? 'Anmeldung...' : 'Anmelden'}
+              {isSubmitting ? t('auth.signingIn') : t('auth.signIn')}
             </button>
             <button
               type="button"
               onClick={() => navigate(ROUTES.FORGOT_PASSWORD)}
               className="w-full text-center text-xs text-gf-text-muted transition-colors hover:text-gf-primary"
             >
-              Passwort vergessen?
+              {t('auth.forgotPassword')}
             </button>
           </form>
+        </div>
+
+        {/* Language selector at bottom of login screen */}
+        <div className="mt-6 flex justify-center">
+          <LanguageSelector />
         </div>
       </div>
     </div>

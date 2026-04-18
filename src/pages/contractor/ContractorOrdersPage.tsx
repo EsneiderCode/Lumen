@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { fetchContractorWorkOrders, type WorkOrderWithRelations } from '@/services/workOrderService'
 import type { WorkOrderStatus, TeamColor } from '@/types/enums'
-import { STATUS_LABELS, WORK_TYPE_LABELS } from '@/constants/labels'
+import { useLabels } from '@/i18n/labels'
 import { STATUS_COLORS, TEAM_DOT } from '@/constants/styles'
 
 // Payment indicator based on status
@@ -148,6 +148,7 @@ export function ContractorOrdersPage() {
 }
 
 function OrderCard({ order }: { order: WorkOrderWithRelations }) {
+  const L = useLabels()
   const isActive = ACTIVE_STATUSES.includes(order.status)
   return (
     <div
@@ -165,14 +166,14 @@ function OrderCard({ order }: { order: WorkOrderWithRelations }) {
         <span
           className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[order.status]}`}
         >
-          {STATUS_LABELS[order.status]}
+          {L.status(order.status)}
         </span>
       </div>
 
       {/* Work type + line + team dot */}
       <div className="mb-1 flex items-center gap-2">
         <span className="text-sm font-semibold text-gf-text">
-          {WORK_TYPE_LABELS[order.work_type]}
+          {L.workType(order.work_type)}
         </span>
         <span className="text-xs text-gf-text-muted">{order.line}</span>
         {order.assigned_team && (
