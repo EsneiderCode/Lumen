@@ -176,19 +176,19 @@ export function DocumentUploader(props: DocumentUploaderProps) {
   return (
     <div className="space-y-2">
       <div className="flex items-baseline justify-between gap-2">
-        <span className="text-xs font-medium text-gf-text-muted">{label}</span>
-        {hint && <span className="text-[10px] text-gf-text-placeholder">{hint}</span>}
+        <span className="text-xs font-medium text-fg-2">{label}</span>
+        {hint && <span className="text-[10px] text-fg-4">{hint}</span>}
       </div>
 
       {/* Upload drop zone */}
       {!readOnly && (
         <label
           htmlFor={`doc-input-${documentType}`}
-          className="flex items-center justify-center gap-2 rounded-gf-btn border border-dashed border-gf-border bg-gf-surface px-4 py-3 text-sm text-gf-text-muted cursor-pointer hover:border-gf-primary hover:text-gf-primary transition-colors"
+          className="flex items-center justify-center gap-2 rounded-btn border border-dashed border-line bg-bg-0 px-4 py-3 text-sm text-fg-2 cursor-pointer hover:border-accent hover:text-accent transition-colors"
         >
           {isUploading ? (
             <>
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-gf-border border-t-gf-primary" />
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-line border-t-accent" />
               <span>Hochladen…</span>
             </>
           ) : (
@@ -214,12 +214,12 @@ export function DocumentUploader(props: DocumentUploaderProps) {
         </label>
       )}
 
-      {error && <p className="text-xs text-gf-danger">{error}</p>}
+      {error && <p className="text-xs text-err">{error}</p>}
 
       {isStaged ? (
         /* Staged list */
         stagedFiles.length === 0 ? (
-          <p className="text-xs italic text-gf-text-placeholder">
+          <p className="text-xs italic text-fg-4">
             Noch keine Dateien ausgewählt
           </p>
         ) : (
@@ -227,14 +227,14 @@ export function DocumentUploader(props: DocumentUploaderProps) {
             {stagedFiles.map((file, idx) => (
               <li
                 key={`${file.name}-${idx}`}
-                className="flex items-center gap-3 rounded-gf-btn border border-dashed border-gf-primary/30 bg-gf-primary/5 px-3 py-2"
+                className="flex items-center gap-3 rounded-btn border border-dashed border-accent/30 bg-accent/5 px-3 py-2"
               >
                 <span className="text-lg" aria-hidden>{iconForMime(file.type)}</span>
                 <div className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium text-gf-text">
+                  <span className="block truncate text-sm font-medium text-fg-1">
                     {file.name}
                   </span>
-                  <p className="text-[10px] text-gf-text-muted">
+                  <p className="text-[10px] text-fg-2">
                     {formatBytes(file.size)} · wird beim Speichern hochgeladen
                   </p>
                 </div>
@@ -242,7 +242,7 @@ export function DocumentUploader(props: DocumentUploaderProps) {
                   <button
                     type="button"
                     onClick={() => handleRemoveStaged(idx)}
-                    className="rounded-gf-btn border border-gf-border px-2 py-1 text-xs text-gf-text-muted hover:border-gf-danger/40 hover:text-gf-danger transition-colors"
+                    className="rounded-btn border border-line px-2 py-1 text-xs text-fg-2 hover:border-err/40 hover:text-err transition-colors"
                     aria-label="Entfernen"
                   >
                     ✕
@@ -253,7 +253,7 @@ export function DocumentUploader(props: DocumentUploaderProps) {
           </ul>
         )
       ) : docs.length === 0 ? (
-        <p className="text-xs italic text-gf-text-placeholder">
+        <p className="text-xs italic text-fg-4">
           {readOnly ? 'Keine Dokumente' : 'Noch keine Dokumente hochgeladen'}
         </p>
       ) : (
@@ -263,7 +263,7 @@ export function DocumentUploader(props: DocumentUploaderProps) {
             return (
               <li
                 key={doc.id}
-                className="flex items-center gap-3 rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2"
+                className="flex items-center gap-3 rounded-btn border border-line bg-bg-0 px-3 py-2"
               >
                 <span className="text-lg" aria-hidden>{iconForMime(doc.mime_type)}</span>
                 <div className="min-w-0 flex-1">
@@ -272,16 +272,16 @@ export function DocumentUploader(props: DocumentUploaderProps) {
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block truncate text-sm font-medium text-gf-primary hover:underline"
+                      className="block truncate text-sm font-medium text-accent hover:underline"
                     >
                       {doc.file_name}
                     </a>
                   ) : (
-                    <span className="block truncate text-sm font-medium text-gf-text">
+                    <span className="block truncate text-sm font-medium text-fg-1">
                       {doc.file_name}
                     </span>
                   )}
-                  <p className="text-[10px] text-gf-text-muted">
+                  <p className="text-[10px] text-fg-2">
                     {formatBytes(doc.size_bytes)} · {new Date(doc.uploaded_at).toLocaleString('de-DE')}
                   </p>
                 </div>
@@ -290,7 +290,7 @@ export function DocumentUploader(props: DocumentUploaderProps) {
                     type="button"
                     onClick={() => handleDeleteImmediate(doc)}
                     disabled={deletingId === doc.id}
-                    className="rounded-gf-btn border border-gf-border px-2 py-1 text-xs text-gf-text-muted hover:border-gf-danger/40 hover:text-gf-danger disabled:opacity-50 transition-colors"
+                    className="rounded-btn border border-line px-2 py-1 text-xs text-fg-2 hover:border-err/40 hover:text-err disabled:opacity-50 transition-colors"
                     aria-label="Löschen"
                   >
                     {deletingId === doc.id ? '…' : '🗑'}
