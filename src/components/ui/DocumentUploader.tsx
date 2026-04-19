@@ -1,5 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import {
+  Paperclip,
+  X,
+  Trash2,
+  File,
+  FileText,
+  FileSpreadsheet,
+  Image as ImageIcon,
+  type LucideIcon,
+} from 'lucide-react'
+import {
   uploadWorkOrderDocument,
   fetchWorkOrderDocuments,
   deleteWorkOrderDocument,
@@ -62,12 +72,12 @@ function formatBytes(bytes: number | null): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-function iconForMime(mime: string | null): string {
-  if (!mime) return '📄'
-  if (mime.includes('pdf')) return '📕'
-  if (mime.includes('spreadsheet') || mime.includes('excel')) return '📊'
-  if (mime.includes('image')) return '🖼️'
-  return '📄'
+function iconForMime(mime: string | null): LucideIcon {
+  if (!mime) return File
+  if (mime.includes('pdf')) return FileText
+  if (mime.includes('spreadsheet') || mime.includes('excel')) return FileSpreadsheet
+  if (mime.includes('image')) return ImageIcon
+  return File
 }
 
 export function DocumentUploader(props: DocumentUploaderProps) {
@@ -193,7 +203,7 @@ export function DocumentUploader(props: DocumentUploaderProps) {
             </>
           ) : (
             <>
-              <span>📎</span>
+              <Paperclip size={16} strokeWidth={1.5} />
               <span>
                 {isStaged
                   ? `Dokument auswählen (${allowedExtensions.join(', ')})`
@@ -224,32 +234,35 @@ export function DocumentUploader(props: DocumentUploaderProps) {
           </p>
         ) : (
           <ul className="space-y-1">
-            {stagedFiles.map((file, idx) => (
-              <li
-                key={`${file.name}-${idx}`}
-                className="flex items-center gap-3 rounded-btn border border-dashed border-accent/30 bg-accent/5 px-3 py-2"
-              >
-                <span className="text-lg" aria-hidden>{iconForMime(file.type)}</span>
-                <div className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium text-fg-1">
-                    {file.name}
-                  </span>
-                  <p className="text-[10px] text-fg-2">
-                    {formatBytes(file.size)} · wird beim Speichern hochgeladen
-                  </p>
-                </div>
-                {!readOnly && (
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveStaged(idx)}
-                    className="rounded-btn border border-line px-2 py-1 text-xs text-fg-2 hover:border-err/40 hover:text-err transition-colors"
-                    aria-label="Entfernen"
-                  >
-                    ✕
-                  </button>
-                )}
-              </li>
-            ))}
+            {stagedFiles.map((file, idx) => {
+              const Icon = iconForMime(file.type)
+              return (
+                <li
+                  key={`${file.name}-${idx}`}
+                  className="flex items-center gap-3 rounded-btn border border-dashed border-accent/30 bg-accent/5 px-3 py-2"
+                >
+                  <Icon size={18} strokeWidth={1.5} className="text-fg-2" aria-hidden />
+                  <div className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium text-fg-1">
+                      {file.name}
+                    </span>
+                    <p className="text-[10px] text-fg-2">
+                      {formatBytes(file.size)} · wird beim Speichern hochgeladen
+                    </p>
+                  </div>
+                  {!readOnly && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveStaged(idx)}
+                      className="flex h-7 w-7 items-center justify-center rounded-btn border border-line text-fg-2 hover:border-err/40 hover:text-err transition-colors"
+                      aria-label="Entfernen"
+                    >
+                      <X size={14} strokeWidth={1.5} />
+                    </button>
+                  )}
+                </li>
+              )
+            })}
           </ul>
         )
       ) : docs.length === 0 ? (
@@ -260,12 +273,13 @@ export function DocumentUploader(props: DocumentUploaderProps) {
         <ul className="space-y-1">
           {docs.map((doc) => {
             const url = urls[doc.storage_path]
+            const Icon = iconForMime(doc.mime_type)
             return (
               <li
                 key={doc.id}
                 className="flex items-center gap-3 rounded-btn border border-line bg-bg-0 px-3 py-2"
               >
-                <span className="text-lg" aria-hidden>{iconForMime(doc.mime_type)}</span>
+                <Icon size={18} strokeWidth={1.5} className="text-fg-2" aria-hidden />
                 <div className="min-w-0 flex-1">
                   {url ? (
                     <a
@@ -290,10 +304,10 @@ export function DocumentUploader(props: DocumentUploaderProps) {
                     type="button"
                     onClick={() => handleDeleteImmediate(doc)}
                     disabled={deletingId === doc.id}
-                    className="rounded-btn border border-line px-2 py-1 text-xs text-fg-2 hover:border-err/40 hover:text-err disabled:opacity-50 transition-colors"
+                    className="flex h-7 w-7 items-center justify-center rounded-btn border border-line text-fg-2 hover:border-err/40 hover:text-err disabled:opacity-50 transition-colors"
                     aria-label="Löschen"
                   >
-                    {deletingId === doc.id ? '…' : '🗑'}
+                    {deletingId === doc.id ? '…' : <Trash2 size={14} strokeWidth={1.5} />}
                   </button>
                 )}
               </li>

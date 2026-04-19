@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router'
 import { useTranslation } from 'react-i18next'
+import { Home, ClipboardList, FileText } from 'lucide-react'
 import { BottomNav, type BottomNavItem } from './BottomNav'
 import { LanguageSelector } from '@/components/ui/LanguageSelector'
 import { ROUTES } from '@/config/routes'
@@ -12,9 +13,9 @@ export function ContractorLayout() {
   const { user, signOut } = useAuth()
 
   const navItems: BottomNavItem[] = [
-    { label: t('nav.dashboard'), path: ROUTES.CONTRACTOR.DASHBOARD, icon: '🏠' },
-    { label: t('nav.workOrders'), path: ROUTES.CONTRACTOR.ORDERS, icon: '📋' },
-    { label: t('nav.documents', { defaultValue: 'Dokumente' }), path: ROUTES.CONTRACTOR.DOCUMENTS, icon: '📄' },
+    { label: t('nav.dashboard'), path: ROUTES.CONTRACTOR.DASHBOARD, icon: Home },
+    { label: t('nav.workOrders'), path: ROUTES.CONTRACTOR.ORDERS, icon: ClipboardList },
+    { label: t('nav.documents', { defaultValue: 'Dokumente' }), path: ROUTES.CONTRACTOR.DOCUMENTS, icon: FileText },
   ]
 
   return (

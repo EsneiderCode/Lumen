@@ -1,14 +1,30 @@
 import { NavLink } from 'react-router'
+import {
+  LayoutGrid,
+  ClipboardList,
+  CheckCircle2,
+  FileText,
+  Users,
+  Package,
+  Settings,
+  type LucideIcon,
+} from 'lucide-react'
 import { ROUTES } from '@/config/routes'
 
-const NAV_ITEMS = [
-  { label: 'Dashboard', path: ROUTES.ADMIN.DASHBOARD, icon: '📊' },
-  { label: 'Aufträge', path: ROUTES.ADMIN.ORDERS, icon: '📋' },
-  { label: 'Zertifizierung', path: ROUTES.ADMIN.CERTIFICATION, icon: '✅' },
-  { label: 'Service-Katalog', path: ROUTES.ADMIN.SERVICE_ITEMS, icon: '📑' },
-  { label: 'Personal', path: ROUTES.ADMIN.PERSONNEL, icon: '👥' },
-  { label: 'Material', path: ROUTES.ADMIN.MATERIALS, icon: '📦' },
-  { label: 'Einstellungen', path: ROUTES.ADMIN.SETTINGS, icon: '⚙️' },
+interface NavItem {
+  label: string
+  path: string
+  icon: LucideIcon
+}
+
+const NAV_ITEMS: NavItem[] = [
+  { label: 'Dashboard', path: ROUTES.ADMIN.DASHBOARD, icon: LayoutGrid },
+  { label: 'Aufträge', path: ROUTES.ADMIN.ORDERS, icon: ClipboardList },
+  { label: 'Zertifizierung', path: ROUTES.ADMIN.CERTIFICATION, icon: CheckCircle2 },
+  { label: 'Service-Katalog', path: ROUTES.ADMIN.SERVICE_ITEMS, icon: FileText },
+  { label: 'Personal', path: ROUTES.ADMIN.PERSONNEL, icon: Users },
+  { label: 'Material', path: ROUTES.ADMIN.MATERIALS, icon: Package },
+  { label: 'Einstellungen', path: ROUTES.ADMIN.SETTINGS, icon: Settings },
 ]
 
 interface SidebarProps {
@@ -43,24 +59,27 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         {/* Navigation */}
         <nav className="flex-1 space-y-1 p-3">
-          {NAV_ITEMS.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              end={item.path === ROUTES.ADMIN.DASHBOARD}
-              onClick={onClose}
-              className={({ isActive }) =>
-                `flex items-center gap-3 rounded-btn px-3 py-2.5 text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'border-l-2 border-accent bg-accent/10 text-accent'
-                    : 'border-l-2 border-transparent text-fg-2 hover:bg-line-s hover:text-ink'
-                }`
-              }
-            >
-              <span>{item.icon}</span>
-              {item.label}
-            </NavLink>
-          ))}
+          {NAV_ITEMS.map((item) => {
+            const Icon = item.icon
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                end={item.path === ROUTES.ADMIN.DASHBOARD}
+                onClick={onClose}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 rounded-btn px-3 py-2.5 text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'border-l-2 border-accent bg-accent/10 text-accent'
+                      : 'border-l-2 border-transparent text-fg-2 hover:bg-line-s hover:text-ink'
+                  }`
+                }
+              >
+                <Icon size={18} strokeWidth={1.5} />
+                {item.label}
+              </NavLink>
+            )
+          })}
         </nav>
 
         {/* Footer */}
