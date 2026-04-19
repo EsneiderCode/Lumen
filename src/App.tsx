@@ -1,68 +1,82 @@
+import { Suspense, lazy } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router'
 import { AuthProvider } from '@/context/AuthContext'
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute'
 import { AdminLayout } from '@/components/layout/AdminLayout'
 import { TechnicianLayout } from '@/components/layout/TechnicianLayout'
 import { ContractorLayout } from '@/components/layout/ContractorLayout'
-import { LoginPage } from '@/pages/auth/LoginPage'
-import { ForgotPasswordPage } from '@/pages/auth/ForgotPasswordPage'
-import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage'
-import { AdminDashboard } from '@/pages/admin/AdminDashboard'
-import { WorkOrdersPage } from '@/pages/admin/WorkOrdersPage'
-import { WorkOrderFormPage } from '@/pages/admin/WorkOrderFormPage'
-import { WorkOrderAssignPage } from '@/pages/admin/WorkOrderAssignPage'
-import { TechDashboard } from '@/pages/technician/TechDashboard'
-import { TechOrdersPage } from '@/pages/technician/TechOrdersPage'
-import { TechOrderDetailPage } from '@/pages/technician/TechOrderDetailPage'
-import { RueckmeldungPage } from '@/pages/technician/RueckmeldungPage'
-import { WorkOrderDetailPage } from '@/pages/admin/WorkOrderDetailPage'
-import { CertificationPage } from '@/pages/admin/CertificationPage'
-import { ContractorDashboard } from '@/pages/contractor/ContractorDashboard'
-import { ContractorOrdersPage } from '@/pages/contractor/ContractorOrdersPage'
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { ROUTES } from '@/config/routes'
+
+// Auth chunk
+const LoginPage        = lazy(() => import('@/pages/auth/LoginPage').then(m => ({ default: m.LoginPage })))
+const ForgotPasswordPage = lazy(() => import('@/pages/auth/ForgotPasswordPage').then(m => ({ default: m.ForgotPasswordPage })))
+const ResetPasswordPage  = lazy(() => import('@/pages/auth/ResetPasswordPage').then(m => ({ default: m.ResetPasswordPage })))
+
+// Admin chunk (includes CertificationPage → jsPDF, largest bundle)
+const AdminDashboard     = lazy(() => import('@/pages/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })))
+const WorkOrdersPage     = lazy(() => import('@/pages/admin/WorkOrdersPage').then(m => ({ default: m.WorkOrdersPage })))
+const WorkOrderFormPage  = lazy(() => import('@/pages/admin/WorkOrderFormPage').then(m => ({ default: m.WorkOrderFormPage })))
+const WorkOrderAssignPage = lazy(() => import('@/pages/admin/WorkOrderAssignPage').then(m => ({ default: m.WorkOrderAssignPage })))
+const WorkOrderDetailPage = lazy(() => import('@/pages/admin/WorkOrderDetailPage').then(m => ({ default: m.WorkOrderDetailPage })))
+const CertificationPage  = lazy(() => import('@/pages/admin/CertificationPage').then(m => ({ default: m.CertificationPage })))
+const ServiceItemsPage   = lazy(() => import('@/pages/admin/ServiceItemsPage').then(m => ({ default: m.ServiceItemsPage })))
+
+// Technician chunk (field technicians on slow connections — keep lean)
+const TechDashboard      = lazy(() => import('@/pages/technician/TechDashboard').then(m => ({ default: m.TechDashboard })))
+const TechOrdersPage     = lazy(() => import('@/pages/technician/TechOrdersPage').then(m => ({ default: m.TechOrdersPage })))
+const TechOrderDetailPage = lazy(() => import('@/pages/technician/TechOrderDetailPage').then(m => ({ default: m.TechOrderDetailPage })))
+const RueckmeldungPage   = lazy(() => import('@/pages/technician/RueckmeldungPage').then(m => ({ default: m.RueckmeldungPage })))
+
+// Contractor chunk
+const ContractorDashboard  = lazy(() => import('@/pages/contractor/ContractorDashboard').then(m => ({ default: m.ContractorDashboard })))
+const ContractorOrdersPage = lazy(() => import('@/pages/contractor/ContractorOrdersPage').then(m => ({ default: m.ContractorOrdersPage })))
 
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <Routes>
-          <Route path={ROUTES.LOGIN} element={<LoginPage />} />
-          <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
-          <Route path={ROUTES.RESET_PASSWORD} element={<ResetPasswordPage />} />
+        <Suspense fallback={<LoadingSpinner />}>
+          <Routes>
+            <Route path={ROUTES.LOGIN} element={<LoginPage />} />
+            <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
+            <Route path={ROUTES.RESET_PASSWORD} element={<ResetPasswordPage />} />
 
-          {/* Admin routes */}
-          <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
-            <Route element={<AdminLayout />}>
-              <Route path={ROUTES.ADMIN.DASHBOARD} element={<AdminDashboard />} />
-              <Route path={ROUTES.ADMIN.ORDERS} element={<WorkOrdersPage />} />
-              <Route path={ROUTES.ADMIN.ORDERS_NEW} element={<WorkOrderFormPage />} />
-              <Route path={ROUTES.ADMIN.ORDERS_EDIT} element={<WorkOrderFormPage />} />
-              <Route path={ROUTES.ADMIN.ORDERS_ASSIGN} element={<WorkOrderAssignPage />} />
-              <Route path={ROUTES.ADMIN.ORDERS_DETAIL} element={<WorkOrderDetailPage />} />
-              <Route path={ROUTES.ADMIN.CERTIFICATION} element={<CertificationPage />} />
+            {/* Admin routes */}
+            <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+              <Route element={<AdminLayout />}>
+                <Route path={ROUTES.ADMIN.DASHBOARD} element={<AdminDashboard />} />
+                <Route path={ROUTES.ADMIN.ORDERS} element={<WorkOrdersPage />} />
+                <Route path={ROUTES.ADMIN.ORDERS_NEW} element={<WorkOrderFormPage />} />
+                <Route path={ROUTES.ADMIN.ORDERS_EDIT} element={<WorkOrderFormPage />} />
+                <Route path={ROUTES.ADMIN.ORDERS_ASSIGN} element={<WorkOrderAssignPage />} />
+                <Route path={ROUTES.ADMIN.ORDERS_DETAIL} element={<WorkOrderDetailPage />} />
+                <Route path={ROUTES.ADMIN.CERTIFICATION} element={<CertificationPage />} />
+                <Route path={ROUTES.ADMIN.SERVICE_ITEMS} element={<ServiceItemsPage />} />
+              </Route>
             </Route>
-          </Route>
 
-          {/* Technician routes */}
-          <Route element={<ProtectedRoute allowedRoles={['technician']} />}>
-            <Route element={<TechnicianLayout />}>
-              <Route path={ROUTES.TECHNICIAN.DASHBOARD} element={<TechDashboard />} />
-              <Route path={ROUTES.TECHNICIAN.ORDERS} element={<TechOrdersPage />} />
-              <Route path={ROUTES.TECHNICIAN.ORDERS_DETAIL} element={<TechOrderDetailPage />} />
-              <Route path={ROUTES.TECHNICIAN.RUECKMELDUNG_FORM} element={<RueckmeldungPage />} />
+            {/* Technician routes */}
+            <Route element={<ProtectedRoute allowedRoles={['technician']} />}>
+              <Route element={<TechnicianLayout />}>
+                <Route path={ROUTES.TECHNICIAN.DASHBOARD} element={<TechDashboard />} />
+                <Route path={ROUTES.TECHNICIAN.ORDERS} element={<TechOrdersPage />} />
+                <Route path={ROUTES.TECHNICIAN.ORDERS_DETAIL} element={<TechOrderDetailPage />} />
+                <Route path={ROUTES.TECHNICIAN.RUECKMELDUNG_FORM} element={<RueckmeldungPage />} />
+              </Route>
             </Route>
-          </Route>
 
-          {/* Contractor routes */}
-          <Route element={<ProtectedRoute allowedRoles={['contractor']} />}>
-            <Route element={<ContractorLayout />}>
-              <Route path={ROUTES.CONTRACTOR.DASHBOARD} element={<ContractorDashboard />} />
-              <Route path={ROUTES.CONTRACTOR.ORDERS} element={<ContractorOrdersPage />} />
+            {/* Contractor routes */}
+            <Route element={<ProtectedRoute allowedRoles={['contractor']} />}>
+              <Route element={<ContractorLayout />}>
+                <Route path={ROUTES.CONTRACTOR.DASHBOARD} element={<ContractorDashboard />} />
+                <Route path={ROUTES.CONTRACTOR.ORDERS} element={<ContractorOrdersPage />} />
+              </Route>
             </Route>
-          </Route>
 
-          <Route path="*" element={<Navigate to={ROUTES.LOGIN} replace />} />
-        </Routes>
+            <Route path="*" element={<Navigate to={ROUTES.LOGIN} replace />} />
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     </AuthProvider>
   )

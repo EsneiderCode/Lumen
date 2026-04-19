@@ -1,83 +1,24 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
+import { ClipboardList } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
-import { fetchMyWorkOrders } from '@/services/workOrderService'
+import { fetchMyWorkOrders, type WorkOrderWithRelations } from '@/services/workOrderService'
 import type { WorkOrderStatus, WorkType, TeamColor } from '@/types/enums'
-import type { Database } from '@/types/database.types'
-
-type WorkOrderRow = Database['public']['Tables']['work_orders']['Row'] & {
-  clients: { name: string; code: string } | null
-  projects: { name: string; code: string } | null
-}
+import { useLabels } from '@/i18n/labels'
+import { STATUS_COLORS, TEAM_DOT } from '@/constants/styles'
 
 const ACTIVE_STATUSES: WorkOrderStatus[] = ['assigned', 'in_progress', 'executed', 'rueckmeldung_pending']
 const DONE_STATUSES: WorkOrderStatus[] = ['rueckmeldung_sent', 'internally_certified', 'sent_to_client', 'client_accepted', 'invoiced', 'paid']
 
 const TEAM_COLORS: Record<string, { dot: string; badge: string }> = {
-  rot: { dot: 'bg-team-rot', badge: 'bg-team-rot/15 text-red-700' },
-  gruen: { dot: 'bg-team-gruen', badge: 'bg-team-gruen/15 text-emerald-700' },
-  blau: { dot: 'bg-team-blau', badge: 'bg-team-blau/15 text-blue-700' },
-  gelb: { dot: 'bg-team-gelb', badge: 'bg-team-gelb/15 text-yellow-700' },
-}
-
-const TEAM_LABELS: Record<string, string> = {
-  rot: 'Rot',
-  gruen: 'Grün',
-  blau: 'Blau',
-  gelb: 'Gelb',
-}
-
-const STATUS_LABELS: Record<WorkOrderStatus, string> = {
-  created: 'Erstellt',
-  assigned: 'Zugewiesen',
-  in_progress: 'In Bearbeitung',
-  executed: 'Ausgeführt',
-  rueckmeldung_pending: 'RM ausstehend',
-  rueckmeldung_sent: 'RM gesendet',
-  internally_certified: 'Zertifiziert',
-  sent_to_client: 'An Kunden',
-  client_accepted: 'Akzeptiert',
-  client_rejected: 'Abgelehnt',
-  invoiced: 'Fakturiert',
-  paid: 'Bezahlt',
-  returned: 'Zurückgegeben',
-  cancelled: 'Storniert',
-}
-
-const STATUS_COLORS: Record<WorkOrderStatus, string> = {
-  created: 'bg-gf-text-muted/20 text-gf-text-muted',
-  assigned: 'bg-gf-primary/15 text-gf-primary-dark',
-  in_progress: 'bg-gf-accent/15 text-gf-accent',
-  executed: 'bg-gf-warning/15 text-amber-700',
-  rueckmeldung_pending: 'bg-gf-warning/20 text-amber-700',
-  rueckmeldung_sent: 'bg-gf-warning/10 text-amber-600',
-  internally_certified: 'bg-gf-success/15 text-emerald-700',
-  sent_to_client: 'bg-gf-primary/10 text-gf-primary-dark',
-  client_accepted: 'bg-gf-success/20 text-emerald-700',
-  client_rejected: 'bg-gf-danger/15 text-rose-700',
-  invoiced: 'bg-gf-accent/10 text-purple-700',
-  paid: 'bg-gf-success/25 text-emerald-800',
-  returned: 'bg-gf-warning/15 text-amber-700',
-  cancelled: 'bg-gf-danger/10 text-rose-600',
-}
-
-const WORK_TYPE_LABELS: Record<WorkType, string> = {
-  soplado: 'Soplado',
-  fusion_ap: 'Fusión AP',
-  fusion_dp: 'Fusión DP',
-  alta: 'Alta',
-  nt_installation: 'NT-Installation',
-  patchkabel: 'Patchkabel',
-}
-
-const TEAM_DOT: Record<TeamColor, string> = {
-  rot: 'bg-team-rot',
-  gruen: 'bg-team-gruen',
-  blau: 'bg-team-blau',
-  gelb: 'bg-team-gelb',
+  rot: { dot: 'bg-team-rot', badge: 'bg-team-rot/15 text-team-rot' },
+  gruen: { dot: 'bg-team-gruen', badge: 'bg-team-gruen/15 text-team-gruen' },
+  blau: { dot: 'bg-team-blau', badge: 'bg-team-blau/15 text-team-blau' },
+  gelb: { dot: 'bg-team-gelb', badge: 'bg-team-gelb/15 text-team-gelb' },
 }
 
 export function TechDashboard() {
+  const L = useLabels()
   const navigate = useNavigate()
   const { user } = useAuth()
   const team = user?.team ?? null
@@ -90,7 +31,7 @@ export function TechDashboard() {
   })
   const todayIso = new Date().toISOString().slice(0, 10)
 
-  const [orders, setOrders] = useState<WorkOrderRow[]>([])
+  const [orders, setOrders] = useState<WorkOrderWithRelations[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -100,7 +41,7 @@ export function TechDashboard() {
       setIsLoading(true)
       const { data } = await fetchMyWorkOrders(user!.id, user!.team)
       if (!cancelled) {
-        setOrders(data as unknown as WorkOrderRow[])
+        setOrders(data)
         setIsLoading(false)
       }
     }
@@ -121,18 +62,18 @@ export function TechDashboard() {
   return (
     <div>
       {/* Greeting */}
-      <div className="mb-5 rounded-gf-card border border-gf-border bg-gf-card p-5">
+      <div className="mb-5 rounded-l border border-line bg-bg-1 p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="font-display text-lg font-bold text-gf-text">
+            <h2 className="font-display text-lg font-bold text-fg-1">
               Hallo, {user?.fullName}
             </h2>
-            <p className="mt-0.5 text-sm text-gf-text-muted">{today}</p>
+            <p className="mt-0.5 text-sm text-fg-2">{today}</p>
           </div>
           {team && teamStyle && (
             <span className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${teamStyle.badge}`}>
               <span className={`h-2 w-2 rounded-full ${teamStyle.dot}`} />
-              Team {TEAM_LABELS[team]}
+              Team {L.team(team as TeamColor)}
             </span>
           )}
         </div>
@@ -142,50 +83,51 @@ export function TechDashboard() {
       <div className="mb-5 grid grid-cols-3 gap-2 sm:gap-3">
         {isLoading
           ? Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="rounded-gf-card border border-gf-border bg-gf-card p-3 text-center sm:p-4">
-                <div className="mx-auto mb-2 h-1 w-8 rounded-full bg-gf-border" />
-                <div className="mx-auto mb-1 h-6 w-6 animate-pulse rounded bg-gf-border" />
-                <div className="mx-auto h-3 w-10 animate-pulse rounded bg-gf-border" />
+              <div key={i} className="rounded-l border border-line bg-bg-1 p-3 text-center sm:p-4">
+                <div className="mx-auto mb-2 h-1 w-8 rounded-full bg-line" />
+                <div className="mx-auto mb-1 h-6 w-6 animate-pulse rounded bg-line" />
+                <div className="mx-auto h-3 w-10 animate-pulse rounded bg-line" />
               </div>
             ))
           : [
-              { label: 'Heute', value: todayCount, color: 'bg-gf-primary' },
-              { label: 'Offen', value: openCount, color: 'bg-gf-warning' },
-              { label: 'Erledigt', value: doneCount, color: 'bg-gf-success' },
+              { label: 'Heute', value: todayCount, color: 'bg-accent' },
+              { label: 'Offen', value: openCount, color: 'bg-warn' },
+              { label: 'Erledigt', value: doneCount, color: 'bg-ok' },
             ].map((s) => (
-              <div key={s.label} className="rounded-gf-card border border-gf-border bg-gf-card p-3 text-center sm:p-4">
+              <div key={s.label} className="rounded-l border border-line bg-bg-1 p-3 text-center sm:p-4">
                 <div className={`mx-auto mb-2 h-1 w-8 rounded-full ${s.color}`} />
-                <p className="font-display text-xl font-bold text-gf-text">{s.value}</p>
-                <p className="text-xs text-gf-text-muted">{s.label}</p>
+                <p className="font-display text-xl font-semibold tabular-nums text-fg-1">{s.value}</p>
+                <p className="nx-label mt-1">{s.label}</p>
               </div>
             ))}
       </div>
 
       {/* Active orders */}
-      <div className="rounded-gf-card border border-gf-border bg-gf-card p-5">
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="font-display text-sm font-semibold text-gf-text">Meine Aufträge</h3>
+      <div className="nx-panel">
+        <div className="nx-panel-head">
+          <h3 className="nx-panel-title">Meine Aufträge</h3>
           {orders.length > 0 && (
             <button
               onClick={() => navigate('/tech/orders')}
-              className="text-xs font-medium text-gf-primary"
+              className="nx-label hover:text-accent transition-colors"
             >
               Alle anzeigen →
             </button>
           )}
         </div>
+        <div className="nx-panel-body">
 
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
-            <div className="h-5 w-5 animate-spin rounded-full border-2 border-gf-border border-t-gf-primary" />
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-line border-t-accent" />
           </div>
         ) : activeOrders.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-6 text-center">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gf-surface">
-              <span className="text-xl">📋</span>
+            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-bg-0">
+              <ClipboardList size={18} strokeWidth={1.5} className="text-fg-2" />
             </div>
-            <p className="text-sm font-medium text-gf-text">Keine aktiven Aufträge</p>
-            <p className="text-xs text-gf-text-muted">
+            <p className="text-sm font-medium text-fg-1">Keine aktiven Aufträge</p>
+            <p className="text-xs text-fg-2">
               Dir sind aktuell keine Aufträge zugewiesen.
             </p>
           </div>
@@ -195,21 +137,21 @@ export function TechDashboard() {
               <button
                 key={order.id}
                 onClick={() => navigate(`/tech/orders/${order.id}`)}
-                className="w-full rounded-gf-btn border border-gf-primary/30 bg-gf-surface px-3 py-2.5 text-left transition-all active:scale-[0.99]"
+                className="w-full rounded-s border border-accent/30 bg-bg-0 px-3 py-2.5 text-left transition-all active:scale-[0.99]"
               >
                 <div className="mb-1 flex items-center justify-between gap-2">
-                  <span className="font-mono text-xs font-semibold text-gf-primary">{order.order_number}</span>
+                  <span className="font-mono text-xs font-semibold text-accent">{order.order_number}</span>
                   <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[order.status as WorkOrderStatus]}`}>
-                    {STATUS_LABELS[order.status as WorkOrderStatus]}
+                    {L.status(order.status as WorkOrderStatus)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-gf-text">{WORK_TYPE_LABELS[order.work_type as WorkType]}</span>
+                  <span className="text-xs font-medium text-fg-1">{L.workType(order.work_type as WorkType)}</span>
                   {order.assigned_team && (
                     <span className={`h-1.5 w-1.5 rounded-full ${TEAM_DOT[order.assigned_team as TeamColor]}`} />
                   )}
                   {(order.address || order.city) && (
-                    <span className="truncate text-xs text-gf-text-muted">
+                    <span className="truncate text-xs text-fg-2">
                       {[order.address, order.city].filter(Boolean).join(', ')}
                     </span>
                   )}
@@ -218,6 +160,7 @@ export function TechDashboard() {
             ))}
           </div>
         )}
+        </div>
       </div>
     </div>
   )

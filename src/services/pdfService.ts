@@ -1,4 +1,6 @@
 import jsPDF from 'jspdf'
+import { labels } from '@/i18n/labels'
+import type { WorkOrderStatus, WorkType } from '@/types/enums'
 
 interface OrderData {
   order_number: string
@@ -28,53 +30,6 @@ interface PhotoItem {
   photo_type: string
 }
 
-const WORK_TYPE_LABELS: Record<string, string> = {
-  soplado: 'Soplado',
-  fusion_ap: 'Fusión AP',
-  fusion_dp: 'Fusión DP',
-  alta: 'Alta',
-  nt_installation: 'NT-Installation',
-  patchkabel: 'Patchkabel',
-}
-
-const STATUS_LABELS: Record<string, string> = {
-  created: 'Erstellt',
-  assigned: 'Zugewiesen',
-  in_progress: 'In Bearbeitung',
-  executed: 'Ausgeführt',
-  rueckmeldung_pending: 'RM ausstehend',
-  rueckmeldung_sent: 'RM gesendet',
-  internally_certified: 'Intern zertifiziert',
-  sent_to_client: 'An Kunden gesendet',
-  client_accepted: 'Akzeptiert',
-  client_rejected: 'Abgelehnt',
-  invoiced: 'Fakturiert',
-  paid: 'Bezahlt',
-  returned: 'Zurückgegeben',
-  cancelled: 'Storniert',
-}
-
-const DETAIL_FIELD_LABELS: Record<string, string> = {
-  meters: 'Meter',
-  section: 'Abschnitt',
-  tube_diameter: 'Rohrdurchmesser',
-  result: 'Ergebnis',
-  splice_count: 'Spleiß-Anzahl',
-  fiber_type: 'Fasertyp',
-  fusion_losses: 'Schmelzverluste (dB)',
-  has_measurement_cert: 'Meßprotokoll',
-  access_type: 'Zugangstyp',
-  equipment_installed: 'Installierte Geräte',
-  client_signature: 'Kundenunterschrift',
-  nt_type: 'NT-Typ',
-  serial_number: 'Seriennummer',
-  location: 'Standort',
-  configuration: 'Konfiguration',
-  connected_section: 'Verbundener Abschnitt',
-  cable_length: 'Kabellänge (m)',
-  connector_type: 'Steckertyp',
-  test_result: 'Testergebnis',
-}
 
 export function generateCertificatePdf(
   order: OrderData,
@@ -140,7 +95,7 @@ export function generateCertificatePdf(
   doc.setFontSize(9)
   doc.setFont('helvetica', 'normal')
   doc.setTextColor(100, 100, 100)
-  doc.text(STATUS_LABELS[order.status] ?? order.status, pageW - 14, y + 7, { align: 'right' })
+  doc.text(labels.status(order.status as WorkOrderStatus) || order.status, pageW - 14, y + 7, { align: 'right' })
 
   y += 20
   doc.setDrawColor(180, 200, 220)
@@ -149,7 +104,7 @@ export function generateCertificatePdf(
 
   // ── Auftragsdaten ─────────────────────────────────────────────
   addSection('Auftragsdaten')
-  addRow('Auftragstyp', WORK_TYPE_LABELS[order.work_type] ?? order.work_type)
+  addRow('Auftragstyp', labels.workType(order.work_type as WorkType) || order.work_type)
   addRow('Linie', order.line)
   addRow('Priorität', order.priority)
   addRow('Kunde', `${order.clients?.name ?? '—'} (${order.clients?.code ?? '—'})`)
@@ -169,9 +124,9 @@ export function generateCertificatePdf(
     ([, v]) => v !== null && v !== undefined && v !== '',
   )
   if (detailEntries.length > 0) {
-    addSection(`Technische Daten — ${WORK_TYPE_LABELS[order.work_type] ?? order.work_type}`)
+    addSection(`Technische Daten — ${labels.workType(order.work_type as WorkType) || order.work_type}`)
     for (const [key, value] of detailEntries) {
-      const label = DETAIL_FIELD_LABELS[key] ?? key.replace(/_/g, ' ')
+      const label = labels.detailField(key)
       const strValue = typeof value === 'boolean' ? (value ? 'Ja' : 'Nein') : String(value)
       addRow(label, strValue)
     }
@@ -212,7 +167,7 @@ export function generateCertificatePdf(
   if (history.length > 0) {
     addSection('Statusverlauf')
     for (const entry of history) {
-      const statusLabel = STATUS_LABELS[entry.to_status] ?? entry.to_status
+      const statusLabel = labels.status(entry.to_status as WorkOrderStatus) || entry.to_status
       const date = new Date(entry.created_at).toLocaleString('de-DE')
       checkPage(entry.notes ? 10 : 6)
       doc.setFontSize(8.5)

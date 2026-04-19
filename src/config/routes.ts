@@ -11,6 +11,7 @@ export const ROUTES = {
     ORDERS_ASSIGN: '/admin/orders/:id/assign',
     ORDERS_DETAIL: '/admin/orders/:id',
     CERTIFICATION: '/admin/certification',
+    SERVICE_ITEMS: '/admin/service-items',
     PERSONNEL: '/admin/personnel',
     MATERIALS: '/admin/materials',
     SETTINGS: '/admin/settings',

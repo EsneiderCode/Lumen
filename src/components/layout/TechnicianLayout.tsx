@@ -1,7 +1,12 @@
 import { Outlet } from 'react-router'
+import { useTranslation } from 'react-i18next'
+import { ClipboardList, Calendar } from 'lucide-react'
 import { BottomNav, type BottomNavItem } from './BottomNav'
+import { LanguageSelector } from '@/components/ui/LanguageSelector'
 import { ROUTES } from '@/config/routes'
 import { useAuth } from '@/hooks/useAuth'
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
+import { OfflineBanner } from '@/components/ui/OfflineBanner'
 
 const TEAM_COLORS: Record<string, string> = {
   rot: 'bg-team-rot',
@@ -10,36 +15,43 @@ const TEAM_COLORS: Record<string, string> = {
   gelb: 'bg-team-gelb',
 }
 
-const NAV_ITEMS: BottomNavItem[] = [
-  { label: 'Aufträge', path: ROUTES.TECHNICIAN.ORDERS, icon: '📋' },
-  { label: 'Kalender', path: ROUTES.TECHNICIAN.SCHEDULE, icon: '📅' },
-]
-
 export function TechnicianLayout() {
+  const { t } = useTranslation()
   const { user, signOut } = useAuth()
-  const teamColorClass = user?.team ? TEAM_COLORS[user.team] ?? 'bg-gf-text-muted' : 'bg-gf-text-muted'
+  const teamColorClass = user?.team ? TEAM_COLORS[user.team] ?? 'bg-fg-2' : 'bg-fg-2'
+
+  const navItems: BottomNavItem[] = [
+    { label: t('nav.workOrders'), path: ROUTES.TECHNICIAN.ORDERS, icon: ClipboardList },
+    { label: t('nav.schedule', { defaultValue: 'Kalender' }), path: ROUTES.TECHNICIAN.SCHEDULE, icon: Calendar },
+  ]
 
   return (
     <div className="flex min-h-screen flex-col nexus-bg">
-      <header className="flex h-14 items-center gap-3 border-b border-gf-border bg-gf-card px-4">
+      <OfflineBanner />
+      <header className="flex h-14 items-center gap-3 border-b border-line bg-bg-1 px-4">
         <div className={`h-3 w-3 rounded-full ${teamColorClass}`} />
-        <span className="font-display text-sm font-semibold text-gf-text">LUMEN</span>
-        <span className="ml-auto text-xs text-gf-text-muted">{user?.fullName}</span>
-        <button
-          onClick={signOut}
-          className="ml-2 rounded-gf-btn px-2 py-1 text-xs text-gf-text-muted transition-colors hover:text-gf-danger"
-        >
-          Abmelden
-        </button>
+        <span className="font-display text-sm font-semibold text-fg-1">LUMEN</span>
+        <div className="ml-auto flex items-center gap-2">
+          <LanguageSelector />
+          <span className="hidden text-xs text-fg-2 sm:inline">{user?.fullName}</span>
+          <button
+            onClick={signOut}
+            className="rounded-s px-2 py-1 text-xs text-fg-2 transition-colors hover:text-err"
+          >
+            {t('auth.signOut')}
+          </button>
+        </div>
       </header>
 
       <main className="flex-1 p-4 pb-20">
         <div className="page-fade-in">
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </div>
       </main>
 
-      <BottomNav items={NAV_ITEMS} />
+      <BottomNav items={navItems} />
     </div>
   )
 }

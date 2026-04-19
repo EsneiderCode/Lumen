@@ -6,25 +6,12 @@ import {
   fetchTechnicians,
   assignWorkOrder,
 } from '@/services/workOrderService'
-import type { TeamColor } from '@/types/enums'
-
-const TEAMS: { value: TeamColor; label: string; dot: string }[] = [
-  { value: 'rot', label: 'Team Rot', dot: 'bg-team-rot' },
-  { value: 'gruen', label: 'Team Grün', dot: 'bg-team-gruen' },
-  { value: 'blau', label: 'Team Blau', dot: 'bg-team-blau' },
-  { value: 'gelb', label: 'Team Gelb', dot: 'bg-team-gelb' },
-]
-
-const WORK_TYPE_LABELS: Record<string, string> = {
-  soplado: 'Soplado',
-  fusion_ap: 'Fusión AP',
-  fusion_dp: 'Fusión DP',
-  alta: 'Alta',
-  nt_installation: 'NT-Installation',
-  patchkabel: 'Patchkabel',
-}
+import type { TeamColor, WorkType } from '@/types/enums'
+import { useLabels } from '@/i18n/labels'
+import { TEAMS } from '@/constants/styles'
 
 export function WorkOrderAssignPage() {
+  const L = useLabels()
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -91,7 +78,7 @@ export function WorkOrderAssignPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-gf-border border-t-gf-primary" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-accent" />
       </div>
     )
   }
@@ -102,37 +89,37 @@ export function WorkOrderAssignPage() {
       <div className="mb-6 flex items-center gap-3">
         <button
           onClick={() => navigate('/admin/orders')}
-          className="flex h-8 w-8 items-center justify-center rounded-gf-btn border border-gf-border text-gf-text-muted hover:border-gf-primary hover:text-gf-primary transition-colors"
+          className="flex h-8 w-8 items-center justify-center rounded-s border border-line text-fg-2 hover:border-accent hover:text-accent transition-colors"
         >
           ←
         </button>
         <div>
-          <h2 className="font-display text-xl font-bold text-gf-text">Auftrag zuweisen</h2>
+          <h2 className="font-display text-xl font-bold text-fg-1">Auftrag zuweisen</h2>
           {order && (
-            <p className="text-sm text-gf-text-muted font-mono">{order.order_number}</p>
+            <p className="text-sm text-fg-2 font-mono">{order.order_number}</p>
           )}
         </div>
       </div>
 
       {/* Order summary */}
       {order && (
-        <div className="mb-5 rounded-gf-card border border-gf-border bg-gf-card p-4">
+        <div className="mb-5 rounded-l border border-line bg-bg-1 p-4">
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div>
-              <p className="text-xs text-gf-text-muted">Kunde</p>
-              <p className="font-medium text-gf-text">{order.clients?.name ?? '—'}</p>
+              <p className="text-xs text-fg-2">Kunde</p>
+              <p className="font-medium text-fg-1">{order.clients?.name ?? '—'}</p>
             </div>
             <div>
-              <p className="text-xs text-gf-text-muted">Projekt</p>
-              <p className="font-medium text-gf-text">{order.projects?.code ?? '—'}</p>
+              <p className="text-xs text-fg-2">Projekt</p>
+              <p className="font-medium text-fg-1">{order.projects?.code ?? '—'}</p>
             </div>
             <div>
-              <p className="text-xs text-gf-text-muted">Arbeitstyp</p>
-              <p className="font-medium text-gf-text">{WORK_TYPE_LABELS[order.work_type] ?? order.work_type}</p>
+              <p className="text-xs text-fg-2">Arbeitstyp</p>
+              <p className="font-medium text-fg-1">{L.workType(order.work_type as WorkType) || order.work_type}</p>
             </div>
             <div>
-              <p className="text-xs text-gf-text-muted">Adresse</p>
-              <p className="font-medium text-gf-text">
+              <p className="text-xs text-fg-2">Adresse</p>
+              <p className="font-medium text-fg-1">
                 {[order.address, order.city].filter(Boolean).join(', ') || '—'}
               </p>
             </div>
@@ -141,13 +128,13 @@ export function WorkOrderAssignPage() {
       )}
 
       <form onSubmit={handleAssign}>
-        <div className="rounded-gf-card border border-gf-border bg-gf-card p-5 space-y-5">
-          <h3 className="font-display text-sm font-semibold text-gf-text">Zuweisung</h3>
+        <div className="rounded-l border border-line bg-bg-1 p-5 space-y-5">
+          <h3 className="font-display text-sm font-semibold text-fg-1">Zuweisung</h3>
 
           {/* Team selection */}
           <div>
-            <label className="mb-2 block text-xs font-medium text-gf-text-muted">
-              Team <span className="text-gf-danger">*</span>
+            <label className="mb-2 block text-xs font-medium text-fg-2">
+              Team <span className="text-err">*</span>
             </label>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {TEAMS.map((team) => (
@@ -155,10 +142,10 @@ export function WorkOrderAssignPage() {
                   key={team.value}
                   type="button"
                   onClick={() => { setSelectedTeam(team.value); setSelectedTechnician('') }}
-                  className={`flex items-center gap-2 rounded-gf-btn border px-3 py-2.5 text-sm font-medium transition-all ${
+                  className={`flex items-center gap-2 rounded-s border px-3 py-2.5 text-sm font-medium transition-all ${
                     selectedTeam === team.value
-                      ? 'border-gf-primary bg-gf-primary/10 text-gf-primary'
-                      : 'border-gf-border bg-gf-surface text-gf-text hover:border-gf-primary/50'
+                      ? 'border-accent bg-accent/10 text-accent'
+                      : 'border-line bg-bg-0 text-fg-1 hover:border-accent/50'
                   }`}
                 >
                   <span className={`h-2.5 w-2.5 rounded-full ${team.dot}`} />
@@ -170,14 +157,14 @@ export function WorkOrderAssignPage() {
 
           {/* Technician */}
           <div>
-            <label className="mb-1 block text-xs font-medium text-gf-text-muted">
+            <label className="mb-1 block text-xs font-medium text-fg-2">
               Interner Mitarbeiter (optional)
             </label>
             <select
               value={selectedTechnician}
               onChange={(e) => setSelectedTechnician(e.target.value)}
               disabled={!selectedTeam}
-              className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary disabled:opacity-50"
+              className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
             >
               <option value="">— Mitarbeiter wählen —</option>
               {filteredTechnicians.map((t) => (
@@ -185,7 +172,7 @@ export function WorkOrderAssignPage() {
               ))}
             </select>
             {selectedTeam && filteredTechnicians.length === 0 && (
-              <p className="mt-1 text-xs text-gf-text-muted">
+              <p className="mt-1 text-xs text-fg-2">
                 Keine Mitarbeiter für dieses Team gefunden.
               </p>
             )}
@@ -193,21 +180,21 @@ export function WorkOrderAssignPage() {
 
           {/* Assigned date */}
           <div>
-            <label className="mb-1 block text-xs font-medium text-gf-text-muted">
+            <label className="mb-1 block text-xs font-medium text-fg-2">
               Einsatzdatum
             </label>
             <input
               type="date"
               value={assignedDate}
               onChange={(e) => setAssignedDate(e.target.value)}
-              className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+              className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
             />
           </div>
         </div>
 
         {/* Error */}
         {error && (
-          <div className="mt-4 rounded-gf-btn border border-gf-danger/30 bg-gf-danger/10 px-4 py-3 text-sm text-rose-700">
+          <div className="mt-4 rounded-s border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
             {error}
           </div>
         )}
@@ -217,14 +204,14 @@ export function WorkOrderAssignPage() {
           <button
             type="button"
             onClick={() => navigate('/admin/orders')}
-            className="flex-1 rounded-gf-btn border border-gf-border px-4 py-2.5 text-sm font-medium text-gf-text hover:bg-gf-surface transition-colors"
+            className="flex-1 rounded-s border border-line px-4 py-2.5 text-sm font-medium text-fg-1 hover:bg-bg-0 transition-colors"
           >
             Abbrechen
           </button>
           <button
             type="submit"
             disabled={!selectedTeam || isSaving}
-            className="flex-1 rounded-gf-btn bg-gf-primary px-4 py-2.5 text-sm font-semibold text-gf-base hover:bg-gf-primary-dark disabled:opacity-50 transition-colors"
+            className="flex-1 rounded-s bg-accent px-4 py-2.5 text-sm font-semibold text-ink hover:bg-accent disabled:opacity-50 transition-colors"
           >
             {isSaving ? 'Zuweisen…' : 'Zuweisen & Status → Assigned'}
           </button>

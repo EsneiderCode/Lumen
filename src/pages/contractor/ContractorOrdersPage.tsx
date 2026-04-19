@@ -1,84 +1,32 @@
 import { useEffect, useState } from 'react'
+import { Check, Receipt, ClipboardList } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
-import { fetchContractorWorkOrders } from '@/services/workOrderService'
-import type { WorkOrderStatus, WorkType, TeamColor } from '@/types/enums'
-import type { Database } from '@/types/database.types'
-
-type WorkOrderRow = Database['public']['Tables']['work_orders']['Row'] & {
-  clients: { name: string; code: string } | null
-  projects: { name: string; code: string } | null
-}
-
-// Statuses visible to contractor mapped to friendly labels
-const STATUS_LABELS: Record<WorkOrderStatus, string> = {
-  created: 'Erstellt',
-  assigned: 'Zugewiesen',
-  in_progress: 'In Bearbeitung',
-  executed: 'Ausgeführt',
-  rueckmeldung_pending: 'RM ausstehend',
-  rueckmeldung_sent: 'RM gesendet',
-  internally_certified: 'Zertifiziert',
-  sent_to_client: 'Beim Kunden',
-  client_accepted: 'Akzeptiert',
-  client_rejected: 'Abgelehnt',
-  invoiced: 'Fakturiert',
-  paid: 'Bezahlt',
-  returned: 'Zurückgegeben',
-  cancelled: 'Storniert',
-}
-
-const STATUS_COLORS: Record<WorkOrderStatus, string> = {
-  created: 'bg-gf-text-muted/20 text-gf-text-muted',
-  assigned: 'bg-gf-primary/15 text-gf-primary-dark',
-  in_progress: 'bg-gf-accent/15 text-gf-accent',
-  executed: 'bg-gf-warning/15 text-amber-700',
-  rueckmeldung_pending: 'bg-gf-warning/20 text-amber-700',
-  rueckmeldung_sent: 'bg-gf-warning/10 text-amber-600',
-  internally_certified: 'bg-gf-success/15 text-emerald-700',
-  sent_to_client: 'bg-gf-primary/10 text-gf-primary-dark',
-  client_accepted: 'bg-gf-success/20 text-emerald-700',
-  client_rejected: 'bg-gf-danger/15 text-rose-700',
-  invoiced: 'bg-gf-accent/10 text-purple-700',
-  paid: 'bg-gf-success/25 text-emerald-800',
-  returned: 'bg-gf-warning/15 text-amber-700',
-  cancelled: 'bg-gf-danger/10 text-rose-600',
-}
-
-const WORK_TYPE_LABELS: Record<WorkType, string> = {
-  soplado: 'Soplado',
-  fusion_ap: 'Fusión AP',
-  fusion_dp: 'Fusión DP',
-  alta: 'Alta',
-  nt_installation: 'NT-Installation',
-  patchkabel: 'Patchkabel',
-}
-
-const TEAM_DOT: Record<TeamColor, string> = {
-  rot: 'bg-team-rot',
-  gruen: 'bg-team-gruen',
-  blau: 'bg-team-blau',
-  gelb: 'bg-team-gelb',
-}
+import { fetchContractorWorkOrders, type WorkOrderWithRelations } from '@/services/workOrderService'
+import type { WorkOrderStatus, TeamColor } from '@/types/enums'
+import { useLabels } from '@/i18n/labels'
+import { STATUS_COLORS, TEAM_DOT } from '@/constants/styles'
 
 // Payment indicator based on status
 function PaymentBadge({ status }: { status: WorkOrderStatus }) {
   if (status === 'paid') {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-gf-success/20 px-2 py-0.5 text-xs font-semibold text-emerald-700">
-        ✓ Bezahlt
+      <span className="inline-flex items-center gap-1 rounded-full bg-ok/20 px-2 py-0.5 text-xs font-semibold text-ok">
+        <Check size={12} strokeWidth={1.5} />
+        Bezahlt
       </span>
     )
   }
   if (status === 'invoiced') {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-gf-accent/10 px-2 py-0.5 text-xs font-semibold text-purple-700">
-        🧾 Fakturiert
+      <span className="inline-flex items-center gap-1 rounded-full bg-err/10 px-2 py-0.5 text-xs font-semibold text-info">
+        <Receipt size={12} strokeWidth={1.5} />
+        Fakturiert
       </span>
     )
   }
   if (status === 'client_accepted') {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full bg-gf-warning/15 px-2 py-0.5 text-xs font-medium text-amber-700">
+      <span className="inline-flex items-center gap-1 rounded-full bg-warn/15 px-2 py-0.5 text-xs font-medium text-warn">
         Abrechnung ausstehend
       </span>
     )
@@ -93,7 +41,7 @@ const ACTIVE_STATUSES: WorkOrderStatus[] = [
 
 export function ContractorOrdersPage() {
   const { user } = useAuth()
-  const [orders, setOrders] = useState<WorkOrderRow[]>([])
+  const [orders, setOrders] = useState<WorkOrderWithRelations[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
@@ -107,7 +55,7 @@ export function ContractorOrdersPage() {
       const { data, error } = await fetchContractorWorkOrders(userId)
       if (cancelled) return
       if (error) setError(error)
-      else setOrders(data as unknown as WorkOrderRow[])
+      else setOrders(data)
       setIsLoading(false)
     }
     void load()
@@ -128,14 +76,14 @@ export function ContractorOrdersPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-gf-border border-t-gf-primary" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-accent" />
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="rounded-gf-btn border border-gf-danger/30 bg-gf-danger/10 px-4 py-3 text-sm text-rose-700">
+      <div className="rounded-s border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
         {error}
       </div>
     )
@@ -145,8 +93,8 @@ export function ContractorOrdersPage() {
     <div>
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h2 className="font-display text-xl font-bold text-gf-text">Meine Aufträge</h2>
-          <p className="text-sm text-gf-text-muted">{orders.length} Aufträge</p>
+          <h2 className="font-display text-xl font-bold text-fg-1">Meine Aufträge</h2>
+          <p className="text-sm text-fg-2">{orders.length} Aufträge</p>
         </div>
       </div>
 
@@ -158,22 +106,22 @@ export function ContractorOrdersPage() {
             placeholder="Auftrag suchen…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-gf-btn border border-gf-border bg-gf-card px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+            className="w-full rounded-s border border-line bg-bg-1 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           />
         </div>
       )}
 
       {orders.length === 0 ? (
-        <div className="rounded-gf-card border border-gf-border bg-gf-card py-16 text-center">
-          <p className="text-2xl">📋</p>
-          <p className="mt-2 text-sm font-medium text-gf-text">Keine Aufträge</p>
-          <p className="text-xs text-gf-text-muted">Ihnen wurden noch keine Aufträge zugewiesen.</p>
+        <div className="rounded-l border border-line bg-bg-1 py-16 text-center">
+          <ClipboardList size={28} strokeWidth={1.5} className="mx-auto text-fg-3" />
+          <p className="mt-2 text-sm font-medium text-fg-1">Keine Aufträge</p>
+          <p className="text-xs text-fg-2">Ihnen wurden noch keine Aufträge zugewiesen.</p>
         </div>
       ) : (
         <div className="space-y-5">
           {activeOrders.length > 0 && (
             <section>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gf-text-muted">
+              <p className="mb-2 nx-label">
                 Aktiv ({activeOrders.length})
               </p>
               <div className="space-y-2">
@@ -186,7 +134,7 @@ export function ContractorOrdersPage() {
 
           {closedOrders.length > 0 && (
             <section>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gf-text-muted">
+              <p className="mb-2 nx-label">
                 Abgeschlossen ({closedOrders.length})
               </p>
               <div className="space-y-2">
@@ -202,34 +150,35 @@ export function ContractorOrdersPage() {
   )
 }
 
-function OrderCard({ order }: { order: WorkOrderRow }) {
+function OrderCard({ order }: { order: WorkOrderWithRelations }) {
+  const L = useLabels()
   const isActive = ACTIVE_STATUSES.includes(order.status)
   return (
     <div
-      className={`rounded-gf-card border p-4 ${
+      className={`rounded-l border p-4 ${
         isActive
-          ? 'border-gf-primary/40 bg-gf-card'
-          : 'border-gf-border bg-gf-card opacity-80'
+          ? 'border-accent/40 bg-bg-1'
+          : 'border-line bg-bg-1 opacity-80'
       }`}
     >
       {/* Top row: order number + status */}
       <div className="mb-2 flex items-start justify-between gap-2">
-        <span className="font-mono text-xs font-semibold text-gf-primary">
+        <span className="font-mono text-xs font-semibold text-accent">
           {order.order_number}
         </span>
         <span
           className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[order.status]}`}
         >
-          {STATUS_LABELS[order.status]}
+          {L.status(order.status)}
         </span>
       </div>
 
       {/* Work type + line + team dot */}
       <div className="mb-1 flex items-center gap-2">
-        <span className="text-sm font-semibold text-gf-text">
-          {WORK_TYPE_LABELS[order.work_type]}
+        <span className="text-sm font-semibold text-fg-1">
+          {L.workType(order.work_type)}
         </span>
-        <span className="text-xs text-gf-text-muted">{order.line}</span>
+        <span className="text-xs text-fg-2">{order.line}</span>
         {order.assigned_team && (
           <span
             className={`h-2 w-2 rounded-full ${TEAM_DOT[order.assigned_team as TeamColor]}`}
@@ -239,7 +188,7 @@ function OrderCard({ order }: { order: WorkOrderRow }) {
 
       {/* Address */}
       {(order.address || order.city) && (
-        <p className="mb-2 text-xs text-gf-text-muted">
+        <p className="mb-2 text-xs text-fg-2">
           {[order.address, order.city].filter(Boolean).join(', ')}
         </p>
       )}
@@ -247,11 +196,11 @@ function OrderCard({ order }: { order: WorkOrderRow }) {
       {/* Bottom row: client/project + date + payment */}
       <div className="flex items-end justify-between gap-2">
         <div>
-          <p className="text-xs text-gf-text-muted">
+          <p className="text-xs text-fg-2">
             {order.clients?.code ?? '—'} · {order.projects?.code ?? '—'}
           </p>
           {order.assigned_date && (
-            <p className="text-xs text-gf-text-muted">
+            <p className="text-xs text-fg-2">
               {new Date(order.assigned_date).toLocaleDateString('de-DE')}
             </p>
           )}
