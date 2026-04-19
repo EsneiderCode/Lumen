@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
+import { ClipboardList } from 'lucide-react'
 import {
   fetchWorkOrders,
   fetchClients,
@@ -315,7 +316,14 @@ export function WorkOrdersPage() {
                           }`}
                           title="Detail"
                         >
-                          {order.status === 'rueckmeldung_sent' ? '📋 RM' : 'Detail'}
+                          {order.status === 'rueckmeldung_sent' ? (
+                            <span className="inline-flex items-center gap-1">
+                              <ClipboardList size={12} strokeWidth={1.5} />
+                              RM
+                            </span>
+                          ) : (
+                            'Detail'
+                          )}
                         </button>
                         {(order.status === 'created') && (
                           <button

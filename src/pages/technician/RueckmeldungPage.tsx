@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
+import { AlertTriangle } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 
 // ── Time picker ────────────────────────────────────────────────
@@ -281,7 +282,10 @@ export function RueckmeldungPage() {
       {/* Non-conformity banner */}
       {order.status === 'returned' && returnedNote && (
         <div className="rounded-card border border-err/50 bg-err/10 p-4">
-          <p className="font-semibold text-err">⚠ Auftrag zurückgegeben — Nichtkonformität</p>
+          <p className="inline-flex items-center gap-2 font-semibold text-err">
+            <AlertTriangle size={16} strokeWidth={1.5} />
+            Auftrag zurückgegeben — Nichtkonformität
+          </p>
           <p className="mt-1 text-sm text-err">{returnedNote}</p>
           <p className="mt-2 text-xs text-err">Korrekturen vornehmen und die Rückmeldung erneut senden.</p>
         </div>

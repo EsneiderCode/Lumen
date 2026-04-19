@@ -1,5 +1,17 @@
 import { Fragment, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
+import {
+  ArrowLeft,
+  Check,
+  CheckCircle2,
+  XCircle,
+  RotateCcw,
+  Receipt,
+  CreditCard,
+  Send,
+  Undo2,
+  FileText,
+} from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import {
   fetchWorkOrder,
@@ -267,8 +279,9 @@ export function WorkOrderDetailPage() {
           <button
             onClick={() => navigate('/admin/orders')}
             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-btn border border-line text-fg-2 hover:border-accent hover:text-accent transition-colors"
+            aria-label="Zurück"
           >
-            ←
+            <ArrowLeft size={16} strokeWidth={1.5} />
           </button>
           <div>
             <div className="flex items-center gap-2">
@@ -284,9 +297,10 @@ export function WorkOrderDetailPage() {
           {showPdfButton && (
             <button
               onClick={handlePdfDownload}
-              className="rounded-btn border border-line px-3 py-1.5 text-xs font-medium text-fg-2 hover:border-accent hover:text-accent transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-btn border border-line px-3 py-1.5 text-xs font-medium text-fg-2 hover:border-accent hover:text-accent transition-colors"
             >
-              📄 PDF
+              <FileText size={14} strokeWidth={1.5} />
+              PDF
             </button>
           )}
           <button
@@ -314,14 +328,21 @@ export function WorkOrderDetailPage() {
                 onClick={() => openModal('return_nonconformity')}
                 className="flex-1 rounded-btn border border-err/40 px-3 py-2 text-sm font-semibold text-err hover:bg-err/10 disabled:opacity-50 transition-colors sm:flex-none"
               >
-                ↩ Zurückgeben
+                <span className="inline-flex items-center gap-1.5"><Undo2 size={14} strokeWidth={1.5} />Zurückgeben</span>
               </button>
               <button
                 disabled={isTransitioning}
                 onClick={handleCertify}
                 className="flex-1 rounded-btn bg-ok px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity sm:flex-none"
               >
-                {isTransitioning ? 'Wird zertifiziert…' : '✓ Intern zertifizieren'}
+                {isTransitioning ? (
+                  'Wird zertifiziert…'
+                ) : (
+                  <span className="inline-flex items-center gap-1.5">
+                    <Check size={14} strokeWidth={1.5} />
+                    Intern zertifizieren
+                  </span>
+                )}
               </button>
             </div>
           </div>
@@ -342,14 +363,14 @@ export function WorkOrderDetailPage() {
                 onClick={() => openModal('return_nonconformity')}
                 className="flex-1 rounded-btn border border-err/40 px-3 py-2 text-sm font-semibold text-err hover:bg-err/10 disabled:opacity-50 transition-colors sm:flex-none"
               >
-                ↩ Zurückgeben
+                <span className="inline-flex items-center gap-1.5"><Undo2 size={14} strokeWidth={1.5} />Zurückgeben</span>
               </button>
               <button
                 disabled={isTransitioning}
                 onClick={() => openModal('send_to_client')}
                 className="flex-1 rounded-btn bg-accent px-4 py-2 text-sm font-semibold text-paper hover:bg-accent disabled:opacity-50 transition-colors sm:flex-none"
               >
-                📤 An Kunden senden
+                <span className="inline-flex items-center gap-1.5"><Send size={14} strokeWidth={1.5} />An Kunden senden</span>
               </button>
             </div>
           </div>
@@ -370,14 +391,14 @@ export function WorkOrderDetailPage() {
                 onClick={() => openModal('reject')}
                 className="flex-1 rounded-btn border border-err/40 px-3 py-2 text-sm font-semibold text-err hover:bg-err/10 disabled:opacity-50 transition-colors sm:flex-none"
               >
-                ❌ Abgelehnt
+                <span className="inline-flex items-center gap-1.5"><XCircle size={14} strokeWidth={1.5} />Abgelehnt</span>
               </button>
               <button
                 disabled={isTransitioning}
                 onClick={() => openModal('accept')}
                 className="flex-1 rounded-btn bg-ok px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity sm:flex-none"
               >
-                ✅ Akzeptiert
+                <span className="inline-flex items-center gap-1.5"><CheckCircle2 size={14} strokeWidth={1.5} />Akzeptiert</span>
               </button>
             </div>
           </div>
@@ -399,7 +420,14 @@ export function WorkOrderDetailPage() {
               onClick={() => void doTransition('internally_certified', 'Zur Überarbeitung zurückgegeben')}
               className="shrink-0 rounded-btn border border-warn/40 px-3 py-2 text-sm font-semibold text-warn hover:bg-warn/10 disabled:opacity-50 transition-colors"
             >
-              {isTransitioning ? '…' : '🔄 Zur Überarbeitung'}
+              {isTransitioning ? (
+                '…'
+              ) : (
+                <span className="inline-flex items-center gap-1.5">
+                  <RotateCcw size={14} strokeWidth={1.5} />
+                  Zur Überarbeitung
+                </span>
+              )}
             </button>
           </div>
         </div>
@@ -418,7 +446,7 @@ export function WorkOrderDetailPage() {
               onClick={() => openModal('invoice')}
               className="shrink-0 rounded-btn bg-err px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
             >
-              🧾 Fakturieren
+              <span className="inline-flex items-center gap-1.5"><Receipt size={14} strokeWidth={1.5} />Fakturieren</span>
             </button>
           </div>
         </div>
@@ -439,7 +467,7 @@ export function WorkOrderDetailPage() {
               onClick={() => openModal('mark_paid')}
               className="shrink-0 rounded-btn bg-ok px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
             >
-              💳 Als bezahlt markieren
+              <span className="inline-flex items-center gap-1.5"><CreditCard size={14} strokeWidth={1.5} />Als bezahlt markieren</span>
             </button>
           </div>
         </div>
@@ -448,7 +476,10 @@ export function WorkOrderDetailPage() {
       {/* paid — final state banner */}
       {order.status === 'paid' && (
         <div className="rounded-card border border-ok/30 bg-ok/10 px-4 py-3">
-          <p className="text-sm font-semibold text-ok">✓ Bezahlt — Auftrag abgeschlossen</p>
+          <p className="inline-flex items-center gap-2 text-sm font-semibold text-ok">
+            <Check size={14} strokeWidth={1.5} />
+            Bezahlt — Auftrag abgeschlossen
+          </p>
         </div>
       )}
 
@@ -759,8 +790,9 @@ export function WorkOrderDetailPage() {
                       {L.status(entry.to_status)}
                     </span>
                     {entry.from_status && (
-                      <span className="text-xs text-fg-2">
-                        ← {L.status(entry.from_status)}
+                      <span className="inline-flex items-center gap-1 text-xs text-fg-2">
+                        <ArrowLeft size={12} strokeWidth={1.5} />
+                        {L.status(entry.from_status)}
                       </span>
                     )}
                   </div>

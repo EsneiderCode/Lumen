@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
+import { ClipboardList } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { fetchMyWorkOrders, type WorkOrderWithRelations } from '@/services/workOrderService'
 import type { WorkOrderStatus, WorkType, TeamColor } from '@/types/enums'
@@ -121,8 +122,8 @@ export function TechDashboard() {
           </div>
         ) : activeOrders.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-6 text-center">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-bg-0">
-              <span className="text-xl">📋</span>
+            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-bg-0">
+              <ClipboardList size={18} strokeWidth={1.5} className="text-fg-2" />
             </div>
             <p className="text-sm font-medium text-fg-1">Keine aktiven Aufträge</p>
             <p className="text-xs text-fg-2">

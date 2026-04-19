@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { FileText } from 'lucide-react'
 import { fetchServiceItems } from '@/services/serviceItemService'
 import type { ServiceItemWithRelations } from '@/types/service-items'
 
@@ -88,7 +89,7 @@ export function ServiceItemsPage() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="rounded-card border border-line bg-bg-1 py-16 text-center">
-          <p className="text-2xl">📋</p>
+          <FileText size={28} strokeWidth={1.5} className="mx-auto text-fg-3" />
           <p className="mt-2 text-sm font-medium text-fg-1">Keine Artikel gefunden</p>
         </div>
       ) : (

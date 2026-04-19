@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
+import { ArrowLeft, Play, Check, PencilLine, AlertTriangle } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import {
   fetchWorkOrder,
@@ -103,8 +104,9 @@ export function TechOrderDetailPage() {
         <button
           onClick={() => navigate('/tech/orders')}
           className="flex h-8 w-8 items-center justify-center rounded-btn border border-line text-fg-2 hover:border-accent hover:text-accent transition-colors"
+          aria-label="Zurück"
         >
-          ←
+          <ArrowLeft size={16} strokeWidth={1.5} />
         </button>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
@@ -124,7 +126,14 @@ export function TechOrderDetailPage() {
           onClick={() => handleTransition('in_progress', 'Arbeit begonnen')}
           className="w-full rounded-btn bg-err px-4 py-3.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
         >
-          {isTransitioning ? 'Wird aktualisiert…' : '▶ In Bearbeitung setzen'}
+          {isTransitioning ? (
+            'Wird aktualisiert…'
+          ) : (
+            <span className="inline-flex items-center justify-center gap-2">
+              <Play size={14} strokeWidth={1.5} />
+              In Bearbeitung setzen
+            </span>
+          )}
         </button>
       )}
 
@@ -134,16 +143,24 @@ export function TechOrderDetailPage() {
           onClick={() => handleTransition('executed', 'Ausführung abgeschlossen')}
           className="w-full rounded-btn bg-warn px-4 py-3.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
         >
-          {isTransitioning ? 'Wird aktualisiert…' : '✓ Ausführung abgeschlossen'}
+          {isTransitioning ? (
+            'Wird aktualisiert…'
+          ) : (
+            <span className="inline-flex items-center justify-center gap-2">
+              <Check size={14} strokeWidth={1.5} />
+              Ausführung abgeschlossen
+            </span>
+          )}
         </button>
       )}
 
       {order.status === 'executed' && (
         <button
           onClick={() => navigate(`/tech/orders/${order.id}/rueckmeldung`)}
-          className="w-full rounded-btn bg-accent px-4 py-3.5 text-sm font-semibold text-paper hover:bg-accent transition-colors"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-btn bg-accent px-4 py-3.5 text-sm font-semibold text-paper hover:bg-accent transition-colors"
         >
-          📝 Rückmeldung ausfüllen
+          <PencilLine size={14} strokeWidth={1.5} />
+          Rückmeldung ausfüllen
         </button>
       )}
 
@@ -159,7 +176,10 @@ export function TechOrderDetailPage() {
             const returnEntry = [...history].reverse().find((e) => e.to_status === 'returned')
             return (
               <>
-                <p className="font-semibold text-err">⚠ Auftrag zurückgegeben — Nichtkonformität</p>
+                <p className="inline-flex items-center gap-2 font-semibold text-err">
+                  <AlertTriangle size={16} strokeWidth={1.5} />
+                  Auftrag zurückgegeben — Nichtkonformität
+                </p>
                 {returnEntry?.notes && (
                   <p className="mt-1 text-sm text-err">{returnEntry.notes}</p>
                 )}
@@ -168,9 +188,10 @@ export function TechOrderDetailPage() {
           })()}
           <button
             onClick={() => navigate(`/tech/orders/${order.id}/rueckmeldung`)}
-            className="mt-3 w-full rounded-btn bg-err px-4 py-3 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+            className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-btn bg-err px-4 py-3 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
           >
-            📝 Rückmeldung korrigieren
+            <PencilLine size={14} strokeWidth={1.5} />
+            Rückmeldung korrigieren
           </button>
         </div>
       )}

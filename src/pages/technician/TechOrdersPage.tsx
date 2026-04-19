@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
+import { ClipboardList, AlertTriangle } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { fetchMyWorkOrders, type WorkOrderWithRelations } from '@/services/workOrderService'
 import type { TeamColor } from '@/types/enums'
@@ -143,15 +144,16 @@ export function TechOrdersPage() {
 
       {orders.length === 0 ? (
         <div className="rounded-card border border-line bg-bg-1 py-16 text-center">
-          <p className="text-2xl">📋</p>
+          <ClipboardList size={28} strokeWidth={1.5} className="mx-auto text-fg-3" />
           <p className="mt-2 text-sm text-fg-2">Keine aktiven Aufträge</p>
         </div>
       ) : (
         <div className="space-y-4">
           {returnedOrders.length > 0 && (
             <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-err">
-                ⚠ Zurückgegeben — Korrektur erforderlich ({returnedOrders.length})
+              <p className="mb-2 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-err">
+                <AlertTriangle size={14} strokeWidth={1.5} />
+                Zurückgegeben — Korrektur erforderlich ({returnedOrders.length})
               </p>
               <div className="space-y-2">
                 {returnedOrders.map((o) => <OrderCard key={o.id} order={o} />)}

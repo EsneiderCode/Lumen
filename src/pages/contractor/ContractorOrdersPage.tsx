@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Check, Receipt, ClipboardList } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { fetchContractorWorkOrders, type WorkOrderWithRelations } from '@/services/workOrderService'
 import type { WorkOrderStatus, TeamColor } from '@/types/enums'
@@ -10,14 +11,16 @@ function PaymentBadge({ status }: { status: WorkOrderStatus }) {
   if (status === 'paid') {
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-ok/20 px-2 py-0.5 text-xs font-semibold text-ok">
-        ✓ Bezahlt
+        <Check size={12} strokeWidth={1.5} />
+        Bezahlt
       </span>
     )
   }
   if (status === 'invoiced') {
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-err/10 px-2 py-0.5 text-xs font-semibold text-info">
-        🧾 Fakturiert
+        <Receipt size={12} strokeWidth={1.5} />
+        Fakturiert
       </span>
     )
   }
@@ -110,7 +113,7 @@ export function ContractorOrdersPage() {
 
       {orders.length === 0 ? (
         <div className="rounded-card border border-line bg-bg-1 py-16 text-center">
-          <p className="text-2xl">📋</p>
+          <ClipboardList size={28} strokeWidth={1.5} className="mx-auto text-fg-3" />
           <p className="mt-2 text-sm font-medium text-fg-1">Keine Aufträge</p>
           <p className="text-xs text-fg-2">Ihnen wurden noch keine Aufträge zugewiesen.</p>
         </div>

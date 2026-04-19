@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
+import { FileSpreadsheet, Check, Send, Receipt } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { fetchWorkOrders, transitionWorkOrderStatus, fetchProjects, type WorkOrderWithRelations } from '@/services/workOrderService'
 import { useAuth } from '@/hooks/useAuth'
@@ -184,7 +185,8 @@ export function CertificationPage() {
           disabled={total === 0}
           className="flex items-center gap-1.5 rounded-btn border border-line px-3 py-1.5 text-xs font-medium text-fg-2 hover:border-accent hover:text-accent disabled:opacity-40 transition-colors"
         >
-          📊 Excel {hasSelection ? `(${selected.size})` : ''}
+          <FileSpreadsheet size={14} strokeWidth={1.5} />
+          Excel {hasSelection ? `(${selected.size})` : ''}
         </button>
       </div>
 
@@ -250,27 +252,42 @@ export function CertificationPage() {
               <button
                 disabled={isBulkWorking}
                 onClick={() => void handleBulkCertify()}
-                className="rounded-btn bg-ok px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+                className="inline-flex items-center gap-1.5 rounded-btn bg-ok px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
               >
-                {isBulkWorking ? '…' : `✓ Intern zertifizieren (${selectedCertifiable})`}
+                {isBulkWorking ? (
+                  '…'
+                ) : (
+                  <>
+                    <Check size={14} strokeWidth={1.5} />
+                    Intern zertifizieren ({selectedCertifiable})
+                  </>
+                )}
               </button>
             )}
             {selectedSendable > 0 && (
               <button
                 disabled={isBulkWorking}
                 onClick={() => void handleBulkSendToClient()}
-                className="rounded-btn bg-accent px-3 py-1.5 text-xs font-semibold text-paper hover:bg-accent disabled:opacity-50 transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-btn bg-accent px-3 py-1.5 text-xs font-semibold text-paper hover:bg-accent disabled:opacity-50 transition-colors"
               >
-                {isBulkWorking ? '…' : `📤 An Kunden senden (${selectedSendable})`}
+                {isBulkWorking ? (
+                  '…'
+                ) : (
+                  <>
+                    <Send size={14} strokeWidth={1.5} />
+                    An Kunden senden ({selectedSendable})
+                  </>
+                )}
               </button>
             )}
             {selectedInvoiceable > 0 && (
               <button
                 disabled={isBulkWorking}
                 onClick={() => setBulkInvoiceModal({ open: true, invoiceNumber: '' })}
-                className="rounded-btn bg-err px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+                className="inline-flex items-center gap-1.5 rounded-btn bg-err px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
               >
-                {`🧾 Fakturieren (${selectedInvoiceable})`}
+                <Receipt size={14} strokeWidth={1.5} />
+                Fakturieren ({selectedInvoiceable})
               </button>
             )}
             <button
