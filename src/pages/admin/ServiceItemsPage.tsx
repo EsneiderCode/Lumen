@@ -119,147 +119,172 @@ function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalP
   }
 
   const inputCls =
-    'w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary'
-  const labelCls = 'block text-xs font-medium text-gf-text-muted mb-1'
+    'w-full rounded-gf-btn border border-gf-border bg-gf-base px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary'
+  const labelCls = 'block text-[10px] font-medium uppercase tracking-widest text-gf-text-muted mb-1.5'
+  const selectStyle = { colorScheme: 'dark' } as React.CSSProperties
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 px-4 py-8"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/80 px-4 py-8"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div className="w-full max-w-2xl rounded-gf-card border border-gf-border bg-gf-card">
+      <div className="w-full max-w-2xl rounded-gf-card border border-gf-border bg-gf-card overflow-hidden"
+           style={{ boxShadow: '0 0 0 1px #333, 0 24px 48px rgba(0,0,0,0.6)' }}>
+
+        {/* Accent top bar */}
+        <div className="h-0.5 w-full bg-gf-primary" />
+
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-gf-border px-6 py-4">
-          <h3 className="font-display text-base font-bold text-gf-text">
-            {isEdit ? 'Artikel bearbeiten' : 'Neuer Artikel'}
-          </h3>
+        <div className="flex items-center justify-between border-b border-gf-border bg-gf-surface px-6 py-4">
+          <div>
+            <p className="text-[10px] uppercase tracking-widest text-gf-text-muted">
+              Service-Katalog
+            </p>
+            <h3 className="font-display text-base font-bold text-gf-text-inverse mt-0.5">
+              {isEdit ? 'Artikel bearbeiten' : 'Neuer Artikel'}
+            </h3>
+          </div>
           <button
             onClick={onClose}
-            className="text-gf-text-muted hover:text-gf-text transition-colors"
+            className="flex h-7 w-7 items-center justify-center rounded-gf-btn border border-gf-border text-gf-text-muted hover:border-gf-text hover:text-gf-text transition-colors text-sm"
           >
             ✕
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {/* Row: Code + Unit */}
-          <div className="grid grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+
+          {/* ── Section: Identifikation ── */}
+          <div className="rounded-gf-card border border-gf-border bg-gf-surface p-4 space-y-4">
+            <p className="text-[10px] uppercase tracking-widest text-gf-primary font-medium">
+              Identifikation
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={labelCls}>SAP-Code *</label>
+                <input
+                  className={inputCls}
+                  value={form.code}
+                  onChange={(e) => set('code', e.target.value)}
+                  placeholder="z.B. DGF_ACT_001"
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Einheit</label>
+                <select
+                  className={inputCls}
+                  style={selectStyle}
+                  value={form.unit ?? ''}
+                  onChange={(e) => set('unit', e.target.value || null)}
+                >
+                  <option value="">— keine —</option>
+                  {UNIT_OPTIONS.map((u) => <option key={u} value={u}>{u}</option>)}
+                </select>
+              </div>
+            </div>
             <div>
-              <label className={labelCls}>SAP-Code *</label>
+              <label className={labelCls}>Beschreibung (DE) *</label>
               <input
                 className={inputCls}
-                value={form.code}
-                onChange={(e) => set('code', e.target.value)}
-                placeholder="z.B. DGF_ACT_001"
+                value={form.description_de}
+                onChange={(e) => set('description_de', e.target.value)}
+                placeholder="Leistungsbeschreibung auf Deutsch"
               />
             </div>
             <div>
-              <label className={labelCls}>Einheit</label>
+              <label className={labelCls}>Descripción (ES)</label>
+              <input
+                className={inputCls}
+                value={form.description_es ?? ''}
+                onChange={(e) => set('description_es', e.target.value || null)}
+                placeholder="Descripción en español (opcional)"
+              />
+            </div>
+          </div>
+
+          {/* ── Section: Preis & Reihenfolge ── */}
+          <div className="rounded-gf-card border border-gf-border bg-gf-surface p-4 space-y-4">
+            <p className="text-[10px] uppercase tracking-widest text-gf-primary font-medium">
+              Preis & Reihenfolge
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={labelCls}>Preis (€ netto) — leer = Nach Angebot</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  className={inputCls}
+                  value={form.unit_price ?? ''}
+                  onChange={(e) => set('unit_price', e.target.value === '' ? null : Number(e.target.value))}
+                  placeholder="0.00"
+                />
+              </div>
+              <div>
+                <label className={labelCls}>Anzeigereihenfolge</label>
+                <input
+                  type="number"
+                  step="1"
+                  className={inputCls}
+                  value={form.display_order}
+                  onChange={(e) => set('display_order', Number(e.target.value))}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* ── Section: Zuordnung ── */}
+          <div className="rounded-gf-card border border-gf-border bg-gf-surface p-4 space-y-4">
+            <p className="text-[10px] uppercase tracking-widest text-gf-primary font-medium">
+              Zuordnung
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className={labelCls}>Betreiber (Operator)</label>
+                <select
+                  className={inputCls}
+                  style={selectStyle}
+                  value={form.operator_id ?? ''}
+                  onChange={(e) => set('operator_id', e.target.value || null)}
+                >
+                  <option value="">— Global / Alle —</option>
+                  {operators.map((op) => (
+                    <option key={op.id} value={op.id}>{op.code} — {op.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>Kunde (Client)</label>
+                <select
+                  className={inputCls}
+                  style={selectStyle}
+                  value={form.client_id ?? ''}
+                  onChange={(e) => set('client_id', e.target.value || null)}
+                >
+                  <option value="">— kein —</option>
+                  {clients.map((cl) => (
+                    <option key={cl.id} value={cl.id}>{cl.code} — {cl.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className={labelCls}>Detail-Formular (technische Route)</label>
               <select
                 className={inputCls}
-                value={form.unit ?? ''}
-                onChange={(e) => set('unit', e.target.value || null)}
+                style={selectStyle}
+                value={form.detail_form ?? ''}
+                onChange={(e) => set('detail_form', (e.target.value || null) as ServiceItemPayload['detail_form'])}
               >
-                <option value="">— keine —</option>
-                {UNIT_OPTIONS.map((u) => <option key={u} value={u}>{u}</option>)}
-              </select>
-            </div>
-          </div>
-
-          {/* Description DE */}
-          <div>
-            <label className={labelCls}>Beschreibung (DE) *</label>
-            <input
-              className={inputCls}
-              value={form.description_de}
-              onChange={(e) => set('description_de', e.target.value)}
-              placeholder="Leistungsbeschreibung auf Deutsch"
-            />
-          </div>
-
-          {/* Description ES */}
-          <div>
-            <label className={labelCls}>Descripción (ES)</label>
-            <input
-              className={inputCls}
-              value={form.description_es ?? ''}
-              onChange={(e) => set('description_es', e.target.value || null)}
-              placeholder="Descripción en español (opcional)"
-            />
-          </div>
-
-          {/* Row: Price + Display order */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={labelCls}>Preis (€ netto) — leer = Nach Angebot</label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                className={inputCls}
-                value={form.unit_price ?? ''}
-                onChange={(e) => set('unit_price', e.target.value === '' ? null : Number(e.target.value))}
-                placeholder="0.00"
-              />
-            </div>
-            <div>
-              <label className={labelCls}>Anzeigereihenfolge</label>
-              <input
-                type="number"
-                step="1"
-                className={inputCls}
-                value={form.display_order}
-                onChange={(e) => set('display_order', Number(e.target.value))}
-              />
-            </div>
-          </div>
-
-          {/* Row: Operator + Client */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={labelCls}>Betreiber (Operator)</label>
-              <select
-                className={inputCls}
-                value={form.operator_id ?? ''}
-                onChange={(e) => set('operator_id', e.target.value || null)}
-              >
-                <option value="">— Global / Alle —</option>
-                {operators.map((op) => (
-                  <option key={op.id} value={op.id}>{op.code} — {op.name}</option>
+                {DETAIL_FORM_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
               </select>
             </div>
-            <div>
-              <label className={labelCls}>Kunde (Client)</label>
-              <select
-                className={inputCls}
-                value={form.client_id ?? ''}
-                onChange={(e) => set('client_id', e.target.value || null)}
-              >
-                <option value="">— kein —</option>
-                {clients.map((cl) => (
-                  <option key={cl.id} value={cl.id}>{cl.code} — {cl.name}</option>
-                ))}
-              </select>
-            </div>
           </div>
 
-          {/* Detail form */}
-          <div>
-            <label className={labelCls}>Detail-Formular (technische Route)</label>
-            <select
-              className={inputCls}
-              value={form.detail_form ?? ''}
-              onChange={(e) => set('detail_form', (e.target.value || null) as ServiceItemPayload['detail_form'])}
-            >
-              {DETAIL_FORM_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Notes */}
+          {/* ── Notizen ── */}
           <div>
             <label className={labelCls}>Notizen</label>
             <textarea
@@ -273,35 +298,39 @@ function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalP
 
           {/* Active toggle (edit only) */}
           {isEdit && (
-            <label className="flex items-center gap-2 cursor-pointer">
+            <label className="flex items-center gap-3 cursor-pointer rounded-gf-btn border border-gf-border bg-gf-surface px-4 py-3 hover:border-gf-primary/50 transition-colors">
               <input
                 type="checkbox"
                 checked={form.active}
                 onChange={(e) => set('active', e.target.checked)}
+                className="accent-[#5B9BF6]"
               />
               <span className="text-sm text-gf-text">Artikel aktiv</span>
+              <span className="ml-auto text-xs text-gf-text-muted">
+                {form.active ? 'Sichtbar im Katalog' : 'Versteckt'}
+              </span>
             </label>
           )}
 
           {err && (
-            <p className="rounded-gf-btn border border-gf-accent/30 bg-gf-accent-light px-3 py-2 text-sm text-gf-accent">
+            <p className="rounded-gf-btn border border-gf-accent/40 bg-gf-accent-light px-4 py-2.5 text-sm text-gf-accent">
               {err}
             </p>
           )}
 
           {/* Actions */}
-          <div className="flex justify-end gap-3 pt-2 border-t border-gf-border">
+          <div className="flex justify-end gap-3 pt-3 border-t border-gf-border">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-gf-btn border border-gf-border px-4 py-2 text-sm text-gf-text-muted hover:text-gf-text transition-colors"
+              className="rounded-gf-btn border border-gf-border px-4 py-2 text-sm text-gf-text-muted hover:text-gf-text hover:border-gf-text/30 transition-colors"
             >
               Abbrechen
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="rounded-gf-btn bg-gf-primary px-5 py-2 text-sm font-medium text-white disabled:opacity-50 hover:opacity-90 transition-opacity"
+              className="rounded-gf-btn bg-gf-primary px-6 py-2 text-sm font-medium text-white disabled:opacity-50 hover:opacity-90 transition-opacity"
             >
               {saving ? '[SPEICHERN…]' : isEdit ? 'Speichern' : 'Erstellen'}
             </button>
@@ -324,29 +353,42 @@ interface DeleteDialogProps {
 function DeleteDialog({ item, onConfirm, onCancel, deleting }: DeleteDialogProps) {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4"
       onClick={(e) => { if (e.target === e.currentTarget) onCancel() }}
     >
-      <div className="w-full max-w-md rounded-gf-card border border-gf-border bg-gf-card p-6 space-y-4">
-        <h3 className="font-display text-base font-bold text-gf-text">Artikel löschen</h3>
-        <p className="text-sm text-gf-text-muted">
-          Soll <span className="font-mono text-gf-text">{item.code}</span> dauerhaft gelöscht werden?
-          Diese Aktion ist nicht rückgängig zu machen.
-        </p>
-        <div className="flex justify-end gap-3 pt-2 border-t border-gf-border">
-          <button
-            onClick={onCancel}
-            className="rounded-gf-btn border border-gf-border px-4 py-2 text-sm text-gf-text-muted hover:text-gf-text transition-colors"
-          >
-            Abbrechen
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={deleting}
-            className="rounded-gf-btn bg-gf-danger px-5 py-2 text-sm font-medium text-white disabled:opacity-50 hover:opacity-90 transition-opacity"
-          >
-            {deleting ? '[LÖSCHEN…]' : 'Endgültig löschen'}
-          </button>
+      <div className="w-full max-w-md rounded-gf-card border border-gf-border bg-gf-card overflow-hidden"
+           style={{ boxShadow: '0 0 0 1px #333, 0 24px 48px rgba(0,0,0,0.6)' }}>
+        {/* Accent top bar — red for destructive */}
+        <div className="h-0.5 w-full bg-gf-danger" />
+        <div className="p-6 space-y-4">
+          <div>
+            <p className="text-[10px] uppercase tracking-widest text-gf-danger font-medium mb-1">
+              Achtung — Irreversibel
+            </p>
+            <h3 className="font-display text-base font-bold text-gf-text-inverse">Artikel löschen</h3>
+          </div>
+          <div className="rounded-gf-btn border border-gf-border bg-gf-surface px-4 py-3">
+            <p className="font-mono text-sm font-semibold text-gf-text">{item.code}</p>
+            <p className="text-xs text-gf-text-muted mt-0.5 line-clamp-1">{item.description_de}</p>
+          </div>
+          <p className="text-sm text-gf-text-muted">
+            Diese Aktion löscht den Artikel dauerhaft aus dem Katalog und kann nicht rückgängig gemacht werden.
+          </p>
+          <div className="flex justify-end gap-3 pt-2 border-t border-gf-border">
+            <button
+              onClick={onCancel}
+              className="rounded-gf-btn border border-gf-border px-4 py-2 text-sm text-gf-text-muted hover:text-gf-text hover:border-gf-text/30 transition-colors"
+            >
+              Abbrechen
+            </button>
+            <button
+              onClick={onConfirm}
+              disabled={deleting}
+              className="rounded-gf-btn bg-gf-danger px-5 py-2 text-sm font-medium text-white disabled:opacity-50 hover:opacity-90 transition-opacity"
+            >
+              {deleting ? '[LÖSCHEN…]' : 'Endgültig löschen'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
