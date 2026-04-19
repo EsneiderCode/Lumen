@@ -35,41 +35,6 @@
   --color-err:  #E5484D;
   --color-info: #5B9BF6;
 
-  /* ── Legacy gf-* aliases (Phase 1 backward-compat — dropped in Phase 3) ── */
-  --color-gf-base:              var(--color-paper);
-  --color-gf-surface:           var(--color-bg-0);
-  --color-gf-surface-end:       var(--color-bg-0);
-  --color-gf-base-light:        var(--color-bg-1);
-  --color-gf-card:              var(--color-bg-1);
-  --color-gf-border:            var(--color-line);
-  --color-gf-border-dark:       var(--color-line-s);
-  --color-gf-border-dark-hover: var(--color-line);
-  --color-gf-text:              var(--color-fg-1);
-  --color-gf-text-muted:        var(--color-fg-2);
-  --color-gf-text-inverse:      var(--color-ink);
-  --color-gf-text-label:        var(--color-fg-3);
-  --color-gf-text-placeholder:  var(--color-fg-4);
-  --color-gf-primary:           var(--color-accent);
-  --color-gf-primary-light:     var(--color-accent);
-  --color-gf-primary-dark:      var(--color-accent);
-  --color-gf-accent:            var(--color-err);
-  --color-gf-accent-light:      rgba(229, 72, 77, 0.15);
-  --color-gf-success:           var(--color-ok);
-  --color-gf-danger:            var(--color-err);
-  --color-gf-warning:           var(--color-warn);
-
-  /* ── Nexus semantic aliases (kept — used by other surfaces) ── */
-  --color-primary-500:   var(--color-accent);
-  --color-nexus-success: var(--color-ok);
-  --color-nexus-warning: var(--color-warn);
-  --color-nexus-danger:  var(--color-err);
-
-  /* ── Scrollbar ── */
-  --color-scroll:       var(--color-line);
-  --color-scroll-hover: var(--color-fg-3);
-  --color-gf-scrollbar:       var(--color-line);
-  --color-gf-scrollbar-hover: var(--color-fg-3);
-
   /* ── Team colors (status encoding by cuadrilla — distinct from accent) ── */
   --color-team-rot:   #ef4444;
   --color-team-gruen: #22c55e;
@@ -87,15 +52,9 @@
 
   /* ── Border radius ── */
   /* NEXUS product: sharp (0px) for inputs/buttons, 12-16px on cards.        */
-  --radius-gf-btn:     0px;
-  --radius-gf-card:    0.75rem;
-  --radius-gf-card-lg: 1rem;
-
-  /* ── Elevation ── */
-  /* NEXUS: NO shadows. Use visible borders instead.                         */
-  --shadow-gf-sm:    none;
-  --shadow-gf-md:    none;
-  --shadow-gf-modal: none;
+  --radius-btn:     0px;
+  --radius-card:    0.75rem;
+  --radius-card-lg: 1rem;
 }
 
 /* ─── Base styles ──────────────────────────────────────────────────────── */
