@@ -6,7 +6,7 @@ import { fetchWorkOrders, transitionWorkOrderStatus, fetchProjects, type WorkOrd
 import { useAuth } from '@/hooks/useAuth'
 import type { WorkOrderStatus, TeamColor } from '@/types/enums'
 import { useLabels } from '@/i18n/labels'
-import { STATUS_COLORS, TEAM_DOT } from '@/constants/styles'
+import { TEAM_DOT } from '@/constants/styles'
 
 interface Project {
   id: string
@@ -61,6 +61,9 @@ export function CertificationPage() {
 
   // refreshKey increments to re-trigger the load effect after bulk actions
   const [refreshKey, setRefreshKey] = useState(0)
+
+  // Active tab — one status visible at a time (NEXUS.OS tabs pattern)
+  const [activeTab, setActiveTab] = useState<WorkOrderStatus>('rueckmeldung_sent')
 
   useEffect(() => {
     let cancelled = false
@@ -300,7 +303,28 @@ export function CertificationPage() {
         </div>
       )}
 
-      {/* Sections */}
+      {/* Status tabs */}
+      <div className="nx-tabs -mb-px overflow-x-auto">
+        {SECTIONS.map(({ status, label }) => {
+          const count = byStatus(status).length
+          return (
+            <button
+              key={status}
+              onClick={() => setActiveTab(status)}
+              className={`nx-tab ${activeTab === status ? 'active' : ''}`}
+            >
+              {label}
+              {count > 0 && (
+                <span className="ml-2 font-mono text-[10px] tabular-nums opacity-70">
+                  {count}
+                </span>
+              )}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Active section */}
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-accent" />
@@ -310,77 +334,79 @@ export function CertificationPage() {
           <p className="text-fg-2">Keine Aufträge im Zertifizierungsprozess.</p>
         </div>
       ) : (
-        <div className="space-y-5">
-          {SECTIONS.map(({ status, label, description }) => {
-            const items = byStatus(status)
-            if (items.length === 0) return null
-            const allSectionSelected = items.every((o) => selected.has(o.id))
+        (() => {
+          const section = SECTIONS.find((s) => s.status === activeTab)!
+          const items = byStatus(activeTab)
+          const allSectionSelected = items.length > 0 && items.every((o) => selected.has(o.id))
+          if (items.length === 0) {
             return (
-              <div key={status}>
-                <div className="mb-2 flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={allSectionSelected}
-                    onChange={() => toggleSection(status)}
-                    className="h-3.5 w-3.5 rounded accent-accent cursor-pointer"
-                  />
-                  <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[status]}`}>
-                    {L.status(status)}
-                  </span>
-                  <span className="text-sm font-semibold text-fg-1">{label}</span>
-                  <span className="text-xs text-fg-2">— {description}</span>
-                  <span className="ml-auto text-xs text-fg-2">{items.length}</span>
-                </div>
-                <div className="overflow-hidden rounded-l border border-line bg-bg-1">
-                  {items.map((order, i) => (
-                    <div
-                      key={order.id}
-                      className={`flex w-full items-center gap-3 px-4 py-3.5 transition-colors ${
-                        selected.has(order.id) ? 'bg-accent/5' : 'hover:bg-bg-0'
-                      } ${i < items.length - 1 ? 'border-b border-line' : ''}`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selected.has(order.id)}
-                        onChange={() => toggleOne(order.id)}
-                        className="h-3.5 w-3.5 rounded accent-accent cursor-pointer shrink-0"
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                      <button
-                        onClick={() => navigate(`/admin/orders/${order.id}`)}
-                        className="flex flex-1 items-center gap-4 text-left min-w-0"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-sm font-semibold text-fg-1">{order.order_number}</span>
-                            <span className="text-xs text-fg-2">{L.workType(order.work_type)}</span>
-                          </div>
-                          <p className="text-xs text-fg-2">
-                            {order.clients?.name ?? '—'} · {order.projects?.code ?? '—'}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-3 shrink-0">
-                          {order.assigned_team && (
-                            <div className="flex items-center gap-1.5">
-                              <span className={`h-2 w-2 rounded-full ${TEAM_DOT[order.assigned_team]}`} />
-                              <span className="text-xs capitalize text-fg-2">{order.assigned_team}</span>
-                            </div>
-                          )}
-                          {order.assigned_date && (
-                            <span className="text-xs text-fg-2">
-                              {new Date(order.assigned_date).toLocaleDateString('de-DE')}
-                            </span>
-                          )}
-                          <span className="text-xs text-fg-2">→</span>
-                        </div>
-                      </button>
-                    </div>
-                  ))}
-                </div>
+              <div className="rounded-l border border-line bg-bg-1 px-6 py-12 text-center">
+                <p className="nx-label mb-1">{section.label}</p>
+                <p className="text-sm text-fg-2">Keine Aufträge in diesem Status.</p>
               </div>
             )
-          })}
-        </div>
+          }
+          return (
+            <div>
+              <div className="mb-3 flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={allSectionSelected}
+                  onChange={() => toggleSection(activeTab)}
+                  className="h-3.5 w-3.5 rounded accent-accent cursor-pointer"
+                />
+                <span className="text-sm text-fg-2">{section.description}</span>
+                <span className="ml-auto nx-label tabular-nums">{items.length} items</span>
+              </div>
+              <div className="overflow-hidden rounded-l border border-line bg-bg-1">
+                {items.map((order, i) => (
+                  <div
+                    key={order.id}
+                    className={`flex w-full items-center gap-3 px-4 py-3.5 transition-colors ${
+                      selected.has(order.id) ? 'bg-accent/5' : 'hover:bg-bg-0'
+                    } ${i < items.length - 1 ? 'border-b border-line' : ''}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selected.has(order.id)}
+                      onChange={() => toggleOne(order.id)}
+                      className="h-3.5 w-3.5 rounded accent-accent cursor-pointer shrink-0"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    <button
+                      onClick={() => navigate(`/admin/orders/${order.id}`)}
+                      className="flex flex-1 items-center gap-4 text-left min-w-0"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-sm font-semibold text-fg-1">{order.order_number}</span>
+                          <span className="text-xs text-fg-2">{L.workType(order.work_type)}</span>
+                        </div>
+                        <p className="text-xs text-fg-2">
+                          {order.clients?.name ?? '—'} · {order.projects?.code ?? '—'}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        {order.assigned_team && (
+                          <div className="flex items-center gap-1.5">
+                            <span className={`h-2 w-2 rounded-full ${TEAM_DOT[order.assigned_team]}`} />
+                            <span className="text-xs capitalize text-fg-2">{order.assigned_team}</span>
+                          </div>
+                        )}
+                        {order.assigned_date && (
+                          <span className="text-xs text-fg-2">
+                            {new Date(order.assigned_date).toLocaleDateString('de-DE')}
+                          </span>
+                        )}
+                        <span className="text-xs text-fg-2">→</span>
+                      </div>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })()
       )}
 
       {/* Bulk invoice modal */}

@@ -91,6 +91,30 @@ const PDF_VISIBLE_STATUSES: WorkOrderStatus[] = [
   'paid',
 ]
 
+// Ordered workflow stages for the progress bar. Keep aligned with state machine.
+const WORKFLOW_STAGES: WorkOrderStatus[] = [
+  'created',
+  'assigned',
+  'in_progress',
+  'executed',
+  'rueckmeldung_pending',
+  'rueckmeldung_sent',
+  'internally_certified',
+  'sent_to_client',
+  'client_accepted',
+  'invoiced',
+  'paid',
+]
+
+function workflowProgress(status: WorkOrderStatus): { pct: number; variant: string } {
+  if (status === 'client_rejected') return { pct: 70, variant: 'err' }
+  if (status === 'returned' || status === 'cancelled') return { pct: 10, variant: 'warn' }
+  const idx = WORKFLOW_STAGES.indexOf(status)
+  if (idx < 0) return { pct: 0, variant: 'ok' }
+  const pct = Math.round(((idx + 1) / WORKFLOW_STAGES.length) * 100)
+  return { pct, variant: status === 'paid' ? 'ok' : '' }
+}
+
 type ModalType = 'send_to_client' | 'accept' | 'reject' | 'invoice' | 'mark_paid' | 'return_nonconformity' | null
 
 interface ModalState {
@@ -311,6 +335,27 @@ export function WorkOrderDetailPage() {
           </button>
         </div>
       </div>
+
+      {/* Workflow progress */}
+      {(() => {
+        const { pct, variant } = workflowProgress(order.status)
+        return (
+          <div className="rounded-l border border-line bg-bg-1 p-4">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <span className="nx-label">Workflow</span>
+              <span className="font-mono text-xs tabular-nums text-fg-2">
+                {pct}% · {L.status(order.status)}
+              </span>
+            </div>
+            <div className="nx-progress">
+              <div
+                className={`nx-progress-fill ${variant}`}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+          </div>
+        )
+      })()}
 
       {/* ── Workflow banners ── */}
 
