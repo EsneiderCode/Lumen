@@ -29,16 +29,16 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
       {/* Sidebar panel */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex h-screen w-64 flex-col bg-gf-base transition-transform duration-200 ease-in-out md:relative md:z-auto md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex h-screen w-64 flex-col bg-paper transition-transform duration-200 ease-in-out md:relative md:z-auto md:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Brand */}
-        <div className="flex h-16 items-center gap-3 border-b border-gf-border-dark px-6">
-          <div className="flex h-8 w-8 items-center justify-center rounded-gf-btn border border-gf-primary/20 bg-gf-base-light">
-            <span className="font-display text-sm font-bold text-gf-primary">L</span>
+        <div className="flex h-16 items-center gap-3 border-b border-line-s px-6">
+          <div className="flex h-8 w-8 items-center justify-center rounded-btn border border-accent/20 bg-bg-1">
+            <span className="font-display text-sm font-bold text-accent">L</span>
           </div>
-          <span className="font-display text-lg font-bold text-gf-text-inverse">LUMEN</span>
+          <span className="font-display text-lg font-bold text-ink">LUMEN</span>
         </div>
 
         {/* Navigation */}
@@ -50,10 +50,10 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               end={item.path === ROUTES.ADMIN.DASHBOARD}
               onClick={onClose}
               className={({ isActive }) =>
-                `flex items-center gap-3 rounded-gf-btn px-3 py-2.5 text-sm font-medium transition-colors ${
+                `flex items-center gap-3 rounded-btn px-3 py-2.5 text-sm font-medium transition-colors ${
                   isActive
-                    ? 'border-l-2 border-gf-primary bg-gf-primary/10 text-gf-primary'
-                    : 'border-l-2 border-transparent text-gf-text-muted hover:bg-gf-border-dark hover:text-gf-text-inverse'
+                    ? 'border-l-2 border-accent bg-accent/10 text-accent'
+                    : 'border-l-2 border-transparent text-fg-2 hover:bg-line-s hover:text-ink'
                 }`
               }
             >
@@ -64,8 +64,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         </nav>
 
         {/* Footer */}
-        <div className="border-t border-gf-border-dark px-6 py-4">
-          <p className="text-xs text-gf-text-muted/50">Nexus Engineering GmbH</p>
+        <div className="border-t border-line-s px-6 py-4">
+          <p className="text-xs text-fg-2/50">Nexus Engineering GmbH</p>
         </div>
       </aside>
     </>

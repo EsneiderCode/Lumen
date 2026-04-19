@@ -20,12 +20,12 @@ export function AdminLayout() {
       <div className="flex flex-1 overflow-hidden">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <div className="flex flex-1 flex-col overflow-hidden">
-          <header className="flex h-16 items-center justify-between border-b border-gf-border bg-gf-card px-4 md:px-6">
+          <header className="flex h-16 items-center justify-between border-b border-line bg-bg-1 px-4 md:px-6">
             <div className="flex items-center gap-3">
               {/* Hamburger — mobile only */}
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="flex h-9 w-9 items-center justify-center rounded-gf-btn border border-gf-border text-gf-text-muted transition-colors hover:border-gf-primary hover:text-gf-primary md:hidden"
+                className="flex h-9 w-9 items-center justify-center rounded-btn border border-line text-fg-2 transition-colors hover:border-accent hover:text-accent md:hidden"
                 aria-label={t('nav.menuOpen', { defaultValue: 'Menü öffnen' })}
               >
                 <svg
@@ -43,7 +43,7 @@ export function AdminLayout() {
                   <line x1="3" y1="18" x2="21" y2="18" />
                 </svg>
               </button>
-              <h1 className="font-display text-base font-semibold text-gf-text md:text-lg">
+              <h1 className="font-display text-base font-semibold text-fg-1 md:text-lg">
                 {t('nav.admin')}
               </h1>
             </div>
@@ -51,16 +51,16 @@ export function AdminLayout() {
               {isInstallable && (
                 <button
                   onClick={promptInstall}
-                  className="hidden rounded-gf-btn border border-gf-primary px-3 py-1.5 text-sm text-gf-primary transition-colors hover:bg-gf-primary hover:text-gf-base sm:flex"
+                  className="hidden rounded-btn border border-accent px-3 py-1.5 text-sm text-accent transition-colors hover:bg-accent hover:text-paper sm:flex"
                 >
                   {t('nav.installApp', { defaultValue: 'App installieren' })}
                 </button>
               )}
               <LanguageSelector />
-              <span className="hidden text-sm text-gf-text-muted sm:block">{user?.fullName}</span>
+              <span className="hidden text-sm text-fg-2 sm:block">{user?.fullName}</span>
               <button
                 onClick={signOut}
-                className="rounded-gf-btn border border-gf-border px-3 py-1.5 text-sm text-gf-text-muted transition-colors hover:border-gf-danger/30 hover:text-gf-danger"
+                className="rounded-btn border border-line px-3 py-1.5 text-sm text-fg-2 transition-colors hover:border-err/30 hover:text-err"
               >
                 {t('auth.signOut')}
               </button>

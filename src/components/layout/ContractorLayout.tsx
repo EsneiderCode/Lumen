@@ -20,14 +20,14 @@ export function ContractorLayout() {
   return (
     <div className="flex min-h-screen flex-col nexus-bg">
       <OfflineBanner />
-      <header className="flex h-14 items-center gap-3 border-b border-gf-border bg-gf-card px-4">
-        <span className="font-display text-sm font-semibold text-gf-text">LUMEN</span>
+      <header className="flex h-14 items-center gap-3 border-b border-line bg-bg-1 px-4">
+        <span className="font-display text-sm font-semibold text-fg-1">LUMEN</span>
         <div className="ml-auto flex items-center gap-2">
           <LanguageSelector />
-          <span className="hidden text-xs text-gf-text-muted sm:inline">{user?.fullName}</span>
+          <span className="hidden text-xs text-fg-2 sm:inline">{user?.fullName}</span>
           <button
             onClick={signOut}
-            className="rounded-gf-btn px-2 py-1 text-xs text-gf-text-muted transition-colors hover:text-gf-danger"
+            className="rounded-btn px-2 py-1 text-xs text-fg-2 transition-colors hover:text-err"
           >
             {t('auth.signOut')}
           </button>
