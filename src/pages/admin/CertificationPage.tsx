@@ -174,15 +174,15 @@ export function CertificationPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="font-display text-2xl font-bold text-gf-text">Zertifizierung</h2>
-          <p className="mt-1 text-sm text-gf-text-muted">
+          <h2 className="font-display text-2xl font-bold text-fg-1">Zertifizierung</h2>
+          <p className="mt-1 text-sm text-fg-2">
             {total === 0 ? 'Keine Aufträge im Prozess' : `${total} Aufträge im Prozess`}
           </p>
         </div>
         <button
           onClick={handleExcelExport}
           disabled={total === 0}
-          className="flex items-center gap-1.5 rounded-gf-btn border border-gf-border px-3 py-1.5 text-xs font-medium text-gf-text-muted hover:border-gf-primary hover:text-gf-primary disabled:opacity-40 transition-colors"
+          className="flex items-center gap-1.5 rounded-btn border border-line px-3 py-1.5 text-xs font-medium text-fg-2 hover:border-accent hover:text-accent disabled:opacity-40 transition-colors"
         >
           📊 Excel {hasSelection ? `(${selected.size})` : ''}
         </button>
@@ -193,7 +193,7 @@ export function CertificationPage() {
         <select
           value={filterTeam}
           onChange={(e) => setFilterTeam(e.target.value as TeamColor | '')}
-          className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-1.5 text-sm text-gf-text focus:border-gf-primary focus:outline-none"
+          className="rounded-btn border border-line bg-bg-0 px-3 py-1.5 text-sm text-fg-1 focus:border-accent focus:outline-none"
         >
           <option value="">Alle Teams</option>
           <option value="rot">Rot</option>
@@ -205,7 +205,7 @@ export function CertificationPage() {
         <select
           value={filterProject}
           onChange={(e) => setFilterProject(e.target.value)}
-          className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-1.5 text-sm text-gf-text focus:border-gf-primary focus:outline-none"
+          className="rounded-btn border border-line bg-bg-0 px-3 py-1.5 text-sm text-fg-1 focus:border-accent focus:outline-none"
         >
           <option value="">Alle Projekte</option>
           {projects.map((p) => (
@@ -217,13 +217,13 @@ export function CertificationPage() {
           type="date"
           value={filterDateFrom}
           onChange={(e) => setFilterDateFrom(e.target.value)}
-          className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-1.5 text-sm text-gf-text focus:border-gf-primary focus:outline-none"
+          className="rounded-btn border border-line bg-bg-0 px-3 py-1.5 text-sm text-fg-1 focus:border-accent focus:outline-none"
         />
         <input
           type="date"
           value={filterDateTo}
           onChange={(e) => setFilterDateTo(e.target.value)}
-          className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-1.5 text-sm text-gf-text focus:border-gf-primary focus:outline-none"
+          className="rounded-btn border border-line bg-bg-0 px-3 py-1.5 text-sm text-fg-1 focus:border-accent focus:outline-none"
         />
 
         {(filterTeam || filterProject || filterDateFrom || filterDateTo) && (
@@ -234,7 +234,7 @@ export function CertificationPage() {
               setFilterDateFrom('')
               setFilterDateTo('')
             }}
-            className="rounded-gf-btn border border-gf-danger/30 px-3 py-1.5 text-xs font-medium text-rose-600 hover:bg-gf-danger/10 transition-colors"
+            className="rounded-btn border border-err/30 px-3 py-1.5 text-xs font-medium text-err hover:bg-err/10 transition-colors"
           >
             × Filter löschen
           </button>
@@ -243,14 +243,14 @@ export function CertificationPage() {
 
       {/* Bulk action bar */}
       {hasSelection && (
-        <div className="flex flex-wrap items-center gap-3 rounded-gf-card border border-gf-primary/30 bg-gf-primary/5 px-4 py-3">
-          <span className="text-sm font-semibold text-gf-primary-dark">{selected.size} ausgewählt</span>
+        <div className="flex flex-wrap items-center gap-3 rounded-card border border-accent/30 bg-accent/5 px-4 py-3">
+          <span className="text-sm font-semibold text-accent">{selected.size} ausgewählt</span>
           <div className="flex flex-wrap gap-2 ml-auto">
             {selectedCertifiable > 0 && (
               <button
                 disabled={isBulkWorking}
                 onClick={() => void handleBulkCertify()}
-                className="rounded-gf-btn bg-gf-success px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+                className="rounded-btn bg-ok px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
               >
                 {isBulkWorking ? '…' : `✓ Intern zertifizieren (${selectedCertifiable})`}
               </button>
@@ -259,7 +259,7 @@ export function CertificationPage() {
               <button
                 disabled={isBulkWorking}
                 onClick={() => void handleBulkSendToClient()}
-                className="rounded-gf-btn bg-gf-primary px-3 py-1.5 text-xs font-semibold text-gf-base hover:bg-gf-primary-light disabled:opacity-50 transition-colors"
+                className="rounded-btn bg-accent px-3 py-1.5 text-xs font-semibold text-paper hover:bg-accent disabled:opacity-50 transition-colors"
               >
                 {isBulkWorking ? '…' : `📤 An Kunden senden (${selectedSendable})`}
               </button>
@@ -268,14 +268,14 @@ export function CertificationPage() {
               <button
                 disabled={isBulkWorking}
                 onClick={() => setBulkInvoiceModal({ open: true, invoiceNumber: '' })}
-                className="rounded-gf-btn bg-gf-accent px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+                className="rounded-btn bg-err px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
               >
                 {`🧾 Fakturieren (${selectedInvoiceable})`}
               </button>
             )}
             <button
               onClick={() => setSelected(new Set())}
-              className="rounded-gf-btn border border-gf-border px-3 py-1.5 text-xs font-medium text-gf-text-muted hover:border-gf-primary hover:text-gf-primary transition-colors"
+              className="rounded-btn border border-line px-3 py-1.5 text-xs font-medium text-fg-2 hover:border-accent hover:text-accent transition-colors"
             >
               Auswahl aufheben
             </button>
@@ -286,11 +286,11 @@ export function CertificationPage() {
       {/* Sections */}
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-gf-border border-t-gf-primary" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-accent" />
         </div>
       ) : total === 0 ? (
-        <div className="rounded-gf-card border border-gf-border bg-gf-card px-6 py-12 text-center">
-          <p className="text-gf-text-muted">Keine Aufträge im Zertifizierungsprozess.</p>
+        <div className="rounded-card border border-line bg-bg-1 px-6 py-12 text-center">
+          <p className="text-fg-2">Keine Aufträge im Zertifizierungsprozess.</p>
         </div>
       ) : (
         <div className="space-y-5">
@@ -305,28 +305,28 @@ export function CertificationPage() {
                     type="checkbox"
                     checked={allSectionSelected}
                     onChange={() => toggleSection(status)}
-                    className="h-3.5 w-3.5 rounded accent-gf-primary cursor-pointer"
+                    className="h-3.5 w-3.5 rounded accent-accent cursor-pointer"
                   />
                   <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[status]}`}>
                     {L.status(status)}
                   </span>
-                  <span className="text-sm font-semibold text-gf-text">{label}</span>
-                  <span className="text-xs text-gf-text-muted">— {description}</span>
-                  <span className="ml-auto text-xs text-gf-text-muted">{items.length}</span>
+                  <span className="text-sm font-semibold text-fg-1">{label}</span>
+                  <span className="text-xs text-fg-2">— {description}</span>
+                  <span className="ml-auto text-xs text-fg-2">{items.length}</span>
                 </div>
-                <div className="overflow-hidden rounded-gf-card border border-gf-border bg-gf-card">
+                <div className="overflow-hidden rounded-card border border-line bg-bg-1">
                   {items.map((order, i) => (
                     <div
                       key={order.id}
                       className={`flex w-full items-center gap-3 px-4 py-3.5 transition-colors ${
-                        selected.has(order.id) ? 'bg-gf-primary/5' : 'hover:bg-gf-surface'
-                      } ${i < items.length - 1 ? 'border-b border-gf-border' : ''}`}
+                        selected.has(order.id) ? 'bg-accent/5' : 'hover:bg-bg-0'
+                      } ${i < items.length - 1 ? 'border-b border-line' : ''}`}
                     >
                       <input
                         type="checkbox"
                         checked={selected.has(order.id)}
                         onChange={() => toggleOne(order.id)}
-                        className="h-3.5 w-3.5 rounded accent-gf-primary cursor-pointer shrink-0"
+                        className="h-3.5 w-3.5 rounded accent-accent cursor-pointer shrink-0"
                         onClick={(e) => e.stopPropagation()}
                       />
                       <button
@@ -335,10 +335,10 @@ export function CertificationPage() {
                       >
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
-                            <span className="font-mono text-sm font-semibold text-gf-text">{order.order_number}</span>
-                            <span className="text-xs text-gf-text-muted">{L.workType(order.work_type)}</span>
+                            <span className="font-mono text-sm font-semibold text-fg-1">{order.order_number}</span>
+                            <span className="text-xs text-fg-2">{L.workType(order.work_type)}</span>
                           </div>
-                          <p className="text-xs text-gf-text-muted">
+                          <p className="text-xs text-fg-2">
                             {order.clients?.name ?? '—'} · {order.projects?.code ?? '—'}
                           </p>
                         </div>
@@ -346,15 +346,15 @@ export function CertificationPage() {
                           {order.assigned_team && (
                             <div className="flex items-center gap-1.5">
                               <span className={`h-2 w-2 rounded-full ${TEAM_DOT[order.assigned_team]}`} />
-                              <span className="text-xs capitalize text-gf-text-muted">{order.assigned_team}</span>
+                              <span className="text-xs capitalize text-fg-2">{order.assigned_team}</span>
                             </div>
                           )}
                           {order.assigned_date && (
-                            <span className="text-xs text-gf-text-muted">
+                            <span className="text-xs text-fg-2">
                               {new Date(order.assigned_date).toLocaleDateString('de-DE')}
                             </span>
                           )}
-                          <span className="text-xs text-gf-text-muted">→</span>
+                          <span className="text-xs text-fg-2">→</span>
                         </div>
                       </button>
                     </div>
@@ -372,9 +372,9 @@ export function CertificationPage() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
           onClick={(e) => { if (e.target === e.currentTarget) setBulkInvoiceModal({ open: false, invoiceNumber: '' }) }}
         >
-          <div className="w-full max-w-sm rounded-gf-card border border-gf-border bg-gf-card p-6 shadow-gf-modal">
-            <h3 className="mb-2 font-display text-base font-bold text-gf-text">Sammel-Fakturierung</h3>
-            <p className="mb-3 text-sm text-gf-text-muted">
+          <div className="w-full max-w-sm rounded-card border border-line bg-bg-1 p-6">
+            <h3 className="mb-2 font-display text-base font-bold text-fg-1">Sammel-Fakturierung</h3>
+            <p className="mb-3 text-sm text-fg-2">
               Rechnungsnummer für {selectedInvoiceable} Aufträge (Pflichtfeld).
             </p>
             <input
@@ -383,19 +383,19 @@ export function CertificationPage() {
               onChange={(e) => setBulkInvoiceModal((m) => ({ ...m, invoiceNumber: e.target.value }))}
               placeholder="z.B. RE-2026-0042"
               autoFocus
-              className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder-gf-text-placeholder focus:border-gf-primary focus:outline-none mb-5"
+              className="w-full rounded-btn border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder-fg-4 focus:border-accent focus:outline-none mb-5"
             />
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setBulkInvoiceModal({ open: false, invoiceNumber: '' })}
-                className="rounded-gf-btn border border-gf-border px-4 py-2 text-sm font-medium text-gf-text-muted hover:border-gf-primary hover:text-gf-primary transition-colors"
+                className="rounded-btn border border-line px-4 py-2 text-sm font-medium text-fg-2 hover:border-accent hover:text-accent transition-colors"
               >
                 Abbrechen
               </button>
               <button
                 onClick={() => void handleBulkInvoice()}
                 disabled={!bulkInvoiceModal.invoiceNumber.trim() || isBulkWorking}
-                className="rounded-gf-btn bg-gf-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+                className="rounded-btn bg-err px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
               >
                 {isBulkWorking ? '…' : 'Fakturieren'}
               </button>
