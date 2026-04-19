@@ -60,19 +60,19 @@ export function ServiceItemsPage() {
           placeholder="Suchen (Code oder Beschreibung)…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="rounded-btn border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+          className="rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
         />
         <select
           value={operatorFilter}
           onChange={(e) => setOperatorFilter(e.target.value)}
-          className="rounded-btn border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+          className="rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
         >
           <option value="">Alle Betreiber / Global</option>
           {operators.map((op) => (
             <option key={op.id} value={op.id}>{op.code} — {op.name}</option>
           ))}
         </select>
-        <label className="flex items-center gap-2 rounded-btn border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 cursor-pointer">
+        <label className="flex items-center gap-2 rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 cursor-pointer">
           <input
             type="checkbox"
             checked={includeInactive}
@@ -88,12 +88,12 @@ export function ServiceItemsPage() {
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-accent" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="rounded-card border border-line bg-bg-1 py-16 text-center">
+        <div className="rounded-l border border-line bg-bg-1 py-16 text-center">
           <FileText size={28} strokeWidth={1.5} className="mx-auto text-fg-3" />
           <p className="mt-2 text-sm font-medium text-fg-1">Keine Artikel gefunden</p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-card border border-line bg-bg-1">
+        <div className="overflow-hidden rounded-l border border-line bg-bg-1">
           <table className="w-full text-sm">
             <thead className="border-b border-line bg-bg-0">
               <tr>

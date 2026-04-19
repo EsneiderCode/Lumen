@@ -28,7 +28,7 @@ export function ContractorLayout() {
           <span className="hidden text-xs text-fg-2 sm:inline">{user?.fullName}</span>
           <button
             onClick={signOut}
-            className="rounded-btn px-2 py-1 text-xs text-fg-2 transition-colors hover:text-err"
+            className="rounded-s px-2 py-1 text-xs text-fg-2 transition-colors hover:text-err"
           >
             {t('auth.signOut')}
           </button>

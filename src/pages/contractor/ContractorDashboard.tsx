@@ -34,7 +34,7 @@ export function ContractorDashboard() {
   return (
     <div>
       {/* Greeting */}
-      <div className="mb-5 rounded-card border border-line bg-bg-1 p-5">
+      <div className="mb-5 rounded-l border border-line bg-bg-1 p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 className="font-display text-lg font-bold text-fg-1">
@@ -52,7 +52,7 @@ export function ContractorDashboard() {
       <div className="mb-5 grid grid-cols-2 gap-3">
         <button
           onClick={() => navigate(ROUTES.CONTRACTOR.ORDERS)}
-          className="rounded-card border border-line bg-bg-1 p-4 text-left transition-colors hover:border-accent/50"
+          className="rounded-l border border-line bg-bg-1 p-4 text-left transition-colors hover:border-accent/50"
         >
           <div className="mb-2 h-1 w-8 rounded-full bg-accent" />
           <p className="font-display text-2xl font-bold text-fg-1">
@@ -62,7 +62,7 @@ export function ContractorDashboard() {
         </button>
         <button
           onClick={() => navigate(ROUTES.CONTRACTOR.ORDERS)}
-          className="rounded-card border border-line bg-bg-1 p-4 text-left transition-colors hover:border-ok/50"
+          className="rounded-l border border-line bg-bg-1 p-4 text-left transition-colors hover:border-ok/50"
         >
           <div className="mb-2 h-1 w-8 rounded-full bg-ok" />
           <p className="font-display text-2xl font-bold text-fg-1">
@@ -73,7 +73,7 @@ export function ContractorDashboard() {
       </div>
 
       {/* Document status */}
-      <div className="mb-4 rounded-card border border-line bg-bg-1 p-5">
+      <div className="mb-4 rounded-l border border-line bg-bg-1 p-5">
         <h3 className="mb-3 font-display text-sm font-semibold text-fg-1">Dokumentenstatus</h3>
         <div className="space-y-2">
           {[
@@ -84,7 +84,7 @@ export function ContractorDashboard() {
           ].map((doc) => (
             <div
               key={doc}
-              className="flex items-center justify-between rounded-btn border border-line bg-bg-0 px-3 py-2"
+              className="flex items-center justify-between rounded-s border border-line bg-bg-0 px-3 py-2"
             >
               <span className="text-sm text-fg-1">{doc}</span>
               <span className="text-xs text-fg-2">Ausstehend</span>
@@ -96,7 +96,7 @@ export function ContractorDashboard() {
       {/* Quick link to orders */}
       <button
         onClick={() => navigate(ROUTES.CONTRACTOR.ORDERS)}
-        className="w-full rounded-card border border-accent/30 bg-accent/5 p-4 text-center transition-colors hover:bg-accent/10"
+        className="w-full rounded-l border border-accent/30 bg-accent/5 p-4 text-center transition-colors hover:bg-accent/10"
       >
         <p className="text-sm font-semibold text-accent">Alle Aufträge anzeigen →</p>
       </button>

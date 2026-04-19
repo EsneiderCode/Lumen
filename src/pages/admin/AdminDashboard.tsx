@@ -14,7 +14,7 @@ export function AdminDashboard() {
         {stats.map((stat) => (
           <div
             key={stat.label}
-            className="rounded-card border border-line bg-bg-1 p-5"
+            className="rounded-l border border-line bg-bg-1 p-5"
           >
             <div className={`mb-3 h-1.5 w-10 rounded-full ${stat.color}`} />
             <p className="font-display text-2xl font-bold text-fg-1">{stat.value}</p>
@@ -23,7 +23,7 @@ export function AdminDashboard() {
         ))}
       </div>
 
-      <div className="mt-8 rounded-card border border-line bg-bg-1 p-6">
+      <div className="mt-8 rounded-l border border-line bg-bg-1 p-6">
         <h3 className="mb-2 font-display text-base font-semibold text-fg-1">
           Willkommen bei LUMEN
         </h3>

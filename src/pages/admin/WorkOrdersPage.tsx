@@ -77,14 +77,14 @@ export function WorkOrdersPage() {
         </div>
         <button
           onClick={() => navigate('/admin/orders/new')}
-          className="flex items-center gap-2 rounded-btn bg-accent px-4 py-2 text-sm font-semibold text-paper hover:bg-accent transition-colors"
+          className="flex items-center gap-2 rounded-s bg-accent px-4 py-2 text-sm font-semibold text-ink hover:bg-accent transition-colors"
         >
           <span className="text-base leading-none">+</span> Neuer Auftrag
         </button>
       </div>
 
       {/* Filters */}
-      <div className="mb-4 rounded-card border border-line bg-bg-1 p-4 space-y-3">
+      <div className="mb-4 rounded-l border border-line bg-bg-1 p-4 space-y-3">
         {/* Row 1 */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {/* Search */}
@@ -94,7 +94,7 @@ export function WorkOrdersPage() {
               placeholder="Suchen…"
               value={search}
               onChange={(e) => { setPage(0); setSearch(e.target.value) }}
-              className="w-full rounded-btn border border-line bg-bg-0 px-3 py-2 pr-8 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 pr-8 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
             />
             {(search !== debouncedSearch || (isLoading && debouncedSearch !== '')) && (
               <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2">
@@ -110,7 +110,7 @@ export function WorkOrdersPage() {
               setPage(0)
               setFilters((f) => ({ ...f, status: (e.target.value as WorkOrderStatus) || undefined }))
             }}
-            className="rounded-btn border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            className="rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           >
             <option value="">Alle Status</option>
             {L.statusOptions().map(({ value, label }) => (
@@ -125,7 +125,7 @@ export function WorkOrdersPage() {
               setPage(0)
               setFilters((f) => ({ ...f, team: (e.target.value as TeamColor) || undefined }))
             }}
-            className="rounded-btn border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            className="rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           >
             <option value="">Alle Teams</option>
             <option value="rot">Rot</option>
@@ -141,7 +141,7 @@ export function WorkOrdersPage() {
               setPage(0)
               setFilters((f) => ({ ...f, work_type: (e.target.value as WorkType) || undefined }))
             }}
-            className="rounded-btn border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            className="rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           >
             <option value="">Alle Typen</option>
             {L.workTypeOptions().map(({ value, label }) => (
@@ -159,7 +159,7 @@ export function WorkOrdersPage() {
               setPage(0)
               setFilters((f) => ({ ...f, client_id: e.target.value || undefined }))
             }}
-            className="rounded-btn border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            className="rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           >
             <option value="">Alle Kunden</option>
             {clients.map((c) => (
@@ -174,7 +174,7 @@ export function WorkOrdersPage() {
               setPage(0)
               setFilters((f) => ({ ...f, project_id: e.target.value || undefined }))
             }}
-            className="rounded-btn border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            className="rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           >
             <option value="">Alle Projekte</option>
             {projects.map((p) => (
@@ -189,7 +189,7 @@ export function WorkOrdersPage() {
               setPage(0)
               setFilters((f) => ({ ...f, priority: (e.target.value as 'normal' | 'alta' | 'urgente') || undefined }))
             }}
-            className="rounded-btn border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            className="rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           >
             <option value="">Alle Prioritäten</option>
             {L.priorityOptions().map(({ value, label }) => (
@@ -205,7 +205,7 @@ export function WorkOrdersPage() {
               setPage(0)
               setFilters((f) => ({ ...f, date_from: e.target.value || undefined }))
             }}
-            className="rounded-btn border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            className="rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
             title="Einsatzdatum von"
           />
 
@@ -217,14 +217,14 @@ export function WorkOrdersPage() {
               setPage(0)
               setFilters((f) => ({ ...f, date_to: e.target.value || undefined }))
             }}
-            className="rounded-btn border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            className="rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
             title="Einsatzdatum bis"
           />
 
           {/* Reset */}
           <button
             onClick={() => { setPage(0); setFilters({}); setSearch('') }}
-            className="rounded-btn border border-line px-3 py-2 text-sm text-fg-2 hover:border-accent hover:text-accent transition-colors"
+            className="rounded-s border border-line px-3 py-2 text-sm text-fg-2 hover:border-accent hover:text-accent transition-colors"
           >
             Zurücksetzen
           </button>
@@ -233,13 +233,13 @@ export function WorkOrdersPage() {
 
       {/* Error */}
       {error && (
-        <div className="mb-4 rounded-btn border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
+        <div className="mb-4 rounded-s border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
           {error}
         </div>
       )}
 
       {/* Table */}
-      <div className="rounded-card border border-line bg-bg-1 overflow-hidden">
+      <div className="rounded-l border border-line bg-bg-1 overflow-hidden">
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
             <div className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-accent" />
@@ -368,14 +368,14 @@ export function WorkOrdersPage() {
             <button
               disabled={page === 0}
               onClick={() => setPage((p) => p - 1)}
-              className="rounded-btn border border-line px-3 py-1.5 text-xs text-fg-1 transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-s border border-line px-3 py-1.5 text-xs text-fg-1 transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40"
             >
               ← Zurück
             </button>
             <button
               disabled={(page + 1) * PAGE_SIZE >= total}
               onClick={() => setPage((p) => p + 1)}
-              className="rounded-btn border border-line px-3 py-1.5 text-xs text-fg-1 transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-s border border-line px-3 py-1.5 text-xs text-fg-1 transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40"
             >
               Weiter →
             </button>
@@ -386,7 +386,7 @@ export function WorkOrdersPage() {
       {/* Delete confirmation modal */}
       {deleteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-sm rounded-card border border-line bg-bg-1 p-6">
+          <div className="w-full max-w-sm rounded-l border border-line bg-bg-1 p-6">
             <h3 className="mb-2 font-display text-base font-semibold text-fg-1">
               Auftrag löschen?
             </h3>
@@ -396,13 +396,13 @@ export function WorkOrdersPage() {
             <div className="flex gap-3">
               <button
                 onClick={() => setDeleteId(null)}
-                className="flex-1 rounded-btn border border-line px-4 py-2 text-sm font-medium text-fg-1 hover:bg-bg-0 transition-colors"
+                className="flex-1 rounded-s border border-line px-4 py-2 text-sm font-medium text-fg-1 hover:bg-bg-0 transition-colors"
               >
                 Abbrechen
               </button>
               <button
                 onClick={() => handleDelete(deleteId)}
-                className="flex-1 rounded-btn bg-err px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+                className="flex-1 rounded-s bg-err px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
               >
                 Löschen
               </button>

@@ -89,7 +89,7 @@ export function WorkOrderAssignPage() {
       <div className="mb-6 flex items-center gap-3">
         <button
           onClick={() => navigate('/admin/orders')}
-          className="flex h-8 w-8 items-center justify-center rounded-btn border border-line text-fg-2 hover:border-accent hover:text-accent transition-colors"
+          className="flex h-8 w-8 items-center justify-center rounded-s border border-line text-fg-2 hover:border-accent hover:text-accent transition-colors"
         >
           ←
         </button>
@@ -103,7 +103,7 @@ export function WorkOrderAssignPage() {
 
       {/* Order summary */}
       {order && (
-        <div className="mb-5 rounded-card border border-line bg-bg-1 p-4">
+        <div className="mb-5 rounded-l border border-line bg-bg-1 p-4">
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div>
               <p className="text-xs text-fg-2">Kunde</p>
@@ -128,7 +128,7 @@ export function WorkOrderAssignPage() {
       )}
 
       <form onSubmit={handleAssign}>
-        <div className="rounded-card border border-line bg-bg-1 p-5 space-y-5">
+        <div className="rounded-l border border-line bg-bg-1 p-5 space-y-5">
           <h3 className="font-display text-sm font-semibold text-fg-1">Zuweisung</h3>
 
           {/* Team selection */}
@@ -142,7 +142,7 @@ export function WorkOrderAssignPage() {
                   key={team.value}
                   type="button"
                   onClick={() => { setSelectedTeam(team.value); setSelectedTechnician('') }}
-                  className={`flex items-center gap-2 rounded-btn border px-3 py-2.5 text-sm font-medium transition-all ${
+                  className={`flex items-center gap-2 rounded-s border px-3 py-2.5 text-sm font-medium transition-all ${
                     selectedTeam === team.value
                       ? 'border-accent bg-accent/10 text-accent'
                       : 'border-line bg-bg-0 text-fg-1 hover:border-accent/50'
@@ -164,7 +164,7 @@ export function WorkOrderAssignPage() {
               value={selectedTechnician}
               onChange={(e) => setSelectedTechnician(e.target.value)}
               disabled={!selectedTeam}
-              className="w-full rounded-btn border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
+              className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
             >
               <option value="">— Mitarbeiter wählen —</option>
               {filteredTechnicians.map((t) => (
@@ -187,14 +187,14 @@ export function WorkOrderAssignPage() {
               type="date"
               value={assignedDate}
               onChange={(e) => setAssignedDate(e.target.value)}
-              className="w-full rounded-btn border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
             />
           </div>
         </div>
 
         {/* Error */}
         {error && (
-          <div className="mt-4 rounded-btn border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
+          <div className="mt-4 rounded-s border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
             {error}
           </div>
         )}
@@ -204,14 +204,14 @@ export function WorkOrderAssignPage() {
           <button
             type="button"
             onClick={() => navigate('/admin/orders')}
-            className="flex-1 rounded-btn border border-line px-4 py-2.5 text-sm font-medium text-fg-1 hover:bg-bg-0 transition-colors"
+            className="flex-1 rounded-s border border-line px-4 py-2.5 text-sm font-medium text-fg-1 hover:bg-bg-0 transition-colors"
           >
             Abbrechen
           </button>
           <button
             type="submit"
             disabled={!selectedTeam || isSaving}
-            className="flex-1 rounded-btn bg-accent px-4 py-2.5 text-sm font-semibold text-paper hover:bg-accent disabled:opacity-50 transition-colors"
+            className="flex-1 rounded-s bg-accent px-4 py-2.5 text-sm font-semibold text-ink hover:bg-accent disabled:opacity-50 transition-colors"
           >
             {isSaving ? 'Zuweisen…' : 'Zuweisen & Status → Assigned'}
           </button>

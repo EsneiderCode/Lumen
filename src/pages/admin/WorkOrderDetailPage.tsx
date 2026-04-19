@@ -250,7 +250,7 @@ export function WorkOrderDetailPage() {
 
   if (!order) {
     return (
-      <div className="rounded-btn border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
+      <div className="rounded-s border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
         {error ?? 'Auftrag nicht gefunden'}
       </div>
     )
@@ -278,7 +278,7 @@ export function WorkOrderDetailPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate('/admin/orders')}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-btn border border-line text-fg-2 hover:border-accent hover:text-accent transition-colors"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-s border border-line text-fg-2 hover:border-accent hover:text-accent transition-colors"
             aria-label="Zurück"
           >
             <ArrowLeft size={16} strokeWidth={1.5} />
@@ -297,7 +297,7 @@ export function WorkOrderDetailPage() {
           {showPdfButton && (
             <button
               onClick={handlePdfDownload}
-              className="inline-flex items-center gap-1.5 rounded-btn border border-line px-3 py-1.5 text-xs font-medium text-fg-2 hover:border-accent hover:text-accent transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-s border border-line px-3 py-1.5 text-xs font-medium text-fg-2 hover:border-accent hover:text-accent transition-colors"
             >
               <FileText size={14} strokeWidth={1.5} />
               PDF
@@ -305,7 +305,7 @@ export function WorkOrderDetailPage() {
           )}
           <button
             onClick={() => navigate(`/admin/orders/${id}/edit`)}
-            className="rounded-btn border border-line px-3 py-1.5 text-xs font-medium text-fg-2 hover:border-accent hover:text-accent transition-colors"
+            className="rounded-s border border-line px-3 py-1.5 text-xs font-medium text-fg-2 hover:border-accent hover:text-accent transition-colors"
           >
             Bearbeiten
           </button>
@@ -316,7 +316,7 @@ export function WorkOrderDetailPage() {
 
       {/* rueckmeldung_sent → internally_certified */}
       {order.status === 'rueckmeldung_sent' && (
-        <div className="rounded-card border border-warn/40 bg-warn/10 p-4">
+        <div className="rounded-l border border-warn/40 bg-warn/10 p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-semibold text-warn">{t('workOrder.rueckmeldungPresent')}</p>
@@ -326,14 +326,14 @@ export function WorkOrderDetailPage() {
               <button
                 disabled={isTransitioning}
                 onClick={() => openModal('return_nonconformity')}
-                className="flex-1 rounded-btn border border-err/40 px-3 py-2 text-sm font-semibold text-err hover:bg-err/10 disabled:opacity-50 transition-colors sm:flex-none"
+                className="flex-1 rounded-s border border-err/40 px-3 py-2 text-sm font-semibold text-err hover:bg-err/10 disabled:opacity-50 transition-colors sm:flex-none"
               >
                 <span className="inline-flex items-center gap-1.5"><Undo2 size={14} strokeWidth={1.5} />Zurückgeben</span>
               </button>
               <button
                 disabled={isTransitioning}
                 onClick={handleCertify}
-                className="flex-1 rounded-btn bg-ok px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity sm:flex-none"
+                className="flex-1 rounded-s bg-ok px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity sm:flex-none"
               >
                 {isTransitioning ? (
                   'Wird zertifiziert…'
@@ -351,7 +351,7 @@ export function WorkOrderDetailPage() {
 
       {/* internally_certified → sent_to_client (LUM-015) */}
       {order.status === 'internally_certified' && (
-        <div className="rounded-card border border-ok/40 bg-ok/10 p-4">
+        <div className="rounded-l border border-ok/40 bg-ok/10 p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-semibold text-ok">{t('workOrder.internallyCertified')}</p>
@@ -361,14 +361,14 @@ export function WorkOrderDetailPage() {
               <button
                 disabled={isTransitioning}
                 onClick={() => openModal('return_nonconformity')}
-                className="flex-1 rounded-btn border border-err/40 px-3 py-2 text-sm font-semibold text-err hover:bg-err/10 disabled:opacity-50 transition-colors sm:flex-none"
+                className="flex-1 rounded-s border border-err/40 px-3 py-2 text-sm font-semibold text-err hover:bg-err/10 disabled:opacity-50 transition-colors sm:flex-none"
               >
                 <span className="inline-flex items-center gap-1.5"><Undo2 size={14} strokeWidth={1.5} />Zurückgeben</span>
               </button>
               <button
                 disabled={isTransitioning}
                 onClick={() => openModal('send_to_client')}
-                className="flex-1 rounded-btn bg-accent px-4 py-2 text-sm font-semibold text-paper hover:bg-accent disabled:opacity-50 transition-colors sm:flex-none"
+                className="flex-1 rounded-s bg-accent px-4 py-2 text-sm font-semibold text-ink hover:bg-accent disabled:opacity-50 transition-colors sm:flex-none"
               >
                 <span className="inline-flex items-center gap-1.5"><Send size={14} strokeWidth={1.5} />An Kunden senden</span>
               </button>
@@ -379,7 +379,7 @@ export function WorkOrderDetailPage() {
 
       {/* sent_to_client → client_accepted / client_rejected (LUM-017) */}
       {order.status === 'sent_to_client' && (
-        <div className="rounded-card border border-accent/30 bg-accent/5 p-4">
+        <div className="rounded-l border border-accent/30 bg-accent/5 p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-semibold text-accent">Beim Kunden</p>
@@ -389,14 +389,14 @@ export function WorkOrderDetailPage() {
               <button
                 disabled={isTransitioning}
                 onClick={() => openModal('reject')}
-                className="flex-1 rounded-btn border border-err/40 px-3 py-2 text-sm font-semibold text-err hover:bg-err/10 disabled:opacity-50 transition-colors sm:flex-none"
+                className="flex-1 rounded-s border border-err/40 px-3 py-2 text-sm font-semibold text-err hover:bg-err/10 disabled:opacity-50 transition-colors sm:flex-none"
               >
                 <span className="inline-flex items-center gap-1.5"><XCircle size={14} strokeWidth={1.5} />Abgelehnt</span>
               </button>
               <button
                 disabled={isTransitioning}
                 onClick={() => openModal('accept')}
-                className="flex-1 rounded-btn bg-ok px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity sm:flex-none"
+                className="flex-1 rounded-s bg-ok px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity sm:flex-none"
               >
                 <span className="inline-flex items-center gap-1.5"><CheckCircle2 size={14} strokeWidth={1.5} />Akzeptiert</span>
               </button>
@@ -407,7 +407,7 @@ export function WorkOrderDetailPage() {
 
       {/* client_rejected — rejection banner + return to revision (LUM-017) */}
       {order.status === 'client_rejected' && (
-        <div className="rounded-card border border-err/40 bg-err/10 p-4">
+        <div className="rounded-l border border-err/40 bg-err/10 p-4">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="font-semibold text-err">Vom Kunden abgelehnt</p>
@@ -418,7 +418,7 @@ export function WorkOrderDetailPage() {
             <button
               disabled={isTransitioning}
               onClick={() => void doTransition('internally_certified', 'Zur Überarbeitung zurückgegeben')}
-              className="shrink-0 rounded-btn border border-warn/40 px-3 py-2 text-sm font-semibold text-warn hover:bg-warn/10 disabled:opacity-50 transition-colors"
+              className="shrink-0 rounded-s border border-warn/40 px-3 py-2 text-sm font-semibold text-warn hover:bg-warn/10 disabled:opacity-50 transition-colors"
             >
               {isTransitioning ? (
                 '…'
@@ -435,7 +435,7 @@ export function WorkOrderDetailPage() {
 
       {/* client_accepted → invoiced (LUM-018) */}
       {order.status === 'client_accepted' && (
-        <div className="rounded-card border border-ok/40 bg-ok/10 p-4">
+        <div className="rounded-l border border-ok/40 bg-ok/10 p-4">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="font-semibold text-ok">Vom Kunden akzeptiert</p>
@@ -444,7 +444,7 @@ export function WorkOrderDetailPage() {
             <button
               disabled={isTransitioning}
               onClick={() => openModal('invoice')}
-              className="shrink-0 rounded-btn bg-err px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+              className="shrink-0 rounded-s bg-err px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
             >
               <span className="inline-flex items-center gap-1.5"><Receipt size={14} strokeWidth={1.5} />Fakturieren</span>
             </button>
@@ -454,7 +454,7 @@ export function WorkOrderDetailPage() {
 
       {/* invoiced → paid (LUM-018) */}
       {order.status === 'invoiced' && (
-        <div className="rounded-card border border-err/30 bg-err/5 p-4">
+        <div className="rounded-l border border-err/30 bg-err/5 p-4">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="font-semibold text-info">Fakturiert</p>
@@ -465,7 +465,7 @@ export function WorkOrderDetailPage() {
             <button
               disabled={isTransitioning}
               onClick={() => openModal('mark_paid')}
-              className="shrink-0 rounded-btn bg-ok px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+              className="shrink-0 rounded-s bg-ok px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
             >
               <span className="inline-flex items-center gap-1.5"><CreditCard size={14} strokeWidth={1.5} />Als bezahlt markieren</span>
             </button>
@@ -475,7 +475,7 @@ export function WorkOrderDetailPage() {
 
       {/* paid — final state banner */}
       {order.status === 'paid' && (
-        <div className="rounded-card border border-ok/30 bg-ok/10 px-4 py-3">
+        <div className="rounded-l border border-ok/30 bg-ok/10 px-4 py-3">
           <p className="inline-flex items-center gap-2 text-sm font-semibold text-ok">
             <Check size={14} strokeWidth={1.5} />
             Bezahlt — Auftrag abgeschlossen
@@ -484,7 +484,7 @@ export function WorkOrderDetailPage() {
       )}
 
       {error && (
-        <div className="rounded-btn border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
+        <div className="rounded-s border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
           {error}
         </div>
       )}
@@ -496,7 +496,7 @@ export function WorkOrderDetailPage() {
         const docTypes = DOCUMENT_TYPES_BY_DETAIL_FORM[detailForm] ?? []
         if (docTypes.length === 0) return null
         return (
-          <div className="rounded-card border border-line bg-bg-1 p-5">
+          <div className="rounded-l border border-line bg-bg-1 p-5">
             <div className="mb-4">
               <h3 className="font-display text-sm font-semibold text-fg-1">Unterstützende Dokumente</h3>
               <p className="mt-0.5 text-xs text-fg-2">
@@ -521,7 +521,7 @@ export function WorkOrderDetailPage() {
 
       {/* Service item — canonical rate-card reference */}
       {order.service_items && (
-        <div className="rounded-card border border-accent/40 bg-accent/5 p-4">
+        <div className="rounded-l border border-accent/40 bg-accent/5 p-4">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div className="min-w-0 flex-1">
               <p className="font-mono text-xs font-semibold uppercase tracking-wide text-accent">
@@ -548,7 +548,7 @@ export function WorkOrderDetailPage() {
       )}
 
       {/* Order info */}
-      <div className="rounded-card border border-line bg-bg-1 p-5">
+      <div className="rounded-l border border-line bg-bg-1 p-5">
         <h3 className="mb-4 font-display text-sm font-semibold text-fg-1">Auftragsdaten</h3>
         <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
           <div>
@@ -603,7 +603,7 @@ export function WorkOrderDetailPage() {
 
       {/* LUM-023: Side-by-side comparison — Beauftragt vs. Gemeldet */}
       {showComparison ? (
-        <div className="rounded-card border border-line bg-bg-1 p-5">
+        <div className="rounded-l border border-line bg-bg-1 p-5">
           <h3 className="mb-1 font-display text-sm font-semibold text-fg-1">
             {t('comparison.title')} — {L.workType(order.work_type)}
           </h3>
@@ -650,7 +650,7 @@ export function WorkOrderDetailPage() {
         </div>
       ) : hasDetail ? (
         /* Simple view when no snapshot available (old orders) */
-        <div className="rounded-card border border-line bg-bg-1 p-5">
+        <div className="rounded-l border border-line bg-bg-1 p-5">
           <h3 className="mb-1 font-display text-sm font-semibold text-fg-1">
             Rückmeldung — {L.workType(order.work_type)}
           </h3>
@@ -681,7 +681,7 @@ export function WorkOrderDetailPage() {
         const rmEntry = history.find((e) => e.to_status === 'rueckmeldung_sent')
         if (!rmEntry?.notes || rmEntry.notes === 'Rückmeldung gesendet') return null
         return (
-          <div className="rounded-card border border-line bg-bg-1 p-5">
+          <div className="rounded-l border border-line bg-bg-1 p-5">
             <h3 className="mb-2 font-display text-sm font-semibold text-fg-1">Notizen vom Techniker</h3>
             <p className="text-sm text-fg-1">{rmEntry.notes}</p>
           </div>
@@ -690,7 +690,7 @@ export function WorkOrderDetailPage() {
 
       {/* Photos */}
       {photos.length > 0 && (
-        <div className="rounded-card border border-line bg-bg-1 p-5">
+        <div className="rounded-l border border-line bg-bg-1 p-5">
           <h3 className="mb-4 font-display text-sm font-semibold text-fg-1">Fotos ({photos.length})</h3>
           <div className="space-y-4">
             {(['before', 'during', 'after'] as PhotoType[]).map((type) => {
@@ -708,7 +708,7 @@ export function WorkOrderDetailPage() {
                         href={photoUrls[photo.storage_path] ?? '#'}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="aspect-square overflow-hidden rounded-btn bg-bg-0 ring-1 ring-line hover:ring-accent transition-all"
+                        className="aspect-square overflow-hidden rounded-s bg-bg-0 ring-1 ring-line hover:ring-accent transition-all"
                       >
                         <img
                           src={photoUrls[photo.storage_path] ?? ''}
@@ -726,7 +726,7 @@ export function WorkOrderDetailPage() {
       )}
 
       {photos.length === 0 && (
-        <div className="rounded-card border border-line bg-bg-1 p-5">
+        <div className="rounded-l border border-line bg-bg-1 p-5">
           <h3 className="mb-2 font-display text-sm font-semibold text-fg-1">Fotos</h3>
           <p className="text-sm text-fg-2">Noch keine Fotos hochgeladen.</p>
         </div>
@@ -734,7 +734,7 @@ export function WorkOrderDetailPage() {
 
       {/* LUM-024: Certification audit trail */}
       {certAudits.length > 0 && (
-        <div className="rounded-card border border-line bg-bg-1 p-5">
+        <div className="rounded-l border border-line bg-bg-1 p-5">
           <h3 className="mb-1 font-display text-sm font-semibold text-fg-1">{t('certification.auditLog')}</h3>
           <p className="mb-4 text-xs text-fg-2">{t('certification.auditSubtitle')}</p>
           <div className="space-y-3">
@@ -775,7 +775,7 @@ export function WorkOrderDetailPage() {
 
       {/* State history */}
       {history.length > 0 && (
-        <div className="rounded-card border border-line bg-bg-1 p-5">
+        <div className="rounded-l border border-line bg-bg-1 p-5">
           <h3 className="mb-4 font-display text-sm font-semibold text-fg-1">Statusverlauf</h3>
           <ol className="space-y-3">
             {history.map((entry, i) => (
@@ -818,7 +818,7 @@ export function WorkOrderDetailPage() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
           onClick={(e) => { if (e.target === e.currentTarget) closeModal() }}
         >
-          <div className="w-full max-w-sm rounded-card border border-line bg-bg-1 p-6">
+          <div className="w-full max-w-sm rounded-l border border-line bg-bg-1 p-6">
             {modal.type === 'send_to_client' && (
               <>
                 <h3 className="mb-2 font-display text-base font-bold text-fg-1">An Kunden senden?</h3>
@@ -836,7 +836,7 @@ export function WorkOrderDetailPage() {
                   onChange={(e) => setModal((m) => ({ ...m, inputValue: e.target.value }))}
                   placeholder="Notiz (optional)…"
                   rows={3}
-                  className="w-full rounded-btn border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder-fg-4 focus:border-accent focus:outline-none mb-5"
+                  className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder-fg-4 focus:border-accent focus:outline-none mb-5"
                 />
               </>
             )}
@@ -849,7 +849,7 @@ export function WorkOrderDetailPage() {
                   onChange={(e) => setModal((m) => ({ ...m, inputValue: e.target.value }))}
                   placeholder="Ablehnungsgrund…"
                   rows={3}
-                  className="w-full rounded-btn border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder-fg-4 focus:border-accent focus:outline-none mb-5"
+                  className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder-fg-4 focus:border-accent focus:outline-none mb-5"
                   autoFocus
                 />
               </>
@@ -863,7 +863,7 @@ export function WorkOrderDetailPage() {
                   value={modal.inputValue}
                   onChange={(e) => setModal((m) => ({ ...m, inputValue: e.target.value }))}
                   placeholder="z.B. RE-2026-0042"
-                  className="w-full rounded-btn border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder-fg-4 focus:border-accent focus:outline-none mb-5"
+                  className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder-fg-4 focus:border-accent focus:outline-none mb-5"
                   autoFocus
                 />
               </>
@@ -886,7 +886,7 @@ export function WorkOrderDetailPage() {
                     value={modal.categoryValue}
                     onChange={(e) => setModal((m) => ({ ...m, categoryValue: e.target.value }))}
                     autoFocus
-                    className="w-full rounded-btn border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none"
+                    className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none"
                   >
                     <option value="">— Kategorie wählen —</option>
                     <option value="datos incorrectos">Datos incorrectos</option>
@@ -905,7 +905,7 @@ export function WorkOrderDetailPage() {
                     onChange={(e) => setModal((m) => ({ ...m, inputValue: e.target.value }))}
                     placeholder="Detaillierte Beschreibung der Nichtkonformität…"
                     rows={4}
-                    className="w-full rounded-btn border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder-fg-4 focus:border-accent focus:outline-none resize-none"
+                    className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder-fg-4 focus:border-accent focus:outline-none resize-none"
                   />
                   {modal.inputValue.length > 0 && modal.inputValue.length < 20 && (
                     <p className="mt-1 text-xs text-err">{20 - modal.inputValue.length} Zeichen fehlen</p>
@@ -919,7 +919,7 @@ export function WorkOrderDetailPage() {
               <button
                 onClick={closeModal}
                 disabled={isTransitioning}
-                className="rounded-btn border border-line px-4 py-2 text-sm font-medium text-fg-2 hover:border-accent hover:text-accent disabled:opacity-50 transition-colors"
+                className="rounded-s border border-line px-4 py-2 text-sm font-medium text-fg-2 hover:border-accent hover:text-accent disabled:opacity-50 transition-colors"
               >
                 Abbrechen
               </button>
@@ -930,7 +930,7 @@ export function WorkOrderDetailPage() {
                   ((modal.type === 'reject' || modal.type === 'invoice') && !modal.inputValue.trim()) ||
                   (modal.type === 'return_nonconformity' && (!modal.categoryValue || modal.inputValue.trim().length < 20))
                 }
-                className="rounded-btn bg-accent px-4 py-2 text-sm font-semibold text-paper hover:bg-accent disabled:opacity-50 transition-colors"
+                className="rounded-s bg-accent px-4 py-2 text-sm font-semibold text-ink hover:bg-accent disabled:opacity-50 transition-colors"
               >
                 {isTransitioning ? '…' : 'Bestätigen'}
               </button>

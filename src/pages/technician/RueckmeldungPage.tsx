@@ -19,7 +19,7 @@ function TimePickerField({ label, value, onChange }: {
       <div className="relative">
         {/* Visual layer — pointer-events-none so the input overlay catches the tap */}
         <div
-          className={`flex items-center gap-3 rounded-card border-2 px-4 py-3.5 transition-colors pointer-events-none ${
+          className={`flex items-center gap-3 rounded-l border-2 px-4 py-3.5 transition-colors pointer-events-none ${
             value
               ? 'border-accent/50 bg-accent/5'
               : 'border-line bg-bg-0'
@@ -254,7 +254,7 @@ export function RueckmeldungPage() {
 
   if (!order) {
     return (
-      <div className="rounded-btn border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
+      <div className="rounded-s border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
         {error ?? 'Auftrag nicht gefunden'}
       </div>
     )
@@ -269,7 +269,7 @@ export function RueckmeldungPage() {
       <div className="flex items-center gap-3">
         <button
           onClick={() => navigate(`/tech/orders/${id}`)}
-          className="flex h-8 w-8 items-center justify-center rounded-btn border border-line text-fg-2 hover:border-accent hover:text-accent transition-colors"
+          className="flex h-8 w-8 items-center justify-center rounded-s border border-line text-fg-2 hover:border-accent hover:text-accent transition-colors"
         >
           ←
         </button>
@@ -281,7 +281,7 @@ export function RueckmeldungPage() {
 
       {/* Non-conformity banner */}
       {order.status === 'returned' && returnedNote && (
-        <div className="rounded-card border border-err/50 bg-err/10 p-4">
+        <div className="rounded-l border border-err/50 bg-err/10 p-4">
           <p className="inline-flex items-center gap-2 font-semibold text-err">
             <AlertTriangle size={16} strokeWidth={1.5} />
             Auftrag zurückgegeben — Nichtkonformität
@@ -292,7 +292,7 @@ export function RueckmeldungPage() {
       )}
 
       {/* Order summary */}
-      <div className="rounded-card border border-line bg-bg-1 p-4">
+      <div className="rounded-l border border-line bg-bg-1 p-4">
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div>
             <p className="text-xs text-fg-2">Kunde</p>
@@ -312,7 +312,7 @@ export function RueckmeldungPage() {
       </div>
 
       {/* Time inputs */}
-      <div className="rounded-card border border-line bg-bg-1 p-4">
+      <div className="rounded-l border border-line bg-bg-1 p-4">
         <h3 className="mb-3 font-display text-sm font-semibold text-fg-1">Einsatzzeiten</h3>
         <div className="grid grid-cols-2 gap-3">
           <TimePickerField label="Beginn" value={startTime} onChange={setStartTime} />
@@ -322,7 +322,7 @@ export function RueckmeldungPage() {
 
       {/* Dynamic detail fields */}
       {detailFields.length > 0 && (
-        <div className="rounded-card border border-accent/30 bg-bg-1 p-4">
+        <div className="rounded-l border border-accent/30 bg-bg-1 p-4">
           <h3 className="mb-1 font-display text-sm font-semibold text-fg-1">
             Technische Daten — {L.workType(order.work_type)}
           </h3>
@@ -349,7 +349,7 @@ export function RueckmeldungPage() {
                     <select
                       value={String(detail[field.key] ?? '')}
                       onChange={(e) => setDetailField(field.key, e.target.value)}
-                      className="w-full rounded-btn border border-line bg-bg-0 px-3 py-2.5 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                      className="w-full rounded-s border border-line bg-bg-0 px-3 py-2.5 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                     >
                       <option value="">— wählen —</option>
                       {field.options?.map((opt) => (
@@ -367,7 +367,7 @@ export function RueckmeldungPage() {
                         setDetailField(field.key, field.type === 'number' ? Number(e.target.value) : e.target.value)
                       }
                       placeholder={field.placeholder}
-                      className="w-full rounded-btn border border-line bg-bg-0 px-3 py-2.5 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                      className="w-full rounded-s border border-line bg-bg-0 px-3 py-2.5 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                     />
                   </>
                 )}
@@ -378,7 +378,7 @@ export function RueckmeldungPage() {
       )}
 
       {/* Photos */}
-      <div className="rounded-card border border-line bg-bg-1 p-4">
+      <div className="rounded-l border border-line bg-bg-1 p-4">
         <h3 className="mb-3 font-display text-sm font-semibold text-fg-1">Fotos</h3>
         <div className="space-y-4">
           {(['before', 'during', 'after'] as PhotoType[]).map((type) => {
@@ -393,7 +393,7 @@ export function RueckmeldungPage() {
                     type="button"
                     disabled={uploadingType === type}
                     onClick={() => fileInputRefs[type].current?.click()}
-                    className="rounded-btn border border-line px-2.5 py-1 text-xs font-medium text-fg-2 hover:border-accent hover:text-accent transition-colors disabled:opacity-50"
+                    className="rounded-s border border-line px-2.5 py-1 text-xs font-medium text-fg-2 hover:border-accent hover:text-accent transition-colors disabled:opacity-50"
                   >
                     {uploadingType === type ? 'Lädt…' : '+ Foto'}
                   </button>
@@ -410,7 +410,7 @@ export function RueckmeldungPage() {
                 {typePhotos.length > 0 ? (
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                     {typePhotos.map((photo) => (
-                      <div key={photo.id} className="relative aspect-square overflow-hidden rounded-btn bg-bg-0">
+                      <div key={photo.id} className="relative aspect-square overflow-hidden rounded-s bg-bg-0">
                         <img
                           src={photoUrls[photo.storage_path] ?? ''}
                           alt={photo.caption ?? L.photo(type)}
@@ -436,7 +436,7 @@ export function RueckmeldungPage() {
                   </div>
                 ) : (
                   <div
-                    className="flex h-16 cursor-pointer items-center justify-center rounded-btn border-2 border-dashed border-line text-xs text-fg-2 hover:border-accent/50 transition-colors"
+                    className="flex h-16 cursor-pointer items-center justify-center rounded-s border-2 border-dashed border-line text-xs text-fg-2 hover:border-accent/50 transition-colors"
                     onClick={() => fileInputRefs[type].current?.click()}
                   >
                     Keine Fotos · Tippen um hinzuzufügen
@@ -449,7 +449,7 @@ export function RueckmeldungPage() {
       </div>
 
       {/* Technician notes */}
-      <div className="rounded-card border border-line bg-bg-1 p-4">
+      <div className="rounded-l border border-line bg-bg-1 p-4">
         <label className="mb-1 block text-xs font-medium text-fg-2">
           Notizen / Besonderheiten
         </label>
@@ -458,18 +458,18 @@ export function RueckmeldungPage() {
           onChange={(e) => setTechNotes(e.target.value)}
           rows={3}
           placeholder="Besonderheiten, Probleme, Hinweise für Admin…"
-          className="w-full rounded-btn border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+          className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent resize-none"
         />
       </div>
 
       {/* Error / success */}
       {error && (
-        <div className="rounded-btn border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
+        <div className="rounded-s border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
           {error}
         </div>
       )}
       {savedOk && (
-        <div className="rounded-btn border border-ok/30 bg-ok/10 px-4 py-3 text-sm text-ok">
+        <div className="rounded-s border border-ok/30 bg-ok/10 px-4 py-3 text-sm text-ok">
           Daten gespeichert.
         </div>
       )}
@@ -479,14 +479,14 @@ export function RueckmeldungPage() {
         <button
           disabled={isSaving || isSending}
           onClick={handleSave}
-          className="rounded-card border border-line px-4 py-3 text-sm font-semibold text-fg-1 hover:bg-bg-0 disabled:opacity-50 transition-colors"
+          className="rounded-l border border-line px-4 py-3 text-sm font-semibold text-fg-1 hover:bg-bg-0 disabled:opacity-50 transition-colors"
         >
           {isSaving ? 'Speichern…' : 'Zwischenspeichern'}
         </button>
         <button
           disabled={isSaving || isSending}
           onClick={handleSend}
-          className="rounded-card bg-accent px-4 py-3 text-sm font-semibold text-paper hover:bg-accent disabled:opacity-50 transition-colors"
+          className="rounded-l bg-accent px-4 py-3 text-sm font-semibold text-ink hover:bg-accent disabled:opacity-50 transition-colors"
         >
           {isSending ? 'Wird gesendet…' : order.status === 'returned' ? 'Korrigierte RM senden' : 'Rückmeldung senden'}
         </button>

@@ -194,7 +194,7 @@ export function DocumentUploader(props: DocumentUploaderProps) {
       {!readOnly && (
         <label
           htmlFor={`doc-input-${documentType}`}
-          className="flex items-center justify-center gap-2 rounded-btn border border-dashed border-line bg-bg-0 px-4 py-3 text-sm text-fg-2 cursor-pointer hover:border-accent hover:text-accent transition-colors"
+          className="flex items-center justify-center gap-2 rounded-s border border-dashed border-line bg-bg-0 px-4 py-3 text-sm text-fg-2 cursor-pointer hover:border-accent hover:text-accent transition-colors"
         >
           {isUploading ? (
             <>
@@ -239,7 +239,7 @@ export function DocumentUploader(props: DocumentUploaderProps) {
               return (
                 <li
                   key={`${file.name}-${idx}`}
-                  className="flex items-center gap-3 rounded-btn border border-dashed border-accent/30 bg-accent/5 px-3 py-2"
+                  className="flex items-center gap-3 rounded-s border border-dashed border-accent/30 bg-accent/5 px-3 py-2"
                 >
                   <Icon size={18} strokeWidth={1.5} className="text-fg-2" aria-hidden />
                   <div className="min-w-0 flex-1">
@@ -254,7 +254,7 @@ export function DocumentUploader(props: DocumentUploaderProps) {
                     <button
                       type="button"
                       onClick={() => handleRemoveStaged(idx)}
-                      className="flex h-7 w-7 items-center justify-center rounded-btn border border-line text-fg-2 hover:border-err/40 hover:text-err transition-colors"
+                      className="flex h-7 w-7 items-center justify-center rounded-s border border-line text-fg-2 hover:border-err/40 hover:text-err transition-colors"
                       aria-label="Entfernen"
                     >
                       <X size={14} strokeWidth={1.5} />
@@ -277,7 +277,7 @@ export function DocumentUploader(props: DocumentUploaderProps) {
             return (
               <li
                 key={doc.id}
-                className="flex items-center gap-3 rounded-btn border border-line bg-bg-0 px-3 py-2"
+                className="flex items-center gap-3 rounded-s border border-line bg-bg-0 px-3 py-2"
               >
                 <Icon size={18} strokeWidth={1.5} className="text-fg-2" aria-hidden />
                 <div className="min-w-0 flex-1">
@@ -304,7 +304,7 @@ export function DocumentUploader(props: DocumentUploaderProps) {
                     type="button"
                     onClick={() => handleDeleteImmediate(doc)}
                     disabled={deletingId === doc.id}
-                    className="flex h-7 w-7 items-center justify-center rounded-btn border border-line text-fg-2 hover:border-err/40 hover:text-err disabled:opacity-50 transition-colors"
+                    className="flex h-7 w-7 items-center justify-center rounded-s border border-line text-fg-2 hover:border-err/40 hover:text-err disabled:opacity-50 transition-colors"
                     aria-label="Löschen"
                   >
                     {deletingId === doc.id ? '…' : <Trash2 size={14} strokeWidth={1.5} />}

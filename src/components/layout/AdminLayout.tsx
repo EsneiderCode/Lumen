@@ -25,7 +25,7 @@ export function AdminLayout() {
               {/* Hamburger — mobile only */}
               <button
                 onClick={() => setSidebarOpen(true)}
-                className="flex h-9 w-9 items-center justify-center rounded-btn border border-line text-fg-2 transition-colors hover:border-accent hover:text-accent md:hidden"
+                className="flex h-9 w-9 items-center justify-center rounded-s border border-line text-fg-2 transition-colors hover:border-accent hover:text-accent md:hidden"
                 aria-label={t('nav.menuOpen', { defaultValue: 'Menü öffnen' })}
               >
                 <svg
@@ -51,7 +51,7 @@ export function AdminLayout() {
               {isInstallable && (
                 <button
                   onClick={promptInstall}
-                  className="hidden rounded-btn border border-accent px-3 py-1.5 text-sm text-accent transition-colors hover:bg-accent hover:text-paper sm:flex"
+                  className="hidden rounded-s border border-accent px-3 py-1.5 text-sm text-accent transition-colors hover:bg-accent hover:text-ink sm:flex"
                 >
                   {t('nav.installApp', { defaultValue: 'App installieren' })}
                 </button>
@@ -60,7 +60,7 @@ export function AdminLayout() {
               <span className="hidden text-sm text-fg-2 sm:block">{user?.fullName}</span>
               <button
                 onClick={signOut}
-                className="rounded-btn border border-line px-3 py-1.5 text-sm text-fg-2 transition-colors hover:border-err/30 hover:text-err"
+                className="rounded-s border border-line px-3 py-1.5 text-sm text-fg-2 transition-colors hover:border-err/30 hover:text-err"
               >
                 {t('auth.signOut')}
               </button>

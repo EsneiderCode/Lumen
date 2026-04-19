@@ -83,7 +83,7 @@ export function ContractorOrdersPage() {
 
   if (error) {
     return (
-      <div className="rounded-btn border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
+      <div className="rounded-s border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
         {error}
       </div>
     )
@@ -106,13 +106,13 @@ export function ContractorOrdersPage() {
             placeholder="Auftrag suchen…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-btn border border-line bg-bg-1 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            className="w-full rounded-s border border-line bg-bg-1 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           />
         </div>
       )}
 
       {orders.length === 0 ? (
-        <div className="rounded-card border border-line bg-bg-1 py-16 text-center">
+        <div className="rounded-l border border-line bg-bg-1 py-16 text-center">
           <ClipboardList size={28} strokeWidth={1.5} className="mx-auto text-fg-3" />
           <p className="mt-2 text-sm font-medium text-fg-1">Keine Aufträge</p>
           <p className="text-xs text-fg-2">Ihnen wurden noch keine Aufträge zugewiesen.</p>
@@ -155,7 +155,7 @@ function OrderCard({ order }: { order: WorkOrderWithRelations }) {
   const isActive = ACTIVE_STATUSES.includes(order.status)
   return (
     <div
-      className={`rounded-card border p-4 ${
+      className={`rounded-l border p-4 ${
         isActive
           ? 'border-accent/40 bg-bg-1'
           : 'border-line bg-bg-1 opacity-80'

@@ -59,7 +59,7 @@ export function TechOrdersPage() {
     return (
       <button
         onClick={() => navigate(`/tech/orders/${order.id}`)}
-        className={`w-full rounded-card border p-4 text-left transition-all active:scale-[0.99] ${
+        className={`w-full rounded-l border p-4 text-left transition-all active:scale-[0.99] ${
           isActive
             ? 'border-accent/40 bg-bg-1'
             : 'border-line bg-bg-1 opacity-75'
@@ -115,7 +115,7 @@ export function TechOrdersPage() {
 
   if (error) {
     return (
-      <div className="rounded-btn border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
+      <div className="rounded-s border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
         {error}
       </div>
     )
@@ -137,13 +137,13 @@ export function TechOrdersPage() {
             placeholder="Auftrag suchen…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-btn border border-line bg-bg-1 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            className="w-full rounded-s border border-line bg-bg-1 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           />
         </div>
       )}
 
       {orders.length === 0 ? (
-        <div className="rounded-card border border-line bg-bg-1 py-16 text-center">
+        <div className="rounded-l border border-line bg-bg-1 py-16 text-center">
           <ClipboardList size={28} strokeWidth={1.5} className="mx-auto text-fg-3" />
           <p className="mt-2 text-sm text-fg-2">Keine aktiven Aufträge</p>
         </div>
@@ -189,14 +189,14 @@ export function TechOrdersPage() {
                 <button
                   disabled={page === 0}
                   onClick={() => setPage((p) => p - 1)}
-                  className="rounded-btn border border-line px-3 py-1.5 text-xs text-fg-1 transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40"
+                  className="rounded-s border border-line px-3 py-1.5 text-xs text-fg-1 transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   ← Zurück
                 </button>
                 <button
                   disabled={(page + 1) * PAGE_SIZE >= total}
                   onClick={() => setPage((p) => p + 1)}
-                  className="rounded-btn border border-line px-3 py-1.5 text-xs text-fg-1 transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40"
+                  className="rounded-s border border-line px-3 py-1.5 text-xs text-fg-1 transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Weiter →
                 </button>

@@ -2,59 +2,63 @@
 
 @theme {
   /* ─────────────────────────────────────────────────────────────────────── */
-  /* NEXUS Brand System 2026 — LUMEN (product context)                       */
-  /* Accent = Flare #FF4D2E. Laser #C6FF3D is marketing only — never here.  */
+  /* NEXUS Brand System 2026 — LUMEN (product context, NEXUS.OS kit)         */
+  /* Source of truth: products/_shared.css from the NEXUS brand kit.         */
   /* ─────────────────────────────────────────────────────────────────────── */
 
-  /* ── Surface scale (dark-first) ── */
-  --color-paper:  #000000;  /* deepest absolute black                        */
-  --color-bg-0:   #0A0A0A;  /* page / app background                         */
-  --color-bg-1:   #141414;  /* cards, modals, sidebars                       */
-  --color-bg-2:   #1C1C1C;  /* hover, raised secondary                       */
-  --color-bg-3:   #262626;  /* highlighted / pressed                         */
-  --color-bg-4:   #333333;  /* selected / strong contrast surface            */
+  /* ── Print-metaphor pair ── */
+  /* paper = cream sheet (light), ink = near-black type on it.               */
+  /* In dark-mode UI, use `text-ink` on `bg-accent` for max contrast.        */
+  --color-paper: #F5F3EE;
+  --color-ink:   #0A0B0D;
 
-  /* ── Foreground scale (text levels) ── */
-  --color-ink:    #FFFFFF;  /* max contrast — display / hero                 */
-  --color-fg-1:   #F5F5F5;  /* primary text                                  */
-  --color-fg-2:   #B3B3B3;  /* secondary / supporting                        */
-  --color-fg-3:   #808080;  /* tertiary / labels / metadata                  */
-  --color-fg-4:   #595959;  /* disabled / placeholder                        */
+  /* ── Surface scale (dark-first) ── */
+  --color-bg-0: #07080A;   /* page / app bg                                  */
+  --color-bg-1: #0E1014;   /* cards, modals, sidebars, panels                */
+  --color-bg-2: #161920;   /* hover, raised secondary                        */
+  --color-bg-3: #1D2029;   /* highlighted / pressed                          */
+  --color-bg-4: #262A34;   /* selected / strong contrast surface             */
+
+  /* ── Foreground scale ── */
+  --color-fg-1: #F5F3EE;   /* primary text (same hue as paper)               */
+  --color-fg-2: #B9BAB4;   /* secondary                                      */
+  --color-fg-3: #7B7D7A;   /* tertiary, labels, metadata                     */
+  --color-fg-4: #4A4C50;   /* disabled, placeholder                          */
 
   /* ── Lines / borders ── */
-  --color-line:   #2E2E2E;  /* visible border                                */
-  --color-line-s: #1F1F1F;  /* subtle / inner border                         */
+  --color-line:   #222630; /* default border                                 */
+  --color-line-s: #2E3440; /* emphasized border (lighter than line)          */
 
   /* ── Accent (PRODUCTO = Flare) ── */
-  --color-accent:       #FF4D2E;
-  --color-accent-soft:  rgba(255, 77, 46, 0.15);
+  --color-accent:      #FF4D2E;
+  --color-accent-soft: rgba(255, 77, 46, 0.12);
 
   /* ── Semantic states ── */
-  --color-ok:   #4A9E5C;
-  --color-warn: #D4A843;
-  --color-err:  #E5484D;
-  --color-info: #5B9BF6;
+  /* NEXUS.OS unifies err with accent — Flare is the interrupt signal.       */
+  --color-ok:   #4ADE80;
+  --color-warn: #FFB020;
+  --color-err:  #FF4D2E;
+  --color-info: #6BA6FF;
 
-  /* ── Team colors (status encoding by cuadrilla — distinct from accent) ── */
+  /* ── Team colors (status encoding by cuadrilla) ── */
   --color-team-rot:   #ef4444;
   --color-team-gruen: #22c55e;
   --color-team-blau:  var(--color-info);
   --color-team-gelb:  #eab308;
 
   /* ── Typography ── */
-  /* Space Grotesk — display / hero / page titles                            */
-  /* Inter         — body / UI / labels / inputs                             */
-  /* JetBrains Mono — data, numbers, tabular values, codes                   */
+  /* Space Grotesk  — display / hero / page titles (weight 300/400/500/700) */
+  /* Inter          — body / UI / labels / inputs (weight 400/500/600)      */
+  /* JetBrains Mono — data, numbers, micro-labels (weight 400/500)          */
   --font-display: 'Space Grotesk', system-ui, -apple-system, sans-serif;
   --font-text:    'Inter', system-ui, -apple-system, sans-serif;
   --font-sans:    'Inter', system-ui, -apple-system, sans-serif;
   --font-mono:    'JetBrains Mono', 'Courier New', monospace;
 
-  /* ── Border radius ── */
-  /* NEXUS product: sharp (0px) for inputs/buttons, 12-16px on cards.        */
-  --radius-btn:     0px;
-  --radius-card:    0.75rem;
-  --radius-card-lg: 1rem;
+  /* ── Border radius (NEXUS.OS scale — not sharp, suave 4/6/10px) ── */
+  --radius-s: 4px;
+  --radius-m: 6px;
+  --radius-l: 10px;
 }
 
 /* ─── Base styles ──────────────────────────────────────────────────────── */
@@ -91,7 +95,7 @@ h1, h2, h3 {
 /* ─── Selection ────────────────────────────────────────────────────────── */
 ::selection {
   background-color: rgba(255, 77, 46, 0.25);
-  color: var(--color-ink);
+  color: var(--color-fg-1);
 }
 
 /* ─── Page background ──────────────────────────────────────────────────── */
@@ -115,4 +119,32 @@ h1, h2, h3 {
 
 .card-lift:hover {
   transform: translateY(-1px);
+}
+
+/* ─── NEXUS.OS typography patterns ─────────────────────────────────────── */
+/* Mono label — sections, breadcrumbs, KPI labels, table headers, badges   */
+.nx-label {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-fg-3);
+}
+
+/* Display KPI number — big tabular-num data readouts                      */
+.nx-kpi {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-weight: 400;
+  font-size: 36px;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Panel title — inside card headers                                       */
+.nx-panel-title {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: -0.01em;
 }

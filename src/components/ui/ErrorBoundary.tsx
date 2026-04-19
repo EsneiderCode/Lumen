@@ -24,7 +24,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
     return (
       <div className="flex min-h-screen flex-col items-center justify-center nexus-bg p-6">
-        <div className="w-full max-w-md rounded-card border border-line bg-bg-1 p-8">
+        <div className="w-full max-w-md rounded-l border border-line bg-bg-1 p-8">
           {/* Icon */}
           <div className="mb-6 flex items-center justify-center">
             <svg
@@ -43,7 +43,7 @@ export class ErrorBoundary extends Component<Props, State> {
           </div>
 
           {/* Heading */}
-          <h1 className="mb-2 text-center font-display text-xl font-bold text-ink">
+          <h1 className="mb-2 text-center font-display text-xl font-bold text-fg-1">
             Unerwarteter Fehler
           </h1>
           <p className="mb-1 text-center text-sm text-fg-2">
@@ -58,7 +58,7 @@ export class ErrorBoundary extends Component<Props, State> {
           {/* Reload button */}
           <button
             onClick={() => window.location.reload()}
-            className="w-full rounded-btn border border-accent bg-accent/10 px-4 py-3 text-sm font-medium text-accent transition-colors hover:bg-accent/20"
+            className="w-full rounded-s border border-accent bg-accent/10 px-4 py-3 text-sm font-medium text-accent transition-colors hover:bg-accent/20"
           >
             Seite neu laden
           </button>

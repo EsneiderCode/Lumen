@@ -62,7 +62,7 @@ export function TechDashboard() {
   return (
     <div>
       {/* Greeting */}
-      <div className="mb-5 rounded-card border border-line bg-bg-1 p-5">
+      <div className="mb-5 rounded-l border border-line bg-bg-1 p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 className="font-display text-lg font-bold text-fg-1">
@@ -83,7 +83,7 @@ export function TechDashboard() {
       <div className="mb-5 grid grid-cols-3 gap-2 sm:gap-3">
         {isLoading
           ? Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="rounded-card border border-line bg-bg-1 p-3 text-center sm:p-4">
+              <div key={i} className="rounded-l border border-line bg-bg-1 p-3 text-center sm:p-4">
                 <div className="mx-auto mb-2 h-1 w-8 rounded-full bg-line" />
                 <div className="mx-auto mb-1 h-6 w-6 animate-pulse rounded bg-line" />
                 <div className="mx-auto h-3 w-10 animate-pulse rounded bg-line" />
@@ -94,7 +94,7 @@ export function TechDashboard() {
               { label: 'Offen', value: openCount, color: 'bg-warn' },
               { label: 'Erledigt', value: doneCount, color: 'bg-ok' },
             ].map((s) => (
-              <div key={s.label} className="rounded-card border border-line bg-bg-1 p-3 text-center sm:p-4">
+              <div key={s.label} className="rounded-l border border-line bg-bg-1 p-3 text-center sm:p-4">
                 <div className={`mx-auto mb-2 h-1 w-8 rounded-full ${s.color}`} />
                 <p className="font-display text-xl font-bold text-fg-1">{s.value}</p>
                 <p className="text-xs text-fg-2">{s.label}</p>
@@ -103,7 +103,7 @@ export function TechDashboard() {
       </div>
 
       {/* Active orders */}
-      <div className="rounded-card border border-line bg-bg-1 p-5">
+      <div className="rounded-l border border-line bg-bg-1 p-5">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="font-display text-sm font-semibold text-fg-1">Meine Aufträge</h3>
           {orders.length > 0 && (
@@ -136,7 +136,7 @@ export function TechDashboard() {
               <button
                 key={order.id}
                 onClick={() => navigate(`/tech/orders/${order.id}`)}
-                className="w-full rounded-btn border border-accent/30 bg-bg-0 px-3 py-2.5 text-left transition-all active:scale-[0.99]"
+                className="w-full rounded-s border border-accent/30 bg-bg-0 px-3 py-2.5 text-left transition-all active:scale-[0.99]"
               >
                 <div className="mb-1 flex items-center justify-between gap-2">
                   <span className="font-mono text-xs font-semibold text-accent">{order.order_number}</span>

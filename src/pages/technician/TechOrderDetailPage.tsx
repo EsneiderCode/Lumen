@@ -89,7 +89,7 @@ export function TechOrderDetailPage() {
 
   if (!order) {
     return (
-      <div className="rounded-btn border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
+      <div className="rounded-s border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
         {error ?? 'Auftrag nicht gefunden'}
       </div>
     )
@@ -103,7 +103,7 @@ export function TechOrderDetailPage() {
       <div className="flex items-center gap-3">
         <button
           onClick={() => navigate('/tech/orders')}
-          className="flex h-8 w-8 items-center justify-center rounded-btn border border-line text-fg-2 hover:border-accent hover:text-accent transition-colors"
+          className="flex h-8 w-8 items-center justify-center rounded-s border border-line text-fg-2 hover:border-accent hover:text-accent transition-colors"
           aria-label="Zurück"
         >
           <ArrowLeft size={16} strokeWidth={1.5} />
@@ -124,7 +124,7 @@ export function TechOrderDetailPage() {
         <button
           disabled={isTransitioning}
           onClick={() => handleTransition('in_progress', 'Arbeit begonnen')}
-          className="w-full rounded-btn bg-err px-4 py-3.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+          className="w-full rounded-s bg-err px-4 py-3.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
         >
           {isTransitioning ? (
             'Wird aktualisiert…'
@@ -141,7 +141,7 @@ export function TechOrderDetailPage() {
         <button
           disabled={isTransitioning}
           onClick={() => handleTransition('executed', 'Ausführung abgeschlossen')}
-          className="w-full rounded-btn bg-warn px-4 py-3.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+          className="w-full rounded-s bg-warn px-4 py-3.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
         >
           {isTransitioning ? (
             'Wird aktualisiert…'
@@ -157,7 +157,7 @@ export function TechOrderDetailPage() {
       {order.status === 'executed' && (
         <button
           onClick={() => navigate(`/tech/orders/${order.id}/rueckmeldung`)}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-btn bg-accent px-4 py-3.5 text-sm font-semibold text-paper hover:bg-accent transition-colors"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-s bg-accent px-4 py-3.5 text-sm font-semibold text-ink hover:bg-accent transition-colors"
         >
           <PencilLine size={14} strokeWidth={1.5} />
           Rückmeldung ausfüllen
@@ -165,13 +165,13 @@ export function TechOrderDetailPage() {
       )}
 
       {order.status === 'rueckmeldung_sent' && (
-        <div className="rounded-card border border-ok/30 bg-ok/10 px-4 py-3 text-sm text-ok">
+        <div className="rounded-l border border-ok/30 bg-ok/10 px-4 py-3 text-sm text-ok">
           Rückmeldung wurde gesendet. Der Admin prüft die Daten.
         </div>
       )}
 
       {order.status === 'returned' && (
-        <div className="rounded-card border border-err/50 bg-err/10 p-4">
+        <div className="rounded-l border border-err/50 bg-err/10 p-4">
           {(() => {
             const returnEntry = [...history].reverse().find((e) => e.to_status === 'returned')
             return (
@@ -188,7 +188,7 @@ export function TechOrderDetailPage() {
           })()}
           <button
             onClick={() => navigate(`/tech/orders/${order.id}/rueckmeldung`)}
-            className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-btn bg-err px-4 py-3 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+            className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-s bg-err px-4 py-3 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
           >
             <PencilLine size={14} strokeWidth={1.5} />
             Rückmeldung korrigieren
@@ -197,13 +197,13 @@ export function TechOrderDetailPage() {
       )}
 
       {error && (
-        <div className="rounded-btn border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
+        <div className="rounded-s border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
           {error}
         </div>
       )}
 
       {/* Order info */}
-      <div className="rounded-card border border-line bg-bg-1 p-4">
+      <div className="rounded-l border border-line bg-bg-1 p-4">
         <h3 className="mb-3 font-display text-sm font-semibold text-fg-1">Auftragsdetails</h3>
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div>
@@ -260,7 +260,7 @@ export function TechOrderDetailPage() {
 
       {/* Technical details (pre-filled by admin) */}
       {hasDetail && (
-        <div className="rounded-card border border-line bg-bg-1 p-4">
+        <div className="rounded-l border border-line bg-bg-1 p-4">
           <h3 className="mb-3 font-display text-sm font-semibold text-fg-1">
             Technische Vorgaben — {L.workType(order.work_type)}
           </h3>
@@ -283,7 +283,7 @@ export function TechOrderDetailPage() {
 
       {/* State history */}
       {history.length > 0 && (
-        <div className="rounded-card border border-line bg-bg-1 p-4">
+        <div className="rounded-l border border-line bg-bg-1 p-4">
           <h3 className="mb-3 font-display text-sm font-semibold text-fg-1">Verlauf</h3>
           <ol className="space-y-2">
             {history.map((entry, i) => (
