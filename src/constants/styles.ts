@@ -1,20 +1,20 @@
 import type { WorkOrderStatus, TeamColor } from '@/types/enums'
 
 export const STATUS_COLORS: Record<WorkOrderStatus, string> = {
-  created: 'bg-gf-text-muted/20 text-gf-text-muted',
-  assigned: 'bg-gf-primary/15 text-gf-primary-dark',
-  in_progress: 'bg-gf-accent/15 text-gf-accent',
-  executed: 'bg-gf-warning/15 text-amber-700',
-  rueckmeldung_pending: 'bg-gf-warning/20 text-amber-700',
-  rueckmeldung_sent: 'bg-gf-warning/10 text-amber-600',
-  internally_certified: 'bg-gf-success/15 text-emerald-700',
-  sent_to_client: 'bg-gf-primary/10 text-gf-primary-dark',
-  client_accepted: 'bg-gf-success/20 text-emerald-700',
-  client_rejected: 'bg-gf-danger/15 text-rose-700',
-  invoiced: 'bg-gf-accent/10 text-purple-700',
-  paid: 'bg-gf-success/25 text-emerald-800',
-  returned: 'bg-gf-warning/15 text-amber-700',
-  cancelled: 'bg-gf-danger/10 text-rose-600',
+  created: 'bg-fg-2/20 text-fg-2',
+  assigned: 'bg-accent/15 text-accent',
+  in_progress: 'bg-info/15 text-info',
+  executed: 'bg-warn/15 text-warn',
+  rueckmeldung_pending: 'bg-warn/20 text-warn',
+  rueckmeldung_sent: 'bg-warn/10 text-warn',
+  internally_certified: 'bg-ok/15 text-ok',
+  sent_to_client: 'bg-info/10 text-info',
+  client_accepted: 'bg-ok/20 text-ok',
+  client_rejected: 'bg-err/15 text-err',
+  invoiced: 'bg-info/10 text-info',
+  paid: 'bg-ok/25 text-ok',
+  returned: 'bg-warn/15 text-warn',
+  cancelled: 'bg-err/10 text-err',
 }
 
 export const TEAM_DOT: Record<TeamColor, string> = {
@@ -25,9 +25,9 @@ export const TEAM_DOT: Record<TeamColor, string> = {
 }
 
 export const PRIORITY_COLORS: Record<'normal' | 'alta' | 'urgente', string> = {
-  normal: 'text-gf-text-muted',
-  alta: 'text-gf-warning',
-  urgente: 'text-gf-danger',
+  normal: 'text-fg-2',
+  alta: 'text-warn',
+  urgente: 'text-err',
 }
 
 export const TEAMS: { value: TeamColor; label: string; dot: string }[] = [
