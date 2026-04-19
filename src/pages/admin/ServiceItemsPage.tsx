@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { FileText } from 'lucide-react'
 import { fetchServiceItems } from '@/services/serviceItemService'
 import type { ServiceItemWithRelations } from '@/types/service-items'
 
@@ -43,11 +44,11 @@ export function ServiceItemsPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="nx-page-header">
         <div>
-          <h2 className="font-display text-xl font-bold text-gf-text">Service-Katalog</h2>
-          <p className="text-sm text-gf-text-muted">
-            {filtered.length} Artikel — Vertragliche Leistungscodes
+          <h2 className="nx-page-title">Service-<em>Katalog</em></h2>
+          <p className="nx-label mt-2 tabular-nums">
+            {filtered.length} Artikel · Vertragliche Leistungscodes
           </p>
         </div>
       </div>
@@ -59,19 +60,19 @@ export function ServiceItemsPage() {
           placeholder="Suchen (Code oder Beschreibung)…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+          className="rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
         />
         <select
           value={operatorFilter}
           onChange={(e) => setOperatorFilter(e.target.value)}
-          className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+          className="rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
         >
           <option value="">Alle Betreiber / Global</option>
           {operators.map((op) => (
             <option key={op.id} value={op.id}>{op.code} — {op.name}</option>
           ))}
         </select>
-        <label className="flex items-center gap-2 rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text cursor-pointer">
+        <label className="flex items-center gap-2 rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 cursor-pointer">
           <input
             type="checkbox"
             checked={includeInactive}
@@ -84,61 +85,61 @@ export function ServiceItemsPage() {
       {/* Table */}
       {isLoading ? (
         <div className="flex items-center justify-center py-20">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-gf-border border-t-gf-primary" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-accent" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="rounded-gf-card border border-gf-border bg-gf-card py-16 text-center">
-          <p className="text-2xl">📋</p>
-          <p className="mt-2 text-sm font-medium text-gf-text">Keine Artikel gefunden</p>
+        <div className="rounded-l border border-line bg-bg-1 py-16 text-center">
+          <FileText size={28} strokeWidth={1.5} className="mx-auto text-fg-3" />
+          <p className="mt-2 text-sm font-medium text-fg-1">Keine Artikel gefunden</p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-gf-card border border-gf-border bg-gf-card">
+        <div className="overflow-hidden rounded-l border border-line bg-bg-1">
           <table className="w-full text-sm">
-            <thead className="border-b border-gf-border bg-gf-surface">
+            <thead className="border-b border-line bg-bg-1">
               <tr>
-                <th className="px-3 py-2 text-left font-medium text-gf-text-muted">Code</th>
-                <th className="px-3 py-2 text-left font-medium text-gf-text-muted">Beschreibung (DE)</th>
-                <th className="px-3 py-2 text-left font-medium text-gf-text-muted">Descripción (ES)</th>
-                <th className="px-3 py-2 text-left font-medium text-gf-text-muted">Einheit</th>
-                <th className="px-3 py-2 text-right font-medium text-gf-text-muted">Preis</th>
-                <th className="px-3 py-2 text-left font-medium text-gf-text-muted">Detail</th>
-                <th className="px-3 py-2 text-left font-medium text-gf-text-muted">Betreiber</th>
-                <th className="px-3 py-2 text-left font-medium text-gf-text-muted">Status</th>
+                <th className="nx-label px-3 py-2 text-left">Code</th>
+                <th className="nx-label px-3 py-2 text-left">Beschreibung (DE)</th>
+                <th className="nx-label px-3 py-2 text-left">Descripción (ES)</th>
+                <th className="nx-label px-3 py-2 text-left">Einheit</th>
+                <th className="nx-label px-3 py-2 text-right">Preis</th>
+                <th className="nx-label px-3 py-2 text-left">Detail</th>
+                <th className="nx-label px-3 py-2 text-left">Betreiber</th>
+                <th className="nx-label px-3 py-2 text-left">Status</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((item) => (
                 <tr
                   key={item.id}
-                  className={`border-t border-gf-border/50 ${!item.active ? 'opacity-50' : ''}`}
+                  className={`border-t border-line/50 ${!item.active ? 'opacity-50' : ''}`}
                 >
-                  <td className="px-3 py-3 font-mono text-xs font-semibold text-gf-primary whitespace-nowrap">
+                  <td className="px-3 py-3 font-mono text-xs font-semibold text-accent whitespace-nowrap">
                     {item.code}
                   </td>
-                  <td className="px-3 py-3 text-gf-text">{item.description_de}</td>
-                  <td className="px-3 py-3 text-gf-text-muted">
-                    {item.description_es ?? <span className="italic text-gf-text-placeholder">—</span>}
+                  <td className="px-3 py-3 text-fg-1">{item.description_de}</td>
+                  <td className="px-3 py-3 text-fg-2">
+                    {item.description_es ?? <span className="italic text-fg-4">—</span>}
                   </td>
-                  <td className="px-3 py-3 text-gf-text-muted font-mono text-xs">
+                  <td className="px-3 py-3 text-fg-2 font-mono text-xs">
                     {item.unit ?? '—'}
                   </td>
-                  <td className="px-3 py-3 text-right font-mono tabular-nums text-gf-text">
+                  <td className="px-3 py-3 text-right font-mono tabular-nums text-fg-1">
                     {item.unit_price != null
                       ? `${item.unit_price.toFixed(2)} €`
-                      : <span className="italic text-gf-text-placeholder">—</span>}
+                      : <span className="italic text-fg-4">—</span>}
                   </td>
                   <td className="px-3 py-3">
                     {item.detail_form
-                      ? <span className="rounded bg-gf-surface px-1.5 py-0.5 font-mono text-xs text-gf-text-muted">{item.detail_form}</span>
+                      ? <span className="rounded bg-bg-0 px-1.5 py-0.5 font-mono text-xs text-fg-2">{item.detail_form}</span>
                       : '—'}
                   </td>
-                  <td className="px-3 py-3 text-gf-text-muted font-mono text-xs">
+                  <td className="px-3 py-3 text-fg-2 font-mono text-xs">
                     {item.operators?.code ?? <span className="italic">Global</span>}
                   </td>
                   <td className="px-3 py-3">
                     {item.active
-                      ? <span className="inline-flex rounded-full bg-gf-success/15 px-2 py-0.5 text-xs font-medium text-emerald-700">Aktiv</span>
-                      : <span className="inline-flex rounded-full bg-gf-danger/10 px-2 py-0.5 text-xs font-medium text-gf-text-muted">Inaktiv</span>
+                      ? <span className="inline-flex rounded-full bg-ok/15 px-2 py-0.5 text-xs font-medium text-ok">Aktiv</span>
+                      : <span className="inline-flex rounded-full bg-err/10 px-2 py-0.5 text-xs font-medium text-fg-2">Inaktiv</span>
                     }
                   </td>
                 </tr>

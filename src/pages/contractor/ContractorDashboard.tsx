@@ -34,15 +34,15 @@ export function ContractorDashboard() {
   return (
     <div>
       {/* Greeting */}
-      <div className="mb-5 rounded-gf-card border border-gf-border bg-gf-card p-5">
+      <div className="mb-5 rounded-l border border-line bg-bg-1 p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 className="font-display text-lg font-bold text-gf-text">
+            <h2 className="font-display text-lg font-bold text-fg-1">
               Willkommen, {user?.fullName}
             </h2>
-            <p className="mt-0.5 text-sm text-gf-text-muted">{today}</p>
+            <p className="mt-0.5 text-sm text-fg-2">{today}</p>
           </div>
-          <span className="rounded-full border border-gf-primary/30 bg-gf-primary/10 px-3 py-1 text-xs font-semibold text-gf-primary">
+          <span className="rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-xs font-semibold text-accent">
             Subunternehmer
           </span>
         </div>
@@ -52,29 +52,29 @@ export function ContractorDashboard() {
       <div className="mb-5 grid grid-cols-2 gap-3">
         <button
           onClick={() => navigate(ROUTES.CONTRACTOR.ORDERS)}
-          className="rounded-gf-card border border-gf-border bg-gf-card p-4 text-left transition-colors hover:border-gf-primary/50"
+          className="rounded-l border border-line bg-bg-1 p-4 text-left transition-colors hover:border-accent/50"
         >
-          <div className="mb-2 h-1 w-8 rounded-full bg-gf-primary" />
-          <p className="font-display text-2xl font-bold text-gf-text">
+          <div className="mb-2 h-1 w-8 rounded-full bg-accent" />
+          <p className="font-display text-2xl font-bold text-fg-1">
             {activeCount === null ? '—' : activeCount}
           </p>
-          <p className="mt-0.5 text-xs text-gf-text-muted">Aktive Aufträge</p>
+          <p className="mt-0.5 text-xs text-fg-2">Aktive Aufträge</p>
         </button>
         <button
           onClick={() => navigate(ROUTES.CONTRACTOR.ORDERS)}
-          className="rounded-gf-card border border-gf-border bg-gf-card p-4 text-left transition-colors hover:border-gf-success/50"
+          className="rounded-l border border-line bg-bg-1 p-4 text-left transition-colors hover:border-ok/50"
         >
-          <div className="mb-2 h-1 w-8 rounded-full bg-gf-success" />
-          <p className="font-display text-2xl font-bold text-gf-text">
+          <div className="mb-2 h-1 w-8 rounded-full bg-ok" />
+          <p className="font-display text-2xl font-bold text-fg-1">
             {doneCount === null ? '—' : doneCount}
           </p>
-          <p className="mt-0.5 text-xs text-gf-text-muted">Abgerechnet</p>
+          <p className="mt-0.5 text-xs text-fg-2">Abgerechnet</p>
         </button>
       </div>
 
       {/* Document status */}
-      <div className="mb-4 rounded-gf-card border border-gf-border bg-gf-card p-5">
-        <h3 className="mb-3 font-display text-sm font-semibold text-gf-text">Dokumentenstatus</h3>
+      <div className="mb-4 rounded-l border border-line bg-bg-1 p-5">
+        <h3 className="mb-3 font-display text-sm font-semibold text-fg-1">Dokumentenstatus</h3>
         <div className="space-y-2">
           {[
             'Gewerbeanmeldung',
@@ -84,10 +84,10 @@ export function ContractorDashboard() {
           ].map((doc) => (
             <div
               key={doc}
-              className="flex items-center justify-between rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2"
+              className="flex items-center justify-between rounded-s border border-line bg-bg-0 px-3 py-2"
             >
-              <span className="text-sm text-gf-text">{doc}</span>
-              <span className="text-xs text-gf-text-muted">Ausstehend</span>
+              <span className="text-sm text-fg-1">{doc}</span>
+              <span className="text-xs text-fg-2">Ausstehend</span>
             </div>
           ))}
         </div>
@@ -96,9 +96,9 @@ export function ContractorDashboard() {
       {/* Quick link to orders */}
       <button
         onClick={() => navigate(ROUTES.CONTRACTOR.ORDERS)}
-        className="w-full rounded-gf-card border border-gf-primary/30 bg-gf-primary/5 p-4 text-center transition-colors hover:bg-gf-primary/10"
+        className="w-full rounded-l border border-accent/30 bg-accent/5 p-4 text-center transition-colors hover:bg-accent/10"
       >
-        <p className="text-sm font-semibold text-gf-primary">Alle Aufträge anzeigen →</p>
+        <p className="text-sm font-semibold text-accent">Alle Aufträge anzeigen →</p>
       </button>
     </div>
   )

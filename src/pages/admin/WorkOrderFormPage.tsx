@@ -277,7 +277,7 @@ export function WorkOrderFormPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-gf-border border-t-gf-primary" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-accent" />
       </div>
     )
   }
@@ -297,85 +297,85 @@ export function WorkOrderFormPage() {
       <div className="mb-6 flex items-center gap-3">
         <button
           onClick={() => navigate('/admin/orders')}
-          className="flex h-8 w-8 items-center justify-center rounded-gf-btn border border-gf-border text-gf-text-muted hover:border-gf-primary hover:text-gf-primary transition-colors"
+          className="flex h-8 w-8 items-center justify-center rounded-s border border-line text-fg-2 hover:border-accent hover:text-accent transition-colors"
         >
           ←
         </button>
         <div>
-          <h2 className="font-display text-xl font-bold text-gf-text">
+          <h2 className="font-display text-xl font-bold text-fg-1">
             {isEdit ? 'Auftrag bearbeiten' : 'Neuer Auftrag'}
           </h2>
-          {isEdit && <p className="text-sm text-gf-text-muted">ID: {id}</p>}
+          {isEdit && <p className="text-sm text-fg-2">ID: {id}</p>}
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Core info card */}
-        <div className="rounded-gf-card border border-gf-border bg-gf-card p-5">
-          <h3 className="mb-4 font-display text-sm font-semibold text-gf-text">Allgemeine Daten</h3>
+        <div className="rounded-l border border-line bg-bg-1 p-5">
+          <h3 className="mb-4 font-display text-sm font-semibold text-fg-1">Allgemeine Daten</h3>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 
             {/* Client */}
             <div>
-              <label className="mb-1 block text-xs font-medium text-gf-text-muted">
-                Kunde <span className="text-gf-danger">*</span>
+              <label className="mb-1 block text-xs font-medium text-fg-2">
+                Kunde <span className="text-err">*</span>
               </label>
               <select
                 value={form.client_id}
                 onChange={(e) => setField('client_id', e.target.value)}
-                className={`w-full rounded-gf-btn border px-3 py-2 text-sm text-gf-text focus:outline-none focus:ring-1 focus:ring-gf-primary ${errors.client_id ? 'border-gf-danger bg-gf-danger/5' : 'border-gf-border bg-gf-surface'}`}
+                className={`w-full rounded-s border px-3 py-2 text-sm text-fg-1 focus:outline-none focus:ring-1 focus:ring-accent ${errors.client_id ? 'border-err bg-err/5' : 'border-line bg-bg-0'}`}
               >
                 <option value="">— Kunde wählen —</option>
                 {clients.map((c) => (
                   <option key={c.id} value={c.id}>{c.name} ({c.code})</option>
                 ))}
               </select>
-              {errors.client_id && <p className="mt-1 text-xs text-gf-danger">{errors.client_id}</p>}
+              {errors.client_id && <p className="mt-1 text-xs text-err">{errors.client_id}</p>}
             </div>
 
             {/* Project */}
             <div>
-              <label className="mb-1 block text-xs font-medium text-gf-text-muted">
-                Projekt <span className="text-gf-danger">*</span>
+              <label className="mb-1 block text-xs font-medium text-fg-2">
+                Projekt <span className="text-err">*</span>
               </label>
               <select
                 value={form.project_id}
                 onChange={(e) => setField('project_id', e.target.value)}
-                className={`w-full rounded-gf-btn border px-3 py-2 text-sm text-gf-text focus:outline-none focus:ring-1 focus:ring-gf-primary ${errors.project_id ? 'border-gf-danger bg-gf-danger/5' : 'border-gf-border bg-gf-surface'}`}
+                className={`w-full rounded-s border px-3 py-2 text-sm text-fg-1 focus:outline-none focus:ring-1 focus:ring-accent ${errors.project_id ? 'border-err bg-err/5' : 'border-line bg-bg-0'}`}
               >
                 <option value="">— Projekt wählen —</option>
                 {filteredProjects.map((p) => (
                   <option key={p.id} value={p.id}>{p.code} – {p.name}</option>
                 ))}
               </select>
-              {errors.project_id && <p className="mt-1 text-xs text-gf-danger">{errors.project_id}</p>}
+              {errors.project_id && <p className="mt-1 text-xs text-err">{errors.project_id}</p>}
             </div>
 
             {/* Operator */}
             <div>
-              <label className="mb-1 block text-xs font-medium text-gf-text-muted">
-                Betreiber <span className="text-gf-danger">*</span>
+              <label className="mb-1 block text-xs font-medium text-fg-2">
+                Betreiber <span className="text-err">*</span>
               </label>
               <select
                 value={form.operator_id}
                 onChange={(e) => setField('operator_id', e.target.value)}
-                className={`w-full rounded-gf-btn border px-3 py-2 text-sm text-gf-text focus:outline-none focus:ring-1 focus:ring-gf-primary ${errors.operator_id ? 'border-gf-danger bg-gf-danger/5' : 'border-gf-border bg-gf-surface'}`}
+                className={`w-full rounded-s border px-3 py-2 text-sm text-fg-1 focus:outline-none focus:ring-1 focus:ring-accent ${errors.operator_id ? 'border-err bg-err/5' : 'border-line bg-bg-0'}`}
               >
                 <option value="">— Betreiber wählen —</option>
                 {operators.map((o) => (
                   <option key={o.id} value={o.id}>{o.name} ({o.code})</option>
                 ))}
               </select>
-              {errors.operator_id && <p className="mt-1 text-xs text-gf-danger">{errors.operator_id}</p>}
+              {errors.operator_id && <p className="mt-1 text-xs text-err">{errors.operator_id}</p>}
             </div>
 
             {/* Line */}
             <div>
-              <label className="mb-1 block text-xs font-medium text-gf-text-muted">Linie</label>
+              <label className="mb-1 block text-xs font-medium text-fg-2">Linie</label>
               <select
                 value={form.line}
                 onChange={(e) => setField('line', e.target.value)}
-                className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:outline-none focus:ring-1 focus:ring-gf-primary"
+                className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:outline-none focus:ring-1 focus:ring-accent"
               >
                 <option value="NE3">NE3</option>
                 <option value="NE4">NE4</option>
@@ -387,8 +387,8 @@ export function WorkOrderFormPage() {
                 both service_item_id (for invoicing) and work_type (for the
                 wo_detail_* shape). */}
             <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-gf-text-muted">
-                Leistung (Katalog) <span className="text-gf-danger">*</span>
+              <label className="mb-1 block text-xs font-medium text-fg-2">
+                Leistung (Katalog) <span className="text-err">*</span>
               </label>
               <select
                 value={form.service_item_id}
@@ -406,7 +406,7 @@ export function WorkOrderFormPage() {
                   setErrors((er) => ({ ...er, service_item_id: undefined, work_type: undefined }))
                   setDetail({})
                 }}
-                className={`w-full rounded-gf-btn border px-3 py-2 text-sm text-gf-text focus:outline-none focus:ring-1 focus:ring-gf-primary ${errors.service_item_id ? 'border-gf-danger bg-gf-danger/5' : 'border-gf-border bg-gf-surface'}`}
+                className={`w-full rounded-s border px-3 py-2 text-sm text-fg-1 focus:outline-none focus:ring-1 focus:ring-accent ${errors.service_item_id ? 'border-err bg-err/5' : 'border-line bg-bg-0'}`}
               >
                 <option value="">— Leistung aus Katalog wählen —</option>
                 {serviceItems.map((si) => (
@@ -419,9 +419,9 @@ export function WorkOrderFormPage() {
                 const selected = serviceItems.find((si) => si.id === form.service_item_id)
                 if (!selected) return null
                 return (
-                  <div className="mt-2 rounded-gf-btn border border-gf-primary/20 bg-gf-primary/5 p-2 text-xs text-gf-text-muted">
+                  <div className="mt-2 rounded-s border border-accent/20 bg-accent/5 p-2 text-xs text-fg-2">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono font-semibold text-gf-primary">{selected.code}</span>
+                      <span className="font-mono font-semibold text-accent">{selected.code}</span>
                       {selected.unit && <span>· {selected.unit}</span>}
                       {selected.unit_price != null && (
                         <span>· {selected.unit_price.toFixed(2)} €</span>
@@ -434,31 +434,31 @@ export function WorkOrderFormPage() {
                   </div>
                 )
               })()}
-              {errors.service_item_id && <p className="mt-1 text-xs text-gf-danger">{errors.service_item_id}</p>}
+              {errors.service_item_id && <p className="mt-1 text-xs text-err">{errors.service_item_id}</p>}
             </div>
 
             {/* Legacy work_type — derived, kept for backwards compat with
                 existing wo_detail_* tables. Shown read-only so admins see
                 which detail form the catalog item routes to. */}
             <div className="sm:col-span-2">
-              <label className="mb-1 block text-xs font-medium text-gf-text-muted">
+              <label className="mb-1 block text-xs font-medium text-fg-2">
                 Arbeitstyp (abgeleitet aus Katalog)
               </label>
               <input
                 type="text"
                 value={form.work_type ? (L.workType(form.work_type as WorkType) ?? form.work_type) : '—'}
                 readOnly
-                className="w-full rounded-gf-btn border border-gf-border bg-gf-surface/50 px-3 py-2 text-sm text-gf-text-muted"
+                className="w-full rounded-s border border-line bg-bg-0/50 px-3 py-2 text-sm text-fg-2"
               />
             </div>
 
             {/* Priority */}
             <div>
-              <label className="mb-1 block text-xs font-medium text-gf-text-muted">Priorität</label>
+              <label className="mb-1 block text-xs font-medium text-fg-2">Priorität</label>
               <select
                 value={form.priority}
                 onChange={(e) => setField('priority', e.target.value as 'normal' | 'alta' | 'urgente')}
-                className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:outline-none focus:ring-1 focus:ring-gf-primary"
+                className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:outline-none focus:ring-1 focus:ring-accent"
               >
                 <option value="normal">Normal</option>
                 <option value="alta">Hoch</option>
@@ -474,37 +474,37 @@ export function WorkOrderFormPage() {
             instead. POP installations happen at central sites, not
             customer addresses. */}
         {selectedDetailForm && !isInfra && (
-          <div className="rounded-gf-card border border-gf-border bg-gf-card p-5">
-            <h3 className="mb-4 font-display text-sm font-semibold text-gf-text">Adresse</h3>
+          <div className="rounded-l border border-line bg-bg-1 p-5">
+            <h3 className="mb-4 font-display text-sm font-semibold text-fg-1">Adresse</h3>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="sm:col-span-3">
-                <label className="mb-1 block text-xs font-medium text-gf-text-muted">Straße / Hausnummer</label>
+                <label className="mb-1 block text-xs font-medium text-fg-2">Straße / Hausnummer</label>
                 <input
                   type="text"
                   value={form.address}
                   onChange={(e) => setField('address', e.target.value)}
                   placeholder="Musterstraße 12"
-                  className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+                  className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-gf-text-muted">PLZ</label>
+                <label className="mb-1 block text-xs font-medium text-fg-2">PLZ</label>
                 <input
                   type="text"
                   value={form.postal_code}
                   onChange={(e) => setField('postal_code', e.target.value)}
                   placeholder="10115"
-                  className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+                  className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                 />
               </div>
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-xs font-medium text-gf-text-muted">Stadt</label>
+                <label className="mb-1 block text-xs font-medium text-fg-2">Stadt</label>
                 <input
                   type="text"
                   value={form.city}
                   onChange={(e) => setField('city', e.target.value)}
                   placeholder="Berlin"
-                  className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+                  className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                 />
               </div>
             </div>
@@ -517,10 +517,10 @@ export function WorkOrderFormPage() {
             here too. On new orders files are staged locally and uploaded
             after the order is created. */}
         {isInfra && (
-          <div className="rounded-gf-card border border-gf-primary/30 bg-gf-card p-5 space-y-5">
+          <div className="rounded-l border border-accent/30 bg-bg-1 p-5 space-y-5">
             <div>
-              <h3 className="font-display text-sm font-semibold text-gf-text">Unterstützende Dokumente</h3>
-              <p className="mt-0.5 text-xs text-gf-text-muted">
+              <h3 className="font-display text-sm font-semibold text-fg-1">Unterstützende Dokumente</h3>
+              <p className="mt-0.5 text-xs text-fg-2">
                 Bei linearen Arbeiten (Soplado / Fusion) sind Plan und Spleißprotokolle
                 anstelle einer Adresse relevant.
               </p>
@@ -558,11 +558,11 @@ export function WorkOrderFormPage() {
 
         {/* Dynamic detail fields */}
         {detailFields.length > 0 && (
-          <div className="rounded-gf-card border border-gf-primary/30 bg-gf-card p-5">
-            <h3 className="mb-1 font-display text-sm font-semibold text-gf-text">
+          <div className="rounded-l border border-accent/30 bg-bg-1 p-5">
+            <h3 className="mb-1 font-display text-sm font-semibold text-fg-1">
               Details: {L.workType(form.work_type as WorkType)}
             </h3>
-            <p className="mb-4 text-xs text-gf-text-muted">Arbeitstyp-spezifische Felder</p>
+            <p className="mb-4 text-xs text-fg-2">Arbeitstyp-spezifische Felder</p>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {detailFields.map((field) => (
                 <div key={field.key} className={field.type === 'checkbox' ? 'flex items-center gap-2 sm:col-span-2' : ''}>
@@ -573,19 +573,19 @@ export function WorkOrderFormPage() {
                         id={field.key}
                         checked={Boolean(detail[field.key])}
                         onChange={(e) => setDetailField(field.key, e.target.checked)}
-                        className="h-4 w-4 rounded border-gf-border text-gf-primary focus:ring-gf-primary"
+                        className="h-4 w-4 rounded border-line text-accent focus:ring-accent"
                       />
-                      <label htmlFor={field.key} className="text-sm font-medium text-gf-text cursor-pointer">
+                      <label htmlFor={field.key} className="text-sm font-medium text-fg-1 cursor-pointer">
                         {field.label}
                       </label>
                     </>
                   ) : field.type === 'select' ? (
                     <>
-                      <label className="mb-1 block text-xs font-medium text-gf-text-muted">{field.label}</label>
+                      <label className="mb-1 block text-xs font-medium text-fg-2">{field.label}</label>
                       <select
                         value={String(detail[field.key] ?? '')}
                         onChange={(e) => setDetailField(field.key, e.target.value)}
-                        className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+                        className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                       >
                         <option value="">— wählen —</option>
                         {field.options?.map((opt) => (
@@ -595,7 +595,7 @@ export function WorkOrderFormPage() {
                     </>
                   ) : (
                     <>
-                      <label className="mb-1 block text-xs font-medium text-gf-text-muted">{field.label}</label>
+                      <label className="mb-1 block text-xs font-medium text-fg-2">{field.label}</label>
                       <input
                         type={field.type}
                         value={String(detail[field.key] ?? '')}
@@ -603,7 +603,7 @@ export function WorkOrderFormPage() {
                           setDetailField(field.key, field.type === 'number' ? Number(e.target.value) : e.target.value)
                         }
                         placeholder={field.placeholder}
-                        className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+                        className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                       />
                     </>
                   )}
@@ -614,20 +614,20 @@ export function WorkOrderFormPage() {
         )}
 
         {/* Notes */}
-        <div className="rounded-gf-card border border-gf-border bg-gf-card p-5">
-          <label className="mb-1 block text-xs font-medium text-gf-text-muted">Interne Notizen</label>
+        <div className="rounded-l border border-line bg-bg-1 p-5">
+          <label className="mb-1 block text-xs font-medium text-fg-2">Interne Notizen</label>
           <textarea
             value={form.internal_notes}
             onChange={(e) => setField('internal_notes', e.target.value)}
             rows={3}
             placeholder="Interne Hinweise für das Team…"
-            className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary resize-none"
+            className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent resize-none"
           />
         </div>
 
         {/* Save error */}
         {saveError && (
-          <div className="rounded-gf-btn border border-gf-danger/30 bg-gf-danger/10 px-4 py-3 text-sm text-rose-700">
+          <div className="rounded-s border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
             {saveError}
           </div>
         )}
@@ -637,14 +637,14 @@ export function WorkOrderFormPage() {
           <button
             type="button"
             onClick={() => navigate('/admin/orders')}
-            className="flex-1 rounded-gf-btn border border-gf-border px-4 py-2.5 text-sm font-medium text-gf-text hover:bg-gf-surface transition-colors"
+            className="flex-1 rounded-s border border-line px-4 py-2.5 text-sm font-medium text-fg-1 hover:bg-bg-0 transition-colors"
           >
             Abbrechen
           </button>
           <button
             type="submit"
             disabled={isSaving}
-            className="flex-1 rounded-gf-btn bg-gf-primary px-4 py-2.5 text-sm font-semibold text-gf-base hover:bg-gf-primary-dark disabled:opacity-50 transition-colors"
+            className="flex-1 rounded-s bg-accent px-4 py-2.5 text-sm font-semibold text-ink hover:bg-accent disabled:opacity-50 transition-colors"
           >
             {isSaving ? 'Speichern…' : isEdit ? 'Änderungen speichern' : 'Auftrag erstellen'}
           </button>

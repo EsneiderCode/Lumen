@@ -22,7 +22,7 @@ export function LanguageSelector({ className = '' }: Props) {
     <div
       role="group"
       aria-label={t('language.change', { defaultValue: 'Sprache ändern' })}
-      className={`inline-flex overflow-hidden rounded-gf-btn border border-gf-border bg-gf-surface ${className}`}
+      className={`inline-flex overflow-hidden rounded-s border border-line bg-bg-0 ${className}`}
     >
       {LANGUAGES.map((l) => {
         const active = current === l.code
@@ -35,8 +35,8 @@ export function LanguageSelector({ className = '' }: Props) {
             className={
               'px-2.5 py-1 font-mono text-[11px] font-semibold tracking-[0.08em] transition-colors ' +
               (active
-                ? 'bg-gf-primary text-gf-base'
-                : 'text-gf-text-muted hover:text-gf-text')
+                ? 'bg-accent text-ink'
+                : 'text-fg-2 hover:text-fg-1')
             }
           >
             {l.short}

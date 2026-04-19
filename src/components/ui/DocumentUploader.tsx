@@ -1,5 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import {
+  Paperclip,
+  X,
+  Trash2,
+  File,
+  FileText,
+  FileSpreadsheet,
+  Image as ImageIcon,
+  type LucideIcon,
+} from 'lucide-react'
+import {
   uploadWorkOrderDocument,
   fetchWorkOrderDocuments,
   deleteWorkOrderDocument,
@@ -62,12 +72,12 @@ function formatBytes(bytes: number | null): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-function iconForMime(mime: string | null): string {
-  if (!mime) return '📄'
-  if (mime.includes('pdf')) return '📕'
-  if (mime.includes('spreadsheet') || mime.includes('excel')) return '📊'
-  if (mime.includes('image')) return '🖼️'
-  return '📄'
+function iconForMime(mime: string | null): LucideIcon {
+  if (!mime) return File
+  if (mime.includes('pdf')) return FileText
+  if (mime.includes('spreadsheet') || mime.includes('excel')) return FileSpreadsheet
+  if (mime.includes('image')) return ImageIcon
+  return File
 }
 
 export function DocumentUploader(props: DocumentUploaderProps) {
@@ -176,24 +186,24 @@ export function DocumentUploader(props: DocumentUploaderProps) {
   return (
     <div className="space-y-2">
       <div className="flex items-baseline justify-between gap-2">
-        <span className="text-xs font-medium text-gf-text-muted">{label}</span>
-        {hint && <span className="text-[10px] text-gf-text-placeholder">{hint}</span>}
+        <span className="text-xs font-medium text-fg-2">{label}</span>
+        {hint && <span className="text-[10px] text-fg-4">{hint}</span>}
       </div>
 
       {/* Upload drop zone */}
       {!readOnly && (
         <label
           htmlFor={`doc-input-${documentType}`}
-          className="flex items-center justify-center gap-2 rounded-gf-btn border border-dashed border-gf-border bg-gf-surface px-4 py-3 text-sm text-gf-text-muted cursor-pointer hover:border-gf-primary hover:text-gf-primary transition-colors"
+          className="flex items-center justify-center gap-2 rounded-s border border-dashed border-line bg-bg-0 px-4 py-3 text-sm text-fg-2 cursor-pointer hover:border-accent hover:text-accent transition-colors"
         >
           {isUploading ? (
             <>
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-gf-border border-t-gf-primary" />
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-line border-t-accent" />
               <span>Hochladen…</span>
             </>
           ) : (
             <>
-              <span>📎</span>
+              <Paperclip size={16} strokeWidth={1.5} />
               <span>
                 {isStaged
                   ? `Dokument auswählen (${allowedExtensions.join(', ')})`
@@ -214,74 +224,78 @@ export function DocumentUploader(props: DocumentUploaderProps) {
         </label>
       )}
 
-      {error && <p className="text-xs text-gf-danger">{error}</p>}
+      {error && <p className="text-xs text-err">{error}</p>}
 
       {isStaged ? (
         /* Staged list */
         stagedFiles.length === 0 ? (
-          <p className="text-xs italic text-gf-text-placeholder">
+          <p className="text-xs italic text-fg-4">
             Noch keine Dateien ausgewählt
           </p>
         ) : (
           <ul className="space-y-1">
-            {stagedFiles.map((file, idx) => (
-              <li
-                key={`${file.name}-${idx}`}
-                className="flex items-center gap-3 rounded-gf-btn border border-dashed border-gf-primary/30 bg-gf-primary/5 px-3 py-2"
-              >
-                <span className="text-lg" aria-hidden>{iconForMime(file.type)}</span>
-                <div className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium text-gf-text">
-                    {file.name}
-                  </span>
-                  <p className="text-[10px] text-gf-text-muted">
-                    {formatBytes(file.size)} · wird beim Speichern hochgeladen
-                  </p>
-                </div>
-                {!readOnly && (
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveStaged(idx)}
-                    className="rounded-gf-btn border border-gf-border px-2 py-1 text-xs text-gf-text-muted hover:border-gf-danger/40 hover:text-gf-danger transition-colors"
-                    aria-label="Entfernen"
-                  >
-                    ✕
-                  </button>
-                )}
-              </li>
-            ))}
+            {stagedFiles.map((file, idx) => {
+              const Icon = iconForMime(file.type)
+              return (
+                <li
+                  key={`${file.name}-${idx}`}
+                  className="flex items-center gap-3 rounded-s border border-dashed border-accent/30 bg-accent/5 px-3 py-2"
+                >
+                  <Icon size={18} strokeWidth={1.5} className="text-fg-2" aria-hidden />
+                  <div className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium text-fg-1">
+                      {file.name}
+                    </span>
+                    <p className="text-[10px] text-fg-2">
+                      {formatBytes(file.size)} · wird beim Speichern hochgeladen
+                    </p>
+                  </div>
+                  {!readOnly && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveStaged(idx)}
+                      className="flex h-7 w-7 items-center justify-center rounded-s border border-line text-fg-2 hover:border-err/40 hover:text-err transition-colors"
+                      aria-label="Entfernen"
+                    >
+                      <X size={14} strokeWidth={1.5} />
+                    </button>
+                  )}
+                </li>
+              )
+            })}
           </ul>
         )
       ) : docs.length === 0 ? (
-        <p className="text-xs italic text-gf-text-placeholder">
+        <p className="text-xs italic text-fg-4">
           {readOnly ? 'Keine Dokumente' : 'Noch keine Dokumente hochgeladen'}
         </p>
       ) : (
         <ul className="space-y-1">
           {docs.map((doc) => {
             const url = urls[doc.storage_path]
+            const Icon = iconForMime(doc.mime_type)
             return (
               <li
                 key={doc.id}
-                className="flex items-center gap-3 rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2"
+                className="flex items-center gap-3 rounded-s border border-line bg-bg-0 px-3 py-2"
               >
-                <span className="text-lg" aria-hidden>{iconForMime(doc.mime_type)}</span>
+                <Icon size={18} strokeWidth={1.5} className="text-fg-2" aria-hidden />
                 <div className="min-w-0 flex-1">
                   {url ? (
                     <a
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block truncate text-sm font-medium text-gf-primary hover:underline"
+                      className="block truncate text-sm font-medium text-accent hover:underline"
                     >
                       {doc.file_name}
                     </a>
                   ) : (
-                    <span className="block truncate text-sm font-medium text-gf-text">
+                    <span className="block truncate text-sm font-medium text-fg-1">
                       {doc.file_name}
                     </span>
                   )}
-                  <p className="text-[10px] text-gf-text-muted">
+                  <p className="text-[10px] text-fg-2">
                     {formatBytes(doc.size_bytes)} · {new Date(doc.uploaded_at).toLocaleString('de-DE')}
                   </p>
                 </div>
@@ -290,10 +304,10 @@ export function DocumentUploader(props: DocumentUploaderProps) {
                     type="button"
                     onClick={() => handleDeleteImmediate(doc)}
                     disabled={deletingId === doc.id}
-                    className="rounded-gf-btn border border-gf-border px-2 py-1 text-xs text-gf-text-muted hover:border-gf-danger/40 hover:text-gf-danger disabled:opacity-50 transition-colors"
+                    className="flex h-7 w-7 items-center justify-center rounded-s border border-line text-fg-2 hover:border-err/40 hover:text-err disabled:opacity-50 transition-colors"
                     aria-label="Löschen"
                   >
-                    {deletingId === doc.id ? '…' : '🗑'}
+                    {deletingId === doc.id ? '…' : <Trash2 size={14} strokeWidth={1.5} />}
                   </button>
                 )}
               </li>

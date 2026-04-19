@@ -15,11 +15,14 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.2.8",
+    "@fontsource/jetbrains-mono": "^5.2.8",
     "@supabase/supabase-js": "^2.100.0",
     "@tailwindcss/vite": "^4.2.2",
     "i18next": "^26.0.5",
     "i18next-browser-languagedetector": "^8.2.1",
     "jspdf": "^4.2.1",
+    "lucide-react": "^1.8.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-i18next": "^17.0.4",
@@ -29,9 +32,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
-    "@fontsource/doto": "^5.2.10",
     "@fontsource/space-grotesk": "^5.2.10",
-    "@fontsource/space-mono": "^5.2.9",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",

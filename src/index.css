@@ -2,94 +2,78 @@
 
 @theme {
   /* ─────────────────────────────────────────────────────────────────────── */
-  /* Nothing Design System — LUMEN                                           */
-  /* Based on: Nothing Design Skill by dominikmartn                         */
-  /* Philosophy: "Subtract, don't add. Every element must earn its pixel."  */
+  /* NEXUS Brand System 2026 — LUMEN (product context, NEXUS.OS kit)         */
+  /* Source of truth: products/_shared.css from the NEXUS brand kit.         */
   /* ─────────────────────────────────────────────────────────────────────── */
 
-  /* ── Core surfaces (dark-first) ── */
-  --color-gf-base:        #000000;  /* absolute black                      */
-  --color-gf-surface:     #111111;  /* page / app background               */
-  --color-gf-base-light:  #1A1A1A;  /* raised surface — sidebars, panels   */
-  --color-gf-card:        #1A1A1A;  /* card / modal background             */
-  --color-gf-surface-end: #111111;  /* no gradients — flat surface         */
+  /* ── Print-metaphor pair ── */
+  /* paper = cream sheet (light), ink = near-black type on it.               */
+  /* In dark-mode UI, use `text-ink` on `bg-accent` for max contrast.        */
+  --color-paper: #F5F3EE;
+  --color-ink:   #0A0B0D;
 
-  /* ── Borders ── */
-  --color-gf-border:            #333333;               /* visible border   */
-  --color-gf-border-dark:       rgba(255, 255, 255, 0.12);
-  --color-gf-border-dark-hover: rgba(255, 255, 255, 0.20);
+  /* ── Surface scale (dark-first) ── */
+  --color-bg-0: #07080A;   /* page / app bg                                  */
+  --color-bg-1: #0E1014;   /* cards, modals, sidebars, panels                */
+  --color-bg-2: #161920;   /* hover, raised secondary                        */
+  --color-bg-3: #1D2029;   /* highlighted / pressed                          */
+  --color-bg-4: #262A34;   /* selected / strong contrast surface             */
 
-  /* ── Text ── */
-  --color-gf-text:             #E8E8E8;  /* primary text                   */
-  --color-gf-text-muted:       #999999;  /* secondary / supporting text    */
-  --color-gf-text-inverse:     #FFFFFF;  /* display / max contrast         */
-  --color-gf-text-label:       #999999;  /* labels, metadata, nav items    */
-  --color-gf-text-placeholder: #666666;  /* disabled / placeholder         */
+  /* ── Foreground scale ── */
+  --color-fg-1: #F5F3EE;   /* primary text (same hue as paper)               */
+  --color-fg-2: #B9BAB4;   /* secondary                                      */
+  --color-fg-3: #7B7D7A;   /* tertiary, labels, metadata                     */
+  --color-fg-4: #4A4C50;   /* disabled, placeholder                          */
 
-  /* ── Interactive (primary actions — not an accent, it's functional) ── */
-  --color-gf-primary:       #5B9BF6;  /* interactive blue                  */
-  --color-gf-primary-light: #7FB3FF;
-  --color-gf-primary-dark:  #3B7DE8;
+  /* ── Lines / borders ── */
+  --color-line:   #222630; /* default border                                 */
+  --color-line-s: #2E3440; /* emphasized border (lighter than line)          */
 
-  /* ── Accent (interrupt signal — use ONLY for critical/urgent UI) ── */
-  --color-gf-accent:       #D71921;                   /* red signal light  */
-  --color-gf-accent-light: rgba(215, 25, 33, 0.15);   /* red subtle bg     */
+  /* ── Accent (PRODUCTO = Flare) ── */
+  --color-accent:      #FF4D2E;
+  --color-accent-soft: rgba(255, 77, 46, 0.12);
 
-  /* ── Semantic status (data-status colors — encode values, not bgs) ── */
-  --color-gf-success: #4A9E5C;  /* positive / confirmed                    */
-  --color-gf-danger:  #D71921;  /* error / destructive                     */
-  --color-gf-warning: #D4A843;  /* caution                                 */
+  /* ── Semantic states ── */
+  /* NEXUS.OS unifies err with accent — Flare is the interrupt signal.       */
+  --color-ok:   #4ADE80;
+  --color-warn: #FFB020;
+  --color-err:  #FF4D2E;
+  --color-info: #6BA6FF;
 
-  /* ── Nexus semantic aliases ── */
-  --color-primary-500:   #5B9BF6;
-  --color-nexus-success: #4A9E5C;
-  --color-nexus-warning: #D4A843;
-  --color-nexus-danger:  #D71921;
-
-  /* ── Scrollbar ── */
-  --color-gf-scrollbar:       #333333;
-  --color-gf-scrollbar-hover: #666666;
-
-  /* ── Team colors (status encoding — unchanged) ── */
+  /* ── Team colors (status encoding by cuadrilla) ── */
   --color-team-rot:   #ef4444;
   --color-team-gruen: #22c55e;
-  --color-team-blau:  var(--color-primary-500);
+  --color-team-blau:  var(--color-info);
   --color-team-gelb:  #eab308;
 
   /* ── Typography ── */
-  /* Space Grotesk — body and UI text (300 / 400 / 500 / 700)              */
-  /* Doto          — display / hero moments (variable weight)              */
-  /* Space Mono    — data labels, small caps, numeric values               */
-  --font-sans:    'Space Grotesk', system-ui, -apple-system, sans-serif;
-  --font-display: 'Doto', 'Space Grotesk', system-ui, sans-serif;
-  --font-mono:    'Space Mono', 'Courier New', monospace;
+  /* Space Grotesk  — display / hero / page titles (weight 300/400/500/700) */
+  /* Inter          — body / UI / labels / inputs (weight 400/500/600)      */
+  /* JetBrains Mono — data, numbers, micro-labels (weight 400/500)          */
+  --font-display: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+  --font-text:    'Inter', system-ui, -apple-system, sans-serif;
+  --font-sans:    'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono:    'JetBrains Mono', 'Courier New', monospace;
 
-  /* ── Border radius ── */
-  /* Nothing system: sharp (0px) or pill (9999px); max 16px on cards.      */
-  /* Anti-pattern: border-radius > 16px on cards.                          */
-  --radius-gf-btn:     0px;     /* sharp — mechanical/industrial aesthetic */
-  --radius-gf-card:    0.75rem; /* 12px — cards, panels, alerts            */
-  --radius-gf-card-lg: 1rem;    /* 16px — large cards (system maximum)     */
-
-  /* ── Elevation ── */
-  /* Nothing system: NO shadows. Use visible borders instead of depth.     */
-  --shadow-gf-sm:    none;
-  --shadow-gf-md:    none;
-  --shadow-gf-modal: none;
+  /* ── Border radius (NEXUS.OS scale — not sharp, suave 4/6/10px) ── */
+  --radius-s: 4px;
+  --radius-m: 6px;
+  --radius-l: 10px;
 }
 
 /* ─── Base styles ──────────────────────────────────────────────────────── */
 body {
   margin: 0;
-  font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
-  background-color: var(--color-gf-surface);
-  color: var(--color-gf-text);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--color-bg-0);
+  color: var(--color-fg-1);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'cv11', 'ss01', 'ss03';
 }
 
 h1, h2, h3 {
-  font-family: 'Doto', 'Space Grotesk', system-ui, sans-serif;
+  font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
   letter-spacing: -0.02em;
 }
 
@@ -101,29 +85,25 @@ h1, h2, h3 {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-gf-scrollbar);
+  background: var(--color-line);
   border-radius: 0;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-gf-scrollbar-hover);
+  background: var(--color-fg-3);
 }
 
 /* ─── Selection ────────────────────────────────────────────────────────── */
 ::selection {
-  background-color: rgba(91, 155, 246, 0.25);
-  color: var(--color-gf-text-inverse);
+  background-color: rgba(255, 77, 46, 0.25);
+  color: var(--color-fg-1);
 }
 
 /* ─── Page background ──────────────────────────────────────────────────── */
-/* Nothing system: no gradients. Flat dark surface only.                   */
 .nexus-bg {
-  background-color: var(--color-gf-surface);
+  background-color: var(--color-bg-0);
 }
 
 /* ─── Transition standards ─────────────────────────────────────────────── */
-/* Micro interactions:  150–250ms cubic-bezier(0.25, 0.1, 0.25, 1)        */
-/* Page transitions:    150ms ease                                          */
-
 @keyframes pageFadeIn {
   from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -133,8 +113,6 @@ h1, h2, h3 {
   animation: pageFadeIn 150ms cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
 }
 
-/* ─── Card hover ────────────────────────────────────────────────────────── */
-/* Subtle translate — no shadow per Nothing system rules.                   */
 .card-lift {
   transition: transform 200ms cubic-bezier(0.25, 0.1, 0.25, 1);
 }
@@ -142,3 +120,292 @@ h1, h2, h3 {
 .card-lift:hover {
   transform: translateY(-1px);
 }
+
+/* ─── NEXUS.OS typography patterns ─────────────────────────────────────── */
+/* Mono label — sections, breadcrumbs, KPI labels, table headers, badges   */
+.nx-label {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-fg-3);
+}
+
+/* Breadcrumb — same as label but with separators                          */
+.nx-breadcrumb {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-fg-3);
+}
+.nx-breadcrumb .sep { opacity: 0.5; margin: 0 6px; }
+.nx-breadcrumb .cur { color: var(--color-fg-1); }
+
+/* Page header — title + subtitle + optional right actions, with divider   */
+.nx-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--color-line);
+  margin-bottom: 24px;
+}
+.nx-page-title {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-weight: 300;
+  font-size: clamp(24px, 4vw, 32px);
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--color-fg-1);
+}
+.nx-page-title em {
+  font-style: italic;
+  font-weight: 400;
+}
+
+/* Panel — card with integrated header separator                           */
+.nx-panel {
+  background: var(--color-bg-1);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-l);
+  overflow: hidden;
+}
+.nx-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--color-line);
+}
+.nx-panel-title {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: -0.01em;
+  color: var(--color-fg-1);
+}
+.nx-panel-meta {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-fg-3);
+}
+.nx-panel-body { padding: 18px; }
+
+/* KPI card                                                                */
+.nx-kpi-card {
+  background: var(--color-bg-1);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-l);
+  padding: 20px;
+}
+.nx-kpi-label {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-fg-3);
+}
+.nx-kpi-value {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-weight: 400;
+  font-size: clamp(24px, 5vw, 36px);
+  letter-spacing: -0.03em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  margin: 10px 0 8px;
+  color: var(--color-fg-1);
+}
+.nx-kpi-value em {
+  font-style: normal;
+  color: var(--color-fg-3);
+  font-size: 0.55em;
+  font-weight: 300;
+  margin-left: 4px;
+}
+.nx-kpi-delta {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 11px;
+  color: var(--color-ok);
+}
+.nx-kpi-delta.down { color: var(--color-err); }
+.nx-kpi-delta.neut { color: var(--color-fg-3); }
+
+/* Legacy alias for .nx-kpi-value (kept for back-compat during migration). */
+.nx-kpi {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-weight: 400;
+  font-size: 36px;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Topbar — environment badge, search, ghost button                        */
+.nx-env-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-ok);
+  border: 1px solid var(--color-ok);
+  padding: 3px 8px;
+  border-radius: 3px;
+}
+.nx-env-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.nx-tb-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-bg-2);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-m);
+  padding: 6px 12px;
+  font-size: 12px;
+  color: var(--color-fg-3);
+  min-width: 240px;
+}
+.nx-tb-search input {
+  background: transparent;
+  border: none;
+  outline: none;
+  flex: 1;
+  color: var(--color-fg-1);
+  font-family: inherit;
+  font-size: inherit;
+}
+.nx-tb-search input::placeholder { color: var(--color-fg-3); }
+.nx-kbd {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 10px;
+  padding: 1px 5px;
+  border: 1px solid var(--color-line-s);
+  border-radius: 3px;
+  color: var(--color-fg-3);
+  margin-left: auto;
+}
+
+.nx-tb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--color-fg-2);
+  padding: 6px 10px;
+  border-radius: var(--radius-s);
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  transition: background 0.12s, color 0.12s;
+}
+.nx-tb-btn:hover {
+  background: var(--color-bg-2);
+  color: var(--color-fg-1);
+}
+
+/* Sidebar section label                                                   */
+.nx-sb-section {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-fg-3);
+  padding: 16px 8px 6px;
+}
+
+/* Progress bar                                                            */
+.nx-progress {
+  height: 6px;
+  background: var(--color-bg-3);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.nx-progress-fill {
+  height: 100%;
+  background: var(--color-accent);
+  border-radius: 999px;
+  transition: width 200ms cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+.nx-progress-fill.ok   { background: var(--color-ok); }
+.nx-progress-fill.warn { background: var(--color-warn); }
+.nx-progress-fill.err  { background: var(--color-err); }
+
+/* Alert list row                                                          */
+.nx-alert-row {
+  display: flex;
+  gap: 14px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--color-line);
+  font-size: 13px;
+  align-items: flex-start;
+}
+.nx-alert-row:last-child { border-bottom: none; }
+.nx-alert-sev {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.nx-alert-sev.crit { background: rgba(255,77,46,0.15); color: var(--color-err); }
+.nx-alert-sev.warn { background: rgba(255,176,32,0.15); color: var(--color-warn); }
+.nx-alert-sev.info { background: rgba(107,166,255,0.15); color: var(--color-info); }
+.nx-alert-body { flex: 1; }
+.nx-alert-body strong { font-weight: 600; display: block; margin-bottom: 2px; }
+.nx-alert-meta {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 11px;
+  color: var(--color-fg-3);
+  margin-top: 4px;
+}
+.nx-alert-ts {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 11px;
+  color: var(--color-fg-3);
+  flex-shrink: 0;
+}
+
+/* Tabs                                                                    */
+.nx-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--color-line);
+  gap: 2px;
+}
+.nx-tab {
+  padding: 10px 14px;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-fg-3);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: transparent;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  transition: color 0.12s, border-color 0.12s;
+}
+.nx-tab.active {
+  color: var(--color-fg-1);
+  border-bottom-color: var(--color-accent);
+}
+.nx-tab:hover:not(.active) { color: var(--color-fg-2); }

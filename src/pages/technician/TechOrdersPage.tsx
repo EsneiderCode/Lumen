@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
+import { ClipboardList, AlertTriangle } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { fetchMyWorkOrders, type WorkOrderWithRelations } from '@/services/workOrderService'
 import type { TeamColor } from '@/types/enums'
@@ -58,35 +59,35 @@ export function TechOrdersPage() {
     return (
       <button
         onClick={() => navigate(`/tech/orders/${order.id}`)}
-        className={`w-full rounded-gf-card border p-4 text-left transition-all active:scale-[0.99] ${
+        className={`w-full rounded-l border p-4 text-left transition-all active:scale-[0.99] ${
           isActive
-            ? 'border-gf-primary/40 bg-gf-card shadow-gf-sm'
-            : 'border-gf-border bg-gf-card opacity-75'
+            ? 'border-accent/40 bg-bg-1'
+            : 'border-line bg-bg-1 opacity-75'
         }`}
       >
         <div className="mb-2 flex items-start justify-between gap-2">
-          <span className="font-mono text-xs font-semibold text-gf-primary">{order.order_number}</span>
+          <span className="font-mono text-xs font-semibold text-accent">{order.order_number}</span>
           <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[order.status]}`}>
             {L.status(order.status)}
           </span>
         </div>
 
         <div className="mb-1 flex items-center gap-2">
-          <span className="text-sm font-semibold text-gf-text">{L.workType(order.work_type)}</span>
-          <span className="text-xs text-gf-text-muted">{order.line}</span>
+          <span className="text-sm font-semibold text-fg-1">{L.workType(order.work_type)}</span>
+          <span className="text-xs text-fg-2">{order.line}</span>
           {order.assigned_team && (
             <span className={`h-2 w-2 rounded-full ${TEAM_DOT[order.assigned_team as TeamColor]}`} />
           )}
         </div>
 
         {(order.address || order.city) && (
-          <p className="mb-2 text-xs text-gf-text-muted">
+          <p className="mb-2 text-xs text-fg-2">
             {[order.address, order.city].filter(Boolean).join(', ')}
           </p>
         )}
 
         <div className="flex items-center justify-between">
-          <div className="text-xs text-gf-text-muted">
+          <div className="text-xs text-fg-2">
             {order.clients?.code ?? '—'} · {order.projects?.code ?? '—'}
           </div>
           <div className="flex items-center gap-2">
@@ -94,7 +95,7 @@ export function TechOrdersPage() {
               {L.priority(order.priority)}
             </span>
             {order.assigned_date && (
-              <span className="text-xs text-gf-text-muted">
+              <span className="text-xs text-fg-2">
                 {new Date(order.assigned_date).toLocaleDateString('de-DE')}
               </span>
             )}
@@ -107,14 +108,14 @@ export function TechOrdersPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-gf-border border-t-gf-primary" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-accent" />
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="rounded-gf-btn border border-gf-danger/30 bg-gf-danger/10 px-4 py-3 text-sm text-rose-700">
+      <div className="rounded-s border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
         {error}
       </div>
     )
@@ -124,8 +125,8 @@ export function TechOrdersPage() {
     <div>
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h2 className="font-display text-xl font-bold text-gf-text">Meine Aufträge</h2>
-          <p className="text-sm text-gf-text-muted">{total} Aufträge zugewiesen</p>
+          <h2 className="font-display text-xl font-bold text-fg-1">Meine Aufträge</h2>
+          <p className="text-sm text-fg-2">{total} Aufträge zugewiesen</p>
         </div>
       </div>
 
@@ -136,22 +137,23 @@ export function TechOrdersPage() {
             placeholder="Auftrag suchen…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-gf-btn border border-gf-border bg-gf-card px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+            className="w-full rounded-s border border-line bg-bg-1 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           />
         </div>
       )}
 
       {orders.length === 0 ? (
-        <div className="rounded-gf-card border border-gf-border bg-gf-card py-16 text-center">
-          <p className="text-2xl">📋</p>
-          <p className="mt-2 text-sm text-gf-text-muted">Keine aktiven Aufträge</p>
+        <div className="rounded-l border border-line bg-bg-1 py-16 text-center">
+          <ClipboardList size={28} strokeWidth={1.5} className="mx-auto text-fg-3" />
+          <p className="mt-2 text-sm text-fg-2">Keine aktiven Aufträge</p>
         </div>
       ) : (
         <div className="space-y-4">
           {returnedOrders.length > 0 && (
             <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-rose-600">
-                ⚠ Zurückgegeben — Korrektur erforderlich ({returnedOrders.length})
+              <p className="nx-label mb-2 inline-flex items-center gap-2 text-err">
+                <AlertTriangle size={14} strokeWidth={1.5} />
+                Zurückgegeben — Korrektur erforderlich ({returnedOrders.length})
               </p>
               <div className="space-y-2">
                 {returnedOrders.map((o) => <OrderCard key={o.id} order={o} />)}
@@ -160,7 +162,7 @@ export function TechOrdersPage() {
           )}
           {activeOrders.length > 0 && (
             <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gf-text-muted">
+              <p className="mb-2 nx-label">
                 Aktiv ({activeOrders.length})
               </p>
               <div className="space-y-2">
@@ -170,7 +172,7 @@ export function TechOrdersPage() {
           )}
           {otherOrders.length > 0 && (
             <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gf-text-muted">
+              <p className="mb-2 nx-label">
                 Abgeschlossen / Gesendet ({otherOrders.length})
               </p>
               <div className="space-y-2">
@@ -180,21 +182,21 @@ export function TechOrdersPage() {
           )}
           {total > PAGE_SIZE && (
             <div className="flex items-center justify-between pt-2">
-              <span className="font-mono text-xs text-gf-text-muted">
+              <span className="font-mono text-xs text-fg-2">
                 {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} von {total}
               </span>
               <div className="flex gap-2">
                 <button
                   disabled={page === 0}
                   onClick={() => setPage((p) => p - 1)}
-                  className="rounded-gf-btn border border-gf-border px-3 py-1.5 text-xs text-gf-text transition-colors hover:border-gf-primary hover:text-gf-primary disabled:cursor-not-allowed disabled:opacity-40"
+                  className="rounded-s border border-line px-3 py-1.5 text-xs text-fg-1 transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   ← Zurück
                 </button>
                 <button
                   disabled={(page + 1) * PAGE_SIZE >= total}
                   onClick={() => setPage((p) => p + 1)}
-                  className="rounded-gf-btn border border-gf-border px-3 py-1.5 text-xs text-gf-text transition-colors hover:border-gf-primary hover:text-gf-primary disabled:cursor-not-allowed disabled:opacity-40"
+                  className="rounded-s border border-line px-3 py-1.5 text-xs text-fg-1 transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   Weiter →
                 </button>
