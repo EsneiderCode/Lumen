@@ -70,10 +70,10 @@ export function WorkOrdersPage() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="nx-page-header">
         <div>
-          <h2 className="font-display text-xl font-bold text-fg-1">Aufträge</h2>
-          <p className="mt-1 font-mono text-xs tabular-nums text-fg-3">{total} total</p>
+          <h2 className="nx-page-title">Aufträge</h2>
+          <p className="nx-label mt-2 tabular-nums">{total} total</p>
         </div>
         <button
           onClick={() => navigate('/admin/orders/new')}

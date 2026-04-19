@@ -173,11 +173,11 @@ export function CertificationPage() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="nx-page-header">
         <div>
-          <h2 className="font-display text-2xl font-bold text-fg-1">Zertifizierung</h2>
-          <p className="mt-1 text-sm text-fg-2">
-            {total === 0 ? 'Keine Aufträge im Prozess' : `${total} Aufträge im Prozess`}
+          <h2 className="nx-page-title">Zertifizierung</h2>
+          <p className="nx-label mt-2 tabular-nums">
+            {total === 0 ? 'Keine Aufträge · im Prozess' : `${total} Aufträge · im Prozess`}
           </p>
         </div>
         <button

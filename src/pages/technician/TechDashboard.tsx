@@ -103,18 +103,19 @@ export function TechDashboard() {
       </div>
 
       {/* Active orders */}
-      <div className="rounded-l border border-line bg-bg-1 p-5">
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="font-display text-sm font-semibold text-fg-1">Meine Aufträge</h3>
+      <div className="nx-panel">
+        <div className="nx-panel-head">
+          <h3 className="nx-panel-title">Meine Aufträge</h3>
           {orders.length > 0 && (
             <button
               onClick={() => navigate('/tech/orders')}
-              className="text-xs font-medium text-accent"
+              className="nx-label hover:text-accent transition-colors"
             >
               Alle anzeigen →
             </button>
           )}
         </div>
+        <div className="nx-panel-body">
 
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
@@ -159,6 +160,7 @@ export function TechDashboard() {
             ))}
           </div>
         )}
+        </div>
       </div>
     </div>
   )

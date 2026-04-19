@@ -44,11 +44,11 @@ export function ServiceItemsPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="nx-page-header">
         <div>
-          <h2 className="font-display text-xl font-bold text-fg-1">Service-Katalog</h2>
-          <p className="text-sm text-fg-2">
-            {filtered.length} Artikel — Vertragliche Leistungscodes
+          <h2 className="nx-page-title">Service-<em>Katalog</em></h2>
+          <p className="nx-label mt-2 tabular-nums">
+            {filtered.length} Artikel · Vertragliche Leistungscodes
           </p>
         </div>
       </div>

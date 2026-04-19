@@ -131,7 +131,110 @@ h1, h2, h3 {
   color: var(--color-fg-3);
 }
 
-/* Display KPI number — big tabular-num data readouts                      */
+/* Breadcrumb — same as label but with separators                          */
+.nx-breadcrumb {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-fg-3);
+}
+.nx-breadcrumb .sep { opacity: 0.5; margin: 0 6px; }
+.nx-breadcrumb .cur { color: var(--color-fg-1); }
+
+/* Page header — title + subtitle + optional right actions, with divider   */
+.nx-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--color-line);
+  margin-bottom: 24px;
+}
+.nx-page-title {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-weight: 300;
+  font-size: clamp(24px, 4vw, 32px);
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--color-fg-1);
+}
+.nx-page-title em {
+  font-style: italic;
+  font-weight: 400;
+}
+
+/* Panel — card with integrated header separator                           */
+.nx-panel {
+  background: var(--color-bg-1);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-l);
+  overflow: hidden;
+}
+.nx-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--color-line);
+}
+.nx-panel-title {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: -0.01em;
+  color: var(--color-fg-1);
+}
+.nx-panel-meta {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-fg-3);
+}
+.nx-panel-body { padding: 18px; }
+
+/* KPI card                                                                */
+.nx-kpi-card {
+  background: var(--color-bg-1);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-l);
+  padding: 20px;
+}
+.nx-kpi-label {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-fg-3);
+}
+.nx-kpi-value {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-weight: 400;
+  font-size: clamp(24px, 5vw, 36px);
+  letter-spacing: -0.03em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  margin: 10px 0 8px;
+  color: var(--color-fg-1);
+}
+.nx-kpi-value em {
+  font-style: normal;
+  color: var(--color-fg-3);
+  font-size: 0.55em;
+  font-weight: 300;
+  margin-left: 4px;
+}
+.nx-kpi-delta {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 11px;
+  color: var(--color-ok);
+}
+.nx-kpi-delta.down { color: var(--color-err); }
+.nx-kpi-delta.neut { color: var(--color-fg-3); }
+
+/* Legacy alias for .nx-kpi-value (kept for back-compat during migration). */
 .nx-kpi {
   font-family: 'Space Grotesk', system-ui, sans-serif;
   font-weight: 400;
@@ -139,12 +242,4 @@ h1, h2, h3 {
   letter-spacing: -0.03em;
   line-height: 1;
   font-variant-numeric: tabular-nums;
-}
-
-/* Panel title — inside card headers                                       */
-.nx-panel-title {
-  font-family: 'Space Grotesk', system-ui, sans-serif;
-  font-weight: 500;
-  font-size: 14px;
-  letter-spacing: -0.01em;
 }
