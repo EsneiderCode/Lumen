@@ -73,7 +73,7 @@ export function WorkOrdersPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h2 className="font-display text-xl font-bold text-fg-1">Aufträge</h2>
-          <p className="text-sm text-fg-2">{total} Aufträge</p>
+          <p className="mt-1 font-mono text-xs tabular-nums text-fg-3">{total} total</p>
         </div>
         <button
           onClick={() => navigate('/admin/orders/new')}
@@ -252,14 +252,14 @@ export function WorkOrdersPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-line bg-bg-0">
-                  <th className="px-4 py-3 text-left font-semibold text-fg-2">Auftrag #</th>
-                  <th className="px-4 py-3 text-left font-semibold text-fg-2">Typ</th>
-                  <th className="px-4 py-3 text-left font-semibold text-fg-2">Kunde / Projekt</th>
-                  <th className="px-4 py-3 text-left font-semibold text-fg-2">Team</th>
-                  <th className="px-4 py-3 text-left font-semibold text-fg-2">Priorität</th>
-                  <th className="px-4 py-3 text-left font-semibold text-fg-2">Status</th>
-                  <th className="px-4 py-3 text-left font-semibold text-fg-2">Datum</th>
+                <tr className="border-b border-line bg-bg-1">
+                  <th className="nx-label px-4 py-3 text-left">Auftrag #</th>
+                  <th className="nx-label px-4 py-3 text-left">Typ</th>
+                  <th className="nx-label px-4 py-3 text-left">Kunde / Projekt</th>
+                  <th className="nx-label px-4 py-3 text-left">Team</th>
+                  <th className="nx-label px-4 py-3 text-left">Priorität</th>
+                  <th className="nx-label px-4 py-3 text-left">Status</th>
+                  <th className="nx-label px-4 py-3 text-left">Datum</th>
                   <th className="px-4 py-3" />
                 </tr>
               </thead>

@@ -121,7 +121,7 @@ export function ContractorOrdersPage() {
         <div className="space-y-5">
           {activeOrders.length > 0 && (
             <section>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-fg-2">
+              <p className="mb-2 nx-label">
                 Aktiv ({activeOrders.length})
               </p>
               <div className="space-y-2">
@@ -134,7 +134,7 @@ export function ContractorOrdersPage() {
 
           {closedOrders.length > 0 && (
             <section>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-fg-2">
+              <p className="mb-2 nx-label">
                 Abgeschlossen ({closedOrders.length})
               </p>
               <div className="space-y-2">

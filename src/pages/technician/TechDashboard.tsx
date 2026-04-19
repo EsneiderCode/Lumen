@@ -96,8 +96,8 @@ export function TechDashboard() {
             ].map((s) => (
               <div key={s.label} className="rounded-l border border-line bg-bg-1 p-3 text-center sm:p-4">
                 <div className={`mx-auto mb-2 h-1 w-8 rounded-full ${s.color}`} />
-                <p className="font-display text-xl font-bold text-fg-1">{s.value}</p>
-                <p className="text-xs text-fg-2">{s.label}</p>
+                <p className="font-display text-xl font-semibold tabular-nums text-fg-1">{s.value}</p>
+                <p className="nx-label mt-1">{s.label}</p>
               </div>
             ))}
       </div>

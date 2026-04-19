@@ -151,7 +151,7 @@ export function TechOrdersPage() {
         <div className="space-y-4">
           {returnedOrders.length > 0 && (
             <div>
-              <p className="mb-2 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-err">
+              <p className="nx-label mb-2 inline-flex items-center gap-2 text-err">
                 <AlertTriangle size={14} strokeWidth={1.5} />
                 Zurückgegeben — Korrektur erforderlich ({returnedOrders.length})
               </p>
@@ -162,7 +162,7 @@ export function TechOrdersPage() {
           )}
           {activeOrders.length > 0 && (
             <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-fg-2">
+              <p className="mb-2 nx-label">
                 Aktiv ({activeOrders.length})
               </p>
               <div className="space-y-2">
@@ -172,7 +172,7 @@ export function TechOrdersPage() {
           )}
           {otherOrders.length > 0 && (
             <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-fg-2">
+              <p className="mb-2 nx-label">
                 Abgeschlossen / Gesendet ({otherOrders.length})
               </p>
               <div className="space-y-2">

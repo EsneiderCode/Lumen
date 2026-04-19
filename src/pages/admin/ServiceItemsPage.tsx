@@ -95,16 +95,16 @@ export function ServiceItemsPage() {
       ) : (
         <div className="overflow-hidden rounded-l border border-line bg-bg-1">
           <table className="w-full text-sm">
-            <thead className="border-b border-line bg-bg-0">
+            <thead className="border-b border-line bg-bg-1">
               <tr>
-                <th className="px-3 py-2 text-left font-medium text-fg-2">Code</th>
-                <th className="px-3 py-2 text-left font-medium text-fg-2">Beschreibung (DE)</th>
-                <th className="px-3 py-2 text-left font-medium text-fg-2">Descripción (ES)</th>
-                <th className="px-3 py-2 text-left font-medium text-fg-2">Einheit</th>
-                <th className="px-3 py-2 text-right font-medium text-fg-2">Preis</th>
-                <th className="px-3 py-2 text-left font-medium text-fg-2">Detail</th>
-                <th className="px-3 py-2 text-left font-medium text-fg-2">Betreiber</th>
-                <th className="px-3 py-2 text-left font-medium text-fg-2">Status</th>
+                <th className="nx-label px-3 py-2 text-left">Code</th>
+                <th className="nx-label px-3 py-2 text-left">Beschreibung (DE)</th>
+                <th className="nx-label px-3 py-2 text-left">Descripción (ES)</th>
+                <th className="nx-label px-3 py-2 text-left">Einheit</th>
+                <th className="nx-label px-3 py-2 text-right">Preis</th>
+                <th className="nx-label px-3 py-2 text-left">Detail</th>
+                <th className="nx-label px-3 py-2 text-left">Betreiber</th>
+                <th className="nx-label px-3 py-2 text-left">Status</th>
               </tr>
             </thead>
             <tbody>
