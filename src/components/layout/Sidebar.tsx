@@ -17,14 +17,34 @@ interface NavItem {
   icon: LucideIcon
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard', path: ROUTES.ADMIN.DASHBOARD, icon: LayoutGrid },
-  { label: 'Aufträge', path: ROUTES.ADMIN.ORDERS, icon: ClipboardList },
-  { label: 'Zertifizierung', path: ROUTES.ADMIN.CERTIFICATION, icon: CheckCircle2 },
-  { label: 'Service-Katalog', path: ROUTES.ADMIN.SERVICE_ITEMS, icon: FileText },
-  { label: 'Personal', path: ROUTES.ADMIN.PERSONNEL, icon: Users },
-  { label: 'Material', path: ROUTES.ADMIN.MATERIALS, icon: Package },
-  { label: 'Einstellungen', path: ROUTES.ADMIN.SETTINGS, icon: Settings },
+interface NavSection {
+  label: string
+  items: NavItem[]
+}
+
+const NAV_SECTIONS: NavSection[] = [
+  {
+    label: 'Operations',
+    items: [
+      { label: 'Dashboard',     path: ROUTES.ADMIN.DASHBOARD,     icon: LayoutGrid },
+      { label: 'Aufträge',      path: ROUTES.ADMIN.ORDERS,        icon: ClipboardList },
+      { label: 'Zertifizierung',path: ROUTES.ADMIN.CERTIFICATION, icon: CheckCircle2 },
+    ],
+  },
+  {
+    label: 'Catalog',
+    items: [
+      { label: 'Service-Katalog', path: ROUTES.ADMIN.SERVICE_ITEMS, icon: FileText },
+    ],
+  },
+  {
+    label: 'Organization',
+    items: [
+      { label: 'Personal',     path: ROUTES.ADMIN.PERSONNEL, icon: Users },
+      { label: 'Material',     path: ROUTES.ADMIN.MATERIALS, icon: Package },
+      { label: 'Einstellungen',path: ROUTES.ADMIN.SETTINGS,  icon: Settings },
+    ],
+  },
 ]
 
 interface SidebarProps {
@@ -50,42 +70,46 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         }`}
       >
         {/* Brand */}
-        <div className="flex h-16 items-center gap-3 border-b border-line px-6">
-          <div className="flex h-8 w-8 items-center justify-center rounded-s border border-accent/20 bg-bg-2">
-            <span className="font-display text-sm font-bold text-accent">L</span>
+        <div className="flex h-12 items-center gap-3 border-b border-line px-5">
+          <svg width="22" height="22" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+            <rect x="6"  y="6" width="6" height="28" fill="var(--color-fg-1)"/>
+            <rect x="28" y="6" width="6" height="28" fill="var(--color-fg-1)"/>
+            <path d="M12 8 L28 32 L28 26 L12 2 Z" fill="var(--color-accent)"/>
+          </svg>
+          <div className="font-display text-[15px] font-medium tracking-tight text-fg-1">
+            LUMEN<span className="text-accent">.OS</span>
           </div>
-          <span className="font-display text-lg font-bold text-fg-1">LUMEN</span>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 space-y-1 p-3">
-          {NAV_ITEMS.map((item) => {
-            const Icon = item.icon
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                end={item.path === ROUTES.ADMIN.DASHBOARD}
-                onClick={onClose}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-s px-3 py-2.5 text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-bg-3 text-fg-1'
-                      : 'text-fg-2 hover:bg-bg-2 hover:text-fg-1'
-                  }`
-                }
-              >
-                <Icon size={18} strokeWidth={1.5} />
-                {item.label}
-              </NavLink>
-            )
-          })}
+        <nav className="flex-1 overflow-auto px-3 py-2">
+          {NAV_SECTIONS.map((section) => (
+            <div key={section.label}>
+              <div className="nx-sb-section">{section.label}</div>
+              {section.items.map((item) => {
+                const Icon = item.icon
+                return (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    end={item.path === ROUTES.ADMIN.DASHBOARD}
+                    onClick={onClose}
+                    className={({ isActive }) =>
+                      `flex items-center gap-2.5 rounded-s px-2 py-1.5 text-[13px] transition-colors ${
+                        isActive
+                          ? 'bg-bg-3 text-fg-1'
+                          : 'text-fg-2 hover:bg-bg-2 hover:text-fg-1'
+                      }`
+                    }
+                  >
+                    <Icon size={14} strokeWidth={1.5} className="opacity-70" />
+                    {item.label}
+                  </NavLink>
+                )
+              })}
+            </div>
+          ))}
         </nav>
-
-        {/* Footer */}
-        <div className="border-t border-line-s px-6 py-4">
-          <p className="text-xs text-fg-2/50">Nexus Engineering GmbH</p>
-        </div>
       </aside>
     </>
   )
