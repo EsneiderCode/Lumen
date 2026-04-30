@@ -41,21 +41,146 @@ const ADMIN_ONLY_TARGETS = new Set<WorkOrderStatus>([
 ])
 
 /**
- * Validates a proposed status transition.
+ * Validates a proposed status transition (pure: machine + role only).
  * Returns an error string if invalid, or null if allowed.
+ *
+ * Direct orders (no external client) may shortcut from internally_certified
+ * straight to invoiced — pass isDirectOrder=true for that case.
+ * Mirror of the SQL trigger validate_work_order_status_transition().
  */
 export function validateStatusTransition(
   from: WorkOrderStatus,
   to: WorkOrderStatus,
   userRole?: UserRole,
+  isDirectOrder?: boolean,
 ): string | null {
-  const allowed = VALID_TRANSITIONS[from]
-  if (!allowed.includes(to)) {
-    return `Ungültiger Statusübergang: ${from} → ${to}`
+  // Direct-order shortcut: internally_certified → invoiced
+  const isDirectShortcut =
+    isDirectOrder === true && from === 'internally_certified' && to === 'invoiced'
+
+  if (!isDirectShortcut) {
+    const allowed = VALID_TRANSITIONS[from]
+    if (!allowed.includes(to)) {
+      return `Ungültiger Statusübergang: ${from} → ${to}`
+    }
   }
+
   if (userRole && userRole !== 'admin' && ADMIN_ONLY_TARGETS.has(to)) {
     return `Keine Berechtigung: Nur Admins können den Status auf "${to}" setzen`
   }
+  return null
+}
+
+// ── Data prerequisites for transitions (DB-backed) ─────────────────────────
+
+/**
+ * Required detail fields per work_type. A transition into internally_certified
+ * is rejected if any of these is null/empty/0/false.
+ *
+ * 'pop' is intentionally absent: wo_detail_pop is referenced by the workType
+ * map but its table is not yet created in supabase/migrations. POP orders
+ * cannot currently be certified through this path.
+ */
+const REQUIRED_DETAIL_FIELDS: Partial<Record<WorkType, readonly string[]>> = {
+  soplado:         ['meters', 'section'],
+  fusion_ap:       ['cabinet_code', 'fiber_type', 'has_measurement_cert'],
+  fusion_dp:       ['cabinet_code', 'fiber_type', 'has_measurement_cert'],
+  alta:            ['access_type', 'equipment_installed', 'client_signature'],
+  nt_installation: ['nt_type', 'serial_number', 'location'],
+  patchkabel:      ['connected_section', 'cable_length', 'connector_type', 'test_result'],
+}
+
+function isFieldFilled(value: unknown): boolean {
+  if (value === null || value === undefined) return false
+  if (typeof value === 'string') return value.trim().length > 0
+  if (typeof value === 'number') return value > 0
+  if (typeof value === 'boolean') return value === true
+  return true
+}
+
+/**
+ * Validates DB-backed prerequisites for a status transition.
+ * Returns an error string if any prerequisite is not met, or null if OK.
+ *
+ * Enforces (CLAUDE.md business rules):
+ *   1. internally_certified  ← requires complete Rückmeldung detail + 3 photos
+ *   2. invoiced (with client) ← requires certification_audits row of cert_type='client'
+ *   3. invoiced (direct)      ← requires certification_audits row of cert_type='internal'
+ */
+export async function validateTransitionPrerequisites(
+  workOrderId: string,
+  toStatus: WorkOrderStatus,
+): Promise<string | null> {
+  if (toStatus !== 'internally_certified' && toStatus !== 'invoiced') {
+    return null
+  }
+
+  const { data: order, error: orderError } = await supabase
+    .from('work_orders')
+    .select('work_type, client_id')
+    .eq('id', workOrderId)
+    .single()
+
+  if (orderError || !order) return 'Auftrag nicht gefunden'
+
+  // ── Rule 1: internally_certified requires complete Rückmeldung
+  if (toStatus === 'internally_certified') {
+    const required = REQUIRED_DETAIL_FIELDS[order.work_type as WorkType]
+    if (!required) {
+      return `Zertifizierung für Arbeitstyp "${order.work_type}" nicht unterstützt`
+    }
+
+    const detailTable = workTypeToDetailTable(order.work_type as WorkType)
+    const { data: detail } = await supabase
+      .from(detailTable as 'wo_detail_soplado')
+      .select('*')
+      .eq('work_order_id', workOrderId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+
+    const detailRow = detail && detail.length > 0 ? (detail[0] as Record<string, unknown>) : null
+    if (!detailRow) {
+      return 'Rückmeldung fehlt — Auftrag kann nicht zertifiziert werden'
+    }
+
+    const missing = required.filter((f) => !isFieldFilled(detailRow[f]))
+    if (missing.length > 0) {
+      return `Rückmeldung unvollständig: ${missing.join(', ')}`
+    }
+
+    const { data: photos } = await supabase
+      .from('work_order_photos')
+      .select('photo_type')
+      .eq('work_order_id', workOrderId)
+
+    const photoTypes = new Set((photos ?? []).map((p) => p.photo_type as string))
+    const missingPhotos = (['before', 'during', 'after'] as const).filter(
+      (t) => !photoTypes.has(t),
+    )
+    if (missingPhotos.length > 0) {
+      return `Fehlende Fotos (${missingPhotos.join(', ')}) — Auftrag kann nicht zertifiziert werden`
+    }
+  }
+
+  // ── Rules 2/3: invoiced requires the right certification audit
+  if (toStatus === 'invoiced') {
+    const isDirect = order.client_id === null
+    const requiredCertType: 'internal' | 'client' = isDirect ? 'internal' : 'client'
+
+    const { data: audits } = await supabase
+      .from('certification_audits' as 'work_orders')
+      .select('cert_type')
+      .eq('work_order_id', workOrderId)
+      .eq('cert_type', requiredCertType)
+      .limit(1)
+
+    if (!audits || audits.length === 0) {
+      return isDirect
+        ? 'Direktauftrag kann nicht fakturiert werden ohne interne Zertifizierung'
+        : 'Auftrag kann nicht fakturiert werden ohne Kundenakzeptanz'
+    }
+  }
+
   return null
 }
 
@@ -388,16 +513,25 @@ export async function transitionWorkOrderStatus(
 ) {
   const { data: current } = await supabase
     .from('work_orders')
-    .select('status')
+    .select('status, client_id')
     .eq('id', id)
     .single()
 
   const fromStatus = current?.status ?? null
+  const isDirectOrder = current?.client_id === null
 
   if (fromStatus) {
-    const validationError = validateStatusTransition(fromStatus as WorkOrderStatus, toStatus, userRole)
+    const validationError = validateStatusTransition(
+      fromStatus as WorkOrderStatus,
+      toStatus,
+      userRole,
+      isDirectOrder,
+    )
     if (validationError) return { data: null, error: validationError }
   }
+
+  const prereqError = await validateTransitionPrerequisites(id, toStatus)
+  if (prereqError) return { data: null, error: prereqError }
 
   const { data, error } = await supabase
     .from('work_orders')
