@@ -141,3 +141,59 @@ describe('validateStatusTransition — role-based access', () => {
     }
   })
 })
+
+// ── Direct-order shortcut (Migration 004) ───────────────────────────────────
+
+describe('validateStatusTransition — direct-order shortcut', () => {
+  it('allows internally_certified → invoiced when isDirectOrder=true', () => {
+    expect(
+      validateStatusTransition('internally_certified', 'invoiced', 'admin', true),
+    ).toBeNull()
+  })
+
+  it('rejects internally_certified → invoiced when isDirectOrder=false', () => {
+    expect(
+      validateStatusTransition('internally_certified', 'invoiced', 'admin', false),
+    ).not.toBeNull()
+  })
+
+  it('rejects internally_certified → invoiced when isDirectOrder is undefined (default)', () => {
+    expect(
+      validateStatusTransition('internally_certified', 'invoiced', 'admin'),
+    ).not.toBeNull()
+  })
+
+  it('blocks technician from the direct-order shortcut even with isDirectOrder=true', () => {
+    const err = validateStatusTransition(
+      'internally_certified', 'invoiced', 'technician', true,
+    )
+    expect(err).not.toBeNull()
+    expect(err).toMatch(/Berechtigung/i)
+  })
+
+  it('blocks contractor from the direct-order shortcut', () => {
+    expect(
+      validateStatusTransition('internally_certified', 'invoiced', 'contractor', true),
+    ).not.toBeNull()
+  })
+
+  it('isDirectOrder=true does not unlock unrelated illegal transitions', () => {
+    expect(
+      validateStatusTransition('created', 'invoiced', 'admin', true),
+    ).not.toBeNull()
+    expect(
+      validateStatusTransition('rueckmeldung_sent', 'invoiced', 'admin', true),
+    ).not.toBeNull()
+    expect(
+      validateStatusTransition('sent_to_client', 'paid', 'admin', true),
+    ).not.toBeNull()
+  })
+
+  it('preserves the standard with-client path even when isDirectOrder=true', () => {
+    // A direct-order flag should not prevent the normal admin flow if the
+    // admin chooses to send to client anyway (operational override).
+    expect(
+      validateStatusTransition('internally_certified', 'sent_to_client', 'admin', true),
+    ).toBeNull()
+  })
+})
