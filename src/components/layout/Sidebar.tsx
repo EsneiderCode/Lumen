@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import {
   LayoutGrid,
   ClipboardList,
@@ -12,37 +13,37 @@ import {
 import { ROUTES } from '@/config/routes'
 
 interface NavItem {
-  label: string
+  labelKey: string
   path: string
   icon: LucideIcon
 }
 
 interface NavSection {
-  label: string
+  labelKey: string
   items: NavItem[]
 }
 
 const NAV_SECTIONS: NavSection[] = [
   {
-    label: 'Operations',
+    labelKey: 'nav.operations',
     items: [
-      { label: 'Dashboard',     path: ROUTES.ADMIN.DASHBOARD,     icon: LayoutGrid },
-      { label: 'Aufträge',      path: ROUTES.ADMIN.ORDERS,        icon: ClipboardList },
-      { label: 'Zertifizierung',path: ROUTES.ADMIN.CERTIFICATION, icon: CheckCircle2 },
+      { labelKey: 'nav.dashboard',     path: ROUTES.ADMIN.DASHBOARD,     icon: LayoutGrid },
+      { labelKey: 'nav.orders',        path: ROUTES.ADMIN.ORDERS,        icon: ClipboardList },
+      { labelKey: 'nav.certification', path: ROUTES.ADMIN.CERTIFICATION, icon: CheckCircle2 },
     ],
   },
   {
-    label: 'Catalog',
+    labelKey: 'nav.catalog',
     items: [
-      { label: 'Service-Katalog', path: ROUTES.ADMIN.SERVICE_ITEMS, icon: FileText },
+      { labelKey: 'nav.serviceCatalog', path: ROUTES.ADMIN.SERVICE_ITEMS, icon: FileText },
     ],
   },
   {
-    label: 'Organization',
+    labelKey: 'nav.organization',
     items: [
-      { label: 'Personal',     path: ROUTES.ADMIN.PERSONNEL, icon: Users },
-      { label: 'Material',     path: ROUTES.ADMIN.MATERIALS, icon: Package },
-      { label: 'Einstellungen',path: ROUTES.ADMIN.SETTINGS,  icon: Settings },
+      { labelKey: 'nav.personnel', path: ROUTES.ADMIN.PERSONNEL, icon: Users },
+      { labelKey: 'nav.materials', path: ROUTES.ADMIN.MATERIALS, icon: Package },
+      { labelKey: 'nav.settings',  path: ROUTES.ADMIN.SETTINGS,  icon: Settings },
     ],
   },
 ]
@@ -53,6 +54,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
+  const { t } = useTranslation()
   return (
     <>
       {/* Mobile backdrop */}
@@ -84,8 +86,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         {/* Navigation */}
         <nav className="flex-1 overflow-auto px-3 py-2">
           {NAV_SECTIONS.map((section) => (
-            <div key={section.label}>
-              <div className="nx-sb-section">{section.label}</div>
+            <div key={section.labelKey}>
+              <div className="nx-sb-section">{t(section.labelKey)}</div>
               {section.items.map((item) => {
                 const Icon = item.icon
                 return (
@@ -103,7 +105,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                     }
                   >
                     <Icon size={14} strokeWidth={1.5} className="opacity-70" />
-                    {item.label}
+                    {t(item.labelKey)}
                   </NavLink>
                 )
               })}

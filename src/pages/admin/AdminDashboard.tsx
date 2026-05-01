@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { AlertTriangle } from 'lucide-react'
 import { fetchWorkOrders, type WorkOrderWithRelations } from '@/services/workOrderService'
 import type { WorkOrderStatus } from '@/types/enums'
@@ -30,6 +31,7 @@ function timeAgo(iso: string): string {
 }
 
 export function AdminDashboard() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [counts, setCounts] = useState<StatCounts>({ open: 0, inProgress: 0, pendingCert: 0, done: 0 })
   const [alerts, setAlerts] = useState<WorkOrderWithRelations[]>([])
@@ -72,18 +74,18 @@ export function AdminDashboard() {
   }, [])
 
   const stats = [
-    { label: 'Offene Aufträge',           value: counts.open,        color: 'bg-accent' },
-    { label: 'In Bearbeitung',            value: counts.inProgress,  color: 'bg-info' },
-    { label: 'Zertifizierung ausstehend', value: counts.pendingCert, color: 'bg-warn' },
-    { label: 'Abgeschlossen · Monat',     value: counts.done,        color: 'bg-ok' },
+    { label: t('dashboard.admin.statOpen'),         value: counts.open,        color: 'bg-accent' },
+    { label: t('dashboard.admin.statInProgress'),   value: counts.inProgress,  color: 'bg-info' },
+    { label: t('dashboard.admin.statPendingCert'),  value: counts.pendingCert, color: 'bg-warn' },
+    { label: t('dashboard.admin.statDone'),         value: counts.done,        color: 'bg-ok' },
   ]
 
   return (
     <div>
       <div className="nx-page-header">
         <div>
-          <h2 className="nx-page-title">Dashboard</h2>
-          <p className="nx-label mt-2">§ Operations · Overview</p>
+          <h2 className="nx-page-title">{t('dashboard.admin.title')}</h2>
+          <p className="nx-label mt-2">{t('dashboard.admin.subtitle')}</p>
         </div>
       </div>
 
@@ -102,9 +104,9 @@ export function AdminDashboard() {
       {/* Attention feed */}
       <div className="nx-panel mt-8">
         <div className="nx-panel-head">
-          <h3 className="nx-panel-title">Benötigt Aufmerksamkeit</h3>
+          <h3 className="nx-panel-title">{t('dashboard.admin.attentionTitle')}</h3>
           <span className="nx-panel-meta tabular-nums">
-            {alerts.length} offen
+            {t('dashboard.admin.attentionOpen', { count: alerts.length })}
           </span>
         </div>
         <div>
@@ -113,11 +115,14 @@ export function AdminDashboard() {
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-line border-t-accent" />
             </div>
           ) : alerts.length === 0 ? (
-            <div className="nx-panel-body text-sm text-fg-2">Keine offenen Meldungen.</div>
+            <div className="nx-panel-body text-sm text-fg-2">{t('dashboard.admin.attentionEmpty')}</div>
           ) : (
             alerts.map((order) => {
               const sev = order.status === 'client_rejected' ? 'crit' : 'warn'
-              const label = order.status === 'client_rejected' ? 'Abgelehnt' : 'Zurück'
+              const label =
+                order.status === 'client_rejected'
+                  ? t('dashboard.admin.attentionRejected')
+                  : t('dashboard.admin.attentionReturned')
               return (
                 <button
                   key={order.id}
@@ -136,7 +141,7 @@ export function AdminDashboard() {
                     </strong>
                     <div className="nx-alert-meta">
                       {order.projects?.code ?? '—'}
-                      {order.assigned_team && ` · Team ${order.assigned_team}`}
+                      {order.assigned_team && ` · ${t('dashboard.admin.team', { team: order.assigned_team })}`}
                     </div>
                   </div>
                   <span className="nx-alert-ts">
@@ -152,13 +157,12 @@ export function AdminDashboard() {
       {/* Welcome panel */}
       <div className="nx-panel mt-6">
         <div className="nx-panel-head">
-          <h3 className="nx-panel-title">Willkommen bei LUMEN</h3>
+          <h3 className="nx-panel-title">{t('dashboard.admin.welcomeTitle')}</h3>
           <span className="nx-panel-meta">v1.0</span>
         </div>
         <div className="nx-panel-body">
           <p className="text-sm text-fg-2">
-            Zentrale Betriebsplattform für HMR Nexus Engineering GmbH. Aufträge, Zertifizierungen und
-            Personalverwaltung an einem Ort.
+            {t('dashboard.admin.welcomeBody')}
           </p>
         </div>
       </div>

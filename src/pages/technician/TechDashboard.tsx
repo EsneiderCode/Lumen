@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { ClipboardList } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { fetchMyWorkOrders, type WorkOrderWithRelations } from '@/services/workOrderService'
@@ -18,12 +19,13 @@ const TEAM_COLORS: Record<string, { dot: string; badge: string }> = {
 }
 
 export function TechDashboard() {
+  const { t, i18n } = useTranslation()
   const L = useLabels()
   const navigate = useNavigate()
   const { user } = useAuth()
   const team = user?.team ?? null
   const teamStyle = team ? TEAM_COLORS[team] : null
-  const today = new Date().toLocaleDateString('de-DE', {
+  const today = new Date().toLocaleDateString(i18n.language === 'es' ? 'es-ES' : 'de-DE', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -66,14 +68,14 @@ export function TechDashboard() {
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 className="font-display text-lg font-bold text-fg-1">
-              Hallo, {user?.fullName}
+              {t('dashboard.tech.greeting', { name: user?.fullName ?? '' })}
             </h2>
             <p className="mt-0.5 text-sm text-fg-2">{today}</p>
           </div>
           {team && teamStyle && (
             <span className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${teamStyle.badge}`}>
               <span className={`h-2 w-2 rounded-full ${teamStyle.dot}`} />
-              Team {L.team(team as TeamColor)}
+              {t('dashboard.tech.team', { name: L.team(team as TeamColor) })}
             </span>
           )}
         </div>
@@ -90,9 +92,9 @@ export function TechDashboard() {
               </div>
             ))
           : [
-              { label: 'Heute', value: todayCount, color: 'bg-accent' },
-              { label: 'Offen', value: openCount, color: 'bg-warn' },
-              { label: 'Erledigt', value: doneCount, color: 'bg-ok' },
+              { label: t('dashboard.tech.statToday'),  value: todayCount, color: 'bg-accent' },
+              { label: t('dashboard.tech.statOpen'),   value: openCount,  color: 'bg-warn' },
+              { label: t('dashboard.tech.statDone'),   value: doneCount,  color: 'bg-ok' },
             ].map((s) => (
               <div key={s.label} className="rounded-l border border-line bg-bg-1 p-3 text-center sm:p-4">
                 <div className={`mx-auto mb-2 h-1 w-8 rounded-full ${s.color}`} />
@@ -105,13 +107,13 @@ export function TechDashboard() {
       {/* Active orders */}
       <div className="nx-panel">
         <div className="nx-panel-head">
-          <h3 className="nx-panel-title">Meine Aufträge</h3>
+          <h3 className="nx-panel-title">{t('dashboard.tech.myOrders')}</h3>
           {orders.length > 0 && (
             <button
               onClick={() => navigate('/tech/orders')}
               className="nx-label hover:text-accent transition-colors"
             >
-              Alle anzeigen →
+              {t('dashboard.tech.viewAll')}
             </button>
           )}
         </div>
@@ -126,9 +128,9 @@ export function TechDashboard() {
             <div className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-bg-0">
               <ClipboardList size={18} strokeWidth={1.5} className="text-fg-2" />
             </div>
-            <p className="text-sm font-medium text-fg-1">Keine aktiven Aufträge</p>
+            <p className="text-sm font-medium text-fg-1">{t('dashboard.tech.emptyTitle')}</p>
             <p className="text-xs text-fg-2">
-              Dir sind aktuell keine Aufträge zugewiesen.
+              {t('dashboard.tech.emptyBody')}
             </p>
           </div>
         ) : (
