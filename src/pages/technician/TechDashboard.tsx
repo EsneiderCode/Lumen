@@ -19,13 +19,13 @@ const TEAM_COLORS: Record<string, { dot: string; badge: string }> = {
 }
 
 export function TechDashboard() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const L = useLabels()
   const navigate = useNavigate()
   const { user } = useAuth()
   const team = user?.team ?? null
   const teamStyle = team ? TEAM_COLORS[team] : null
-  const today = new Date().toLocaleDateString('de-DE', {
+  const today = new Date().toLocaleDateString(i18n.language === 'es' ? 'es-ES' : 'de-DE', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -68,33 +68,33 @@ export function TechDashboard() {
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 className="font-display text-lg font-bold text-fg-1">
-              {t('techDashboard.greeting', { name: user?.fullName })}
+              {t('dashboard.tech.greeting', { name: user?.fullName ?? '' })}
             </h2>
             <p className="mt-0.5 text-sm text-fg-2">{today}</p>
           </div>
           {team && teamStyle && (
             <span className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${teamStyle.badge}`}>
               <span className={`h-2 w-2 rounded-full ${teamStyle.dot}`} />
-              Team {L.team(team as TeamColor)}
+              {t('dashboard.tech.team', { name: L.team(team as TeamColor) })}
             </span>
           )}
         </div>
       </div>
 
       {/* Stats row */}
-      <div className="mb-5 grid grid-cols-3 gap-2 sm:gap-3" aria-live="polite" aria-busy={isLoading}>
+      <div className="mb-5 grid grid-cols-3 gap-2 sm:gap-3">
         {isLoading
           ? Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="rounded-l border border-line bg-bg-1 p-3 text-center sm:p-4" aria-hidden="true">
+              <div key={i} className="rounded-l border border-line bg-bg-1 p-3 text-center sm:p-4">
                 <div className="mx-auto mb-2 h-1 w-8 rounded-full bg-line" />
                 <div className="mx-auto mb-1 h-6 w-6 animate-pulse rounded bg-line" />
                 <div className="mx-auto h-3 w-10 animate-pulse rounded bg-line" />
               </div>
             ))
           : [
-              { label: t('techDashboard.stats.today'), value: todayCount, color: 'bg-accent' },
-              { label: t('techDashboard.stats.open'),  value: openCount,  color: 'bg-warn' },
-              { label: t('techDashboard.stats.done'),  value: doneCount,  color: 'bg-ok' },
+              { label: t('dashboard.tech.statToday'),  value: todayCount, color: 'bg-accent' },
+              { label: t('dashboard.tech.statOpen'),   value: openCount,  color: 'bg-warn' },
+              { label: t('dashboard.tech.statDone'),   value: doneCount,  color: 'bg-ok' },
             ].map((s) => (
               <div key={s.label} className="rounded-l border border-line bg-bg-1 p-3 text-center sm:p-4">
                 <div className={`mx-auto mb-2 h-1 w-8 rounded-full ${s.color}`} />
@@ -107,30 +107,30 @@ export function TechDashboard() {
       {/* Active orders */}
       <div className="nx-panel">
         <div className="nx-panel-head">
-          <h3 className="nx-panel-title">{t('techDashboard.myOrders')}</h3>
+          <h3 className="nx-panel-title">{t('dashboard.tech.myOrders')}</h3>
           {orders.length > 0 && (
             <button
               onClick={() => navigate('/tech/orders')}
               className="nx-label hover:text-accent transition-colors"
             >
-              {t('techDashboard.viewAll')}
+              {t('dashboard.tech.viewAll')}
             </button>
           )}
         </div>
         <div className="nx-panel-body">
 
         {isLoading ? (
-          <div className="flex items-center justify-center py-8" role="status" aria-label="Wird geladen">
-            <div className="h-5 w-5 animate-spin rounded-full border-2 border-line border-t-accent" aria-hidden="true" />
+          <div className="flex items-center justify-center py-8">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-line border-t-accent" />
           </div>
         ) : activeOrders.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-6 text-center">
             <div className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-bg-0">
               <ClipboardList size={18} strokeWidth={1.5} className="text-fg-2" />
             </div>
-            <p className="text-sm font-medium text-fg-1">{t('techDashboard.noOrders')}</p>
+            <p className="text-sm font-medium text-fg-1">{t('dashboard.tech.emptyTitle')}</p>
             <p className="text-xs text-fg-2">
-              {t('techDashboard.noOrdersDesc')}
+              {t('dashboard.tech.emptyBody')}
             </p>
           </div>
         ) : (
@@ -139,7 +139,6 @@ export function TechDashboard() {
               <button
                 key={order.id}
                 onClick={() => navigate(`/tech/orders/${order.id}`)}
-                aria-label={`Auftrag ${order.order_number} öffnen`}
                 className="w-full rounded-s border border-accent/30 bg-bg-0 px-3 py-2.5 text-left transition-all active:scale-[0.99]"
               >
                 <div className="mb-1 flex items-center justify-between gap-2">

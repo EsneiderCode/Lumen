@@ -222,6 +222,47 @@
   "offline": {
     "banner": "Keine Verbindung — Änderungen werden lokal gespeichert"
   },
+  "nav": {
+    "operations": "Operations",
+    "catalog": "Katalog",
+    "organization": "Organisation",
+    "dashboard": "Dashboard",
+    "orders": "Aufträge",
+    "certification": "Zertifizierung",
+    "serviceCatalog": "Service-Katalog",
+    "personnel": "Personal",
+    "materials": "Material",
+    "settings": "Einstellungen"
+  },
+  "dashboard": {
+    "admin": {
+      "title": "Dashboard",
+      "subtitle": "§ Operations · Übersicht",
+      "statOpen": "Offene Aufträge",
+      "statInProgress": "In Bearbeitung",
+      "statPendingCert": "Zertifizierung ausstehend",
+      "statDone": "Abgeschlossen · Monat",
+      "attentionTitle": "Benötigt Aufmerksamkeit",
+      "attentionOpen": "{{count}} offen",
+      "attentionEmpty": "Keine offenen Meldungen.",
+      "attentionRejected": "Abgelehnt",
+      "attentionReturned": "Zurück",
+      "team": "Team {{team}}",
+      "welcomeTitle": "Willkommen bei LUMEN",
+      "welcomeBody": "Zentrale Betriebsplattform für HMR Nexus Engineering GmbH. Aufträge, Zertifizierungen und Personalverwaltung an einem Ort."
+    },
+    "tech": {
+      "greeting": "Hallo, {{name}}",
+      "team": "Team {{name}}",
+      "statToday": "Heute",
+      "statOpen": "Offen",
+      "statDone": "Erledigt",
+      "myOrders": "Meine Aufträge",
+      "viewAll": "Alle anzeigen →",
+      "emptyTitle": "Keine aktiven Aufträge",
+      "emptyBody": "Dir sind aktuell keine Aufträge zugewiesen."
+    }
+  },
   "errors": {
     "boundary": "Ein unerwarteter Fehler ist aufgetreten.",
     "boundaryRetry": "Seite neu laden",

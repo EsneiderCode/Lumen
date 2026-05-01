@@ -19,31 +19,31 @@ interface NavItem {
 }
 
 interface NavSection {
-  sectionKey: string
+  labelKey: string
   items: NavItem[]
 }
 
 const NAV_SECTIONS: NavSection[] = [
   {
-    sectionKey: 'operations',
+    labelKey: 'nav.operations',
     items: [
-      { labelKey: 'dashboard',    path: ROUTES.ADMIN.DASHBOARD,     icon: LayoutGrid },
-      { labelKey: 'orders',       path: ROUTES.ADMIN.ORDERS,        icon: ClipboardList },
-      { labelKey: 'certification',path: ROUTES.ADMIN.CERTIFICATION, icon: CheckCircle2 },
+      { labelKey: 'nav.dashboard',     path: ROUTES.ADMIN.DASHBOARD,     icon: LayoutGrid },
+      { labelKey: 'nav.orders',        path: ROUTES.ADMIN.ORDERS,        icon: ClipboardList },
+      { labelKey: 'nav.certification', path: ROUTES.ADMIN.CERTIFICATION, icon: CheckCircle2 },
     ],
   },
   {
-    sectionKey: 'catalog',
+    labelKey: 'nav.catalog',
     items: [
-      { labelKey: 'serviceCatalog', path: ROUTES.ADMIN.SERVICE_ITEMS, icon: FileText },
+      { labelKey: 'nav.serviceCatalog', path: ROUTES.ADMIN.SERVICE_ITEMS, icon: FileText },
     ],
   },
   {
-    sectionKey: 'organization',
+    labelKey: 'nav.organization',
     items: [
-      { labelKey: 'personnel', path: ROUTES.ADMIN.PERSONNEL, icon: Users },
-      { labelKey: 'materials', path: ROUTES.ADMIN.MATERIALS, icon: Package },
-      { labelKey: 'settings',  path: ROUTES.ADMIN.SETTINGS,  icon: Settings },
+      { labelKey: 'nav.personnel', path: ROUTES.ADMIN.PERSONNEL, icon: Users },
+      { labelKey: 'nav.materials', path: ROUTES.ADMIN.MATERIALS, icon: Package },
+      { labelKey: 'nav.settings',  path: ROUTES.ADMIN.SETTINGS,  icon: Settings },
     ],
   },
 ]
@@ -86,8 +86,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         {/* Navigation */}
         <nav className="flex-1 overflow-auto px-3 py-2">
           {NAV_SECTIONS.map((section) => (
-            <div key={section.sectionKey}>
-              <div className="nx-sb-section">{t(`sidebar.sections.${section.sectionKey}`)}</div>
+            <div key={section.labelKey}>
+              <div className="nx-sb-section">{t(section.labelKey)}</div>
               {section.items.map((item) => {
                 const Icon = item.icon
                 return (
@@ -105,7 +105,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                     }
                   >
                     <Icon size={14} strokeWidth={1.5} className="opacity-70" />
-                    {t(`sidebar.nav.${item.labelKey}`)}
+                    {t(item.labelKey)}
                   </NavLink>
                 )
               })}

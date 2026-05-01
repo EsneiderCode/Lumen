@@ -222,6 +222,47 @@
   "offline": {
     "banner": "Sin conexión — los cambios se guardan en el dispositivo"
   },
+  "nav": {
+    "operations": "Operaciones",
+    "catalog": "Catálogo",
+    "organization": "Organización",
+    "dashboard": "Tablero",
+    "orders": "Órdenes",
+    "certification": "Certificación",
+    "serviceCatalog": "Catálogo de servicios",
+    "personnel": "Personal",
+    "materials": "Material",
+    "settings": "Configuración"
+  },
+  "dashboard": {
+    "admin": {
+      "title": "Tablero",
+      "subtitle": "§ Operaciones · Resumen",
+      "statOpen": "Órdenes abiertas",
+      "statInProgress": "En curso",
+      "statPendingCert": "Certificación pendiente",
+      "statDone": "Cerradas · mes",
+      "attentionTitle": "Requiere atención",
+      "attentionOpen": "{{count}} abiertas",
+      "attentionEmpty": "Sin alertas abiertas.",
+      "attentionRejected": "Rechazada",
+      "attentionReturned": "Devuelta",
+      "team": "Equipo {{team}}",
+      "welcomeTitle": "Bienvenido a LUMEN",
+      "welcomeBody": "Plataforma operativa central para HMR Nexus Engineering GmbH. Órdenes, certificaciones y gestión de personal en un solo lugar."
+    },
+    "tech": {
+      "greeting": "Hola, {{name}}",
+      "team": "Equipo {{name}}",
+      "statToday": "Hoy",
+      "statOpen": "Abiertas",
+      "statDone": "Hechas",
+      "myOrders": "Mis órdenes",
+      "viewAll": "Ver todo →",
+      "emptyTitle": "Sin órdenes activas",
+      "emptyBody": "No tenés órdenes asignadas en este momento."
+    }
+  },
   "errors": {
     "boundary": "Ocurrió un error inesperado.",
     "boundaryRetry": "Recargar página",
