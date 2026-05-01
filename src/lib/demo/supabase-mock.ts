@@ -272,7 +272,7 @@ function makeBuilder(table: keyof DemoStore): MockBuilder {
     range(from: number, to: number) {
       state.rangeFrom = from
       state.rangeTo = to
-      return execute(state) as never
+      return builder
     },
     limit(n: number) {
       state.limit = n
@@ -308,7 +308,7 @@ interface MockBuilder {
   or: (raw: string) => MockBuilder
   not: (col: string, op: string, val: string) => MockBuilder
   order: (col: string, opts?: { ascending?: boolean; nullsFirst?: boolean }) => MockBuilder
-  range: (from: number, to: number) => Promise<{ data: Row[]; count: number; error: null }>
+  range: (from: number, to: number) => MockBuilder
   limit: (n: number) => MockBuilder
   single: () => Promise<{ data: Row | null; error: { message: string } | null }>
   maybeSingle: () => Promise<{ data: Row | null; error: null }>
