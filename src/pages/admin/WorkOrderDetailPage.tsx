@@ -13,6 +13,7 @@ import {
   FileText,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import { supabase } from '@/lib/supabase'
 import {
   fetchWorkOrder,
   fetchWorkOrderDetail,
@@ -24,15 +25,18 @@ import {
   generateDataHash,
   insertCertificationAudit,
   fetchCertificationAudits,
+  getCollaboratorType,
+  type CollaboratorType,
   type WorkOrderWithRelations,
 } from '@/services/workOrderService'
 import { generateCertificatePdf } from '@/services/pdfService'
-import type { WorkOrderStatus } from '@/types/enums'
+import type { WorkOrderStatus, UserRole } from '@/types/enums'
 import { useTranslation } from 'react-i18next'
 import { useLabels } from '@/i18n/labels'
 import { STATUS_COLORS, TEAM_DOT } from '@/constants/styles'
 import { DocumentUploader } from '@/components/ui/DocumentUploader'
 import { notifyOrderReturnedForCorrection } from '@/services/notificationService'
+import { InvoicePreviewModal } from '@/components/admin/InvoicePreviewModal'
 
 // Catalog detail_form values for infra work — hide address, show
 // supporting-document uploaders. POP items live here too: they're
@@ -138,7 +142,7 @@ export function WorkOrderDetailPage() {
   const [history, setHistory] = useState<StateEntry[]>([])
   const [certAudits, setCertAudits] = useState<Array<{
     id: string
-    cert_type: 'internal' | 'client'
+    cert_type: 'internal' | 'client' | 'external'
     certified_at: string
     data_hash: string
     notes: string | null
@@ -148,6 +152,17 @@ export function WorkOrderDetailPage() {
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [modal, setModal] = useState<ModalState>({ type: null, inputValue: '', categoryValue: '' })
+
+  // Invoice preview modal — replaces the LUM-018 free-text invoice number prompt
+  const [previewOpen, setPreviewOpen] = useState(false)
+  // Collaborator type — derived from assignee's profile.role on order load
+  const [collabType, setCollabType] = useState<CollaboratorType>('internal')
+  // Whether an external cert audit already exists for this order
+  const hasExternalCert = certAudits.some((a) => a.cert_type === 'external')
+  // External cert confirmation modal
+  const [externalCertOpen, setExternalCertOpen] = useState(false)
+  const [externalCertNotes, setExternalCertNotes] = useState('')
+  const [isCertifyingExternal, setIsCertifyingExternal] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -173,6 +188,17 @@ export function WorkOrderDetailPage() {
       getPhotoSignedUrls(loadedPhotos.map((p) => p.storage_path)).then(setPhotoUrls)
       setHistory((histData ?? []) as unknown as StateEntry[])
       setCertAudits(auditData)
+
+      // Resolve collaborator type from the assignee's profile role
+      if (orderData.assigned_technician) {
+        const { data: prof } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', orderData.assigned_technician)
+          .single()
+        const role = (prof as { role?: UserRole } | null)?.role
+        setCollabType(getCollaboratorType(role))
+      }
 
       const table = workTypeToDetailTable(orderData.work_type)
       const { data: detailData } = await fetchWorkOrderDetail(table, id)
@@ -496,20 +522,69 @@ export function WorkOrderDetailPage() {
         </div>
       )}
 
-      {/* client_accepted → invoiced (LUM-018) */}
+      {/* client_accepted → invoiced (LUM-018, replaced by InvoicePreviewModal) */}
       {order.status === 'client_accepted' && (
         <div className="rounded-l border border-ok/40 bg-ok/10 p-4">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="font-semibold text-ok">Vom Kunden akzeptiert</p>
-              <p className="text-sm text-ok">Rechnung erstellen und Auftrag fakturieren.</p>
+              <p className="text-sm text-ok">Vorschau der Fakturierung anzeigen — Posten und Beträge.</p>
             </div>
             <button
               disabled={isTransitioning}
-              onClick={() => openModal('invoice')}
+              onClick={() => setPreviewOpen(true)}
               className="shrink-0 rounded-s bg-err px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
             >
-              <span className="inline-flex items-center gap-1.5"><Receipt size={14} strokeWidth={1.5} />Fakturieren</span>
+              <span className="inline-flex items-center gap-1.5"><Receipt size={14} strokeWidth={1.5} />Fakturierung vorbereiten</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* internally_certified + Direktauftrag → invoiced (PR #8 shortcut) */}
+      {order.status === 'internally_certified' && order.client_id == null && (
+        <div className="rounded-l border border-fg-2/30 bg-bg-1 p-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="font-semibold text-fg-1">Direktauftrag — bereit zur Fakturierung</p>
+              <p className="text-sm text-fg-2">Kein externer Kunde — direkt fakturieren.</p>
+            </div>
+            <button
+              disabled={isTransitioning}
+              onClick={() => setPreviewOpen(true)}
+              className="shrink-0 rounded-s bg-err px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+            >
+              <span className="inline-flex items-center gap-1.5"><Receipt size={14} strokeWidth={1.5} />Direkt fakturieren</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* External-collaborator certification action (W1.5)
+          Visible whenever the assignee is a contractor and the order is at
+          internally_certified or beyond. Runs in parallel with the client
+          flow — does NOT change order status. */}
+      {collabType === 'external' &&
+        ['internally_certified', 'sent_to_client', 'client_accepted', 'invoiced', 'paid'].includes(order.status) && (
+        <div className="rounded-l border border-accent/40 bg-accent/5 p-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <p className="font-semibold text-accent">Externer Mitarbeiter — Zertifizierung</p>
+              <p className="text-sm text-fg-2">
+                {hasExternalCert
+                  ? 'Zertifizierung an externen Mitarbeiter bereits ausgestellt.'
+                  : 'Ausstellen, sobald die Leistung des Subunternehmers abgenommen ist — gibt die Auszahlung frei.'}
+              </p>
+            </div>
+            <button
+              disabled={hasExternalCert || isCertifyingExternal}
+              onClick={() => setExternalCertOpen(true)}
+              className="shrink-0 rounded-s bg-accent px-4 py-2 text-sm font-semibold text-ink hover:opacity-90 disabled:opacity-40 transition-opacity"
+            >
+              <span className="inline-flex items-center gap-1.5">
+                <CheckCircle2 size={14} strokeWidth={1.5} />
+                {hasExternalCert ? 'Bereits zertifiziert' : 'An externen zertifizieren'}
+              </span>
             </button>
           </div>
         </div>
@@ -1019,6 +1094,104 @@ export function WorkOrderDetailPage() {
               >
                 {isTransitioning ? '…' : 'Bestätigen'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Invoice preview modal — replaces LUM-018 free-text prompt */}
+      {previewOpen && (
+        <InvoicePreviewModal
+          order={{
+            id: order.id,
+            order_number: order.order_number,
+            client_id: order.client_id,
+            clients: order.clients,
+          }}
+          collaboratorType={collabType}
+          onClose={() => setPreviewOpen(false)}
+          onConfirm={async (_invoiceNumber, totalNote) => {
+            void _invoiceNumber
+            await doTransition('invoiced', totalNote)
+            setPreviewOpen(false)
+          }}
+        />
+      )}
+
+      {/* External-collaborator certification confirmation */}
+      {externalCertOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4"
+          onClick={(e) => { if (e.target === e.currentTarget) setExternalCertOpen(false) }}
+        >
+          <div className="w-full max-w-md rounded-l border border-accent/40 bg-bg-1 overflow-hidden">
+            <div className="h-0.5 w-full bg-accent" />
+            <div className="p-6">
+              <p className="text-[10px] uppercase tracking-widest text-accent font-semibold">
+                Externer Mitarbeiter
+              </p>
+              <h3 className="font-display text-base font-bold text-fg-1 mt-1">
+                Zertifizierung an externen Mitarbeiter
+              </h3>
+              <p className="mt-2 text-sm text-fg-2">
+                Bestätigt, dass die Leistung des Subunternehmers abgenommen wurde.
+                Diese Zertifizierung ist die Grundlage für die Auszahlung an den
+                externen Mitarbeiter — sie ändert NICHT den Auftragsstatus.
+              </p>
+              <div className="mt-4">
+                <label className="mb-1 block text-xs font-medium text-fg-2">
+                  Hinweis (optional)
+                </label>
+                <textarea
+                  rows={3}
+                  value={externalCertNotes}
+                  onChange={(e) => setExternalCertNotes(e.target.value)}
+                  placeholder="z.B. Liquidationsperiode 04/2026"
+                  className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+                />
+              </div>
+              <div className="mt-5 flex justify-end gap-3">
+                <button
+                  onClick={() => setExternalCertOpen(false)}
+                  disabled={isCertifyingExternal}
+                  className="rounded-s border border-line px-4 py-2 text-sm text-fg-2 hover:border-fg-1 hover:text-fg-1 disabled:opacity-50 transition-colors"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!user) return
+                    setIsCertifyingExternal(true)
+                    const hash = await generateDataHash({
+                      orderId: order.id,
+                      certType: 'external',
+                      timestamp: new Date().toISOString(),
+                      certifiedBy: user.id,
+                    })
+                    const { error: certErr } = await insertCertificationAudit(
+                      order.id,
+                      'external',
+                      user.id,
+                      hash,
+                      externalCertNotes.trim() || 'Externe Zertifizierung',
+                    )
+                    if (certErr) {
+                      setError(certErr)
+                    } else {
+                      // Refresh local audits list so the badge updates without reload
+                      const { data: refreshed } = await fetchCertificationAudits(order.id)
+                      setCertAudits(refreshed)
+                      setExternalCertOpen(false)
+                      setExternalCertNotes('')
+                    }
+                    setIsCertifyingExternal(false)
+                  }}
+                  disabled={isCertifyingExternal}
+                  className="rounded-s bg-accent px-5 py-2 text-sm font-semibold text-ink hover:opacity-90 disabled:opacity-40 transition-opacity"
+                >
+                  {isCertifyingExternal ? 'Wird ausgestellt…' : 'Zertifizierung ausstellen'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
