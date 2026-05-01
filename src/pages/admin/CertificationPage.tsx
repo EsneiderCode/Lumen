@@ -2,9 +2,19 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { FileSpreadsheet, Check, Send, Receipt } from 'lucide-react'
 import * as XLSX from 'xlsx'
-import { fetchWorkOrders, transitionWorkOrderStatus, fetchProjects, type WorkOrderWithRelations } from '@/services/workOrderService'
+import {
+  fetchWorkOrders,
+  transitionWorkOrderStatus,
+  fetchProjects,
+  fetchTechnicians,
+  fetchBillingLines,
+  getCollaboratorType,
+  type WorkOrderWithRelations,
+  type CollaboratorType,
+} from '@/services/workOrderService'
+import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
-import type { WorkOrderStatus, TeamColor } from '@/types/enums'
+import type { WorkOrderStatus, TeamColor, UserRole } from '@/types/enums'
 import { useLabels } from '@/i18n/labels'
 import { TEAM_DOT } from '@/constants/styles'
 
@@ -51,7 +61,13 @@ export function CertificationPage() {
   const [filterProject, setFilterProject] = useState('')
   const [filterDateFrom, setFilterDateFrom] = useState('')
   const [filterDateTo, setFilterDateTo] = useState('')
+  const [filterCollab, setFilterCollab] = useState<'' | CollaboratorType>('')
   const [projects, setProjects] = useState<Project[]>([])
+
+  // Profiles map (id → role) — drives internal vs external classification
+  // Plus per-order billing-line totals derived from work_order_billing_lines
+  const [profileRoles, setProfileRoles] = useState<Record<string, UserRole>>({})
+  const [orderTotals, setOrderTotals] = useState<Record<string, { client: number; external: number }>>({})
 
   // Selection
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -80,6 +96,25 @@ export function CertificationPage() {
       const all = results.flatMap((r) => r.data)
       setOrders(all)
       setSelected(new Set())
+
+      // Load billing-line totals per order so we can show client/external amounts
+      // in the row. work_order_billing_lines.subtotal is GENERATED in DB, so
+      // summing `qty * unit_price_snapshot` here mirrors the DB result.
+      const totals: Record<string, { client: number; external: number }> = {}
+      await Promise.all(all.map(async (o) => {
+        const { data: lines } = await fetchBillingLines(o.id)
+        let client = 0
+        let external = 0
+        for (const l of lines) {
+          client += Number(l.qty) * Number(l.unit_price_snapshot)
+          if (l.unit_price_external_snapshot != null) {
+            external += Number(l.qty) * Number(l.unit_price_external_snapshot)
+          }
+        }
+        totals[o.id] = { client, external }
+      }))
+      if (cancelled) return
+      setOrderTotals(totals)
       setIsLoading(false)
     }
     void load()
@@ -88,9 +123,40 @@ export function CertificationPage() {
 
   useEffect(() => {
     fetchProjects().then(({ data }) => setProjects(data as Project[]))
+    // Build profile-role map: includes technicians (via fetchTechnicians) plus
+    // contractors (separate query, because fetchTechnicians filters role).
+    void (async () => {
+      const [{ data: techs }, contractorRes] = await Promise.all([
+        fetchTechnicians(),
+        supabase
+          .from('profiles')
+          .select('id, full_name, role')
+          .eq('role', 'contractor')
+          .eq('is_active', true),
+      ])
+      const map: Record<string, UserRole> = {}
+      for (const t of (techs ?? []) as Array<{ id: string }>) map[t.id] = 'technician'
+      for (const c of ((contractorRes.data ?? []) as Array<{ id: string; role: UserRole }>)) {
+        map[c.id] = c.role
+      }
+      setProfileRoles(map)
+    })()
   }, [])
 
-  const byStatus = (status: WorkOrderStatus) => orders.filter((o) => o.status === status)
+  function orderCollabType(order: WorkOrderWithRelations): CollaboratorType {
+    if (!order.assigned_technician) return 'internal'
+    return getCollaboratorType(profileRoles[order.assigned_technician])
+  }
+
+  const byStatus = (status: WorkOrderStatus) => orders.filter((o) => {
+    if (o.status !== status) return false
+    if (filterCollab && orderCollabType(o) !== filterCollab) return false
+    return true
+  })
+
+  function fmtMoney(n: number): string {
+    return n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'
+  }
 
   function toggleOne(id: string) {
     setSelected((prev) => {
@@ -218,6 +284,17 @@ export function CertificationPage() {
           ))}
         </select>
 
+        <select
+          value={filterCollab}
+          onChange={(e) => setFilterCollab(e.target.value as '' | CollaboratorType)}
+          className="rounded-s border border-line bg-bg-0 px-3 py-1.5 text-sm text-fg-1 focus:border-accent focus:outline-none"
+          title="Mitarbeiter-Typ"
+        >
+          <option value="">Alle Mitarbeiter</option>
+          <option value="internal">Intern</option>
+          <option value="external">Extern</option>
+        </select>
+
         <input
           type="date"
           value={filterDateFrom}
@@ -231,13 +308,14 @@ export function CertificationPage() {
           className="rounded-s border border-line bg-bg-0 px-3 py-1.5 text-sm text-fg-1 focus:border-accent focus:outline-none"
         />
 
-        {(filterTeam || filterProject || filterDateFrom || filterDateTo) && (
+        {(filterTeam || filterProject || filterDateFrom || filterDateTo || filterCollab) && (
           <button
             onClick={() => {
               setFilterTeam('')
               setFilterProject('')
               setFilterDateFrom('')
               setFilterDateTo('')
+              setFilterCollab('')
             }}
             className="rounded-s border border-err/30 px-3 py-1.5 text-xs font-medium text-err hover:bg-err/10 transition-colors"
           >
@@ -359,50 +437,89 @@ export function CertificationPage() {
                 <span className="ml-auto nx-label tabular-nums">{items.length} items</span>
               </div>
               <div className="overflow-hidden rounded-l border border-line bg-bg-1">
-                {items.map((order, i) => (
-                  <div
-                    key={order.id}
-                    className={`flex w-full items-center gap-3 px-4 py-3.5 transition-colors ${
-                      selected.has(order.id) ? 'bg-accent/5' : 'hover:bg-bg-0'
-                    } ${i < items.length - 1 ? 'border-b border-line' : ''}`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selected.has(order.id)}
-                      onChange={() => toggleOne(order.id)}
-                      className="h-3.5 w-3.5 rounded accent-accent cursor-pointer shrink-0"
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                    <button
-                      onClick={() => navigate(`/admin/orders/${order.id}`)}
-                      className="flex flex-1 items-center gap-4 text-left min-w-0"
+                {items.map((order, i) => {
+                  const collab = orderCollabType(order)
+                  const isExternal = collab === 'external'
+                  const isDirect = order.client_id == null
+                  const totals = orderTotals[order.id] ?? { client: 0, external: 0 }
+                  const margin = isExternal ? totals.client - totals.external : 0
+                  return (
+                    <div
+                      key={order.id}
+                      className={`flex w-full items-center gap-3 px-4 py-3.5 transition-colors ${
+                        selected.has(order.id) ? 'bg-accent/5' : 'hover:bg-bg-0'
+                      } ${i < items.length - 1 ? 'border-b border-line' : ''}`}
                     >
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-sm font-semibold text-fg-1">{order.order_number}</span>
-                          <span className="text-xs text-fg-2">{L.workType(order.work_type)}</span>
-                        </div>
-                        <p className="text-xs text-fg-2">
-                          {order.clients?.name ?? '—'} · {order.projects?.code ?? '—'}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-3 shrink-0">
-                        {order.assigned_team && (
-                          <div className="flex items-center gap-1.5">
-                            <span className={`h-2 w-2 rounded-full ${TEAM_DOT[order.assigned_team]}`} />
-                            <span className="text-xs capitalize text-fg-2">{order.assigned_team}</span>
+                      <input
+                        type="checkbox"
+                        checked={selected.has(order.id)}
+                        onChange={() => toggleOne(order.id)}
+                        className="h-3.5 w-3.5 rounded accent-accent cursor-pointer shrink-0"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <button
+                        onClick={() => navigate(`/admin/orders/${order.id}`)}
+                        className="flex flex-1 items-center gap-4 text-left min-w-0"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-mono text-sm font-semibold text-fg-1">{order.order_number}</span>
+                            <span className="text-xs text-fg-2">{L.workType(order.work_type)}</span>
+                            {isDirect && (
+                              <span className="rounded-full border border-fg-2/40 bg-bg-0 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider text-fg-2">
+                                Direkt
+                              </span>
+                            )}
+                            {isExternal && (
+                              <span className="rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider text-accent">
+                                Extern
+                              </span>
+                            )}
                           </div>
-                        )}
-                        {order.assigned_date && (
-                          <span className="text-xs text-fg-2">
-                            {new Date(order.assigned_date).toLocaleDateString('de-DE')}
-                          </span>
-                        )}
-                        <span className="text-xs text-fg-2">→</span>
-                      </div>
-                    </button>
-                  </div>
-                ))}
+                          <p className="text-xs text-fg-2">
+                            {order.clients?.name ?? (isDirect ? '— direkt —' : '—')} · {order.projects?.code ?? '—'}
+                          </p>
+                        </div>
+
+                        {/* Money columns — visible only to admin (this page is admin-only) */}
+                        <div className="flex items-center gap-3 shrink-0">
+                          {totals.client > 0 && (
+                            <div className="flex flex-col items-end">
+                              <span className="text-[10px] uppercase tracking-wider text-fg-2">Kunde</span>
+                              <span className="font-mono text-xs font-semibold text-fg-1 tabular-nums">{fmtMoney(totals.client)}</span>
+                            </div>
+                          )}
+                          {isExternal && totals.external > 0 && (
+                            <>
+                              <div className="flex flex-col items-end">
+                                <span className="text-[10px] uppercase tracking-wider text-fg-2">Extern</span>
+                                <span className="font-mono text-xs font-semibold text-fg-1 tabular-nums">{fmtMoney(totals.external)}</span>
+                              </div>
+                              <div className="flex flex-col items-end">
+                                <span className="text-[10px] uppercase tracking-wider text-accent">Marge</span>
+                                <span className={`font-mono text-xs font-semibold tabular-nums ${margin >= 0 ? 'text-ok' : 'text-err'}`}>
+                                  {fmtMoney(margin)}
+                                </span>
+                              </div>
+                            </>
+                          )}
+                          {order.assigned_team && (
+                            <div className="flex items-center gap-1.5">
+                              <span className={`h-2 w-2 rounded-full ${TEAM_DOT[order.assigned_team]}`} />
+                              <span className="text-xs capitalize text-fg-2">{order.assigned_team}</span>
+                            </div>
+                          )}
+                          {order.assigned_date && (
+                            <span className="text-xs text-fg-2">
+                              {new Date(order.assigned_date).toLocaleDateString('de-DE')}
+                            </span>
+                          )}
+                          <span className="text-xs text-fg-2">→</span>
+                        </div>
+                      </button>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )
