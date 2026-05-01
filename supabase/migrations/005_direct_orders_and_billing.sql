@@ -1,17 +1,21 @@
 -- ─────────────────────────────────────────────────────────────────────────
--- Migration 004 — Direct Orders + Billing Model
--- LUM-XXX: support work orders with no external client + per-order billing lines
+-- Migration 005 — Direct Orders + Billing Model
+--
+-- Depends on:
+--   · 001_initial_schema.sql            (work_orders, wo_detail_*, profiles)
+--   · 002_cert_audit.sql                (certification_audits, status trigger fn)
+--   · 004_service_catalog_seed.sql      (service_items table + 102 contract rows)
 --
 -- Adds the foundation so DATEV export can compute amounts per certified order:
 --   1. work_orders.client_id → nullable (NULL = direct order, no Insyte/Vancom)
 --   2. wo_detail_fusion_ap / wo_detail_fusion_dp gain cabinet_code + card_count
 --      (Schrank for NE3/NE4, multiple cards in POP — single cabinet per order)
 --   3. work_order_billing_lines: per-order line items with snapshot pricing
---      (used by Alta multi-item; flexible for any work_type later)
+--      (FK → service_items from migration 004; used by Alta multi-item)
 --   4. validate_work_order_status_transition(): direct orders may shortcut
 --      internally_certified → invoiced (skip sent_to_client / client_accepted)
 --
--- Run manually in Supabase SQL Editor.
+-- Run manually in Supabase SQL Editor AFTER migration 004 has been applied.
 -- Idempotent: safe to re-run.
 -- ─────────────────────────────────────────────────────────────────────────
 

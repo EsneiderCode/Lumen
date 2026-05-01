@@ -25,11 +25,13 @@ There are two flavours of work order:
 
 ## Already delivered in this PR (Phases 0-1)
 
-### Phase 0 — `supabase/migrations/004_direct_orders_and_billing.sql`
+### Phase 0 — `supabase/migrations/005_direct_orders_and_billing.sql`
+
+> **Depends on `004_service_catalog_seed.sql`** (already in `upstream/develop`). Migration 005 must be applied AFTER 004.
 
 - `work_orders.client_id` → nullable (`NULL` = direct order)
 - `wo_detail_fusion_ap` / `wo_detail_fusion_dp` gain `cabinet_code TEXT` + `card_count INTEGER`
-- New table `work_order_billing_lines` with snapshot pricing (`unit_price_snapshot`) and `subtotal` as a stored generated column
+- New table `work_order_billing_lines` with snapshot pricing (`unit_price_snapshot`) and `subtotal` as a stored generated column. FK `service_item_id → service_items(id)` resolves against the catalog seeded in 004.
 - `validate_work_order_status_transition()` updated: direct orders may shortcut `internally_certified → invoiced`
 
 **Alejandro applies this manually in Supabase SQL Editor, then runs `supabase gen types typescript` to refresh `src/types/database.types.ts`.**
@@ -87,8 +89,15 @@ export async function upsertBillingLines(workOrderId: string, lines: BillingLine
 ```
 On insert, **snapshot the current `unit_price` from `service_items`** into `unit_price_snapshot`. Never copy by reference.
 
-#### 2.3 — Contract import for Alta service items
-**Action item for Jarl**: provide the Insyte/Vancom contract listing the billable Alta items. Alejandro adds those rows to `service_items` (one-time seed migration or admin UI insert).
+#### 2.3 — Contract import for Alta service items — ✅ DONE upstream
+Already in `upstream/develop` via commit `6e7e0b9` (`feat(catalog): service items CRUD + seed 102 contract prices from UMTELKOMD PDF`):
+- `service_items` table created with RLS (admin full, all auth read active rows).
+- 102 rows seeded from Insyte NE3 Rev 6, Insyte NE4 MDU v0, Vancom NE4 Rahmenvertrag — covering operators DGF, MER, GFPLUS, GFNW, GVG, WESTC.
+- Admin CRUD UI in `src/pages/admin/ServiceItemsPage.tsx`.
+
+What remains in this phase (still open):
+- Bind selected `service_item_id` to `work_order_billing_lines` from the Rückmeldung form (2.2 above).
+- Filter the selector by the order's `client_id` and `operator_id` so technicians only see relevant catalog rows.
 
 ### Acceptance criteria — Phase 2
 - Technician fills Fusión cabinet + card_count → values persist on submit.
@@ -103,15 +112,21 @@ On insert, **snapshot the current `unit_price` from `service_items`** into `unit
 ### Goal
 Before transitioning to `invoiced`, admin sees exactly what will be billed. No surprises.
 
+### What already exists (LUM-018)
+The current `WorkOrderDetailPage.tsx` (commit `a137bdd` on `origin/main`) already has an **invoice-number modal** that prompts for an invoice number string and writes it to `state_history.notes` on the `client_accepted → invoiced` transition. This phase **replaces** that modal — it must not delete the LUM-018 wiring without giving admin the same final outcome (status → `invoiced` + history record).
+
+A `pdfService.ts` (LUM-016) using jsPDF already generates the certification PDF — reuse it for the invoice-preview download if useful, but invoice itself stays in DATEV.
+
 ### Implementation
 
-**File**: new component `src/components/admin/InvoicePreviewModal.tsx`, called from `WorkOrderDetailPage` and `CertificationPage`.
+**File**: new component `src/components/admin/InvoicePreviewModal.tsx`, replaces the inline invoice modal in `WorkOrderDetailPage.tsx` and is also called from `CertificationPage.tsx` for bulk invoicing.
 
 Modal contents:
 - **Header**: `Order LUM-XXX · Direkt` or `Order LUM-XXX · Kunde: Insyte Deutschland`.
-- **Lines table**: code, description (de), qty, unit, unit_price_snapshot, subtotal.
+- **Lines table**: code, description (de), qty, unit, unit_price_snapshot, subtotal — sourced from `work_order_billing_lines`.
 - **Footer**: total bruto.
 - **For with-client orders**: show last `certification_audits` of `cert_type='client'` — `certified_by`, `certified_at`, `data_hash` (truncated).
+- **Optional invoice-number field**: keep the LUM-018 input as a free-text reference that goes into `state_history.notes` (DATEV is the system of record for the real invoice number — this is just a Lumen-side label).
 - **CTA buttons**: `Abbrechen` (ghost) / `Fakturierung bestätigen` (primary).
 
 Confirming triggers `transitionWorkOrderStatus(id, 'invoiced', userId, notes, 'admin')`. The Phase 1 validations will block if prerequisites are not met.
@@ -119,7 +134,8 @@ Confirming triggers `transitionWorkOrderStatus(id, 'invoiced', userId, notes, 'a
 ### Acceptance criteria — Phase 3
 - Modal blocks invoice transition when no billing lines exist (empty preview).
 - Modal blocks invoice transition for with-client order without `cert_type='client'` audit row (Phase 1 validation surfaces the message).
-- After confirm, status moves to `invoiced` and a `state_history` row is written with notes containing the total amount.
+- After confirm, status moves to `invoiced` and a `state_history` row is written with notes containing the total amount and (optional) invoice-number reference.
+- LUM-018 outcomes preserved: existing orders that already reached `invoiced` keep their note format readable.
 
 ---
 
