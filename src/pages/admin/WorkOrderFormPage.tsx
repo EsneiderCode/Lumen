@@ -71,6 +71,7 @@ const DETAIL_FORM_TO_WORK_TYPE: Record<string, WorkType> = {
 // ── Form ─────────────────────────────────────────────────────
 
 interface FormValues {
+  is_direct_order: boolean
   client_id: string
   project_id: string
   operator_id: string
@@ -85,6 +86,7 @@ interface FormValues {
 }
 
 const EMPTY_FORM: FormValues = {
+  is_direct_order: false,
   client_id: '',
   project_id: '',
   operator_id: '',
@@ -153,7 +155,8 @@ export function WorkOrderFormPage() {
     fetchWorkOrder(id).then(async ({ data, error }) => {
       if (error || !data) { setSaveError(error ?? 'Auftrag nicht gefunden'); setIsLoading(false); return }
       setForm({
-        client_id: data.client_id,
+        is_direct_order: data.client_id == null,
+        client_id: data.client_id ?? '',
         project_id: data.project_id,
         operator_id: data.operator_id,
         line: data.line,
@@ -194,7 +197,9 @@ export function WorkOrderFormPage() {
 
   function validate(): boolean {
     const e: Partial<Record<keyof FormValues, string>> = {}
-    if (!form.client_id) e.client_id = 'Pflichtfeld'
+    // Direktauftrag: client_id is intentionally null. Project + operator stay required
+    // (orders still belong to a project and an operator even when there is no external client).
+    if (!form.is_direct_order && !form.client_id) e.client_id = 'Pflichtfeld'
     if (!form.project_id) e.project_id = 'Pflichtfeld'
     if (!form.operator_id) e.operator_id = 'Pflichtfeld'
     if (!form.service_item_id) e.service_item_id = 'Pflichtfeld'
@@ -212,7 +217,8 @@ export function WorkOrderFormPage() {
     setSaveError(null)
 
     const payload = {
-      client_id: form.client_id,
+      // Direct order = client_id IS NULL (per migration 005). DB FK is nullable.
+      client_id: form.is_direct_order ? null : form.client_id,
       project_id: form.project_id,
       operator_id: form.operator_id,
       line: form.line,
@@ -313,25 +319,44 @@ export function WorkOrderFormPage() {
         {/* Core info card */}
         <div className="rounded-l border border-line bg-bg-1 p-5">
           <h3 className="mb-4 font-display text-sm font-semibold text-fg-1">Allgemeine Daten</h3>
+
+          {/* Direct order toggle — when checked, client_id is NULL on save */}
+          <label className="mb-4 flex items-start gap-3 cursor-pointer rounded-s border border-line bg-bg-0 p-3 hover:border-accent/50 transition-colors">
+            <input
+              type="checkbox"
+              checked={form.is_direct_order}
+              onChange={(e) => setField('is_direct_order', e.target.checked)}
+              className="mt-0.5 accent-[var(--color-accent)]"
+            />
+            <div className="text-sm">
+              <div className="font-medium text-fg-1">Direktauftrag (kein externer Kunde)</div>
+              <div className="text-xs text-fg-2 mt-0.5">
+                Direkte Aufträge überspringen die Kundenfreigabe und gehen von der internen Zertifizierung direkt zur Fakturierung.
+              </div>
+            </div>
+          </label>
+
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 
-            {/* Client */}
-            <div>
-              <label className="mb-1 block text-xs font-medium text-fg-2">
-                Kunde <span className="text-err">*</span>
-              </label>
-              <select
-                value={form.client_id}
-                onChange={(e) => setField('client_id', e.target.value)}
-                className={`w-full rounded-s border px-3 py-2 text-sm text-fg-1 focus:outline-none focus:ring-1 focus:ring-accent ${errors.client_id ? 'border-err bg-err/5' : 'border-line bg-bg-0'}`}
-              >
-                <option value="">— Kunde wählen —</option>
-                {clients.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name} ({c.code})</option>
-                ))}
-              </select>
-              {errors.client_id && <p className="mt-1 text-xs text-err">{errors.client_id}</p>}
-            </div>
+            {/* Client (hidden when direct order) */}
+            {!form.is_direct_order && (
+              <div>
+                <label className="mb-1 block text-xs font-medium text-fg-2">
+                  Kunde <span className="text-err">*</span>
+                </label>
+                <select
+                  value={form.client_id}
+                  onChange={(e) => setField('client_id', e.target.value)}
+                  className={`w-full rounded-s border px-3 py-2 text-sm text-fg-1 focus:outline-none focus:ring-1 focus:ring-accent ${errors.client_id ? 'border-err bg-err/5' : 'border-line bg-bg-0'}`}
+                >
+                  <option value="">— Kunde wählen —</option>
+                  {clients.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name} ({c.code})</option>
+                  ))}
+                </select>
+                {errors.client_id && <p className="mt-1 text-xs text-err">{errors.client_id}</p>}
+              </div>
+            )}
 
             {/* Project */}
             <div>
@@ -423,9 +448,6 @@ export function WorkOrderFormPage() {
                     <div className="flex items-center gap-2">
                       <span className="font-mono font-semibold text-accent">{selected.code}</span>
                       {selected.unit && <span>· {selected.unit}</span>}
-                      {selected.unit_price != null && (
-                        <span>· {selected.unit_price.toFixed(2)} €</span>
-                      )}
                       {selected.operators?.code && <span>· {selected.operators.code}</span>}
                     </div>
                     {selected.description_es && (
