@@ -332,3 +332,29 @@ describe('validateTransitionPrerequisites — invoiced', () => {
     expect(await validateTransitionPrerequisites('id-1', 'invoiced')).toBeNull()
   })
 })
+
+// ── getCollaboratorType (Migration 006 — collaborator pricing) ─────────────
+
+import { getCollaboratorType } from '@/services/workOrderService'
+
+describe('getCollaboratorType', () => {
+  it('returns external for contractor role', () => {
+    expect(getCollaboratorType('contractor')).toBe('external')
+  })
+
+  it('returns internal for technician role', () => {
+    expect(getCollaboratorType('technician')).toBe('internal')
+  })
+
+  it('returns internal for admin role', () => {
+    expect(getCollaboratorType('admin')).toBe('internal')
+  })
+
+  it('returns internal when role is null (safer default)', () => {
+    expect(getCollaboratorType(null)).toBe('internal')
+  })
+
+  it('returns internal when role is undefined', () => {
+    expect(getCollaboratorType(undefined)).toBe('internal')
+  })
+})
