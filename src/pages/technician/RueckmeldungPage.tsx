@@ -35,8 +35,13 @@ import {
   transitionWorkOrderStatus,
   workTypeToDetailTable,
   getPhotoSignedUrls,
+  fetchBillingLines,
+  upsertBillingLines,
+  type BillingLineDraft,
   type WorkOrderWithRelations,
 } from '@/services/workOrderService'
+import { fetchServiceItems } from '@/services/serviceItemService'
+import type { ServiceItemWithRelations } from '@/types/service-items'
 import { useLabels } from '@/i18n/labels'
 import { DETAIL_FIELDS } from '@/constants/detail-fields'
 
@@ -71,6 +76,12 @@ export function RueckmeldungPage() {
   const [error, setError] = useState<string | null>(null)
   const [savedOk, setSavedOk] = useState(false)
   const [returnedNote, setReturnedNote] = useState<string | null>(null)
+
+  // Alta multi-item billing lines (work_order_billing_lines)
+  // Loaded only when work_type === 'alta'. Each draft holds an `id` when
+  // existing in DB so upsert can distinguish updates from inserts.
+  const [billingDrafts, setBillingDrafts] = useState<Array<BillingLineDraft & { _key: string }>>([])
+  const [catalog, setCatalog] = useState<ServiceItemWithRelations[]>([])
 
   const fileInputRefs = {
     before: useRef<HTMLInputElement>(null),
@@ -107,9 +118,81 @@ export function RueckmeldungPage() {
         void _i; void _w; void _c
         setDetail(rest)
       }
+
+      // For Alta orders, load existing billing lines + the service-item catalog
+      // (filtered by client+operator so technician only sees relevant rates).
+      if (orderData.work_type === 'alta') {
+        const [{ data: lines }, { data: items }] = await Promise.all([
+          fetchBillingLines(id),
+          fetchServiceItems({ includeInactive: false }),
+        ])
+        const drafts = lines.map((l) => ({
+          _key: l.id,
+          id: l.id,
+          service_item_id: l.service_item_id,
+          qty: Number(l.qty),
+          unit_price_snapshot: Number(l.unit_price_snapshot),
+          unit_price_external_snapshot: l.unit_price_external_snapshot != null
+            ? Number(l.unit_price_external_snapshot)
+            : null,
+          notes: l.notes,
+        }))
+        setBillingDrafts(drafts)
+        // Filter catalog by order's client and operator so the picker only shows
+        // applicable rates (catalog rows with NULL client/operator stay visible
+        // as "global" entries).
+        const filtered = items.filter((it) => {
+          const okClient = it.client_id == null || it.client_id === orderData.client_id
+          const okOp = it.operator_id == null || it.operator_id === orderData.operator_id
+          return okClient && okOp
+        })
+        setCatalog(filtered)
+      }
+
       setIsLoading(false)
     })
   }, [id])
+
+  // Billing-line CRUD on the local drafts (saved on handleSave / handleSend)
+  function addBillingLine() {
+    setBillingDrafts((prev) => [
+      ...prev,
+      {
+        _key: `new-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        service_item_id: '',
+        qty: 1,
+        unit_price_snapshot: 0,
+        unit_price_external_snapshot: null,
+        notes: null,
+      },
+    ])
+  }
+
+  function removeBillingLine(key: string) {
+    setBillingDrafts((prev) => prev.filter((d) => d._key !== key))
+  }
+
+  function setBillingLineField<K extends keyof BillingLineDraft>(
+    key: string,
+    field: K,
+    value: BillingLineDraft[K],
+  ) {
+    setBillingDrafts((prev) => prev.map((d) => {
+      if (d._key !== key) return d
+      const updated = { ...d, [field]: value }
+      // When the technician picks a service_item, snapshot both prices from the catalog.
+      // The technician never sees these — they are written to DB for the admin's
+      // CertificationPage to read later.
+      if (field === 'service_item_id') {
+        const item = catalog.find((c) => c.id === value)
+        if (item) {
+          updated.unit_price_snapshot = item.unit_price ?? 0
+          updated.unit_price_external_snapshot = item.unit_price_external ?? null
+        }
+      }
+      return updated
+    }))
+  }
 
   function setDetailField(key: string, value: unknown) {
     setDetail((d) => ({ ...d, [key]: value }))
@@ -168,13 +251,28 @@ export function RueckmeldungPage() {
 
     const table = workTypeToDetailTable(order.work_type)
     const { error } = await upsertWorkOrderDetail(table, id, detail)
-
     if (error) {
       setError(error)
-    } else {
-      setSavedOk(true)
-      setTimeout(() => setSavedOk(false), 3000)
+      setIsSaving(false)
+      return
     }
+
+    // For Alta orders, also persist billing lines (multi-item)
+    if (order.work_type === 'alta') {
+      const valid = billingDrafts.filter((d) => d.service_item_id && d.qty > 0)
+      const { error: blErr } = await upsertBillingLines(
+        id,
+        valid.map(({ _key: _k, ...rest }) => { void _k; return rest }),
+      )
+      if (blErr) {
+        setError(blErr)
+        setIsSaving(false)
+        return
+      }
+    }
+
+    setSavedOk(true)
+    setTimeout(() => setSavedOk(false), 3000)
     setIsSaving(false)
   }
 
@@ -190,6 +288,20 @@ export function RueckmeldungPage() {
       setError(detailError)
       setIsSending(false)
       return
+    }
+
+    // For Alta orders, also persist billing lines before transitioning
+    if (order.work_type === 'alta') {
+      const valid = billingDrafts.filter((d) => d.service_item_id && d.qty > 0)
+      const { error: blErr } = await upsertBillingLines(
+        id,
+        valid.map(({ _key: _k, ...rest }) => { void _k; return rest }),
+      )
+      if (blErr) {
+        setError(blErr)
+        setIsSending(false)
+        return
+      }
     }
 
     // Build notes string with tech input
@@ -296,6 +408,88 @@ export function RueckmeldungPage() {
           <TimePickerField label="Ende" value={endTime} onChange={setEndTime} />
         </div>
       </div>
+
+      {/* Alta multi-item billing editor — prices stay hidden, only the technician
+          declares what was executed; admin sees the prices in CertificationPage */}
+      {order.work_type === 'alta' && (
+        <div className="rounded-l border border-accent/30 bg-bg-1 p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <div>
+              <h3 className="font-display text-sm font-semibold text-fg-1">Geleistete Posten</h3>
+              <p className="text-xs text-fg-2">Was wurde tatsächlich montiert. Eine Zeile je Position aus dem Service-Katalog.</p>
+            </div>
+            <button
+              type="button"
+              onClick={addBillingLine}
+              className="rounded-s border border-accent bg-accent/10 px-3 py-1.5 text-xs font-semibold text-accent hover:bg-accent/20 transition-colors"
+            >
+              + Posten
+            </button>
+          </div>
+
+          {billingDrafts.length === 0 ? (
+            <p className="rounded-s border border-dashed border-line bg-bg-0 p-3 text-center text-xs text-fg-2">
+              Noch keine Posten. Klick auf <span className="font-semibold text-accent">+ Posten</span>.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {billingDrafts.map((line) => {
+                const selectedItem = catalog.find((c) => c.id === line.service_item_id)
+                return (
+                  <div
+                    key={line._key}
+                    className="rounded-s border border-line bg-bg-0 p-3 grid grid-cols-1 gap-2 sm:grid-cols-[1fr_90px_auto]"
+                  >
+                    <div>
+                      <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-fg-2">
+                        Leistung
+                      </label>
+                      <select
+                        value={line.service_item_id}
+                        onChange={(e) => setBillingLineField(line._key, 'service_item_id', e.target.value)}
+                        className="w-full rounded-s border border-line bg-bg-1 px-2 py-1.5 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                      >
+                        <option value="">— wählen —</option>
+                        {catalog.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.code} — {c.description_de}
+                          </option>
+                        ))}
+                      </select>
+                      {selectedItem?.description_es && (
+                        <p className="mt-1 text-[11px] italic text-fg-2">ES: {selectedItem.description_es}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-fg-2">
+                        Menge {selectedItem?.unit ? `(${selectedItem.unit})` : ''}
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={line.qty}
+                        onChange={(e) => setBillingLineField(line._key, 'qty', Number(e.target.value))}
+                        className="w-full rounded-s border border-line bg-bg-1 px-2 py-1.5 text-right font-mono text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                      />
+                    </div>
+                    <div className="flex items-end">
+                      <button
+                        type="button"
+                        onClick={() => removeBillingLine(line._key)}
+                        className="rounded-s border border-err/40 px-3 py-1.5 text-xs text-err hover:bg-err/10 transition-colors"
+                        title="Posten entfernen"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Dynamic detail fields */}
       {detailFields.length > 0 && (

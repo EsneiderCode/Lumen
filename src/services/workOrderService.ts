@@ -745,7 +745,7 @@ export async function fetchCertificationAudits(workOrderId: string) {
   return {
     data: (data ?? []) as unknown as Array<{
       id: string
-      cert_type: 'internal' | 'client'
+      cert_type: 'internal' | 'client' | 'external'
       certified_at: string
       data_hash: string
       notes: string | null
@@ -753,4 +753,111 @@ export async function fetchCertificationAudits(workOrderId: string) {
     }>,
     error: error?.message ?? null,
   }
+}
+
+// ── Billing lines (Migration 005 + 006) ────────────────────────────────────
+
+export interface BillingLine {
+  id: string
+  work_order_id: string
+  service_item_id: string
+  qty: number
+  unit_price_snapshot: number
+  unit_price_external_snapshot: number | null
+  subtotal: number
+  notes: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface BillingLineDraft {
+  id?: string                       // present = update, absent = insert
+  service_item_id: string
+  qty: number
+  unit_price_snapshot: number       // snapshot at create — never re-derived
+  unit_price_external_snapshot?: number | null
+  notes?: string | null
+}
+
+export async function fetchBillingLines(workOrderId: string) {
+  const { data, error } = await supabase
+    .from('work_order_billing_lines' as 'work_orders')
+    .select('*, service_items ( id, code, description_de, description_es, unit, unit_price, unit_price_external )')
+    .eq('work_order_id', workOrderId)
+    .order('created_at', { ascending: true })
+  return {
+    data: (data ?? []) as unknown as Array<BillingLine & {
+      service_items: {
+        id: string
+        code: string
+        description_de: string
+        description_es: string | null
+        unit: string | null
+        unit_price: number | null
+        unit_price_external: number | null
+      } | null
+    }>,
+    error: error?.message ?? null,
+  }
+}
+
+/**
+ * Replace the billing lines of a work order with the provided drafts.
+ * Drafts without `id` are inserted; drafts with `id` are updated; rows in
+ * DB whose id is not in drafts are deleted. `unit_price_snapshot` is
+ * captured at insert time and never re-derived from service_items, so
+ * historical billings survive catalog price edits.
+ */
+export async function upsertBillingLines(
+  workOrderId: string,
+  drafts: BillingLineDraft[],
+) {
+  const { data: existing, error: fetchErr } = await supabase
+    .from('work_order_billing_lines' as 'work_orders')
+    .select('id')
+    .eq('work_order_id', workOrderId)
+  if (fetchErr) return { error: fetchErr.message }
+
+  const existingIds = new Set((existing ?? []).map((r) => (r as { id: string }).id))
+  const draftIds = new Set(drafts.filter((d) => d.id).map((d) => d.id as string))
+
+  const toDelete = [...existingIds].filter((id) => !draftIds.has(id))
+  if (toDelete.length > 0) {
+    const { error } = await supabase
+      .from('work_order_billing_lines' as 'work_orders')
+      .delete()
+      .in('id', toDelete)
+    if (error) return { error: error.message }
+  }
+
+  for (const draft of drafts) {
+    if (draft.id) {
+      const { error } = await supabase
+        .from('work_order_billing_lines' as 'work_orders')
+        .update({
+          service_item_id: draft.service_item_id,
+          qty: draft.qty,
+          unit_price_snapshot: draft.unit_price_snapshot,
+          unit_price_external_snapshot: draft.unit_price_external_snapshot ?? null,
+          notes: draft.notes ?? null,
+          updated_at: new Date().toISOString(),
+        } as never)
+        .eq('id', draft.id)
+      if (error) return { error: error.message }
+    } else {
+      const { error } = await supabase
+        .from('work_order_billing_lines' as 'work_orders')
+        .insert({
+          work_order_id: workOrderId,
+          service_item_id: draft.service_item_id,
+          qty: draft.qty,
+          unit_price_snapshot: draft.unit_price_snapshot,
+          unit_price_external_snapshot: draft.unit_price_external_snapshot ?? null,
+          notes: draft.notes ?? null,
+        } as never)
+      if (error) return { error: error.message }
+    }
+  }
+
+  return { error: null }
 }

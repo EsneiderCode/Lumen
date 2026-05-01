@@ -16,12 +16,16 @@ export const DETAIL_FIELDS: Record<WorkType, DetailField[]> = {
     { key: 'result', label: 'Ergebnis', type: 'select', options: ['OK', 'NOK', 'Ausstehend'] },
   ],
   fusion_ap: [
+    { key: 'cabinet_code', label: 'Schrank / Cabinet', type: 'text', placeholder: 'z.B. NE3-S-001 oder POP-X-12' },
+    { key: 'card_count', label: 'Karten (nur POP)', type: 'number', placeholder: '0 = nicht anwendbar' },
     { key: 'splice_count', label: 'Spleiß-Anzahl', type: 'number', placeholder: '0' },
     { key: 'fiber_type', label: 'Fasertyp', type: 'text', placeholder: 'z.B. G.657.A2' },
     { key: 'fusion_losses', label: 'Schmelzverluste (dB)', type: 'number', placeholder: '0.00' },
     { key: 'has_measurement_cert', label: 'Meßprotokoll vorhanden', type: 'checkbox' },
   ],
   fusion_dp: [
+    { key: 'cabinet_code', label: 'Schrank / Cabinet', type: 'text', placeholder: 'z.B. NE3-S-001 oder POP-X-12' },
+    { key: 'card_count', label: 'Karten (nur POP)', type: 'number', placeholder: '0 = nicht anwendbar' },
     { key: 'splice_count', label: 'Spleiß-Anzahl', type: 'number', placeholder: '0' },
     { key: 'fiber_type', label: 'Fasertyp', type: 'text', placeholder: 'z.B. G.657.A2' },
     { key: 'fusion_losses', label: 'Schmelzverluste (dB)', type: 'number', placeholder: '0.00' },
