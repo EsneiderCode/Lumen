@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
-import { FileSpreadsheet, Check, Send, Receipt } from 'lucide-react'
+import { FileSpreadsheet, Check, Send, Receipt, Download } from 'lucide-react'
 import * as XLSX from 'xlsx'
+import { buildDatevCsv, downloadDatevCsv } from '@/services/datevExportService'
 import {
   fetchWorkOrders,
   transitionWorkOrderStatus,
@@ -207,6 +208,27 @@ export function CertificationPage() {
     await bulkTransition(ids, 'invoiced', `Rechnung: ${invoiceNum}`)
   }
 
+  /** Builds a DATEV-Buchungsstapel CSV from invoiced orders.
+   *  If selection is non-empty, only selected orders ship; otherwise all
+   *  invoiced orders in the current view are exported. */
+  function handleDatevExport() {
+    const candidatePool = selected.size > 0
+      ? orders.filter((o) => selected.has(o.id))
+      : orders
+    const invoicedOrders = candidatePool.filter((o) => o.status === 'invoiced')
+    if (invoicedOrders.length === 0) return
+
+    const inputs = invoicedOrders.map((o) => ({
+      order: o,
+      totalClient: orderTotals[o.id]?.client ?? 0,
+      invoiceDate: o.assigned_date ?? undefined,
+      invoiceNumber: null as string | null,
+    }))
+    const csv = buildDatevCsv(inputs)
+    const date = new Date().toISOString().slice(0, 10)
+    downloadDatevCsv(csv, `lumen-datev-${date}.csv`)
+  }
+
   function handleExcelExport() {
     const selectedOrders = selected.size > 0
       ? orders.filter((o) => selected.has(o.id))
@@ -249,14 +271,25 @@ export function CertificationPage() {
             {total === 0 ? 'Keine Aufträge · im Prozess' : `${total} Aufträge · im Prozess`}
           </p>
         </div>
-        <button
-          onClick={handleExcelExport}
-          disabled={total === 0}
-          className="flex items-center gap-1.5 rounded-s border border-line px-3 py-1.5 text-xs font-medium text-fg-2 hover:border-accent hover:text-accent disabled:opacity-40 transition-colors"
-        >
-          <FileSpreadsheet size={14} strokeWidth={1.5} />
-          Excel {hasSelection ? `(${selected.size})` : ''}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleDatevExport}
+            disabled={byStatus('invoiced').length === 0 && (selected.size === 0 || ![...selected].some((id) => orders.find((o) => o.id === id)?.status === 'invoiced'))}
+            className="flex items-center gap-1.5 rounded-s border border-accent/40 bg-accent/10 px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent/20 disabled:opacity-40 transition-colors"
+            title="Fakturierte Aufträge als DATEV-Buchungsstapel exportieren"
+          >
+            <Download size={14} strokeWidth={1.5} />
+            DATEV
+          </button>
+          <button
+            onClick={handleExcelExport}
+            disabled={total === 0}
+            className="flex items-center gap-1.5 rounded-s border border-line px-3 py-1.5 text-xs font-medium text-fg-2 hover:border-accent hover:text-accent disabled:opacity-40 transition-colors"
+          >
+            <FileSpreadsheet size={14} strokeWidth={1.5} />
+            Excel {hasSelection ? `(${selected.size})` : ''}
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
