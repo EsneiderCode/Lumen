@@ -1,0 +1,260 @@
+/**
+ * Demo-mode fixture data — seeded into the in-memory store on first load
+ * and on every `demo:reset`. Designed to exercise every screen of the app.
+ *
+ * This is NOT real production data. All UUIDs are stable so links survive reload.
+ */
+
+const ADMIN_ID = '00000000-0000-0000-0000-000000000001'
+const TECH_ID = '00000000-0000-0000-0000-000000000002'
+const CONTRACTOR_ID = '00000000-0000-0000-0000-000000000003'
+
+const CLIENT_INSYTE = '10000000-0000-0000-0000-000000000001'
+const CLIENT_VANCOM = '10000000-0000-0000-0000-000000000002'
+
+const PROJECT_HXT = '20000000-0000-0000-0000-000000000001'
+const PROJECT_RSD = '20000000-0000-0000-0000-000000000002'
+const PROJECT_WCB = '20000000-0000-0000-0000-000000000003'
+
+const OP_DGF = '30000000-0000-0000-0000-000000000001'
+const OP_GFPLUS = '30000000-0000-0000-0000-000000000002'
+const OP_UGG = '30000000-0000-0000-0000-000000000003'
+
+const SI_SOPLADO_M = '40000000-0000-0000-0000-000000000001'
+const SI_FUSION_AP = '40000000-0000-0000-0000-000000000002'
+const SI_ALTA_BASIC = '40000000-0000-0000-0000-000000000003'
+const SI_ALTA_NT = '40000000-0000-0000-0000-000000000004'
+const SI_PATCHKABEL = '40000000-0000-0000-0000-000000000005'
+
+const WO_1 = '50000000-0000-0000-0000-000000000001'
+const WO_2 = '50000000-0000-0000-0000-000000000002'
+const WO_3 = '50000000-0000-0000-0000-000000000003'
+const WO_4_DIRECT = '50000000-0000-0000-0000-000000000004'
+const WO_5_PAID = '50000000-0000-0000-0000-000000000005'
+const WO_6_REJECTED = '50000000-0000-0000-0000-000000000006'
+
+const NOW = new Date('2026-04-28T08:00:00Z').toISOString()
+const YESTERDAY = new Date('2026-04-27T08:00:00Z').toISOString()
+const LAST_WEEK = new Date('2026-04-21T08:00:00Z').toISOString()
+
+export const DEMO_PASSWORD = 'demo123'
+export const DEMO_TECH_PIN = '1234'
+
+export interface DemoSession {
+  user: { id: string; email: string } | null
+  access_token: string | null
+}
+
+export const initialFixtures = () => ({
+  profiles: [
+    {
+      id: ADMIN_ID,
+      email: 'admin@demo.lumen',
+      full_name: 'Demo Admin',
+      role: 'admin',
+      team: null,
+      is_active: true,
+      created_at: LAST_WEEK,
+      updated_at: LAST_WEEK,
+    },
+    {
+      id: TECH_ID,
+      email: 'tech@demo.lumen',
+      full_name: 'Demo Técnico',
+      role: 'technician',
+      team: 'rot',
+      is_active: true,
+      created_at: LAST_WEEK,
+      updated_at: LAST_WEEK,
+    },
+    {
+      id: CONTRACTOR_ID,
+      email: 'contractor@demo.lumen',
+      full_name: 'Demo Contractor',
+      role: 'contractor',
+      team: null,
+      is_active: true,
+      created_at: LAST_WEEK,
+      updated_at: LAST_WEEK,
+    },
+  ],
+
+  clients: [
+    { id: CLIENT_INSYTE, name: 'Insyte Deutschland', code: 'INSYTE', is_active: true, created_at: LAST_WEEK },
+    { id: CLIENT_VANCOM, name: 'Vancom IT',         code: 'VANCOM', is_active: true, created_at: LAST_WEEK },
+  ],
+
+  projects: [
+    { id: PROJECT_HXT, code: 'HXT', name: 'Höxter Nord',  client_id: CLIENT_INSYTE, is_active: true, created_at: LAST_WEEK },
+    { id: PROJECT_RSD, code: 'RSD', name: 'Roßdorf 1',    client_id: CLIENT_INSYTE, is_active: true, created_at: LAST_WEEK },
+    { id: PROJECT_WCB, code: 'WCB', name: 'Westconnect',  client_id: CLIENT_VANCOM, is_active: true, created_at: LAST_WEEK },
+  ],
+
+  operators: [
+    { id: OP_DGF,    code: 'DGF',    name: 'Deutsche Glasfaser', is_active: true, created_at: LAST_WEEK },
+    { id: OP_GFPLUS, code: 'GFPLUS', name: 'GlasfaserPlus',      is_active: true, created_at: LAST_WEEK },
+    { id: OP_UGG,    code: 'UGG',    name: 'UGG',                is_active: true, created_at: LAST_WEEK },
+  ],
+
+  service_items: [
+    {
+      id: SI_SOPLADO_M, code: 'SOP-M', description_de: 'Einblasen Glasfaser je Meter',
+      description_es: 'Soplado por metro', unit: 'm', unit_price: 1.85,
+      operator_id: OP_DGF, client_id: CLIENT_INSYTE, detail_form: 'soplado',
+      display_order: 10, active: true, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK,
+    },
+    {
+      id: SI_FUSION_AP, code: 'FUS-AP', description_de: 'Spleißung am AP (pro Schrank)',
+      description_es: 'Fusión AP por armario', unit: 'Stk', unit_price: 95.00,
+      operator_id: OP_DGF, client_id: CLIENT_INSYTE, detail_form: 'fusion_ap',
+      display_order: 20, active: true, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK,
+    },
+    {
+      id: SI_ALTA_BASIC, code: 'ALTA-BASIC', description_de: 'Standard-Hausanschluss',
+      description_es: 'Alta básica', unit: 'Stk', unit_price: 145.00,
+      operator_id: OP_DGF, client_id: CLIENT_INSYTE, detail_form: 'alta',
+      display_order: 30, active: true, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK,
+    },
+    {
+      id: SI_ALTA_NT, code: 'ALTA-NT', description_de: 'NT-Installation und Aktivierung',
+      description_es: 'Instalación NT', unit: 'Stk', unit_price: 65.00,
+      operator_id: OP_DGF, client_id: CLIENT_INSYTE, detail_form: 'nt',
+      display_order: 31, active: true, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK,
+    },
+    {
+      id: SI_PATCHKABEL, code: 'PATCH', description_de: 'Patchkabel Anschluss',
+      description_es: 'Patchkabel', unit: 'Stk', unit_price: 38.00,
+      operator_id: OP_GFPLUS, client_id: CLIENT_VANCOM, detail_form: 'patchkabel',
+      display_order: 40, active: true, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK,
+    },
+  ],
+
+  work_orders: [
+    // 1 — created, just opened
+    {
+      id: WO_1, order_number: 'LUM-20260428-0001',
+      client_id: CLIENT_INSYTE, project_id: PROJECT_HXT, operator_id: OP_DGF,
+      line: 'NE3', work_type: 'soplado', status: 'created', priority: 'normal',
+      assigned_team: null, assigned_technician: null, assigned_date: null,
+      address: 'Bahnhofstraße 12', postal_code: '37671', city: 'Höxter',
+      internal_notes: 'Demo: soplado nuevo, sin asignar', assigned_detail_snapshot: null,
+      service_item_id: SI_SOPLADO_M, created_by: ADMIN_ID,
+      created_at: NOW, updated_at: NOW,
+    },
+    // 2 — assigned to técnico, in progress
+    {
+      id: WO_2, order_number: 'LUM-20260428-0002',
+      client_id: CLIENT_INSYTE, project_id: PROJECT_RSD, operator_id: OP_DGF,
+      line: 'NE4', work_type: 'fusion_ap', status: 'in_progress', priority: 'alta',
+      assigned_team: 'rot', assigned_technician: TECH_ID, assigned_date: '2026-04-28',
+      address: 'Kirchplatz 5', postal_code: '64380', city: 'Roßdorf',
+      internal_notes: 'Demo: fusión AP en curso', assigned_detail_snapshot: { cabinet_code: 'NE4-S-007' },
+      service_item_id: SI_FUSION_AP, created_by: ADMIN_ID,
+      created_at: YESTERDAY, updated_at: NOW,
+    },
+    // 3 — Rückmeldung sent, awaiting internal cert
+    {
+      id: WO_3, order_number: 'LUM-20260427-0003',
+      client_id: CLIENT_INSYTE, project_id: PROJECT_HXT, operator_id: OP_DGF,
+      line: 'NE3', work_type: 'alta', status: 'rueckmeldung_sent', priority: 'normal',
+      assigned_team: 'rot', assigned_technician: TECH_ID, assigned_date: '2026-04-27',
+      address: 'Hauptstraße 88', postal_code: '37671', city: 'Höxter',
+      internal_notes: null, assigned_detail_snapshot: null,
+      service_item_id: SI_ALTA_BASIC, created_by: ADMIN_ID,
+      created_at: YESTERDAY, updated_at: NOW,
+    },
+    // 4 — DIRECT order, ready to invoice
+    {
+      id: WO_4_DIRECT, order_number: 'LUM-20260426-0004',
+      client_id: null, project_id: PROJECT_HXT, operator_id: OP_UGG,
+      line: 'NE3', work_type: 'patchkabel', status: 'internally_certified', priority: 'normal',
+      assigned_team: 'gruen', assigned_technician: TECH_ID, assigned_date: '2026-04-26',
+      address: 'Marktplatz 1', postal_code: '37671', city: 'Höxter',
+      internal_notes: 'Demo: orden directa sin cliente externo', assigned_detail_snapshot: null,
+      service_item_id: SI_PATCHKABEL, created_by: ADMIN_ID,
+      created_at: LAST_WEEK, updated_at: NOW,
+    },
+    // 5 — paid (full pipeline)
+    {
+      id: WO_5_PAID, order_number: 'LUM-20260421-0005',
+      client_id: CLIENT_VANCOM, project_id: PROJECT_WCB, operator_id: OP_GFPLUS,
+      line: 'NE4', work_type: 'fusion_ap', status: 'paid', priority: 'normal',
+      assigned_team: 'blau', assigned_technician: TECH_ID, assigned_date: '2026-04-21',
+      address: 'Industriestraße 4', postal_code: '70567', city: 'Stuttgart',
+      internal_notes: 'Demo: cerrada y pagada', assigned_detail_snapshot: { cabinet_code: 'NE4-S-001' },
+      service_item_id: SI_FUSION_AP, created_by: ADMIN_ID,
+      created_at: LAST_WEEK, updated_at: LAST_WEEK,
+    },
+    // 6 — client_rejected, returns to revision
+    {
+      id: WO_6_REJECTED, order_number: 'LUM-20260427-0006',
+      client_id: CLIENT_INSYTE, project_id: PROJECT_RSD, operator_id: OP_DGF,
+      line: 'NE3', work_type: 'soplado', status: 'client_rejected', priority: 'urgente',
+      assigned_team: 'rot', assigned_technician: TECH_ID, assigned_date: '2026-04-27',
+      address: 'Schulstraße 3', postal_code: '64380', city: 'Roßdorf',
+      internal_notes: 'Demo: rechazada por cliente, motivo en notes', assigned_detail_snapshot: null,
+      service_item_id: SI_SOPLADO_M, created_by: ADMIN_ID,
+      created_at: YESTERDAY, updated_at: NOW,
+    },
+  ],
+
+  wo_detail_soplado: [
+    { id: 'd1000000-0000-0000-0000-000000000001', work_order_id: WO_3, meters: 142.5, section: 'AP-37 → DP-12', tube_diameter: '40/33', result: 'OK', created_at: NOW },
+    { id: 'd1000000-0000-0000-0000-000000000005', work_order_id: WO_5_PAID, meters: 95, section: 'POP-2 → AP-1', tube_diameter: '32/26', result: 'OK', created_at: LAST_WEEK },
+  ],
+
+  wo_detail_fusion_ap: [
+    { id: 'd2000000-0000-0000-0000-000000000002', work_order_id: WO_2, splice_count: 24, fiber_type: 'G.652D', fusion_losses: 0.08, has_measurement_cert: false, cabinet_code: 'NE4-S-007', card_count: null, created_at: NOW },
+    { id: 'd2000000-0000-0000-0000-000000000005', work_order_id: WO_5_PAID, splice_count: 16, fiber_type: 'G.657A1', fusion_losses: 0.05, has_measurement_cert: true, cabinet_code: 'NE4-S-001', card_count: null, created_at: LAST_WEEK },
+  ],
+
+  wo_detail_fusion_dp: [],
+
+  wo_detail_alta: [
+    { id: 'd3000000-0000-0000-0000-000000000003', work_order_id: WO_3, access_type: 'Tiefbau', equipment_installed: 'NT-1234, ONT-5678', client_signature: true, created_at: NOW },
+  ],
+
+  wo_detail_nt: [],
+
+  wo_detail_patchkabel: [
+    { id: 'd4000000-0000-0000-0000-000000000004', work_order_id: WO_4_DIRECT, connected_section: 'POP→Rack-3', cable_length: 2.5, connector_type: 'LC/APC', test_result: 'OK', created_at: LAST_WEEK },
+  ],
+
+  work_order_photos: [
+    { id: 'p0000000-0000-0000-0000-000000000031', work_order_id: WO_3, storage_path: 'demo/wo3-before.jpg', photo_type: 'before',  caption: null, uploaded_by: TECH_ID, created_at: NOW },
+    { id: 'p0000000-0000-0000-0000-000000000032', work_order_id: WO_3, storage_path: 'demo/wo3-during.jpg', photo_type: 'during',  caption: null, uploaded_by: TECH_ID, created_at: NOW },
+    { id: 'p0000000-0000-0000-0000-000000000033', work_order_id: WO_3, storage_path: 'demo/wo3-after.jpg',  photo_type: 'after',   caption: null, uploaded_by: TECH_ID, created_at: NOW },
+    { id: 'p0000000-0000-0000-0000-000000000041', work_order_id: WO_4_DIRECT, storage_path: 'demo/wo4-before.jpg', photo_type: 'before', caption: null, uploaded_by: TECH_ID, created_at: LAST_WEEK },
+    { id: 'p0000000-0000-0000-0000-000000000042', work_order_id: WO_4_DIRECT, storage_path: 'demo/wo4-during.jpg', photo_type: 'during', caption: null, uploaded_by: TECH_ID, created_at: LAST_WEEK },
+    { id: 'p0000000-0000-0000-0000-000000000043', work_order_id: WO_4_DIRECT, storage_path: 'demo/wo4-after.jpg',  photo_type: 'after',  caption: null, uploaded_by: TECH_ID, created_at: LAST_WEEK },
+    { id: 'p0000000-0000-0000-0000-000000000051', work_order_id: WO_5_PAID,   storage_path: 'demo/wo5-before.jpg', photo_type: 'before', caption: null, uploaded_by: TECH_ID, created_at: LAST_WEEK },
+    { id: 'p0000000-0000-0000-0000-000000000052', work_order_id: WO_5_PAID,   storage_path: 'demo/wo5-during.jpg', photo_type: 'during', caption: null, uploaded_by: TECH_ID, created_at: LAST_WEEK },
+    { id: 'p0000000-0000-0000-0000-000000000053', work_order_id: WO_5_PAID,   storage_path: 'demo/wo5-after.jpg',  photo_type: 'after',  caption: null, uploaded_by: TECH_ID, created_at: LAST_WEEK },
+  ],
+
+  work_order_state_history: [
+    { id: 'h0000000-0000-0000-0000-000000000010', work_order_id: WO_1, from_status: null,                    to_status: 'created',              changed_by: ADMIN_ID, notes: 'Auftrag erstellt', created_at: NOW },
+    { id: 'h0000000-0000-0000-0000-000000000020', work_order_id: WO_2, from_status: null,                    to_status: 'created',              changed_by: ADMIN_ID, notes: 'Auftrag erstellt', created_at: YESTERDAY },
+    { id: 'h0000000-0000-0000-0000-000000000021', work_order_id: WO_2, from_status: 'created',               to_status: 'assigned',             changed_by: ADMIN_ID, notes: 'Zugewiesen an Team rot', created_at: YESTERDAY },
+    { id: 'h0000000-0000-0000-0000-000000000022', work_order_id: WO_2, from_status: 'assigned',              to_status: 'in_progress',          changed_by: TECH_ID,  notes: null, created_at: NOW },
+    { id: 'h0000000-0000-0000-0000-000000000040', work_order_id: WO_4_DIRECT, from_status: null,             to_status: 'created',              changed_by: ADMIN_ID, notes: 'Direktauftrag', created_at: LAST_WEEK },
+    { id: 'h0000000-0000-0000-0000-000000000041', work_order_id: WO_4_DIRECT, from_status: 'created',        to_status: 'assigned',             changed_by: ADMIN_ID, notes: null, created_at: LAST_WEEK },
+    { id: 'h0000000-0000-0000-0000-000000000042', work_order_id: WO_4_DIRECT, from_status: 'assigned',       to_status: 'in_progress',          changed_by: TECH_ID,  notes: null, created_at: LAST_WEEK },
+    { id: 'h0000000-0000-0000-0000-000000000043', work_order_id: WO_4_DIRECT, from_status: 'in_progress',    to_status: 'executed',             changed_by: TECH_ID,  notes: null, created_at: LAST_WEEK },
+    { id: 'h0000000-0000-0000-0000-000000000044', work_order_id: WO_4_DIRECT, from_status: 'executed',       to_status: 'rueckmeldung_pending', changed_by: TECH_ID,  notes: null, created_at: LAST_WEEK },
+    { id: 'h0000000-0000-0000-0000-000000000045', work_order_id: WO_4_DIRECT, from_status: 'rueckmeldung_pending', to_status: 'rueckmeldung_sent', changed_by: TECH_ID, notes: null, created_at: LAST_WEEK },
+    { id: 'h0000000-0000-0000-0000-000000000046', work_order_id: WO_4_DIRECT, from_status: 'rueckmeldung_sent',    to_status: 'internally_certified', changed_by: ADMIN_ID, notes: 'Hash: a1b2c3...', created_at: LAST_WEEK },
+  ],
+
+  certification_audits: [
+    { id: 'a0000000-0000-0000-0000-000000000040', work_order_id: WO_4_DIRECT, cert_type: 'internal', certified_by: ADMIN_ID, certified_at: LAST_WEEK, data_hash: 'a1b2c3d4e5f60718293a4b5c6d7e8f9012345678901234567890abcdef123456', notes: 'Demo cert', created_at: LAST_WEEK },
+    { id: 'a0000000-0000-0000-0000-000000000050', work_order_id: WO_5_PAID,   cert_type: 'internal', certified_by: ADMIN_ID, certified_at: LAST_WEEK, data_hash: 'b2c3d4e5f60718293a4b5c6d7e8f9012345678901234567890abcdef1234567a', notes: null, created_at: LAST_WEEK },
+    { id: 'a0000000-0000-0000-0000-000000000051', work_order_id: WO_5_PAID,   cert_type: 'client',   certified_by: ADMIN_ID, certified_at: LAST_WEEK, data_hash: 'c3d4e5f60718293a4b5c6d7e8f9012345678901234567890abcdef1234567ab2', notes: 'Vancom akzeptiert', created_at: LAST_WEEK },
+  ],
+
+  work_order_billing_lines: [],
+
+  _session: { user: null, access_token: null } as DemoSession,
+})
+
+export type DemoStore = ReturnType<typeof initialFixtures>
