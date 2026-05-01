@@ -16,25 +16,45 @@ Lumen does **not** issue invoices. The invoice is emitted by **DATEV** (German a
 2. A **billable-quantity record** per certified order — quantity × snapshot price × line items.
 3. A **DATEV-compatible export** that Beatriz/Janet can import in DATEV to generate the actual `Rechnung`.
 
-There are two flavours of work order:
+A work order is described by **two orthogonal dimensions**:
 
-- **With-client**: routed through Insyte / Vancom / etc. Goes through full pipeline with `sent_to_client → client_accepted` before invoicing.
-- **Direct**: no external client. `client_id IS NULL`. Skips client phase: certified internally, then invoiced.
+### Dimension 1 — client routing
+- **With-client**: routed through Insyte / Vancom / etc. Full pipeline: `internally_certified → sent_to_client → client_accepted → invoiced`.
+- **Direct**: no external client. `client_id IS NULL`. Skips client phase: `internally_certified → invoiced`.
+
+### Dimension 2 — collaborator (who executes)
+- **Internal collaborator** (`profiles.role = 'technician'`): UMTELKOMD payroll. Admin certifies once: to the client (`cert_type='client'`).
+- **External collaborator** (`profiles.role = 'contractor'`): subcontracted. Admin certifies **twice**: one to the client (`cert_type='client'`, gates invoicing) AND one to the external collaborator (`cert_type='external'`, gates payment to subcontractor). The two certifications run in parallel — neither blocks the other in the state machine.
+
+### Pricing rule (single catalog, two prices)
+The `service_items` catalog is **one shared catalog**. Each item has:
+- `unit_price` — what UMTELKOMD bills the client.
+- `unit_price_external` — what UMTELKOMD pays the external collaborator (NULL when not applicable).
+
+**Prices are HIDDEN** when creating the order, in the technician's view, and in the contractor's view. Prices are ONLY visible to the admin in `CertificationPage`:
+- Internal order → 1 price column (client).
+- External order → 2 price columns (client + external) + computed margin.
 
 ---
 
 ## Already delivered in this PR (Phases 0-1)
 
-### Phase 0 — `supabase/migrations/005_direct_orders_and_billing.sql`
+### Phase 0 — `supabase/migrations/005_direct_orders_and_billing.sql` + `006_collaborator_pricing.sql`
 
-> **Depends on `004_service_catalog_seed.sql`** (already in `upstream/develop`). Migration 005 must be applied AFTER 004.
+> **Apply order**: `004_service_catalog_seed.sql` → `005_direct_orders_and_billing.sql` → `006_collaborator_pricing.sql`. Both 005 and 006 are idempotent.
 
+**Migration 005** — direct orders + billing model:
 - `work_orders.client_id` → nullable (`NULL` = direct order)
 - `wo_detail_fusion_ap` / `wo_detail_fusion_dp` gain `cabinet_code TEXT` + `card_count INTEGER`
 - New table `work_order_billing_lines` with snapshot pricing (`unit_price_snapshot`) and `subtotal` as a stored generated column. FK `service_item_id → service_items(id)` resolves against the catalog seeded in 004.
 - `validate_work_order_status_transition()` updated: direct orders may shortcut `internally_certified → invoiced`
 
-**Alejandro applies this manually in Supabase SQL Editor, then runs `supabase gen types typescript` to refresh `src/types/database.types.ts`.**
+**Migration 006** — collaborator pricing + external cert:
+- Documents `service_items.unit_price` as "price billed to client" via `COMMENT`.
+- Adds `service_items.unit_price_external NUMERIC(10,2)` (nullable — pricing pending OR item only ever executed by internal staff).
+- Extends `certification_audits.cert_type` CHECK from `('internal','client')` to `('internal','client','external')`. The new `external` row gates payment to the subcontractor and lives in parallel with the work-order state machine.
+
+**Alejandro applies these manually in Supabase SQL Editor (in order), then runs `supabase gen types typescript` to refresh `src/types/database.types.ts`.**
 
 ### Phase 1 — `src/services/workOrderService.ts`
 
@@ -43,7 +63,8 @@ There are two flavours of work order:
   - `→ internally_certified` requires complete `wo_detail_*` (per-type required fields, see `REQUIRED_DETAIL_FIELDS`) **and** before/during/after photos uploaded.
   - `→ invoiced` requires a `certification_audits` row with the right `cert_type` (`internal` for direct, `client` for with-client).
 - `transitionWorkOrderStatus()` updated to fetch `client_id`, derive `isDirectOrder`, and call both validators before the UPDATE.
-- 21 new tests covering the new rules. Total: 72 tests passing.
+- `getCollaboratorType(profileRole)` — pure helper that maps an assignee's `profiles.role` to `'internal' | 'external'`. Used by UI to decide which prices to show, and by future logic to decide whether `cert_type='external'` is expected.
+- 26 new tests covering the new rules + collaborator-type mapping. Total: 77 tests passing.
 
 ---
 
@@ -107,35 +128,63 @@ What remains in this phase (still open):
 
 ---
 
-## Phase 3 — Invoice preview modal
+## Phase 3 — CertificationPage with collaborator-aware pricing + Invoice preview
 
 ### Goal
-Before transitioning to `invoiced`, admin sees exactly what will be billed. No surprises.
+Before transitioning to `invoiced` (and, for external orders, before signing the external-collaborator certification), the admin sees exactly **what will be billed and what will be paid**. No surprises.
 
 ### What already exists (LUM-018)
 The current `WorkOrderDetailPage.tsx` (commit `a137bdd` on `origin/main`) already has an **invoice-number modal** that prompts for an invoice number string and writes it to `state_history.notes` on the `client_accepted → invoiced` transition. This phase **replaces** that modal — it must not delete the LUM-018 wiring without giving admin the same final outcome (status → `invoiced` + history record).
 
 A `pdfService.ts` (LUM-016) using jsPDF already generates the certification PDF — reuse it for the invoice-preview download if useful, but invoice itself stays in DATEV.
 
-### Implementation
+### CertificationPage table — collaborator-aware columns
+
+Use `getCollaboratorType(assignee.role)` to decide column layout per row:
+
+| Column | Internal (1 collaborator type) | External (1 collaborator type) |
+|---|---|---|
+| Order # | shown | shown |
+| Client | shown | shown |
+| Qty × `unit_price` (= **client side**) | shown | shown |
+| Qty × `unit_price_external` (= **external side**) | hidden | shown |
+| Margin (client − external) | hidden | shown |
+| Cert badges | `client` (single) | `client` + `external` (two pills) |
+
+When mixed lists are shown, render both column groups but leave external cells empty for internal rows.
+
+### Invoice preview modal
 
 **File**: new component `src/components/admin/InvoicePreviewModal.tsx`, replaces the inline invoice modal in `WorkOrderDetailPage.tsx` and is also called from `CertificationPage.tsx` for bulk invoicing.
 
 Modal contents:
-- **Header**: `Order LUM-XXX · Direkt` or `Order LUM-XXX · Kunde: Insyte Deutschland`.
-- **Lines table**: code, description (de), qty, unit, unit_price_snapshot, subtotal — sourced from `work_order_billing_lines`.
-- **Footer**: total bruto.
+- **Header**: `Order LUM-XXX · Direkt` or `Order LUM-XXX · Kunde: Insyte Deutschland`. Plus a `· Extern` badge when the assignee is a contractor.
+- **Lines table**:
+  - For internal orders: code, description (de), qty, unit, unit_price_snapshot, subtotal.
+  - For external orders: same columns + `unit_price_external_snapshot`, `external_subtotal`, `margin`.
+- **Footer**: total bruto (al cliente). For external orders: also "total a pagar al externo" + margen.
 - **For with-client orders**: show last `certification_audits` of `cert_type='client'` — `certified_by`, `certified_at`, `data_hash` (truncated).
+- **For external orders**: show whether `cert_type='external'` audit exists — if not, surface a "falta certificación al externo" warning (does NOT block invoicing the client, but reminds the admin to issue the external cert before liquidating the subcontractor).
 - **Optional invoice-number field**: keep the LUM-018 input as a free-text reference that goes into `state_history.notes` (DATEV is the system of record for the real invoice number — this is just a Lumen-side label).
 - **CTA buttons**: `Abbrechen` (ghost) / `Fakturierung bestätigen` (primary).
 
 Confirming triggers `transitionWorkOrderStatus(id, 'invoiced', userId, notes, 'admin')`. The Phase 1 validations will block if prerequisites are not met.
 
+### External-collaborator certification action
+
+For external orders, `WorkOrderDetailPage` and `CertificationPage` add a separate action button: `An externen Mitarbeiter zertifizieren`. Clicking it:
+- Opens a modal showing the external-side breakdown (qty × `unit_price_external`).
+- On confirm: calls `insertCertificationAudit(orderId, 'external', adminId, dataHash, notes)`.
+- Does NOT change the work-order status — runs in parallel.
+- Generates a PDF (reusing `pdfService.ts`) intended to be sent to the contractor for their invoice.
+
 ### Acceptance criteria — Phase 3
 - Modal blocks invoice transition when no billing lines exist (empty preview).
 - Modal blocks invoice transition for with-client order without `cert_type='client'` audit row (Phase 1 validation surfaces the message).
+- For external orders: external-cert action creates `cert_type='external'` audit; UI badge updates without reloading.
 - After confirm, status moves to `invoiced` and a `state_history` row is written with notes containing the total amount and (optional) invoice-number reference.
 - LUM-018 outcomes preserved: existing orders that already reached `invoiced` keep their note format readable.
+- **Hidden prices respected**: `WorkOrderFormPage`, `TechOrderDetailPage`, `RueckmeldungPage`, `ContractorOrdersPage` show NO prices anywhere. Only `CertificationPage` and `InvoicePreviewModal` (admin-only routes) reveal them.
 
 ---
 
