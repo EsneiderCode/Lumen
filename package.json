@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:demo": "VITE_DEMO_MODE=true vite",
+    "dev:demo": "vite --mode demo",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "eslint src/",
@@ -15,7 +15,9 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "preflight": "npm run typecheck && npm run lint && npm test",
-    "pre-pr": "npm run preflight && npm run build"
+    "pre-pr": "npm run preflight && npm run build",
+    "feature:start": "bash scripts/start-feature.sh",
+    "feature:check": "bash scripts/check-pr-ready.sh"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
