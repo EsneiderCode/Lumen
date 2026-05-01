@@ -184,6 +184,28 @@ export async function validateTransitionPrerequisites(
   return null
 }
 
+// ── Collaborator type ──────────────────────────────────────────────────────
+
+/**
+ * Internal vs external collaborator — derived from the assignee's profile
+ * role, NOT from a column on work_orders. Drives:
+ *   · which prices CertificationPage shows the admin (1 column for internal:
+ *     unit_price; 2 columns for external: unit_price + unit_price_external).
+ *   · whether a `cert_type='external'` audit is expected (only on external).
+ */
+export type CollaboratorType = 'internal' | 'external'
+
+/**
+ * Maps a profile role to the collaborator type for billing/cert routing.
+ * Anything other than 'contractor' is treated as internal — that's the
+ * safer default (admin and technician are payroll, no external liquidation).
+ */
+export function getCollaboratorType(
+  profileRole: UserRole | null | undefined,
+): CollaboratorType {
+  return profileRole === 'contractor' ? 'external' : 'internal'
+}
+
 type WorkOrderRow = Database['public']['Tables']['work_orders']['Row']
 type WorkOrderInsert = Database['public']['Tables']['work_orders']['Insert']
 type WorkOrderUpdate = Database['public']['Tables']['work_orders']['Update']
