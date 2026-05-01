@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   fetchServiceItems,
   createServiceItem,
@@ -62,6 +63,7 @@ interface ModalProps {
 }
 
 function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalProps) {
+  const { t } = useTranslation()
   const isEdit = item !== null
   const [form, setForm] = useState<ServiceItemPayload>(
     isEdit
@@ -90,7 +92,7 @@ function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalP
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!form.code.trim() || !form.description_de.trim()) {
-      setErr('Code und Deutsche Beschreibung sind Pflichtfelder.')
+      setErr(t('serviceItems.modal.errorRequired'))
       return
     }
     setSaving(true)
@@ -125,7 +127,7 @@ function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalP
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/80 px-4 py-8"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/95 px-4 py-8"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div className="w-full max-w-2xl rounded-gf-card border border-gf-border bg-gf-card overflow-hidden"
@@ -138,10 +140,10 @@ function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalP
         <div className="flex items-center justify-between border-b border-gf-border bg-gf-surface px-6 py-4">
           <div>
             <p className="text-[10px] uppercase tracking-widest text-gf-text-muted">
-              Service-Katalog
+              {t('serviceItems.modal.category')}
             </p>
             <h3 className="font-display text-base font-bold text-gf-text-inverse mt-0.5">
-              {isEdit ? 'Artikel bearbeiten' : 'Neuer Artikel'}
+              {isEdit ? t('serviceItems.modal.editTitle') : t('serviceItems.modal.createTitle')}
             </h3>
           </div>
           <button
@@ -158,47 +160,47 @@ function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalP
           {/* ── Section: Identifikation ── */}
           <div className="rounded-gf-card border border-gf-border bg-gf-surface p-4 space-y-4">
             <p className="text-[10px] uppercase tracking-widest text-gf-primary font-medium">
-              Identifikation
+              {t('serviceItems.modal.sectionIdentification')}
             </p>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className={labelCls}>SAP-Code *</label>
+                <label className={labelCls}>{t('serviceItems.modal.fieldCode')} *</label>
                 <input
                   className={inputCls}
                   value={form.code}
                   onChange={(e) => set('code', e.target.value)}
-                  placeholder="z.B. DGF_ACT_001"
+                  placeholder={t('serviceItems.modal.fieldCodePlaceholder')}
                 />
               </div>
               <div>
-                <label className={labelCls}>Einheit</label>
+                <label className={labelCls}>{t('serviceItems.modal.fieldUnit')}</label>
                 <select
                   className={inputCls}
                   style={selectStyle}
                   value={form.unit ?? ''}
                   onChange={(e) => set('unit', e.target.value || null)}
                 >
-                  <option value="">— keine —</option>
+                  <option value="">{t('serviceItems.modal.fieldUnitNone')}</option>
                   {UNIT_OPTIONS.map((u) => <option key={u} value={u}>{u}</option>)}
                 </select>
               </div>
             </div>
             <div>
-              <label className={labelCls}>Beschreibung (DE) *</label>
+              <label className={labelCls}>{t('serviceItems.modal.fieldDescDe')} *</label>
               <input
                 className={inputCls}
                 value={form.description_de}
                 onChange={(e) => set('description_de', e.target.value)}
-                placeholder="Leistungsbeschreibung auf Deutsch"
+                placeholder={t('serviceItems.modal.fieldDescDePlaceholder')}
               />
             </div>
             <div>
-              <label className={labelCls}>Descripción (ES)</label>
+              <label className={labelCls}>{t('serviceItems.modal.fieldDescEs')}</label>
               <input
                 className={inputCls}
                 value={form.description_es ?? ''}
                 onChange={(e) => set('description_es', e.target.value || null)}
-                placeholder="Descripción en español (opcional)"
+                placeholder={t('serviceItems.modal.fieldDescEsPlaceholder')}
               />
             </div>
           </div>
@@ -206,11 +208,11 @@ function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalP
           {/* ── Section: Preis & Reihenfolge ── */}
           <div className="rounded-gf-card border border-gf-border bg-gf-surface p-4 space-y-4">
             <p className="text-[10px] uppercase tracking-widest text-gf-primary font-medium">
-              Preis & Reihenfolge
+              {t('serviceItems.modal.sectionPrice')}
             </p>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className={labelCls}>Preis (€ netto) — leer = Nach Angebot</label>
+                <label className={labelCls}>{t('serviceItems.modal.fieldPrice')}</label>
                 <input
                   type="number"
                   step="0.01"
@@ -222,7 +224,7 @@ function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalP
                 />
               </div>
               <div>
-                <label className={labelCls}>Anzeigereihenfolge</label>
+                <label className={labelCls}>{t('serviceItems.modal.fieldDisplayOrder')}</label>
                 <input
                   type="number"
                   step="1"
@@ -237,32 +239,32 @@ function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalP
           {/* ── Section: Zuordnung ── */}
           <div className="rounded-gf-card border border-gf-border bg-gf-surface p-4 space-y-4">
             <p className="text-[10px] uppercase tracking-widest text-gf-primary font-medium">
-              Zuordnung
+              {t('serviceItems.modal.sectionAssignment')}
             </p>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className={labelCls}>Betreiber (Operator)</label>
+                <label className={labelCls}>{t('serviceItems.modal.fieldOperator')}</label>
                 <select
                   className={inputCls}
                   style={selectStyle}
                   value={form.operator_id ?? ''}
                   onChange={(e) => set('operator_id', e.target.value || null)}
                 >
-                  <option value="">— Global / Alle —</option>
+                  <option value="">{t('serviceItems.modal.fieldOperatorGlobal')}</option>
                   {operators.map((op) => (
                     <option key={op.id} value={op.id}>{op.code} — {op.name}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className={labelCls}>Kunde (Client)</label>
+                <label className={labelCls}>{t('serviceItems.modal.fieldClient')}</label>
                 <select
                   className={inputCls}
                   style={selectStyle}
                   value={form.client_id ?? ''}
                   onChange={(e) => set('client_id', e.target.value || null)}
                 >
-                  <option value="">— kein —</option>
+                  <option value="">{t('serviceItems.modal.fieldClientNone')}</option>
                   {clients.map((cl) => (
                     <option key={cl.id} value={cl.id}>{cl.code} — {cl.name}</option>
                   ))}
@@ -270,7 +272,7 @@ function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalP
               </div>
             </div>
             <div>
-              <label className={labelCls}>Detail-Formular (technische Route)</label>
+              <label className={labelCls}>{t('serviceItems.modal.fieldDetailForm')}</label>
               <select
                 className={inputCls}
                 style={selectStyle}
@@ -286,13 +288,13 @@ function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalP
 
           {/* ── Notizen ── */}
           <div>
-            <label className={labelCls}>Notizen</label>
+            <label className={labelCls}>{t('serviceItems.modal.fieldNotes')}</label>
             <textarea
               rows={2}
               className={inputCls}
               value={form.notes ?? ''}
               onChange={(e) => set('notes', e.target.value || null)}
-              placeholder="Interne Hinweise zum Artikel…"
+              placeholder={t('serviceItems.modal.fieldNotesPlaceholder')}
             />
           </div>
 
@@ -305,9 +307,9 @@ function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalP
                 onChange={(e) => set('active', e.target.checked)}
                 className="accent-[#5B9BF6]"
               />
-              <span className="text-sm text-gf-text">Artikel aktiv</span>
+              <span className="text-sm text-gf-text">{t('serviceItems.modal.active')}</span>
               <span className="ml-auto text-xs text-gf-text-muted">
-                {form.active ? 'Sichtbar im Katalog' : 'Versteckt'}
+                {form.active ? t('serviceItems.modal.activeVisible') : t('serviceItems.modal.activeHidden')}
               </span>
             </label>
           )}
@@ -325,14 +327,18 @@ function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalP
               onClick={onClose}
               className="rounded-gf-btn border border-gf-border px-4 py-2 text-sm text-gf-text-muted hover:text-gf-text hover:border-gf-text/30 transition-colors"
             >
-              Abbrechen
+              {t('serviceItems.modal.buttonCancel')}
             </button>
             <button
               type="submit"
               disabled={saving}
               className="rounded-gf-btn bg-gf-primary px-6 py-2 text-sm font-medium text-white disabled:opacity-50 hover:opacity-90 transition-opacity"
             >
-              {saving ? '[SPEICHERN…]' : isEdit ? 'Speichern' : 'Erstellen'}
+              {saving
+                ? t('serviceItems.modal.buttonSaving')
+                : isEdit
+                  ? t('serviceItems.modal.buttonSave')
+                  : t('serviceItems.modal.buttonCreate')}
             </button>
           </div>
         </form>
@@ -351,9 +357,10 @@ interface DeleteDialogProps {
 }
 
 function DeleteDialog({ item, onConfirm, onCancel, deleting }: DeleteDialogProps) {
+  const { t } = useTranslation()
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 px-4"
       onClick={(e) => { if (e.target === e.currentTarget) onCancel() }}
     >
       <div className="w-full max-w-md rounded-gf-card border border-gf-border bg-gf-card overflow-hidden"
@@ -363,30 +370,32 @@ function DeleteDialog({ item, onConfirm, onCancel, deleting }: DeleteDialogProps
         <div className="p-6 space-y-4">
           <div>
             <p className="text-[10px] uppercase tracking-widest text-gf-danger font-medium mb-1">
-              Achtung — Irreversibel
+              {t('serviceItems.deleteDialog.warning')}
             </p>
-            <h3 className="font-display text-base font-bold text-gf-text-inverse">Artikel löschen</h3>
+            <h3 className="font-display text-base font-bold text-gf-text-inverse">
+              {t('serviceItems.deleteDialog.title')}
+            </h3>
           </div>
           <div className="rounded-gf-btn border border-gf-border bg-gf-surface px-4 py-3">
             <p className="font-mono text-sm font-semibold text-gf-text">{item.code}</p>
             <p className="text-xs text-gf-text-muted mt-0.5 line-clamp-1">{item.description_de}</p>
           </div>
           <p className="text-sm text-gf-text-muted">
-            Diese Aktion löscht den Artikel dauerhaft aus dem Katalog und kann nicht rückgängig gemacht werden.
+            {t('serviceItems.deleteDialog.body')}
           </p>
           <div className="flex justify-end gap-3 pt-2 border-t border-gf-border">
             <button
               onClick={onCancel}
               className="rounded-gf-btn border border-gf-border px-4 py-2 text-sm text-gf-text-muted hover:text-gf-text hover:border-gf-text/30 transition-colors"
             >
-              Abbrechen
+              {t('serviceItems.deleteDialog.buttonCancel')}
             </button>
             <button
               onClick={onConfirm}
               disabled={deleting}
               className="rounded-gf-btn bg-gf-danger px-5 py-2 text-sm font-medium text-white disabled:opacity-50 hover:opacity-90 transition-opacity"
             >
-              {deleting ? '[LÖSCHEN…]' : 'Endgültig löschen'}
+              {deleting ? t('serviceItems.deleteDialog.buttonDeleting') : t('serviceItems.deleteDialog.buttonConfirm')}
             </button>
           </div>
         </div>
@@ -402,6 +411,7 @@ function DeleteDialog({ item, onConfirm, onCancel, deleting }: DeleteDialogProps
  * operator contracts. Supports create, edit, deactivate, and delete.
  */
 export function ServiceItemsPage() {
+  const { t } = useTranslation()
   const [items, setItems] = useState<ServiceItemWithRelations[]>([])
   const [operators, setOperators] = useState<RefRow[]>([])
   const [clients, setClients] = useState<RefRow[]>([])
@@ -481,16 +491,16 @@ export function ServiceItemsPage() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h2 className="font-display text-xl font-bold text-gf-text">Service-Katalog</h2>
+          <h2 className="font-display text-xl font-bold text-gf-text">{t('serviceItems.title')}</h2>
           <p className="text-sm text-gf-text-muted">
-            {filtered.length} Artikel — Vertragliche Leistungscodes
+            {t('serviceItems.subtitle', { count: filtered.length })}
           </p>
         </div>
         <button
           onClick={() => setModalItem('new')}
           className="rounded-gf-btn bg-gf-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
         >
-          + Neuer Artikel
+          + {t('serviceItems.newItem')}
         </button>
       </div>
 
@@ -498,7 +508,7 @@ export function ServiceItemsPage() {
       <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <input
           type="text"
-          placeholder="Suchen (Code, Beschreibung)…"
+          placeholder={t('serviceItems.search')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
@@ -508,8 +518,8 @@ export function ServiceItemsPage() {
           onChange={(e) => setOperatorFilter(e.target.value)}
           className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
         >
-          <option value="">Alle Betreiber</option>
-          <option value="__null__">— Global (kein Betreiber)</option>
+          <option value="">{t('serviceItems.filters.allOperators')}</option>
+          <option value="__null__">{t('serviceItems.filters.globalNoOperator')}</option>
           {visibleOperators.map((op) => (
             <option key={op.id} value={op.id}>{op.code} — {op.name}</option>
           ))}
@@ -519,7 +529,7 @@ export function ServiceItemsPage() {
           onChange={(e) => setClientFilter(e.target.value)}
           className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
         >
-          <option value="">Alle Kunden</option>
+          <option value="">{t('serviceItems.filters.allClients')}</option>
           {visibleClients.map((cl) => (
             <option key={cl.id} value={cl.id}>{cl.code} — {cl.name}</option>
           ))}
@@ -530,7 +540,7 @@ export function ServiceItemsPage() {
             checked={includeInactive}
             onChange={(e) => setIncludeInactive(e.target.checked)}
           />
-          <span>Inaktive anzeigen</span>
+          <span>{t('serviceItems.filters.showInactive')}</span>
         </label>
       </div>
 
@@ -542,7 +552,7 @@ export function ServiceItemsPage() {
       ) : filtered.length === 0 ? (
         <div className="rounded-gf-card border border-gf-border bg-gf-card py-16 text-center">
           <p className="text-2xl">📋</p>
-          <p className="mt-2 text-sm font-medium text-gf-text">Keine Artikel gefunden</p>
+          <p className="mt-2 text-sm font-medium text-gf-text">{t('serviceItems.table.empty')}</p>
         </div>
       ) : (
         <div className="overflow-hidden rounded-gf-card border border-gf-border bg-gf-card">
@@ -550,16 +560,16 @@ export function ServiceItemsPage() {
             <table className="w-full text-sm">
               <thead className="border-b border-gf-border bg-gf-surface">
                 <tr>
-                  <th className="px-3 py-2 text-left font-medium text-gf-text-muted whitespace-nowrap">Code</th>
-                  <th className="px-3 py-2 text-left font-medium text-gf-text-muted">Beschreibung (DE)</th>
-                  <th className="px-3 py-2 text-left font-medium text-gf-text-muted hidden lg:table-cell">Descripción (ES)</th>
-                  <th className="px-3 py-2 text-left font-medium text-gf-text-muted whitespace-nowrap">Einh.</th>
-                  <th className="px-3 py-2 text-right font-medium text-gf-text-muted whitespace-nowrap">Preis</th>
-                  <th className="px-3 py-2 text-left font-medium text-gf-text-muted whitespace-nowrap hidden md:table-cell">Form</th>
-                  <th className="px-3 py-2 text-left font-medium text-gf-text-muted whitespace-nowrap hidden md:table-cell">Betreiber</th>
-                  <th className="px-3 py-2 text-left font-medium text-gf-text-muted whitespace-nowrap hidden sm:table-cell">Kunde</th>
-                  <th className="px-3 py-2 text-left font-medium text-gf-text-muted whitespace-nowrap">Status</th>
-                  <th className="px-3 py-2 text-right font-medium text-gf-text-muted whitespace-nowrap">Aktionen</th>
+                  <th className="px-3 py-2 text-left font-medium text-gf-text-muted whitespace-nowrap">{t('serviceItems.table.code')}</th>
+                  <th className="px-3 py-2 text-left font-medium text-gf-text-muted">{t('serviceItems.table.descriptionDe')}</th>
+                  <th className="px-3 py-2 text-left font-medium text-gf-text-muted hidden lg:table-cell">{t('serviceItems.table.descriptionEs')}</th>
+                  <th className="px-3 py-2 text-left font-medium text-gf-text-muted whitespace-nowrap">{t('serviceItems.table.unit')}</th>
+                  <th className="px-3 py-2 text-right font-medium text-gf-text-muted whitespace-nowrap">{t('serviceItems.table.price')}</th>
+                  <th className="px-3 py-2 text-left font-medium text-gf-text-muted whitespace-nowrap hidden md:table-cell">{t('serviceItems.table.form')}</th>
+                  <th className="px-3 py-2 text-left font-medium text-gf-text-muted whitespace-nowrap hidden md:table-cell">{t('serviceItems.table.operator')}</th>
+                  <th className="px-3 py-2 text-left font-medium text-gf-text-muted whitespace-nowrap hidden sm:table-cell">{t('serviceItems.table.client')}</th>
+                  <th className="px-3 py-2 text-left font-medium text-gf-text-muted whitespace-nowrap">{t('serviceItems.table.status')}</th>
+                  <th className="px-3 py-2 text-right font-medium text-gf-text-muted whitespace-nowrap">{t('serviceItems.table.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -591,21 +601,21 @@ export function ServiceItemsPage() {
                         : <span className="text-gf-text-placeholder">—</span>}
                     </td>
                     <td className="px-3 py-3 font-mono text-xs text-gf-text-muted whitespace-nowrap hidden md:table-cell">
-                      {item.operators?.code ?? <span className="italic text-gf-text-placeholder">Global</span>}
+                      {item.operators?.code ?? <span className="italic text-gf-text-placeholder">{t('serviceItems.table.global')}</span>}
                     </td>
                     <td className="px-3 py-3 font-mono text-xs text-gf-text-muted whitespace-nowrap hidden sm:table-cell">
                       {item.clients?.code ?? <span className="italic text-gf-text-placeholder">—</span>}
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap">
                       {item.active
-                        ? <span className="inline-flex rounded-full bg-gf-success/15 px-2 py-0.5 text-xs font-medium text-emerald-700">Aktiv</span>
-                        : <span className="inline-flex rounded-full bg-gf-danger/10 px-2 py-0.5 text-xs font-medium text-gf-text-muted">Inaktiv</span>}
+                        ? <span className="inline-flex rounded-full bg-gf-success/15 px-2 py-0.5 text-xs font-medium text-emerald-700">{t('serviceItems.table.active')}</span>
+                        : <span className="inline-flex rounded-full bg-gf-danger/10 px-2 py-0.5 text-xs font-medium text-gf-text-muted">{t('serviceItems.table.inactive')}</span>}
                     </td>
                     <td className="px-3 py-3">
                       <div className="flex items-center justify-end gap-1">
                         {/* Edit */}
                         <button
-                          title="Bearbeiten"
+                          title={t('serviceItems.table.edit')}
                           onClick={() => setModalItem(item)}
                           className="rounded px-2 py-1 text-xs text-gf-text-muted hover:text-gf-primary hover:bg-gf-surface transition-colors"
                         >
@@ -613,7 +623,7 @@ export function ServiceItemsPage() {
                         </button>
                         {/* Toggle active */}
                         <button
-                          title={item.active ? 'Deaktivieren' : 'Aktivieren'}
+                          title={item.active ? t('serviceItems.table.deactivate') : t('serviceItems.table.activate')}
                           disabled={togglingId === item.id}
                           onClick={() => handleToggleActive(item)}
                           className="rounded px-2 py-1 text-xs text-gf-text-muted hover:text-gf-warning hover:bg-gf-surface transition-colors disabled:opacity-40"
@@ -622,7 +632,7 @@ export function ServiceItemsPage() {
                         </button>
                         {/* Delete */}
                         <button
-                          title="Löschen"
+                          title={t('serviceItems.table.delete')}
                           onClick={() => setDeleteTarget(item)}
                           className="rounded px-2 py-1 text-xs text-gf-text-muted hover:text-gf-danger hover:bg-gf-surface transition-colors"
                         >
