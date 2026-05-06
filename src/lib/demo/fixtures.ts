@@ -26,6 +26,12 @@ const SI_ALTA_BASIC = '40000000-0000-0000-0000-000000000003'
 const SI_ALTA_NT = '40000000-0000-0000-0000-000000000004'
 const SI_PATCHKABEL = '40000000-0000-0000-0000-000000000005'
 
+const VEHICLE_ROT_COMBO = '41000000-0000-0000-0000-000000000001'
+const MAT_GFP_HUEP_48 = '42000000-0000-0000-0000-000000000001'
+const MAT_GFP_HUEP_1 = '42000000-0000-0000-0000-000000000002'
+const MAT_GFP_PIGTAIL = '42000000-0000-0000-0000-000000000003'
+const MAT_GFP_PATCH_45 = '42000000-0000-0000-0000-000000000004'
+
 const WO_1 = '50000000-0000-0000-0000-000000000001'
 const WO_2 = '50000000-0000-0000-0000-000000000002'
 const WO_3 = '50000000-0000-0000-0000-000000000003'
@@ -149,6 +155,85 @@ export const initialFixtures = () => ({
       operator_id: OP_GFPLUS, client_id: CLIENT_VANCOM, detail_form: 'patchkabel',
       display_order: 40, active: true, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK,
     },
+  ],
+
+  materials: [
+    {
+      id: MAT_GFP_HUEP_48,
+      name: 'GF-AP HÜP 4-8 WE GFP',
+      category: 'Activacion',
+      sku: 'GFM000453',
+      catalog_client_id: CLIENT_VANCOM,
+      catalog_source: 'gfp',
+      unit: 'ud',
+      min_stock: 2,
+      notes: 'AP 4-8 Cajas lunas para splitter',
+      is_active: true,
+      created_at: LAST_WEEK,
+      updated_at: LAST_WEEK,
+    },
+    {
+      id: MAT_GFP_HUEP_1,
+      name: 'GF-AP HÜP 1 WE GFP',
+      category: 'Activacion',
+      sku: 'GFM000454',
+      catalog_client_id: CLIENT_VANCOM,
+      catalog_source: 'gfp',
+      unit: 'ud',
+      min_stock: 2,
+      notes: null,
+      is_active: true,
+      created_at: LAST_WEEK,
+      updated_at: LAST_WEEK,
+    },
+    {
+      id: MAT_GFP_PIGTAIL,
+      name: 'Gf-TA mit Pigtail und Spleißablage',
+      category: 'Activacion',
+      sku: 'GFM000535',
+      catalog_client_id: CLIENT_VANCOM,
+      catalog_source: 'westconnect',
+      unit: 'ud',
+      min_stock: 4,
+      notes: 'FTTH-ANSCHLUSSDOSE AP MIT SPLEIßABL. EON',
+      is_active: true,
+      created_at: LAST_WEEK,
+      updated_at: LAST_WEEK,
+    },
+    {
+      id: MAT_GFP_PATCH_45,
+      name: 'PATCHKABEL G657A1 4,5M LCAPC-LCAPC 1,6MM',
+      category: 'Latiguillos',
+      sku: 'GFM000360',
+      catalog_client_id: CLIENT_VANCOM,
+      catalog_source: 'gfp',
+      unit: 'ud',
+      min_stock: 5,
+      notes: null,
+      is_active: true,
+      created_at: LAST_WEEK,
+      updated_at: LAST_WEEK,
+    },
+  ],
+
+  inventory_vehicles: [
+    {
+      id: VEHICLE_ROT_COMBO,
+      name: 'Rot-Opel Combo',
+      team: 'rot',
+      license_plate: null,
+      notes: 'Demo: vehículo principal del equipo Rot',
+      active: true,
+      created_at: LAST_WEEK,
+      updated_at: LAST_WEEK,
+    },
+  ],
+
+  vehicle_material_stock: [
+    { id: '43000000-0000-0000-0000-000000000001', vehicle_id: VEHICLE_ROT_COMBO, material_id: MAT_GFP_HUEP_48, quantity: 8, updated_at: LAST_WEEK },
+    { id: '43000000-0000-0000-0000-000000000002', vehicle_id: VEHICLE_ROT_COMBO, material_id: MAT_GFP_HUEP_1, quantity: 5, updated_at: LAST_WEEK },
+    { id: '43000000-0000-0000-0000-000000000003', vehicle_id: VEHICLE_ROT_COMBO, material_id: MAT_GFP_PIGTAIL, quantity: 12, updated_at: LAST_WEEK },
+    { id: '43000000-0000-0000-0000-000000000004', vehicle_id: VEHICLE_ROT_COMBO, material_id: MAT_GFP_PATCH_45, quantity: 3, updated_at: LAST_WEEK },
   ],
 
   work_orders: [
@@ -303,6 +388,24 @@ export const initialFixtures = () => ({
     { id: 'l0000000-0000-0000-0000-000000000071', work_order_id: WO_7_EXTERNAL, service_item_id: SI_ALTA_BASIC, qty: 1, unit_price_snapshot: 145.00,         unit_price_external_snapshot: 95.00, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK },
     { id: 'l0000000-0000-0000-0000-000000000072', work_order_id: WO_7_EXTERNAL, service_item_id: SI_ALTA_NT,    qty: 1, unit_price_snapshot: 65.00,          unit_price_external_snapshot: 40.00, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK },
     { id: 'l0000000-0000-0000-0000-000000000073', work_order_id: WO_7_EXTERNAL, service_item_id: SI_PATCHKABEL, qty: 1, unit_price_snapshot: 38.00,          unit_price_external_snapshot: 22.00, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK },
+  ],
+
+  work_order_material_consumptions: [],
+
+  stock_movements: [
+    {
+      id: '44000000-0000-0000-0000-000000000001',
+      vehicle_id: VEHICLE_ROT_COMBO,
+      material_id: MAT_GFP_HUEP_48,
+      work_order_id: null,
+      movement_type: 'import',
+      quantity_delta: 8,
+      stock_before: 0,
+      stock_after: 8,
+      reason: 'Demo seed GFP',
+      created_by: ADMIN_ID,
+      created_at: LAST_WEEK,
+    },
   ],
 
   contractor_documents: [

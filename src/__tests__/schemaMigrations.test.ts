@@ -57,4 +57,15 @@ describe('database migrations cover billing workflow schema', () => {
     expect(migrationSql).toContain('block_external_cert_without_valid_docs')
     expect(migrationSql).toContain('enforce_external_cert_documents')
   })
+
+  it('tracks material inventory by vehicle and Rückmeldung consumption', () => {
+    expect(migrationSql).toContain('create table if not exists public.inventory_vehicles')
+    expect(migrationSql).toContain('create table if not exists public.vehicle_material_stock')
+    expect(migrationSql).toContain('create table if not exists public.work_order_material_consumptions')
+    expect(migrationSql).toContain('create table if not exists public.stock_movements')
+    expect(migrationSql).toContain('catalog_source')
+    expect(migrationSql).toContain('idx_materials_catalog_sku_unique')
+    expect(migrationSql).toContain('movement_type')
+    expect(migrationSql).toContain('tech_correction')
+  })
 })

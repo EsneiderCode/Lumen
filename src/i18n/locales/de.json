@@ -386,6 +386,120 @@
       "emptyBody": "Dir sind aktuell keine Aufträge zugewiesen."
     }
   },
+  "rueckmeldung": {
+    "materialConsumption": {
+      "title": "Materialverbrauch",
+      "subtitle": "Optional. Der Verbrauch wird vom Fahrzeugbestand des Teams abgezogen.",
+      "empty": "Kein Materialverbrauch gemeldet.",
+      "correctionRequired": "Realbestand erforderlich: {{items}}",
+      "optionStock": "Bestand {{quantity}} {{unit}}",
+      "registered": "Registriert: {{quantity}} {{unit}}",
+      "fields": {
+        "vehicle": "Fahrzeug",
+        "material": "Material",
+        "quantity": "Menge",
+        "realStockBefore": "Realer Bestand vor Verbrauch"
+      },
+      "actions": {
+        "add": "Material",
+        "remove": "Material entfernen"
+      },
+      "placeholders": {
+        "noVehicle": "— kein Verbrauch / Fahrzeug wählen —",
+        "choose": "— wählen —",
+        "minimum": "mind. {{quantity}}"
+      },
+      "errors": {
+        "vehicleRequired": "Fahrzeug für Materialverbrauch wählen.",
+        "stockCorrectionRequired": "Bestand reicht nicht aus. Bitte den realen Bestand vor Verbrauch eintragen."
+      },
+      "notes": {
+        "summary": "Materialverbrauch: {{count}} Position(en)"
+      }
+    }
+  },
+  "materials": {
+    "eyebrow": "Vehicle Stock · Field Verbrauch",
+    "title": "Inventar",
+    "kpi": {
+      "materials": "Material",
+      "vehicles": "Fahrzeuge",
+      "alerts": "Warnungen"
+    },
+    "vehicles": {
+      "title": "Fahrzeuge / Teams",
+      "meta": "1 Team"
+    },
+    "manual": {
+      "title": "Material manuell",
+      "meta": "Einzelposten"
+    },
+    "stock": {
+      "title": "Bestand nach Fahrzeug",
+      "noVehicle": "Kein Fahrzeug gewählt",
+      "lowStock": "{{count}} Materialpositionen unter oder auf Mindestbestand.",
+      "empty": "Kein Bestand für dieses Fahrzeug."
+    },
+    "import": {
+      "title": "Excel Import",
+      "previewCount": "{{count}} erkannte Zeilen"
+    },
+    "catalog": {
+      "title": "Materialkatalog",
+      "meta": "GFP · Westconnect · Manual",
+      "noSku": "ohne SKU"
+    },
+    "fields": {
+      "name": "Name",
+      "team": "Team",
+      "licensePlate": "Kennzeichen",
+      "notes": "Notizen",
+      "catalog": "Katalog",
+      "category": "Kategorie",
+      "unit": "Einheit",
+      "minStock": "Min."
+    },
+    "table": {
+      "material": "Material",
+      "name": "Name",
+      "category": "Kategorie",
+      "stock": "Bestand",
+      "min": "Min.",
+      "quantity": "Menge",
+      "catalog": "Katalog",
+      "unit": "Einheit",
+      "actions": "Aktion"
+    },
+    "actions": {
+      "create": "Anlegen",
+      "update": "Aktualisieren",
+      "reset": "Zurücksetzen",
+      "edit": "Edit",
+      "off": "Off",
+      "deactivate": "Deaktivieren",
+      "file": "Datei",
+      "applyImport": "Import anwenden"
+    },
+    "placeholders": {
+      "optional": "optional",
+      "choose": "— wählen —",
+      "catalog": "Katalog/Kunde wählen",
+      "vehicle": "Fahrzeug wählen"
+    },
+    "status": {
+      "inactive": "inaktiv"
+    },
+    "messages": {
+      "materialRequired": "Name, Kategorie und Katalog/Kunde sind Pflichtfelder.",
+      "vehicleRequired": "Fahrzeugname ist Pflicht.",
+      "materialCreated": "Material angelegt.",
+      "materialUpdated": "Material aktualisiert.",
+      "vehicleCreated": "Fahrzeug angelegt.",
+      "vehicleUpdated": "Fahrzeug aktualisiert.",
+      "rowsDetected": "{{count}} Positionen aus {{file}} erkannt.",
+      "imported": "{{count}} Materialpositionen importiert und dem Fahrzeugbestand gutgeschrieben."
+    }
+  },
   "errors": {
     "boundary": "Ein unerwarteter Fehler ist aufgetreten.",
     "boundaryRetry": "Seite neu laden",
@@ -443,6 +557,56 @@
       "saving": "[SPEICHERN…]",
       "create": "Erstellen",
       "cancel": "Abbrechen"
+    },
+    "table": {
+      "code": "Code",
+      "descriptionDe": "Beschreibung (DE)",
+      "descriptionEs": "Descripción (ES)",
+      "unit": "Einh.",
+      "price": "Preis",
+      "quote": "Angebot",
+      "form": "Form",
+      "operator": "Betreiber",
+      "client": "Kunde",
+      "status": "Status",
+      "actions": "Aktionen",
+      "active": "Aktiv",
+      "inactive": "Inaktiv"
+    },
+    "modal": {
+      "category": "Service-Katalog",
+      "createTitle": "Neuer Artikel",
+      "editTitle": "Artikel bearbeiten",
+      "sectionIdentification": "Identifikation",
+      "sectionPrice": "Preis & Reihenfolge",
+      "sectionAssignment": "Zuordnung",
+      "fieldCode": "SAP-Code",
+      "fieldCodePlaceholder": "z.B. DGF_ACT_001",
+      "fieldUnit": "Einheit",
+      "fieldUnitNone": "— keine —",
+      "fieldDescDe": "Beschreibung (DE)",
+      "fieldDescDePlaceholder": "Leistungsbeschreibung auf Deutsch",
+      "fieldDescEs": "Descripción (ES)",
+      "fieldDescEsPlaceholder": "Descripción en español (opcional)",
+      "fieldPrice": "Preis (€ netto) — leer = Nach Angebot",
+      "fieldExternalPrice": "Preis extern",
+      "fieldDisplayOrder": "Anzeigereihenfolge",
+      "fieldOperator": "Betreiber (Operator)",
+      "fieldOperatorGlobal": "— Global / Alle —",
+      "fieldClient": "Kunde (Client)",
+      "fieldClientNone": "— kein —",
+      "fieldDetailForm": "Detail-Formular (technische Route)",
+      "fieldNotes": "Notizen",
+      "fieldNotesPlaceholder": "Interne Hinweise zum Artikel…",
+      "active": "Artikel aktiv",
+      "activeVisible": "Sichtbar im Katalog",
+      "activeHidden": "Versteckt",
+      "errorRequired": "Code und Deutsche Beschreibung sind Pflichtfelder.",
+      "buttonCancel": "Abbrechen",
+      "buttonClose": "Schließen",
+      "buttonCreate": "Erstellen",
+      "buttonSave": "Speichern",
+      "buttonSaving": "[SPEICHERN…]"
     },
     "delete": {
       "title": "Artikel löschen",

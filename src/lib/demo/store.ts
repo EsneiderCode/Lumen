@@ -8,12 +8,27 @@ import { initialFixtures, type DemoStore } from './fixtures'
 
 const STORE_KEY = 'lumen-demo-store-v1'
 
+function hydrateStore(rawStore: Partial<DemoStore>): DemoStore {
+  const fresh = initialFixtures()
+  const hydrated = { ...fresh } as Record<string, unknown>
+  const raw = rawStore as Record<string, unknown>
+  for (const key of Object.keys(fresh)) {
+    if (raw[key] !== undefined) hydrated[key] = raw[key]
+  }
+  return hydrated as DemoStore
+}
+
 export function getStore(): DemoStore {
   if (typeof window === 'undefined') return initialFixtures()
   const raw = window.localStorage.getItem(STORE_KEY)
   if (raw) {
     try {
-      return JSON.parse(raw) as DemoStore
+      const parsed = JSON.parse(raw) as Partial<DemoStore>
+      const hydrated = hydrateStore(parsed)
+      if ((Object.keys(hydrated) as Array<keyof DemoStore>).some((key) => parsed[key] === undefined)) {
+        saveStore(hydrated)
+      }
+      return hydrated
     } catch {
       // fall through to reseed
     }

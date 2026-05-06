@@ -117,7 +117,7 @@ function applyOrder(rows: Row[], ord: OrderBy | null): Row[] {
 
 interface ParsedSelect {
   columns: string[] | '*'
-  relations: Array<{ name: string; columns: string[] | '*' }>
+  relations: Array<{ name: string; columns: string[] | '*'; fkCol?: string }>
 }
 
 function parseSelect(input: string): ParsedSelect {
@@ -126,17 +126,19 @@ function parseSelect(input: string): ParsedSelect {
   if (s === '*') return { columns: '*', relations: [] }
 
   const relations: ParsedSelect['relations'] = []
-  // Capture "name ( fields )" blocks.
-  const relationRe = /(\w+)\s*\(\s*([^()]+)\s*\)/g
+  // Capture "name ( fields )" and "alias:fk_column ( fields )" blocks.
+  const relationRe = /(?:(\w+):)?(\w+)\s*\(\s*([^()]+)\s*\)/g
   let stripped = s
   let m: RegExpExecArray | null
   while ((m = relationRe.exec(s)) !== null) {
-    const [full, name, inner] = m
+    const [full, alias, nameOrFk, inner] = m
+    const name = alias || nameOrFk
+    const fkCol = alias ? nameOrFk : undefined
     const cols = inner
       .split(',')
       .map((c) => c.trim())
       .filter(Boolean)
-    relations.push({ name, columns: cols.length ? cols : '*' })
+    relations.push({ name, fkCol, columns: cols.length ? cols : '*' })
     stripped = stripped.replace(full, '')
   }
 
@@ -159,7 +161,10 @@ function attachRelations(rows: Row[], parent: keyof DemoStore, parsed: ParsedSel
     for (const rel of parsed.relations) {
       const relTable = rel.name as keyof DemoStore
       if (!(relTable in store)) continue
-      const fkCol = `${rel.name.replace(/s$/, '')}_id` // clients → client_id
+      const fkCol = rel.fkCol
+        ?? (parent === 'materials' && rel.name === 'clients'
+          ? 'catalog_client_id'
+          : `${rel.name.replace(/s$/, '')}_id`) // clients → client_id
       const relRows = store[relTable] as unknown as Row[]
 
       if (parent === 'work_order_state_history' && rel.name === 'profiles') {

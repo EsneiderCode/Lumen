@@ -2,7 +2,8 @@ import type { UserRole, TeamColor, WorkOrderStatus, WorkType } from './enums'
 
 type PriorityLevel = 'normal' | 'alta' | 'urgente'
 type PhotoType = 'before' | 'during' | 'after'
-type MaterialUnit = 'm' | 'ud' | 'rollo' | 'caja'
+type MaterialUnit = string
+type StockMovementType = 'import' | 'admin_adjustment' | 'tech_correction' | 'consumption'
 type ContractorDocumentType =
   | 'gewerbeanmeldung'
   | 'haftpflichtversicherung'
@@ -715,24 +716,174 @@ export type Database = {
         Row: {
           id: string
           name: string
+          category: string
+          sku: string | null
+          catalog_client_id: string | null
+          catalog_source: string
           unit: MaterialUnit
           min_stock: number
+          notes: string | null
           is_active: boolean
           created_at: string
+          updated_at: string
         }
         Insert: {
           id?: string
           name: string
+          category?: string
+          sku?: string | null
+          catalog_client_id?: string | null
+          catalog_source?: string
           unit: MaterialUnit
           min_stock?: number
+          notes?: string | null
           is_active?: boolean
           created_at?: string
+          updated_at?: string
         }
         Update: {
           name?: string
+          category?: string
+          sku?: string | null
+          catalog_client_id?: string | null
+          catalog_source?: string
           unit?: MaterialUnit
           min_stock?: number
+          notes?: string | null
           is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: never[]
+      }
+
+      inventory_vehicles: {
+        Row: {
+          id: string
+          name: string
+          team: TeamColor
+          license_plate: string | null
+          notes: string | null
+          active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          team: TeamColor
+          license_plate?: string | null
+          notes?: string | null
+          active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          name?: string
+          team?: TeamColor
+          license_plate?: string | null
+          notes?: string | null
+          active?: boolean
+          updated_at?: string
+        }
+        Relationships: never[]
+      }
+
+      vehicle_material_stock: {
+        Row: {
+          id: string
+          vehicle_id: string
+          material_id: string
+          quantity: number
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          vehicle_id: string
+          material_id: string
+          quantity?: number
+          updated_at?: string
+        }
+        Update: {
+          vehicle_id?: string
+          material_id?: string
+          quantity?: number
+          updated_at?: string
+        }
+        Relationships: never[]
+      }
+
+      work_order_material_consumptions: {
+        Row: {
+          id: string
+          work_order_id: string
+          vehicle_id: string
+          material_id: string
+          quantity: number
+          reported_by: string
+          stock_real_before: number | null
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          work_order_id: string
+          vehicle_id: string
+          material_id: string
+          quantity: number
+          reported_by: string
+          stock_real_before?: number | null
+          notes?: string | null
+          created_at?: string
+        }
+        Update: {
+          work_order_id?: string
+          vehicle_id?: string
+          material_id?: string
+          quantity?: number
+          reported_by?: string
+          stock_real_before?: number | null
+          notes?: string | null
+        }
+        Relationships: never[]
+      }
+
+      stock_movements: {
+        Row: {
+          id: string
+          vehicle_id: string
+          material_id: string
+          work_order_id: string | null
+          movement_type: StockMovementType
+          quantity_delta: number
+          stock_before: number
+          stock_after: number
+          reason: string | null
+          created_by: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          vehicle_id: string
+          material_id: string
+          work_order_id?: string | null
+          movement_type: StockMovementType
+          quantity_delta: number
+          stock_before: number
+          stock_after: number
+          reason?: string | null
+          created_by: string
+          created_at?: string
+        }
+        Update: {
+          vehicle_id?: string
+          material_id?: string
+          work_order_id?: string | null
+          movement_type?: StockMovementType
+          quantity_delta?: number
+          stock_before?: number
+          stock_after?: number
+          reason?: string | null
+          created_by?: string
         }
         Relationships: never[]
       }
