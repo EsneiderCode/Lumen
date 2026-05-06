@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database.types'
 import { createDemoSupabaseClient } from './demo/supabase-mock'
+import { getPinAccessToken } from '@/services/pinSession'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -8,7 +9,6 @@ const isDemoMode = import.meta.env.VITE_DEMO === 'true'
 
 function buildClient(): SupabaseClient<Database> {
   if (isDemoMode) {
-    // eslint-disable-next-line no-console
     console.info(
       '%c[Lumen] Demo mode active — Supabase calls hit an in-memory store backed by localStorage. Reset with `localStorage.removeItem("lumen-demo-store-v1")`.',
       'color: #FF4D2E; font-weight: 500',
@@ -27,6 +27,19 @@ function buildClient(): SupabaseClient<Database> {
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: true,
+    },
+    global: {
+      fetch: async (input, init) => {
+        const token = getPinAccessToken()
+        const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
+        if (!token || url.includes('/auth/v1/')) {
+          return fetch(input, init)
+        }
+
+        const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined))
+        headers.set('Authorization', `Bearer ${token}`)
+        return fetch(input, { ...init, headers })
+      },
     },
   })
 }

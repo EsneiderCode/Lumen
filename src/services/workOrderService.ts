@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/types/database.types'
 import type { WorkOrderStatus, WorkType, TeamColor, UserRole } from '@/types/enums'
+import { fetchContractorDocumentCompliance } from '@/services/contractorDocumentService'
 
 // ── State machine ──────────────────────────────────────────────────────────
 
@@ -209,6 +210,11 @@ export function getCollaboratorType(
 type WorkOrderRow = Database['public']['Tables']['work_orders']['Row']
 type WorkOrderInsert = Database['public']['Tables']['work_orders']['Insert']
 type WorkOrderUpdate = Database['public']['Tables']['work_orders']['Update']
+type DirectOrderInsert = Omit<WorkOrderInsert, 'order_number' | 'created_by' | 'client_id'> & { client_id: string | null }
+type DirectOrderUpdate = Omit<WorkOrderUpdate, 'client_id' | 'service_item_id'> & {
+  client_id?: string | null
+  service_item_id?: string | null
+}
 
 export interface WorkOrderWithRelations extends WorkOrderRow {
   clients: { name: string; code: string } | null
@@ -223,6 +229,7 @@ export interface WorkOrderWithRelations extends WorkOrderRow {
     description_es: string | null
     unit: string | null
     unit_price: number | null
+    unit_price_external: number | null
     detail_form: string | null
   } | null
 }
@@ -269,8 +276,8 @@ export async function fetchOperators() {
 export async function fetchTechnicians() {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, full_name, team')
-    .eq('role', 'technician')
+    .select('id, full_name, team, role')
+    .in('role', ['technician', 'contractor'])
     .eq('is_active', true)
     .order('full_name')
   return { data: data ?? [], error: error?.message ?? null }
@@ -329,7 +336,7 @@ export async function fetchWorkOrder(id: string) {
       clients ( name, code ),
       projects ( name, code ),
       operators ( name, code ),
-      service_items ( id, code, description_de, description_es, unit, unit_price, detail_form )
+      service_items ( id, code, description_de, description_es, unit, unit_price, unit_price_external, detail_form )
     `)
     .eq('id', id)
     .single()
@@ -337,7 +344,7 @@ export async function fetchWorkOrder(id: string) {
 }
 
 export async function createWorkOrder(
-  payload: Omit<WorkOrderInsert, 'order_number' | 'created_by'>,
+  payload: DirectOrderInsert,
   userId: string,
 ) {
   // Generate order number atomically via DB sequence (migration 003)
@@ -350,7 +357,7 @@ export async function createWorkOrder(
 
   const { data, error } = await supabase
     .from('work_orders')
-    .insert({ ...payload, order_number, created_by: userId })
+    .insert({ ...payload, order_number, created_by: userId } as never)
     .select()
     .single()
 
@@ -368,10 +375,10 @@ export async function createWorkOrder(
   return { data, error: null }
 }
 
-export async function updateWorkOrder(id: string, payload: WorkOrderUpdate) {
+export async function updateWorkOrder(id: string, payload: DirectOrderUpdate) {
   const { data, error } = await supabase
     .from('work_orders')
-    .update({ ...payload, updated_at: new Date().toISOString() })
+    .update({ ...payload, updated_at: new Date().toISOString() } as never)
     .eq('id', id)
     .select()
     .single()
@@ -387,7 +394,7 @@ export async function deleteWorkOrder(id: string) {
 
 export async function assignWorkOrder(
   id: string,
-  team: TeamColor,
+  team: TeamColor | null,
   technicianId: string | null,
   assignedDate: string | null,
   changedBy: string,
@@ -421,7 +428,9 @@ export async function assignWorkOrder(
     from_status: fromStatus,
     to_status: 'assigned',
     changed_by: changedBy,
-    notes: `Zugewiesen an Team ${team}`,
+    notes: technicianId
+      ? 'Zugewiesen an Mitarbeiter'
+      : `Zugewiesen an Team ${team ?? '-'}`,
   })
 
   return { data, error: null }
@@ -716,11 +725,41 @@ export async function generateDataHash(data: Record<string, unknown>): Promise<s
  */
 export async function insertCertificationAudit(
   workOrderId: string,
-  certType: 'internal' | 'client',
+  certType: 'internal' | 'client' | 'external',
   certifiedBy: string,
   dataHash: string,
   notes?: string,
 ) {
+  if (certType === 'external') {
+    const { data: order, error: orderError } = await supabase
+      .from('work_orders')
+      .select('assigned_technician')
+      .eq('id', workOrderId)
+      .single()
+
+    if (orderError || !order?.assigned_technician) {
+      return { error: 'External certification requires a contractor assignee' }
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', order.assigned_technician)
+      .single()
+
+    if (profileError || getCollaboratorType(profile?.role as UserRole | null) !== 'external') {
+      return { error: 'External certification requires a contractor assignee' }
+    }
+
+    const { data: compliance, error: complianceError } = await fetchContractorDocumentCompliance(order.assigned_technician)
+    if (complianceError) return { error: complianceError }
+    if (!compliance.isCompliant) {
+      return {
+        error: `External certification blocked: contractor documents missing or invalid (${compliance.missingTypes.join(', ')})`,
+      }
+    }
+  }
+
   const { error } = await supabase
     .from('certification_audits' as 'work_orders') // cast — table added in migration 002
     .insert({

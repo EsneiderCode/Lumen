@@ -51,6 +51,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { user: result.user, error: result.error }
   }, [])
 
+  const signInWithPin = useCallback(async (loginCode: string, pin: string) => {
+    const result = await authService.signInWithPin(loginCode, pin)
+    if (result.user) setUser(result.user)
+    return { user: result.user, error: result.error }
+  }, [])
+
   const signOut = useCallback(async () => {
     await authService.signOut()
     setUser(null)
@@ -66,10 +72,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       role: user?.role ?? null,
       isLoading,
       signInWithEmail,
+      signInWithPin,
       signOut,
       resetPassword,
     }),
-    [user, isLoading, signInWithEmail, signOut, resetPassword],
+    [user, isLoading, signInWithEmail, signInWithPin, signOut, resetPassword],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

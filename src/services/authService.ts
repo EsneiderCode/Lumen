@@ -1,6 +1,13 @@
 import { supabase } from '@/lib/supabase'
 import type { AuthUser } from '@/context/authTypes'
 import type { Database } from '@/types/database.types'
+import {
+  clearPinSession,
+  getOfflinePinUser,
+  getPinDeviceId,
+  getStoredPinSession,
+  storePinSession,
+} from '@/services/pinSession'
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row']
 
@@ -16,13 +23,14 @@ function profileToAuthUser(p: ProfileRow): AuthUser {
     fullName: p.full_name,
     role: p.role,
     team: p.team,
+    loginCode: p.pin_login_code,
   }
 }
 
 async function fetchProfile(userId: string): Promise<AuthUser | null> {
   const { data, error } = await supabase
     .from('profiles')
-    .select('*')
+    .select('id,email,full_name,role,team,is_active,pin_login_code,created_at,updated_at,pin_set_at,last_pin_login_at')
     .eq('id', userId)
     .single()
 
@@ -47,6 +55,13 @@ export const authService = {
   },
 
   async getCurrentUser(): Promise<AuthUser | null> {
+    const pinSession = getStoredPinSession()
+    if (pinSession?.accessToken && pinSession.expiresAt * 1000 > Date.now()) {
+      const profile = await fetchProfile(pinSession.user.id).catch(() => null)
+      if (profile) return { ...profile, authMethod: 'pin' }
+      return { ...pinSession.user, authMethod: 'offline-pin' }
+    }
+
     const {
       data: { session },
     } = await supabase.auth.getSession()
@@ -54,7 +69,38 @@ export const authService = {
     return fetchProfile(session.user.id)
   },
 
+  async signInWithPin(loginCode: string, pin: string): Promise<SignInResult> {
+    const isOffline = typeof navigator !== 'undefined' && !navigator.onLine
+    if (isOffline) {
+      const offlineUser = await getOfflinePinUser(loginCode, pin)
+      return offlineUser
+        ? { user: { ...offlineUser, authMethod: 'offline-pin' }, error: null }
+        : { user: null, error: 'Offline login not available on this device. Sign in online once first.' }
+    }
+
+    const { data, error } = await supabase.functions.invoke<{
+      accessToken: string
+      expiresAt: number
+      user: AuthUser & { loginCode?: string | null }
+    }>('pin-login', {
+      body: {
+        loginCode: loginCode.trim(),
+        pin,
+        deviceId: getPinDeviceId(),
+      },
+    })
+
+    if (error || !data?.user || !data.accessToken) {
+      return { user: null, error: error?.message ?? 'PIN login failed' }
+    }
+
+    const user = { ...data.user, authMethod: 'pin' as const }
+    await storePinSession(data.accessToken, data.expiresAt, user, pin)
+    return { user, error: null }
+  },
+
   async signOut(): Promise<void> {
+    clearPinSession()
     await supabase.auth.signOut()
   },
 

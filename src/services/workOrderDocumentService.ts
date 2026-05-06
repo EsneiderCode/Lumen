@@ -8,7 +8,7 @@ const BUCKET = 'work-order-documents'
 
 /** Sanitize a filename for safe storage-path use. */
 function sanitize(name: string): string {
-  return name.replace(/[^\w.\-]/g, '_').slice(0, 120)
+  return name.replace(/[^\w.-]/g, '_').slice(0, 120)
 }
 
 /** Upload a file and insert the document row. Path: {work_order_id}/{timestamp}-{sanitized_filename} */

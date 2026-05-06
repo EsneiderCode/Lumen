@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { FileText } from 'lucide-react'
 import {
   fetchServiceItems,
   createServiceItem,
@@ -50,7 +49,7 @@ const EMPTY_FORM: ServiceItemPayload = {
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 function fmtPrice(p: number | null) {
-  if (p == null) return <span className="italic text-fg-4">Angebot</span>
+  if (p == null) return <span className="italic text-gf-text-placeholder">Angebot</span>
   return <span>{p.toLocaleString('de-DE', { minimumFractionDigits: 2 })} €</span>
 }
 
@@ -70,18 +69,18 @@ function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalP
   const [form, setForm] = useState<ServiceItemPayload>(
     isEdit
       ? {
-          code:                item.code,
-          description_de:      item.description_de,
-          description_es:      item.description_es,
-          unit:                item.unit,
-          unit_price:          item.unit_price,
+          code:          item.code,
+          description_de: item.description_de,
+          description_es: item.description_es,
+          unit:          item.unit,
+          unit_price:    item.unit_price,
           unit_price_external: item.unit_price_external,
-          operator_id:         item.operator_id,
-          client_id:           item.client_id,
-          detail_form:         item.detail_form,
-          display_order:       item.display_order,
-          active:              item.active,
-          notes:               item.notes,
+          operator_id:   item.operator_id,
+          client_id:     item.client_id,
+          detail_form:   item.detail_form,
+          display_order: item.display_order,
+          active:        item.active,
+          notes:         item.notes,
         }
       : { ...EMPTY_FORM },
   )
@@ -92,25 +91,26 @@ function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalP
     setForm((f) => ({ ...f, [k]: v }))
   }
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!form.code.trim() || !form.description_de.trim()) {
-      setErr(t('catalog.errorRequired'))
+      setErr(t('serviceItems.modal.errorRequired'))
       return
     }
     setSaving(true)
     setErr(null)
     const payload: ServiceItemPayload = {
       ...form,
-      code:           form.code.trim(),
+      code:          form.code.trim(),
       description_de: form.description_de.trim(),
       description_es: form.description_es?.trim() || null,
-      unit:           form.unit || null,
-      unit_price:     form.unit_price,
-      operator_id:    form.operator_id || null,
-      client_id:      form.client_id || null,
-      detail_form:    (form.detail_form || null) as ServiceItemPayload['detail_form'],
-      notes:          form.notes?.trim() || null,
+      unit:          form.unit || null,
+      unit_price:    form.unit_price,
+      unit_price_external: form.unit_price_external,
+      operator_id:   form.operator_id || null,
+      client_id:     form.client_id || null,
+      detail_form:   (form.detail_form || null) as ServiceItemPayload['detail_form'],
+      notes:         form.notes?.trim() || null,
     }
     const result = isEdit
       ? await updateServiceItem(item!.id, payload)
@@ -124,36 +124,34 @@ function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalP
   }
 
   const inputCls =
-    'w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent'
-  const labelCls = 'block text-[10px] font-medium uppercase tracking-widest text-fg-3 mb-1.5'
+    'w-full rounded-gf-btn border border-gf-border bg-gf-base px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary'
+  const labelCls = 'block text-[10px] font-medium uppercase tracking-widest text-gf-text-muted mb-1.5'
   const selectStyle = { colorScheme: 'dark' } as React.CSSProperties
-  const modalId = 'service-item-modal-title'
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/80 px-4 py-8"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={modalId}
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/95 px-4 py-8"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div className="w-full max-w-2xl rounded-l border border-line bg-bg-1 overflow-hidden">
+      <div className="w-full max-w-2xl rounded-gf-card border border-gf-border bg-gf-card overflow-hidden"
+           style={{ boxShadow: '0 0 0 1px #333, 0 24px 48px rgba(0,0,0,0.6)' }}>
 
         {/* Accent top bar */}
-        <div className="h-0.5 w-full bg-accent" aria-hidden="true" />
+        <div className="h-0.5 w-full bg-gf-primary" />
 
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-line px-6 py-4">
+        <div className="flex items-center justify-between border-b border-gf-border bg-gf-surface px-6 py-4">
           <div>
-            <p className="nx-label">{t('catalog.modal.section')}</p>
-            <h3 id={modalId} className="font-display text-base font-bold text-fg-1 mt-0.5">
-              {isEdit ? t('catalog.modal.titleEdit') : t('catalog.modal.titleCreate')}
+            <p className="text-[10px] uppercase tracking-widest text-gf-text-muted">
+              {t('serviceItems.modal.category')}
+            </p>
+            <h3 className="font-display text-base font-bold text-gf-text-inverse mt-0.5">
+              {isEdit ? t('serviceItems.modal.editTitle') : t('serviceItems.modal.createTitle')}
             </h3>
           </div>
           <button
             onClick={onClose}
-            aria-label={t('catalog.actions.cancel')}
-            className="flex h-7 w-7 items-center justify-center rounded-s border border-line text-fg-3 hover:border-fg-1 hover:text-fg-1 transition-colors"
+            className="flex h-7 w-7 items-center justify-center rounded-gf-btn border border-gf-border text-gf-text-muted hover:border-gf-text hover:text-gf-text transition-colors text-sm"
           >
             ✕
           </button>
@@ -163,57 +161,61 @@ function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalP
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
 
           {/* ── Section: Identifikation ── */}
-          <div className="rounded-l border border-line bg-bg-2 p-4 space-y-4">
-            <p className="nx-label text-accent">{t('catalog.sections.identification')}</p>
+          <div className="rounded-gf-card border border-gf-border bg-gf-surface p-4 space-y-4">
+            <p className="text-[10px] uppercase tracking-widest text-gf-primary font-medium">
+              {t('serviceItems.modal.sectionIdentification')}
+            </p>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className={labelCls}>{t('catalog.fields.sapCode')}</label>
+                <label className={labelCls}>{t('serviceItems.modal.fieldCode')} *</label>
                 <input
                   className={inputCls}
                   value={form.code}
                   onChange={(e) => set('code', e.target.value)}
-                  placeholder="z.B. DGF_ACT_001"
+                  placeholder={t('serviceItems.modal.fieldCodePlaceholder')}
                 />
               </div>
               <div>
-                <label className={labelCls}>{t('catalog.fields.unit')}</label>
+                <label className={labelCls}>{t('serviceItems.modal.fieldUnit')}</label>
                 <select
                   className={inputCls}
                   style={selectStyle}
                   value={form.unit ?? ''}
                   onChange={(e) => set('unit', e.target.value || null)}
                 >
-                  <option value="">— keine —</option>
+                  <option value="">{t('serviceItems.modal.fieldUnitNone')}</option>
                   {UNIT_OPTIONS.map((u) => <option key={u} value={u}>{u}</option>)}
                 </select>
               </div>
             </div>
             <div>
-              <label className={labelCls}>{t('catalog.fields.descDe')}</label>
+              <label className={labelCls}>{t('serviceItems.modal.fieldDescDe')} *</label>
               <input
                 className={inputCls}
                 value={form.description_de}
                 onChange={(e) => set('description_de', e.target.value)}
-                placeholder="Leistungsbeschreibung auf Deutsch"
+                placeholder={t('serviceItems.modal.fieldDescDePlaceholder')}
               />
             </div>
             <div>
-              <label className={labelCls}>{t('catalog.fields.descEs')}</label>
+              <label className={labelCls}>{t('serviceItems.modal.fieldDescEs')}</label>
               <input
                 className={inputCls}
                 value={form.description_es ?? ''}
                 onChange={(e) => set('description_es', e.target.value || null)}
-                placeholder="Descripción en español (opcional)"
+                placeholder={t('serviceItems.modal.fieldDescEsPlaceholder')}
               />
             </div>
           </div>
 
           {/* ── Section: Preis & Reihenfolge ── */}
-          <div className="rounded-l border border-line bg-bg-2 p-4 space-y-4">
-            <p className="nx-label text-accent">{t('catalog.sections.priceOrder')}</p>
-            <div className="grid grid-cols-2 gap-4">
+          <div className="rounded-gf-card border border-gf-border bg-gf-surface p-4 space-y-4">
+            <p className="text-[10px] uppercase tracking-widest text-gf-primary font-medium">
+              {t('serviceItems.modal.sectionPrice')}
+            </p>
+            <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className={labelCls}>{t('catalog.fields.price')}</label>
+                <label className={labelCls}>{t('serviceItems.modal.fieldPrice')}</label>
                 <input
                   type="number"
                   step="0.01"
@@ -225,7 +227,7 @@ function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalP
                 />
               </div>
               <div>
-                <label className={labelCls}>{t('catalog.fields.priceExternal')}</label>
+                <label className={labelCls}>Preis extern</label>
                 <input
                   type="number"
                   step="0.01"
@@ -236,46 +238,48 @@ function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalP
                   placeholder="0.00"
                 />
               </div>
-            </div>
-            <div>
-              <label className={labelCls}>{t('catalog.fields.displayOrder')}</label>
-              <input
-                type="number"
-                step="1"
-                className={inputCls}
-                value={form.display_order}
-                onChange={(e) => set('display_order', Number(e.target.value))}
-              />
+              <div>
+                <label className={labelCls}>{t('serviceItems.modal.fieldDisplayOrder')}</label>
+                <input
+                  type="number"
+                  step="1"
+                  className={inputCls}
+                  value={form.display_order}
+                  onChange={(e) => set('display_order', Number(e.target.value))}
+                />
+              </div>
             </div>
           </div>
 
           {/* ── Section: Zuordnung ── */}
-          <div className="rounded-l border border-line bg-bg-2 p-4 space-y-4">
-            <p className="nx-label text-accent">{t('catalog.sections.assignment')}</p>
+          <div className="rounded-gf-card border border-gf-border bg-gf-surface p-4 space-y-4">
+            <p className="text-[10px] uppercase tracking-widest text-gf-primary font-medium">
+              {t('serviceItems.modal.sectionAssignment')}
+            </p>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className={labelCls}>{t('catalog.fields.operator')}</label>
+                <label className={labelCls}>{t('serviceItems.modal.fieldOperator')}</label>
                 <select
                   className={inputCls}
                   style={selectStyle}
                   value={form.operator_id ?? ''}
                   onChange={(e) => set('operator_id', e.target.value || null)}
                 >
-                  <option value="">— Global / Alle —</option>
+                  <option value="">{t('serviceItems.modal.fieldOperatorGlobal')}</option>
                   {operators.map((op) => (
                     <option key={op.id} value={op.id}>{op.code} — {op.name}</option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className={labelCls}>{t('catalog.fields.client')}</label>
+                <label className={labelCls}>{t('serviceItems.modal.fieldClient')}</label>
                 <select
                   className={inputCls}
                   style={selectStyle}
                   value={form.client_id ?? ''}
                   onChange={(e) => set('client_id', e.target.value || null)}
                 >
-                  <option value="">— kein —</option>
+                  <option value="">{t('serviceItems.modal.fieldClientNone')}</option>
                   {clients.map((cl) => (
                     <option key={cl.id} value={cl.id}>{cl.code} — {cl.name}</option>
                   ))}
@@ -283,7 +287,7 @@ function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalP
               </div>
             </div>
             <div>
-              <label className={labelCls}>{t('catalog.fields.detailForm')}</label>
+              <label className={labelCls}>{t('serviceItems.modal.fieldDetailForm')}</label>
               <select
                 className={inputCls}
                 style={selectStyle}
@@ -299,52 +303,57 @@ function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalP
 
           {/* ── Notizen ── */}
           <div>
-            <label className={labelCls}>{t('catalog.fields.notes')}</label>
+            <label className={labelCls}>{t('serviceItems.modal.fieldNotes')}</label>
             <textarea
               rows={2}
               className={inputCls}
               value={form.notes ?? ''}
               onChange={(e) => set('notes', e.target.value || null)}
-              placeholder="Interne Hinweise zum Artikel…"
+              placeholder={t('serviceItems.modal.fieldNotesPlaceholder')}
             />
           </div>
 
           {/* Active toggle (edit only) */}
           {isEdit && (
-            <label className="flex items-center gap-3 cursor-pointer rounded-s border border-line bg-bg-2 px-4 py-3 hover:border-accent/50 transition-colors">
+            <label className="flex items-center gap-3 cursor-pointer rounded-gf-btn border border-gf-border bg-gf-surface px-4 py-3 hover:border-gf-primary/50 transition-colors">
               <input
                 type="checkbox"
                 checked={form.active}
                 onChange={(e) => set('active', e.target.checked)}
+                className="accent-[#5B9BF6]"
               />
-              <span className="text-sm text-fg-1">{t('catalog.fields.itemActive')}</span>
-              <span className="ml-auto text-xs text-fg-3">
-                {form.active ? t('catalog.status.visibleInCatalog') : t('catalog.status.hidden')}
+              <span className="text-sm text-gf-text">{t('serviceItems.modal.active')}</span>
+              <span className="ml-auto text-xs text-gf-text-muted">
+                {form.active ? t('serviceItems.modal.activeVisible') : t('serviceItems.modal.activeHidden')}
               </span>
             </label>
           )}
 
           {err && (
-            <p role="alert" className="rounded-s border border-err/40 bg-err/10 px-4 py-2.5 text-sm text-err">
+            <p className="rounded-gf-btn border border-gf-accent/40 bg-gf-accent-light px-4 py-2.5 text-sm text-gf-accent">
               {err}
             </p>
           )}
 
           {/* Actions */}
-          <div className="flex justify-end gap-3 pt-3 border-t border-line">
+          <div className="flex justify-end gap-3 pt-3 border-t border-gf-border">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-s border border-line px-4 py-2 text-sm text-fg-3 hover:text-fg-1 hover:border-fg-3 transition-colors"
+              className="rounded-gf-btn border border-gf-border px-4 py-2 text-sm text-gf-text-muted hover:text-gf-text hover:border-gf-text/30 transition-colors"
             >
-              {t('catalog.actions.cancel')}
+              {t('serviceItems.modal.buttonCancel')}
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="rounded-s bg-accent px-6 py-2 text-sm font-medium text-ink disabled:opacity-50 hover:opacity-90 transition-opacity"
+              className="rounded-gf-btn bg-gf-primary px-6 py-2 text-sm font-medium text-white disabled:opacity-50 hover:opacity-90 transition-opacity"
             >
-              {saving ? t('catalog.actions.saving') : isEdit ? t('catalog.actions.save') : t('catalog.actions.create')}
+              {saving
+                ? t('serviceItems.modal.buttonSaving')
+                : isEdit
+                  ? t('serviceItems.modal.buttonSave')
+                  : t('serviceItems.modal.buttonCreate')}
             </button>
           </div>
         </form>
@@ -364,40 +373,44 @@ interface DeleteDialogProps {
 
 function DeleteDialog({ item, onConfirm, onCancel, deleting }: DeleteDialogProps) {
   const { t } = useTranslation()
-  const dialogId = 'delete-dialog-title'
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={dialogId}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 px-4"
       onClick={(e) => { if (e.target === e.currentTarget) onCancel() }}
     >
-      <div className="w-full max-w-md rounded-l border border-line bg-bg-1 overflow-hidden">
-        <div className="h-0.5 w-full bg-err" aria-hidden="true" />
+      <div className="w-full max-w-md rounded-gf-card border border-gf-border bg-gf-card overflow-hidden"
+           style={{ boxShadow: '0 0 0 1px #333, 0 24px 48px rgba(0,0,0,0.6)' }}>
+        {/* Accent top bar — red for destructive */}
+        <div className="h-0.5 w-full bg-gf-danger" />
         <div className="p-6 space-y-4">
           <div>
-            <p className="nx-label text-err mb-1">{t('catalog.delete.warning')}</p>
-            <h3 id={dialogId} className="font-display text-base font-bold text-fg-1">{t('catalog.delete.title')}</h3>
+            <p className="text-[10px] uppercase tracking-widest text-gf-danger font-medium mb-1">
+              {t('serviceItems.deleteDialog.warning')}
+            </p>
+            <h3 className="font-display text-base font-bold text-gf-text-inverse">
+              {t('serviceItems.deleteDialog.title')}
+            </h3>
           </div>
-          <div className="rounded-s border border-line bg-bg-2 px-4 py-3">
-            <p className="font-mono text-sm font-semibold text-fg-1">{item.code}</p>
-            <p className="text-xs text-fg-3 mt-0.5 line-clamp-1">{item.description_de}</p>
+          <div className="rounded-gf-btn border border-gf-border bg-gf-surface px-4 py-3">
+            <p className="font-mono text-sm font-semibold text-gf-text">{item.code}</p>
+            <p className="text-xs text-gf-text-muted mt-0.5 line-clamp-1">{item.description_de}</p>
           </div>
-          <p className="text-sm text-fg-2">{t('catalog.delete.confirm')}</p>
-          <div className="flex justify-end gap-3 pt-2 border-t border-line">
+          <p className="text-sm text-gf-text-muted">
+            {t('serviceItems.deleteDialog.body')}
+          </p>
+          <div className="flex justify-end gap-3 pt-2 border-t border-gf-border">
             <button
               onClick={onCancel}
-              className="rounded-s border border-line px-4 py-2 text-sm text-fg-3 hover:text-fg-1 hover:border-fg-3 transition-colors"
+              className="rounded-gf-btn border border-gf-border px-4 py-2 text-sm text-gf-text-muted hover:text-gf-text hover:border-gf-text/30 transition-colors"
             >
-              {t('catalog.actions.cancel')}
+              {t('serviceItems.deleteDialog.buttonCancel')}
             </button>
             <button
               onClick={onConfirm}
               disabled={deleting}
-              className="rounded-s bg-err px-5 py-2 text-sm font-medium text-white disabled:opacity-50 hover:opacity-90 transition-opacity"
+              className="rounded-gf-btn bg-gf-danger px-5 py-2 text-sm font-medium text-white disabled:opacity-50 hover:opacity-90 transition-opacity"
             >
-              {deleting ? t('catalog.delete.deleting') : t('catalog.delete.action')}
+              {deleting ? t('serviceItems.deleteDialog.buttonDeleting') : t('serviceItems.deleteDialog.buttonConfirm')}
             </button>
           </div>
         </div>
@@ -429,23 +442,26 @@ export function ServiceItemsPage() {
   const [deleting, setDeleting] = useState(false)
   const [togglingId, setTogglingId] = useState<string | null>(null)
 
+  // Load reference data once
   useEffect(() => {
     fetchOperators().then(({ data }) => setOperators(data as RefRow[]))
     fetchClients().then(({ data }) => setClients(data as RefRow[]))
   }, [])
 
-  const load = () => {
-    setIsLoading(true)
-    fetchServiceItems({ includeInactive }).then(({ data }) => {
-      setItems(data)
-      setIsLoading(false)
-    })
-  }
-
-  useEffect(() => {
-    load()
+  const load = useCallback(async (showLoading = true) => {
+    if (showLoading) setIsLoading(true)
+    const { data } = await fetchServiceItems({ includeInactive })
+    setItems(data)
+    setIsLoading(false)
   }, [includeInactive])
 
+  useEffect(() => {
+    // Initial/refilter data load is an external async sync point; ServiceItemsPage owns the loading state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void load(false)
+  }, [load])
+
+  // Filter operators/clients from loaded items for dropdown
   const visibleOperators = Array.from(
     new Map(items.filter((i) => i.operators).map((i) => [i.operators!.id, i.operators!])).values(),
   )
@@ -486,47 +502,40 @@ export function ServiceItemsPage() {
     load()
   }
 
-  const selectStyle = { colorScheme: 'dark' } as React.CSSProperties
-  const hasFilters = Boolean(search || operatorFilter || clientFilter)
-
   return (
     <div>
       {/* Header */}
-      <div className="nx-page-header">
+      <div className="mb-6 flex items-center justify-between">
         <div>
-          <h2 className="nx-page-title">{t('catalog.title')}</h2>
-          <p className="nx-label mt-2 tabular-nums">
-            {t('catalog.subtitleCount', { count: filtered.length })}
+          <h2 className="font-display text-xl font-bold text-gf-text">{t('serviceItems.title')}</h2>
+          <p className="text-sm text-gf-text-muted">
+            {t('serviceItems.subtitle', { count: filtered.length })}
           </p>
         </div>
         <button
           onClick={() => setModalItem('new')}
-          className="flex items-center gap-2 rounded-s bg-accent px-4 py-2 text-sm font-semibold text-ink hover:opacity-90 transition-opacity"
+          className="rounded-gf-btn bg-gf-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
         >
-          <span aria-hidden="true">+</span>
-          {t('catalog.newItem')}
+          + {t('serviceItems.newItem')}
         </button>
       </div>
 
       {/* Filters */}
       <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <input
-          type="search"
-          placeholder={t('catalog.filter.search')}
+          type="text"
+          placeholder={t('serviceItems.search')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          aria-label={t('catalog.filter.search')}
-          className="rounded-s border border-line bg-bg-1 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+          className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
         />
         <select
           value={operatorFilter}
           onChange={(e) => setOperatorFilter(e.target.value)}
-          aria-label={t('catalog.filter.allOperators')}
-          style={selectStyle}
-          className="rounded-s border border-line bg-bg-1 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+          className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
         >
-          <option value="">{t('catalog.filter.allOperators')}</option>
-          <option value="__null__">{t('catalog.filter.globalOperator')}</option>
+          <option value="">{t('serviceItems.filters.allOperators')}</option>
+          <option value="__null__">{t('serviceItems.filters.globalNoOperator')}</option>
           {visibleOperators.map((op) => (
             <option key={op.id} value={op.id}>{op.code} — {op.name}</option>
           ))}
@@ -534,130 +543,114 @@ export function ServiceItemsPage() {
         <select
           value={clientFilter}
           onChange={(e) => setClientFilter(e.target.value)}
-          aria-label={t('catalog.filter.allClients')}
-          style={selectStyle}
-          className="rounded-s border border-line bg-bg-1 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+          className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
         >
-          <option value="">{t('catalog.filter.allClients')}</option>
+          <option value="">{t('serviceItems.filters.allClients')}</option>
           {visibleClients.map((cl) => (
             <option key={cl.id} value={cl.id}>{cl.code} — {cl.name}</option>
           ))}
         </select>
-        <label className="flex items-center gap-2 rounded-s border border-line bg-bg-1 px-3 py-2 text-sm text-fg-1 cursor-pointer hover:border-accent transition-colors">
+        <label className="flex items-center gap-2 rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text cursor-pointer">
           <input
             type="checkbox"
             checked={includeInactive}
             onChange={(e) => setIncludeInactive(e.target.checked)}
           />
-          <span>{t('catalog.filter.showInactive')}</span>
+          <span>{t('serviceItems.filters.showInactive')}</span>
         </label>
       </div>
 
-      {/* Table / states */}
+      {/* Table */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-20" role="status" aria-label="Wird geladen">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-accent" aria-hidden="true" />
+        <div className="flex items-center justify-center py-20">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-gf-border border-t-gf-primary" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="rounded-l border border-line bg-bg-1 py-16 text-center">
-          <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full border border-line bg-bg-0">
-            <FileText size={18} strokeWidth={1.5} className="text-fg-3" aria-hidden="true" />
-          </div>
-          <p className="text-sm font-medium text-fg-1">{t('catalog.empty')}</p>
-          <p className="mt-1 text-xs text-fg-3">
-            {hasFilters
-              ? 'Filter anpassen oder zurücksetzen.'
-              : 'Neuen Artikel anlegen, um zu beginnen.'}
-          </p>
-          {!hasFilters && (
-            <button
-              onClick={() => setModalItem('new')}
-              className="mt-4 rounded-s border border-line px-4 py-2 text-xs text-fg-2 hover:border-accent hover:text-accent transition-colors"
-            >
-              {t('catalog.newItem')}
-            </button>
-          )}
+        <div className="rounded-gf-card border border-gf-border bg-gf-card py-16 text-center">
+          <p className="text-2xl">📋</p>
+          <p className="mt-2 text-sm font-medium text-gf-text">{t('serviceItems.table.empty')}</p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-l border border-line bg-bg-1">
+        <div className="overflow-hidden rounded-gf-card border border-gf-border bg-gf-card">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="border-b border-line bg-bg-2">
+              <thead className="border-b border-gf-border bg-gf-surface">
                 <tr>
-                  <th scope="col" className="nx-label px-3 py-3 text-left whitespace-nowrap">Code</th>
-                  <th scope="col" className="nx-label px-3 py-3 text-left">Beschreibung (DE)</th>
-                  <th scope="col" className="nx-label px-3 py-3 text-left hidden lg:table-cell">Descripción (ES)</th>
-                  <th scope="col" className="nx-label px-3 py-3 text-left whitespace-nowrap">Einh.</th>
-                  <th scope="col" className="nx-label px-3 py-3 text-right whitespace-nowrap">Preis</th>
-                  <th scope="col" className="nx-label px-3 py-3 text-left whitespace-nowrap hidden md:table-cell">Form</th>
-                  <th scope="col" className="nx-label px-3 py-3 text-left whitespace-nowrap hidden md:table-cell">Betreiber</th>
-                  <th scope="col" className="nx-label px-3 py-3 text-left whitespace-nowrap hidden sm:table-cell">Kunde</th>
-                  <th scope="col" className="nx-label px-3 py-3 text-left whitespace-nowrap">Status</th>
-                  <th scope="col" className="px-3 py-3"><span className="sr-only">Aktionen</span></th>
+                  <th className="px-3 py-2 text-left font-medium text-gf-text-muted whitespace-nowrap">{t('serviceItems.table.code')}</th>
+                  <th className="px-3 py-2 text-left font-medium text-gf-text-muted">{t('serviceItems.table.descriptionDe')}</th>
+                  <th className="px-3 py-2 text-left font-medium text-gf-text-muted hidden lg:table-cell">{t('serviceItems.table.descriptionEs')}</th>
+                  <th className="px-3 py-2 text-left font-medium text-gf-text-muted whitespace-nowrap">{t('serviceItems.table.unit')}</th>
+                  <th className="px-3 py-2 text-right font-medium text-gf-text-muted whitespace-nowrap">{t('serviceItems.table.price')}</th>
+                  <th className="px-3 py-2 text-left font-medium text-gf-text-muted whitespace-nowrap hidden md:table-cell">{t('serviceItems.table.form')}</th>
+                  <th className="px-3 py-2 text-left font-medium text-gf-text-muted whitespace-nowrap hidden md:table-cell">{t('serviceItems.table.operator')}</th>
+                  <th className="px-3 py-2 text-left font-medium text-gf-text-muted whitespace-nowrap hidden sm:table-cell">{t('serviceItems.table.client')}</th>
+                  <th className="px-3 py-2 text-left font-medium text-gf-text-muted whitespace-nowrap">{t('serviceItems.table.status')}</th>
+                  <th className="px-3 py-2 text-right font-medium text-gf-text-muted whitespace-nowrap">{t('serviceItems.table.actions')}</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((item) => (
                   <tr
                     key={item.id}
-                    className={`border-t border-line/50 transition-colors hover:bg-bg-2 ${!item.active ? 'opacity-50' : ''}`}
+                    className={`border-t border-gf-border/50 transition-colors hover:bg-gf-surface/40 ${!item.active ? 'opacity-50' : ''}`}
                   >
-                    <td className="px-3 py-3 font-mono text-xs font-semibold text-accent whitespace-nowrap">
+                    <td className="px-3 py-3 font-mono text-xs font-semibold text-gf-primary whitespace-nowrap">
                       {item.code}
                     </td>
-                    <td className="px-3 py-3 text-fg-1 max-w-xs">
+                    <td className="px-3 py-3 text-gf-text max-w-xs">
                       <span className="line-clamp-2">{item.description_de}</span>
                     </td>
-                    <td className="px-3 py-3 text-fg-3 max-w-xs hidden lg:table-cell">
+                    <td className="px-3 py-3 text-gf-text-muted max-w-xs hidden lg:table-cell">
                       {item.description_es
                         ? <span className="line-clamp-2">{item.description_es}</span>
-                        : <span className="italic text-fg-4">—</span>}
+                        : <span className="italic text-gf-text-placeholder">—</span>}
                     </td>
-                    <td className="px-3 py-3 text-fg-3 font-mono text-xs whitespace-nowrap">
+                    <td className="px-3 py-3 text-gf-text-muted font-mono text-xs whitespace-nowrap">
                       {item.unit ?? '—'}
                     </td>
-                    <td className="px-3 py-3 text-right font-mono tabular-nums text-fg-1 whitespace-nowrap">
+                    <td className="px-3 py-3 text-right font-mono tabular-nums text-gf-text whitespace-nowrap">
                       {fmtPrice(item.unit_price)}
                     </td>
                     <td className="px-3 py-3 hidden md:table-cell">
                       {item.detail_form
-                        ? <span className="rounded bg-bg-2 px-1.5 py-0.5 font-mono text-xs text-fg-3 border border-line">{item.detail_form}</span>
-                        : <span className="text-fg-4">—</span>}
+                        ? <span className="rounded bg-gf-surface px-1.5 py-0.5 font-mono text-xs text-gf-text-muted border border-gf-border">{item.detail_form}</span>
+                        : <span className="text-gf-text-placeholder">—</span>}
                     </td>
-                    <td className="px-3 py-3 font-mono text-xs text-fg-3 whitespace-nowrap hidden md:table-cell">
-                      {item.operators?.code ?? <span className="italic text-fg-4">Global</span>}
+                    <td className="px-3 py-3 font-mono text-xs text-gf-text-muted whitespace-nowrap hidden md:table-cell">
+                      {item.operators?.code ?? <span className="italic text-gf-text-placeholder">{t('serviceItems.table.global')}</span>}
                     </td>
-                    <td className="px-3 py-3 font-mono text-xs text-fg-3 whitespace-nowrap hidden sm:table-cell">
-                      {item.clients?.code ?? <span className="italic text-fg-4">—</span>}
+                    <td className="px-3 py-3 font-mono text-xs text-gf-text-muted whitespace-nowrap hidden sm:table-cell">
+                      {item.clients?.code ?? <span className="italic text-gf-text-placeholder">—</span>}
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap">
                       {item.active
-                        ? <span className="inline-flex rounded-full bg-ok/15 px-2 py-0.5 text-xs font-medium text-ok">{t('catalog.status.active')}</span>
-                        : <span className="inline-flex rounded-full bg-err/10 px-2 py-0.5 text-xs font-medium text-fg-3">{t('catalog.status.inactive')}</span>}
+                        ? <span className="inline-flex rounded-full bg-gf-success/15 px-2 py-0.5 text-xs font-medium text-emerald-700">{t('serviceItems.table.active')}</span>
+                        : <span className="inline-flex rounded-full bg-gf-danger/10 px-2 py-0.5 text-xs font-medium text-gf-text-muted">{t('serviceItems.table.inactive')}</span>}
                     </td>
                     <td className="px-3 py-3">
                       <div className="flex items-center justify-end gap-1">
+                        {/* Edit */}
                         <button
-                          aria-label={`${item.code} bearbeiten`}
+                          title={t('serviceItems.table.edit')}
                           onClick={() => setModalItem(item)}
-                          className="rounded px-2 py-1 text-xs text-fg-3 hover:text-accent hover:bg-bg-0 transition-colors"
+                          className="rounded px-2 py-1 text-xs text-gf-text-muted hover:text-gf-primary hover:bg-gf-surface transition-colors"
                         >
                           ✎
                         </button>
+                        {/* Toggle active */}
                         <button
-                          aria-label={item.active ? `${item.code} deaktivieren` : `${item.code} aktivieren`}
+                          title={item.active ? t('serviceItems.table.deactivate') : t('serviceItems.table.activate')}
                           disabled={togglingId === item.id}
                           onClick={() => handleToggleActive(item)}
-                          className="rounded px-2 py-1 text-xs text-fg-3 hover:text-warn hover:bg-bg-0 transition-colors disabled:opacity-40"
+                          className="rounded px-2 py-1 text-xs text-gf-text-muted hover:text-gf-warning hover:bg-gf-surface transition-colors disabled:opacity-40"
                         >
-                          {togglingId === item.id
-                            ? <span className="inline-block h-3 w-3 animate-spin rounded-full border border-line border-t-warn" aria-hidden="true" />
-                            : item.active ? '⏸' : '▶'}
+                          {item.active ? '⏸' : '▶'}
                         </button>
+                        {/* Delete */}
                         <button
-                          aria-label={`${item.code} löschen`}
+                          title={t('serviceItems.table.delete')}
                           onClick={() => setDeleteTarget(item)}
-                          className="rounded px-2 py-1 text-xs text-fg-3 hover:text-err hover:bg-bg-0 transition-colors"
+                          className="rounded px-2 py-1 text-xs text-gf-text-muted hover:text-gf-danger hover:bg-gf-surface transition-colors"
                         >
                           ✕
                         </button>

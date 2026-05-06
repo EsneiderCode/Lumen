@@ -7,6 +7,8 @@ export interface AuthUser {
   fullName: string
   role: UserRole
   team: string | null
+  loginCode?: string | null
+  authMethod?: 'email' | 'pin' | 'offline-pin'
 }
 
 export interface AuthContextType {
@@ -14,6 +16,7 @@ export interface AuthContextType {
   role: UserRole | null
   isLoading: boolean
   signInWithEmail: (email: string, password: string) => Promise<{ user: AuthUser | null; error: string | null }>
+  signInWithPin: (loginCode: string, pin: string) => Promise<{ user: AuthUser | null; error: string | null }>
   signOut: () => Promise<void>
   resetPassword: (email: string) => Promise<{ error: string | null }>
 }

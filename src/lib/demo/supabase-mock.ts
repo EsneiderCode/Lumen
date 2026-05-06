@@ -11,7 +11,7 @@
  */
 
 import { getStore, saveStore, demoUuid } from './store'
-import { DEMO_PASSWORD, type DemoStore } from './fixtures'
+import { DEMO_PASSWORD, DEMO_TECH_PIN, type DemoStore } from './fixtures'
 
 type Row = Record<string, unknown>
 type FilterOp = 'eq' | 'gte' | 'lte' | 'is' | 'in'
@@ -279,13 +279,16 @@ function makeBuilder(table: keyof DemoStore): MockBuilder {
       return builder
     },
     single() {
-      return execute(state, 'single')
+      return execute(state, 'single') as Promise<{ data: Row | null; error: { message: string } | null }>
     },
     maybeSingle() {
-      return execute(state, 'maybe')
+      return execute(state, 'maybe') as Promise<{ data: Row | null; error: null }>
     },
     then(onFulfilled, onRejected) {
-      return execute(state, 'list').then(onFulfilled, onRejected)
+      return (execute(state, 'list') as Promise<{ data: Row[] | null; error: null; count?: number }>).then(
+        onFulfilled,
+        onRejected,
+      )
     },
     catch(onRejected) {
       return execute(state, 'list').catch(onRejected)
@@ -329,7 +332,14 @@ async function execute(state: BuilderState, kind: 'list' | 'single' | 'maybe' = 
 
   if (state.mode === 'insert') {
     const rows = Array.isArray(state.payload) ? state.payload : [state.payload!]
-    const inserted = rows.map((r) => ({ ...r, id: r.id ?? demoUuid(), created_at: r.created_at ?? new Date().toISOString() }))
+    const now = new Date().toISOString()
+    const inserted = rows.map((r) => ({
+      ...r,
+      id: r.id ?? demoUuid(),
+      created_at: r.created_at ?? now,
+      updated_at: r.updated_at ?? now,
+      ...(table === 'contractor_documents' ? { uploaded_at: r.uploaded_at ?? now } : {}),
+    }))
     ;(store[table] as unknown as Row[]).push(...inserted)
     saveStore(store)
     if (kind === 'single') return { data: inserted[0] ?? null, error: null }
@@ -338,7 +348,7 @@ async function execute(state: BuilderState, kind: 'list' | 'single' | 'maybe' = 
 
   if (state.mode === 'update') {
     const list = store[table] as unknown as Row[]
-    let updated: Row[] = []
+    const updated: Row[] = []
     for (let i = 0; i < list.length; i++) {
       const row = list[i]
       let match = state.filters.every((f) => applyFilter([row], f).length > 0)
@@ -356,11 +366,10 @@ async function execute(state: BuilderState, kind: 'list' | 'single' | 'maybe' = 
   if (state.mode === 'delete') {
     const list = store[table] as unknown as Row[]
     const survivors: Row[] = []
-    let deleted = 0
     for (const row of list) {
       const match = state.filters.every((f) => applyFilter([row], f).length > 0)
       if (match) {
-        deleted++
+        continue
       } else {
         survivors.push(row)
       }
@@ -512,6 +521,93 @@ function makeRpc() {
   }
 }
 
+// ── Functions ────────────────────────────────────────────────────────────────
+
+function makeFunctions() {
+  return {
+    async invoke(functionName: string, options: { method?: string; body?: Row } = {}) {
+      const store = getStore()
+
+      if (functionName === 'pin-login') {
+        const loginCode = String(options.body?.loginCode ?? '').toLowerCase()
+        const pin = String(options.body?.pin ?? '')
+        const user = store.profiles.find((p) =>
+          p.pin_login_code === loginCode &&
+          p.is_active &&
+          ['technician', 'contractor'].includes(String(p.role)),
+        )
+        if (!user || pin !== DEMO_TECH_PIN) {
+          return { data: null, error: { message: 'Invalid demo PIN (use 1234)' } }
+        }
+        user.last_pin_login_at = new Date().toISOString()
+        store._session = { user: { id: user.id, email: user.email ?? '' }, access_token: 'demo-pin-token' }
+        saveStore(store)
+        return {
+          data: {
+            accessToken: 'demo-pin-token',
+            expiresAt: Math.floor(Date.now() / 1000) + 60 * 60 * 12,
+            user: {
+              id: user.id,
+              email: user.email,
+              fullName: user.full_name,
+              role: user.role,
+              team: user.team,
+              loginCode: user.pin_login_code,
+            },
+          },
+          error: null,
+        }
+      }
+
+      if (functionName === 'admin-users') {
+        if (options.method === 'GET') {
+          return { data: { users: store.profiles }, error: null }
+        }
+
+        const body = options.body ?? {}
+        if (options.method === 'POST') {
+          const id = demoUuid()
+          const role = String(body.role ?? 'technician')
+          const user = {
+            id,
+            email: typeof body.email === 'string' && body.email ? body.email : null,
+            full_name: String(body.fullName ?? 'Neuer Benutzer'),
+            role,
+            team: (body.team as string | null) ?? null,
+            pin_login_code: role === 'admin' ? null : String(body.loginCode ?? '').toLowerCase(),
+            pin_set_at: body.pin ? new Date().toISOString() : null,
+            last_pin_login_at: null,
+            is_active: body.isActive !== false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }
+          store.profiles.push(user)
+          saveStore(store)
+          return { data: { users: store.profiles }, error: null }
+        }
+
+        if (options.method === 'PATCH') {
+          const id = String(body.id ?? '')
+          const user = store.profiles.find((p) => p.id === id)
+          if (!user) return { data: null, error: { message: 'Demo user not found' } }
+          if (body.email !== undefined) user.email = body.email as string | null
+          if (body.fullName !== undefined) user.full_name = String(body.fullName)
+          if (body.role !== undefined) user.role = String(body.role)
+          if (body.team !== undefined) user.team = body.team as string | null
+          if (body.loginCode !== undefined) user.pin_login_code = body.loginCode as string | null
+          if (body.isActive !== undefined) user.is_active = Boolean(body.isActive)
+          if (body.pin) user.pin_set_at = new Date().toISOString()
+          user.updated_at = new Date().toISOString()
+          saveStore(store)
+          return { data: { users: store.profiles }, error: null }
+        }
+      }
+
+      return { data: null, error: { message: `Function ${functionName} not supported in demo mode` } }
+    },
+  }
+}
+
 // ── Public client ───────────────────────────────────────────────────────────
 
 export function createDemoSupabaseClient() {
@@ -522,6 +618,7 @@ export function createDemoSupabaseClient() {
     auth: makeAuth(),
     storage: makeStorage(),
     rpc: makeRpc(),
+    functions: makeFunctions(),
   }
 }
 

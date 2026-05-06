@@ -55,7 +55,7 @@ export async function createServiceItem(
 ): Promise<{ data: ServiceItem | null; error: string | null }> {
   const { data, error } = await supabase
     .from('service_items')
-    .insert(payload)
+    .insert(payload as never)
     .select()
     .single()
   if (error) return { data: null, error: error.message }
@@ -69,7 +69,7 @@ export async function updateServiceItem(
 ): Promise<{ data: ServiceItem | null; error: string | null }> {
   const { data, error } = await supabase
     .from('service_items')
-    .update(payload)
+    .update(payload as never)
     .eq('id', id)
     .select()
     .single()

@@ -3,6 +3,14 @@ import type { UserRole, TeamColor, WorkOrderStatus, WorkType } from './enums'
 type PriorityLevel = 'normal' | 'alta' | 'urgente'
 type PhotoType = 'before' | 'during' | 'after'
 type MaterialUnit = 'm' | 'ud' | 'rollo' | 'caja'
+type ContractorDocumentType =
+  | 'gewerbeanmeldung'
+  | 'haftpflichtversicherung'
+  | 'unbedenklichkeit_finanzamt'
+  | 'unbedenklichkeit_sozialkasse'
+  | 'id_passport'
+  | 'subcontractor_agreement'
+type ContractorDocumentStatus = 'pending_review' | 'approved' | 'rejected'
 
 export type Database = {
   public: {
@@ -14,6 +22,9 @@ export type Database = {
           full_name: string
           role: UserRole
           team: TeamColor | null
+          pin_login_code: string | null
+          pin_set_at: string | null
+          last_pin_login_at: string | null
           is_active: boolean
           created_at: string
           updated_at: string
@@ -24,7 +35,10 @@ export type Database = {
           full_name: string
           role: UserRole
           team?: TeamColor | null
-          pin_code?: string | null
+          pin_login_code?: string | null
+          pin_hash?: string | null
+          pin_set_at?: string | null
+          last_pin_login_at?: string | null
           is_active?: boolean
           created_at?: string
           updated_at?: string
@@ -35,8 +49,99 @@ export type Database = {
           full_name?: string
           role?: UserRole
           team?: TeamColor | null
-          pin_code?: string | null
+          pin_login_code?: string | null
+          pin_hash?: string | null
+          pin_set_at?: string | null
+          last_pin_login_at?: string | null
           is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: never[]
+      }
+
+      pin_trusted_devices: {
+        Row: {
+          id: string
+          profile_id: string
+          device_id_hash: string
+          first_seen_at: string
+          last_seen_at: string
+          last_user_agent: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          profile_id: string
+          device_id_hash: string
+          first_seen_at?: string
+          last_seen_at?: string
+          last_user_agent?: string | null
+          created_at?: string
+        }
+        Update: {
+          profile_id?: string
+          device_id_hash?: string
+          first_seen_at?: string
+          last_seen_at?: string
+          last_user_agent?: string | null
+        }
+        Relationships: never[]
+      }
+
+      contractor_documents: {
+        Row: {
+          id: string
+          contractor_id: string
+          document_type: ContractorDocumentType
+          status: ContractorDocumentStatus
+          file_name: string
+          storage_path: string
+          mime_type: string | null
+          size_bytes: number | null
+          issued_at: string | null
+          expires_at: string | null
+          uploaded_by: string
+          uploaded_at: string
+          reviewed_by: string | null
+          reviewed_at: string | null
+          review_notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          contractor_id: string
+          document_type: ContractorDocumentType
+          status?: ContractorDocumentStatus
+          file_name: string
+          storage_path: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          issued_at?: string | null
+          expires_at?: string | null
+          uploaded_by: string
+          uploaded_at?: string
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          review_notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          contractor_id?: string
+          document_type?: ContractorDocumentType
+          status?: ContractorDocumentStatus
+          file_name?: string
+          storage_path?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          issued_at?: string | null
+          expires_at?: string | null
+          uploaded_by?: string
+          uploaded_at?: string
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          review_notes?: string | null
           updated_at?: string
         }
         Relationships: never[]

@@ -15,7 +15,7 @@ export function ContractorLayout() {
   const navItems: BottomNavItem[] = [
     { label: t('nav.dashboard'), path: ROUTES.CONTRACTOR.DASHBOARD, icon: Home },
     { label: t('nav.workOrders'), path: ROUTES.CONTRACTOR.ORDERS, icon: ClipboardList },
-    { label: t('nav.documents', { defaultValue: 'Dokumente' }), path: ROUTES.CONTRACTOR.DOCUMENTS, icon: FileText },
+    { label: t('nav.documents'), path: ROUTES.CONTRACTOR.DOCUMENTS, icon: FileText },
   ]
 
   return (

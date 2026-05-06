@@ -22,7 +22,7 @@ export function TechnicianLayout() {
 
   const navItems: BottomNavItem[] = [
     { label: t('nav.workOrders'), path: ROUTES.TECHNICIAN.ORDERS, icon: ClipboardList },
-    { label: t('nav.schedule', { defaultValue: 'Kalender' }), path: ROUTES.TECHNICIAN.SCHEDULE, icon: Calendar },
+    { label: t('nav.schedule'), path: ROUTES.TECHNICIAN.SCHEDULE, icon: Calendar },
   ]
 
   return (

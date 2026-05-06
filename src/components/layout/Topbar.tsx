@@ -22,7 +22,7 @@ export function Topbar({ onOpenSidebar }: TopbarProps) {
       <button
         onClick={onOpenSidebar}
         className="nx-tb-btn md:hidden"
-        aria-label={t('nav.menuOpen', { defaultValue: 'Menü öffnen' })}
+        aria-label={t('nav.menuOpen')}
       >
         <Menu size={18} strokeWidth={1.5} />
       </button>
@@ -34,8 +34,8 @@ export function Topbar({ onOpenSidebar }: TopbarProps) {
         <Search size={14} strokeWidth={1.5} />
         <input
           type="text"
-          placeholder={t('nav.search', { defaultValue: 'Suchen…' })}
-          aria-label="Suchen"
+          placeholder={t('nav.search')}
+          aria-label={t('nav.search')}
         />
         <span className="nx-kbd">⌘K</span>
       </div>
@@ -46,7 +46,7 @@ export function Topbar({ onOpenSidebar }: TopbarProps) {
       {/* Install CTA (if available) */}
       {isInstallable && (
         <button onClick={promptInstall} className="nx-tb-btn hidden lg:inline-flex">
-          {t('nav.installApp', { defaultValue: 'Install' })}
+          {t('nav.installApp')}
         </button>
       )}
 
