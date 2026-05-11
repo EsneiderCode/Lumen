@@ -235,6 +235,19 @@ export function RueckmeldungPage() {
     if (endTime) noteParts.push(`Ende: ${endTime}`)
     const notes = noteParts.length > 0 ? noteParts.join(' | ') : 'Rückmeldung gesendet'
 
+    // If the order is in 'executed' or 'returned', first move to 'rueckmeldung_pending'
+    // before transitioning to 'rueckmeldung_sent' (state machine requires the intermediate step)
+    if (order.status === 'executed' || order.status === 'returned') {
+      const { error: pendingError } = await transitionWorkOrderStatus(
+        id, 'rueckmeldung_pending', user.id, undefined, user.role,
+      )
+      if (pendingError) {
+        setError(pendingError)
+        setIsSending(false)
+        return
+      }
+    }
+
     const { error } = await transitionWorkOrderStatus(id, 'rueckmeldung_sent', user.id, notes, user.role)
     if (error) {
       setError(error)
