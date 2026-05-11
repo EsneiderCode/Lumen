@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { ClipboardList } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { fetchMyWorkOrders, type WorkOrderWithRelations } from '@/services/workOrderService'
@@ -18,6 +19,7 @@ const TEAM_COLORS: Record<string, { dot: string; badge: string }> = {
 }
 
 export function TechDashboard() {
+  const { t } = useTranslation()
   const L = useLabels()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -66,7 +68,7 @@ export function TechDashboard() {
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 className="font-display text-lg font-bold text-fg-1">
-              Hallo, {user?.fullName}
+              {t('techDashboard.greeting', { name: user?.fullName })}
             </h2>
             <p className="mt-0.5 text-sm text-fg-2">{today}</p>
           </div>
@@ -80,19 +82,19 @@ export function TechDashboard() {
       </div>
 
       {/* Stats row */}
-      <div className="mb-5 grid grid-cols-3 gap-2 sm:gap-3">
+      <div className="mb-5 grid grid-cols-3 gap-2 sm:gap-3" aria-live="polite" aria-busy={isLoading}>
         {isLoading
           ? Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="rounded-l border border-line bg-bg-1 p-3 text-center sm:p-4">
+              <div key={i} className="rounded-l border border-line bg-bg-1 p-3 text-center sm:p-4" aria-hidden="true">
                 <div className="mx-auto mb-2 h-1 w-8 rounded-full bg-line" />
                 <div className="mx-auto mb-1 h-6 w-6 animate-pulse rounded bg-line" />
                 <div className="mx-auto h-3 w-10 animate-pulse rounded bg-line" />
               </div>
             ))
           : [
-              { label: 'Heute', value: todayCount, color: 'bg-accent' },
-              { label: 'Offen', value: openCount, color: 'bg-warn' },
-              { label: 'Erledigt', value: doneCount, color: 'bg-ok' },
+              { label: t('techDashboard.stats.today'), value: todayCount, color: 'bg-accent' },
+              { label: t('techDashboard.stats.open'),  value: openCount,  color: 'bg-warn' },
+              { label: t('techDashboard.stats.done'),  value: doneCount,  color: 'bg-ok' },
             ].map((s) => (
               <div key={s.label} className="rounded-l border border-line bg-bg-1 p-3 text-center sm:p-4">
                 <div className={`mx-auto mb-2 h-1 w-8 rounded-full ${s.color}`} />
@@ -105,30 +107,30 @@ export function TechDashboard() {
       {/* Active orders */}
       <div className="nx-panel">
         <div className="nx-panel-head">
-          <h3 className="nx-panel-title">Meine Aufträge</h3>
+          <h3 className="nx-panel-title">{t('techDashboard.myOrders')}</h3>
           {orders.length > 0 && (
             <button
               onClick={() => navigate('/tech/orders')}
               className="nx-label hover:text-accent transition-colors"
             >
-              Alle anzeigen →
+              {t('techDashboard.viewAll')}
             </button>
           )}
         </div>
         <div className="nx-panel-body">
 
         {isLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="h-5 w-5 animate-spin rounded-full border-2 border-line border-t-accent" />
+          <div className="flex items-center justify-center py-8" role="status" aria-label="Wird geladen">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-line border-t-accent" aria-hidden="true" />
           </div>
         ) : activeOrders.length === 0 ? (
           <div className="flex flex-col items-center gap-2 py-6 text-center">
             <div className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-bg-0">
               <ClipboardList size={18} strokeWidth={1.5} className="text-fg-2" />
             </div>
-            <p className="text-sm font-medium text-fg-1">Keine aktiven Aufträge</p>
+            <p className="text-sm font-medium text-fg-1">{t('techDashboard.noOrders')}</p>
             <p className="text-xs text-fg-2">
-              Dir sind aktuell keine Aufträge zugewiesen.
+              {t('techDashboard.noOrdersDesc')}
             </p>
           </div>
         ) : (
@@ -137,6 +139,7 @@ export function TechDashboard() {
               <button
                 key={order.id}
                 onClick={() => navigate(`/tech/orders/${order.id}`)}
+                aria-label={`Auftrag ${order.order_number} öffnen`}
                 className="w-full rounded-s border border-accent/30 bg-bg-0 px-3 py-2.5 text-left transition-all active:scale-[0.99]"
               >
                 <div className="mb-1 flex items-center justify-between gap-2">

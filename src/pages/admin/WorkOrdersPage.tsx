@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
-import { ClipboardList } from 'lucide-react'
+import { ClipboardList, RefreshCw } from 'lucide-react'
 import {
   fetchWorkOrders,
   fetchClients,
@@ -233,34 +233,58 @@ export function WorkOrdersPage() {
 
       {/* Error */}
       {error && (
-        <div className="mb-4 rounded-s border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
-          {error}
+        <div role="alert" className="mb-4 flex items-center justify-between gap-4 rounded-s border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
+          <span>{error}</span>
+          <button
+            onClick={() => { setError(null); setPage(0) }}
+            aria-label="Erneut versuchen"
+            className="flex shrink-0 items-center gap-1.5 rounded-s border border-err/30 px-2.5 py-1 text-xs text-err hover:bg-err/10 transition-colors"
+          >
+            <RefreshCw size={12} strokeWidth={1.5} aria-hidden="true" />
+            Wiederholen
+          </button>
         </div>
       )}
 
       {/* Table */}
       <div className="rounded-l border border-line bg-bg-1 overflow-hidden">
         {isLoading ? (
-          <div className="flex items-center justify-center py-16">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-accent" />
+          <div className="flex items-center justify-center py-16" role="status" aria-label="Wird geladen">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-accent" aria-hidden="true" />
           </div>
         ) : orders.length === 0 ? (
-          <div className="py-16 text-center text-sm text-fg-2">
-            Keine Aufträge gefunden.
+          <div className="py-16 text-center">
+            <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full border border-line bg-bg-0">
+              <ClipboardList size={18} strokeWidth={1.5} className="text-fg-3" aria-hidden="true" />
+            </div>
+            <p className="text-sm font-medium text-fg-1">Keine Aufträge gefunden</p>
+            <p className="mt-1 text-xs text-fg-3">
+              {Object.keys(filters).length > 0 || debouncedSearch
+                ? 'Filter anpassen oder zurücksetzen.'
+                : 'Erstellen Sie den ersten Auftrag.'}
+            </p>
+            {Object.keys(filters).length === 0 && !debouncedSearch && (
+              <button
+                onClick={() => navigate('/admin/orders/new')}
+                className="mt-4 rounded-s border border-line px-4 py-2 text-xs text-fg-2 hover:border-accent hover:text-accent transition-colors"
+              >
+                + Neuer Auftrag
+              </button>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-line bg-bg-1">
-                  <th className="nx-label px-4 py-3 text-left">Auftrag #</th>
-                  <th className="nx-label px-4 py-3 text-left">Typ</th>
-                  <th className="nx-label px-4 py-3 text-left">Kunde / Projekt</th>
-                  <th className="nx-label px-4 py-3 text-left">Team</th>
-                  <th className="nx-label px-4 py-3 text-left">Priorität</th>
-                  <th className="nx-label px-4 py-3 text-left">Status</th>
-                  <th className="nx-label px-4 py-3 text-left">Datum</th>
-                  <th className="px-4 py-3" />
+                <tr className="border-b border-line bg-bg-2">
+                  <th scope="col" className="nx-label px-4 py-3 text-left">Auftrag #</th>
+                  <th scope="col" className="nx-label px-4 py-3 text-left">Typ</th>
+                  <th scope="col" className="nx-label px-4 py-3 text-left">Kunde / Projekt</th>
+                  <th scope="col" className="nx-label px-4 py-3 text-left hidden sm:table-cell">Team</th>
+                  <th scope="col" className="nx-label px-4 py-3 text-left hidden md:table-cell">Priorität</th>
+                  <th scope="col" className="nx-label px-4 py-3 text-left">Status</th>
+                  <th scope="col" className="nx-label px-4 py-3 text-left hidden lg:table-cell">Datum</th>
+                  <th scope="col" className="px-4 py-3"><span className="sr-only">Aktionen</span></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
@@ -282,7 +306,7 @@ export function WorkOrdersPage() {
                       <div className="font-medium text-fg-1">{order.clients?.code ?? '—'}</div>
                       <div className="text-xs text-fg-2">{order.projects?.code ?? '—'}</div>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 hidden sm:table-cell">
                       {order.assigned_team ? (
                         <div className="flex items-center gap-1.5">
                           <span className={`h-2 w-2 rounded-full ${TEAM_DOT[order.assigned_team]}`} />
@@ -292,7 +316,7 @@ export function WorkOrdersPage() {
                         <span className="text-fg-2">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 hidden md:table-cell">
                       <span className={`text-xs font-medium ${PRIORITY_COLORS[order.priority]}`}>
                         {L.priority(order.priority)}
                       </span>
@@ -302,23 +326,23 @@ export function WorkOrdersPage() {
                         {L.status(order.status)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-xs text-fg-2">
+                    <td className="px-4 py-3 text-xs text-fg-2 hidden lg:table-cell">
                       {new Date(order.created_at).toLocaleDateString('de-DE')}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => navigate(`/admin/orders/${order.id}`)}
+                          aria-label={`Auftrag ${order.order_number} öffnen`}
                           className={`rounded px-2.5 py-1.5 text-xs font-medium transition-colors ${
                             order.status === 'rueckmeldung_sent'
-                              ? 'text-warn hover:bg-warn'
+                              ? 'text-warn hover:bg-warn/10'
                               : 'text-fg-2 hover:bg-bg-0 hover:text-fg-1'
                           }`}
-                          title="Detail"
                         >
                           {order.status === 'rueckmeldung_sent' ? (
                             <span className="inline-flex items-center gap-1">
-                              <ClipboardList size={12} strokeWidth={1.5} />
+                              <ClipboardList size={12} strokeWidth={1.5} aria-hidden="true" />
                               RM
                             </span>
                           ) : (
@@ -328,23 +352,23 @@ export function WorkOrdersPage() {
                         {(order.status === 'created') && (
                           <button
                             onClick={() => navigate(`/admin/orders/${order.id}/assign`)}
+                            aria-label={`Auftrag ${order.order_number} zuweisen`}
                             className="rounded px-2.5 py-1.5 text-xs font-medium text-accent hover:bg-accent/10 transition-colors"
-                            title="Zuweisen"
                           >
                             Zuweisen
                           </button>
                         )}
                         <button
                           onClick={() => navigate(`/admin/orders/${order.id}/edit`)}
+                          aria-label={`Auftrag ${order.order_number} bearbeiten`}
                           className="rounded px-2.5 py-1.5 text-xs font-medium text-fg-2 hover:bg-bg-0 hover:text-fg-1 transition-colors"
-                          title="Bearbeiten"
                         >
                           Bearb.
                         </button>
                         <button
                           onClick={() => setDeleteId(order.id)}
+                          aria-label={`Auftrag ${order.order_number} löschen`}
                           className="rounded px-2.5 py-1.5 text-xs font-medium text-fg-2 hover:bg-err/10 hover:text-err transition-colors"
-                          title="Löschen"
                         >
                           Löschen
                         </button>
@@ -385,9 +409,14 @@ export function WorkOrdersPage() {
 
       {/* Delete confirmation modal */}
       {deleteId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-order-title"
+        >
           <div className="w-full max-w-sm rounded-l border border-line bg-bg-1 p-6">
-            <h3 className="mb-2 font-display text-base font-semibold text-fg-1">
+            <h3 id="delete-order-title" className="mb-2 font-display text-base font-semibold text-fg-1">
               Auftrag löschen?
             </h3>
             <p className="mb-5 text-sm text-fg-2">

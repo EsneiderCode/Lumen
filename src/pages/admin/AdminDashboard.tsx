@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { AlertTriangle } from 'lucide-react'
 import { fetchWorkOrders, type WorkOrderWithRelations } from '@/services/workOrderService'
 import type { WorkOrderStatus } from '@/types/enums'
@@ -30,6 +31,7 @@ function timeAgo(iso: string): string {
 }
 
 export function AdminDashboard() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [counts, setCounts] = useState<StatCounts>({ open: 0, inProgress: 0, pendingCert: 0, done: 0 })
   const [alerts, setAlerts] = useState<WorkOrderWithRelations[]>([])
@@ -72,10 +74,10 @@ export function AdminDashboard() {
   }, [])
 
   const stats = [
-    { label: 'Offene Aufträge',           value: counts.open,        color: 'bg-accent' },
-    { label: 'In Bearbeitung',            value: counts.inProgress,  color: 'bg-info' },
-    { label: 'Zertifizierung ausstehend', value: counts.pendingCert, color: 'bg-warn' },
-    { label: 'Abgeschlossen · Monat',     value: counts.done,        color: 'bg-ok' },
+    { label: t('adminDashboard.kpi.openOrders'), value: counts.open,        color: 'bg-accent' },
+    { label: t('adminDashboard.kpi.inProgress'), value: counts.inProgress,  color: 'bg-info' },
+    { label: t('adminDashboard.kpi.pendingCert'),value: counts.pendingCert, color: 'bg-warn' },
+    { label: t('adminDashboard.kpi.done'),       value: counts.done,        color: 'bg-ok' },
   ]
 
   return (
@@ -87,14 +89,14 @@ export function AdminDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-live="polite" aria-busy={isLoading}>
         {stats.map((stat) => (
           <div key={stat.label} className="nx-kpi-card">
             <p className="nx-kpi-label">{stat.label}</p>
-            <p className="nx-kpi-value">
-              {isLoading ? <span className="text-fg-3">—</span> : stat.value}
+            <p className="nx-kpi-value" aria-label={`${stat.label}: ${isLoading ? 'wird geladen' : stat.value}`}>
+              {isLoading ? <span className="text-fg-3" aria-hidden="true">—</span> : stat.value}
             </p>
-            <div className={`h-0.5 w-8 rounded-full ${stat.color}`} />
+            <div className={`h-0.5 w-8 rounded-full ${stat.color}`} aria-hidden="true" />
           </div>
         ))}
       </div>
@@ -102,26 +104,29 @@ export function AdminDashboard() {
       {/* Attention feed */}
       <div className="nx-panel mt-8">
         <div className="nx-panel-head">
-          <h3 className="nx-panel-title">Benötigt Aufmerksamkeit</h3>
+          <h3 className="nx-panel-title">{t('adminDashboard.attention.title')}</h3>
           <span className="nx-panel-meta tabular-nums">
-            {alerts.length} offen
+            {t('adminDashboard.attention.open', { count: alerts.length })}
           </span>
         </div>
         <div>
           {isLoading ? (
-            <div className="nx-panel-body flex items-center justify-center py-6">
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-line border-t-accent" />
+            <div className="nx-panel-body flex items-center justify-center py-6" role="status" aria-label="Wird geladen">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-line border-t-accent" aria-hidden="true" />
             </div>
           ) : alerts.length === 0 ? (
-            <div className="nx-panel-body text-sm text-fg-2">Keine offenen Meldungen.</div>
+            <div className="nx-panel-body text-sm text-fg-2">{t('adminDashboard.attention.empty')}</div>
           ) : (
             alerts.map((order) => {
               const sev = order.status === 'client_rejected' ? 'crit' : 'warn'
-              const label = order.status === 'client_rejected' ? 'Abgelehnt' : 'Zurück'
+              const label = order.status === 'client_rejected'
+                ? t('adminDashboard.attention.rejected')
+                : t('adminDashboard.attention.returned')
               return (
                 <button
                   key={order.id}
                   onClick={() => navigate(`/admin/orders/${order.id}`)}
+                  aria-label={`Auftrag ${order.order_number} öffnen`}
                   className="nx-alert-row w-full text-left hover:bg-bg-2 transition-colors"
                 >
                   <span className={`nx-alert-sev ${sev}`}>
@@ -152,13 +157,12 @@ export function AdminDashboard() {
       {/* Welcome panel */}
       <div className="nx-panel mt-6">
         <div className="nx-panel-head">
-          <h3 className="nx-panel-title">Willkommen bei LUMEN</h3>
-          <span className="nx-panel-meta">v1.0</span>
+          <h3 className="nx-panel-title">{t('adminDashboard.welcome.title')}</h3>
+          <span className="nx-panel-meta">{t('adminDashboard.welcome.version')}</span>
         </div>
         <div className="nx-panel-body">
           <p className="text-sm text-fg-2">
-            Zentrale Betriebsplattform für HMR Nexus Engineering GmbH. Aufträge, Zertifizierungen und
-            Personalverwaltung an einem Ort.
+            {t('adminDashboard.welcome.desc')}
           </p>
         </div>
       </div>

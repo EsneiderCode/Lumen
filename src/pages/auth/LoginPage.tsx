@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
+import { Eye, EyeOff } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { LanguageSelector } from '@/components/ui/LanguageSelector'
 import { ROUTES } from '@/config/routes'
@@ -16,6 +17,7 @@ export function LoginPage() {
   const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const navigate = useNavigate()
@@ -43,30 +45,25 @@ export function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center nexus-bg px-4">
-      {/* Subtle cyan glow */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-80 w-125 -translate-x-1/2 rounded-full bg-accent/8 blur-3xl" />
-      </div>
-
-      <div className="relative z-10 w-full max-w-sm">
+      <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-l border border-accent/20 bg-bg-1">
-            <span className="font-display text-2xl font-bold text-accent">L</span>
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-l border border-line bg-bg-1">
+            <span className="font-display text-2xl font-bold text-accent" aria-hidden="true">L</span>
           </div>
           <h1 className="font-display text-2xl font-bold text-fg-1">LUMEN</h1>
           <p className="mt-1 text-sm text-fg-2">Nexus Engineering Operations</p>
         </div>
 
         {/* Card */}
-        <div className="rounded-l border border-line-s bg-bg-1 p-6">
+        <div className="rounded-l border border-line bg-bg-1 p-6">
           {error && (
-            <div className="mb-4 rounded-s border border-err/20 bg-err/10 px-4 py-3 text-sm text-err">
+            <div role="alert" id="login-error" className="mb-4 rounded-s border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
               {error}
             </div>
           )}
 
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-4" aria-describedby={error ? 'login-error' : undefined} noValidate>
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-fg-3">
                 {t('auth.email')}
@@ -78,7 +75,8 @@ export function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
-                className="mt-1 block w-full rounded-s border border-line-s bg-bg-2 px-3 py-2.5 text-sm text-fg-1 placeholder-fg-4 transition-colors focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none"
+                aria-invalid={!!error}
+                className="mt-1 block w-full rounded-s border border-line-s bg-bg-2 px-3 py-2.5 text-sm text-fg-1 placeholder:text-fg-4 transition-colors focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none"
                 placeholder="name@nexus-engineering.de"
               />
             </div>
@@ -86,20 +84,33 @@ export function LoginPage() {
               <label htmlFor="password" className="block text-sm font-medium text-fg-3">
                 {t('auth.password')}
               </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                autoComplete="current-password"
-                className="mt-1 block w-full rounded-s border border-line-s bg-bg-2 px-3 py-2.5 text-sm text-fg-1 placeholder-fg-4 transition-colors focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none"
-              />
+              <div className="relative mt-1">
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                  aria-invalid={!!error}
+                  className="block w-full rounded-s border border-line-s bg-bg-2 px-3 py-2.5 pr-10 text-sm text-fg-1 placeholder:text-fg-4 transition-colors focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
+                  className="absolute inset-y-0 right-0 flex items-center px-3 text-fg-3 hover:text-fg-1 transition-colors"
+                >
+                  {showPassword
+                    ? <EyeOff size={16} strokeWidth={1.5} aria-hidden="true" />
+                    : <Eye size={16} strokeWidth={1.5} aria-hidden="true" />}
+                </button>
+              </div>
             </div>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full rounded-s bg-accent px-4 py-2.5 text-sm font-semibold text-fg-1 transition-colors hover:bg-accent disabled:opacity-50"
+              className="w-full rounded-s bg-accent px-4 py-2.5 text-sm font-semibold text-ink transition-opacity hover:opacity-90 disabled:opacity-50"
             >
               {isSubmitting ? t('auth.signingIn') : t('auth.signIn')}
             </button>
