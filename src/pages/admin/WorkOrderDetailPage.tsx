@@ -266,16 +266,30 @@ export function WorkOrderDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-accent" />
+      <div className="flex items-center justify-center py-20" role="status" aria-label="Wird geladen">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-accent" aria-hidden="true" />
       </div>
     )
   }
 
   if (!order) {
     return (
-      <div className="rounded-s border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
-        {error ?? 'Auftrag nicht gefunden'}
+      <div role="alert" className="rounded-s border border-err/30 bg-err/10 px-4 py-4 text-sm text-err">
+        <p className="font-semibold">{error ?? 'Auftrag nicht gefunden'}</p>
+        <div className="mt-3 flex gap-2">
+          <button
+            onClick={() => navigate('/admin/orders')}
+            className="rounded-s border border-err/30 px-3 py-1.5 text-xs text-err hover:bg-err/10 transition-colors"
+          >
+            ← Zur Übersicht
+          </button>
+          <button
+            onClick={() => window.location.reload()}
+            className="rounded-s border border-err/30 px-3 py-1.5 text-xs text-err hover:bg-err/10 transition-colors"
+          >
+            Erneut versuchen
+          </button>
+        </div>
       </div>
     )
   }
@@ -529,7 +543,7 @@ export function WorkOrderDetailPage() {
       )}
 
       {error && (
-        <div className="rounded-s border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
+        <div role="alert" className="rounded-s border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
           {error}
         </div>
       )}
@@ -860,7 +874,10 @@ export function WorkOrderDetailPage() {
       {/* ── Modal ── */}
       {modal.type && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Aktion bestätigen"
           onClick={(e) => { if (e.target === e.currentTarget) closeModal() }}
         >
           <div className="w-full max-w-sm rounded-l border border-line bg-bg-1 p-6">

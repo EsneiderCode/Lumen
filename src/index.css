@@ -77,6 +77,20 @@ h1, h2, h3 {
   letter-spacing: -0.02em;
 }
 
+/* ─── Focus ring (WCAG 2.4.7 — keyboard focus visible) ─────────────────── */
+/* Use focus-visible so mouse users don't see outlines; keyboard users do. */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+/* Inputs manage focus via border + ring utilities — suppress double ring.  */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+}
+
 /* ─── Scrollbar styling (webkit) ──────────────────────────────────────── */
 ::-webkit-scrollbar {
   width: 6px;

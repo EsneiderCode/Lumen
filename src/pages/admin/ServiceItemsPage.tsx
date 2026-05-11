@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { FileText } from 'lucide-react'
 import {
   fetchServiceItems,
   createServiceItem,
@@ -36,6 +38,7 @@ const EMPTY_FORM: ServiceItemPayload = {
   description_es: null,
   unit: null,
   unit_price: null,
+  unit_price_external: null,
   operator_id: null,
   client_id: null,
   detail_form: null,
@@ -47,7 +50,7 @@ const EMPTY_FORM: ServiceItemPayload = {
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 function fmtPrice(p: number | null) {
-  if (p == null) return <span className="italic text-gf-text-placeholder">Angebot</span>
+  if (p == null) return <span className="italic text-fg-4">Angebot</span>
   return <span>{p.toLocaleString('de-DE', { minimumFractionDigits: 2 })} €</span>
 }
 
@@ -62,21 +65,23 @@ interface ModalProps {
 }
 
 function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalProps) {
+  const { t } = useTranslation()
   const isEdit = item !== null
   const [form, setForm] = useState<ServiceItemPayload>(
     isEdit
       ? {
-          code:          item.code,
-          description_de: item.description_de,
-          description_es: item.description_es,
-          unit:          item.unit,
-          unit_price:    item.unit_price,
-          operator_id:   item.operator_id,
-          client_id:     item.client_id,
-          detail_form:   item.detail_form,
-          display_order: item.display_order,
-          active:        item.active,
-          notes:         item.notes,
+          code:                item.code,
+          description_de:      item.description_de,
+          description_es:      item.description_es,
+          unit:                item.unit,
+          unit_price:          item.unit_price,
+          unit_price_external: item.unit_price_external,
+          operator_id:         item.operator_id,
+          client_id:           item.client_id,
+          detail_form:         item.detail_form,
+          display_order:       item.display_order,
+          active:              item.active,
+          notes:               item.notes,
         }
       : { ...EMPTY_FORM },
   )
@@ -87,25 +92,25 @@ function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalP
     setForm((f) => ({ ...f, [k]: v }))
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!form.code.trim() || !form.description_de.trim()) {
-      setErr('Code und Deutsche Beschreibung sind Pflichtfelder.')
+      setErr(t('catalog.errorRequired'))
       return
     }
     setSaving(true)
     setErr(null)
     const payload: ServiceItemPayload = {
       ...form,
-      code:          form.code.trim(),
+      code:           form.code.trim(),
       description_de: form.description_de.trim(),
       description_es: form.description_es?.trim() || null,
-      unit:          form.unit || null,
-      unit_price:    form.unit_price,
-      operator_id:   form.operator_id || null,
-      client_id:     form.client_id || null,
-      detail_form:   (form.detail_form || null) as ServiceItemPayload['detail_form'],
-      notes:         form.notes?.trim() || null,
+      unit:           form.unit || null,
+      unit_price:     form.unit_price,
+      operator_id:    form.operator_id || null,
+      client_id:      form.client_id || null,
+      detail_form:    (form.detail_form || null) as ServiceItemPayload['detail_form'],
+      notes:          form.notes?.trim() || null,
     }
     const result = isEdit
       ? await updateServiceItem(item!.id, payload)
@@ -119,34 +124,36 @@ function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalP
   }
 
   const inputCls =
-    'w-full rounded-gf-btn border border-gf-border bg-gf-base px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary'
-  const labelCls = 'block text-[10px] font-medium uppercase tracking-widest text-gf-text-muted mb-1.5'
+    'w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent'
+  const labelCls = 'block text-[10px] font-medium uppercase tracking-widest text-fg-3 mb-1.5'
   const selectStyle = { colorScheme: 'dark' } as React.CSSProperties
+  const modalId = 'service-item-modal-title'
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/80 px-4 py-8"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={modalId}
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div className="w-full max-w-2xl rounded-gf-card border border-gf-border bg-gf-card overflow-hidden"
-           style={{ boxShadow: '0 0 0 1px #333, 0 24px 48px rgba(0,0,0,0.6)' }}>
+      <div className="w-full max-w-2xl rounded-l border border-line bg-bg-1 overflow-hidden">
 
         {/* Accent top bar */}
-        <div className="h-0.5 w-full bg-gf-primary" />
+        <div className="h-0.5 w-full bg-accent" aria-hidden="true" />
 
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-gf-border bg-gf-surface px-6 py-4">
+        <div className="flex items-center justify-between border-b border-line px-6 py-4">
           <div>
-            <p className="text-[10px] uppercase tracking-widest text-gf-text-muted">
-              Service-Katalog
-            </p>
-            <h3 className="font-display text-base font-bold text-gf-text-inverse mt-0.5">
-              {isEdit ? 'Artikel bearbeiten' : 'Neuer Artikel'}
+            <p className="nx-label">{t('catalog.modal.section')}</p>
+            <h3 id={modalId} className="font-display text-base font-bold text-fg-1 mt-0.5">
+              {isEdit ? t('catalog.modal.titleEdit') : t('catalog.modal.titleCreate')}
             </h3>
           </div>
           <button
             onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-gf-btn border border-gf-border text-gf-text-muted hover:border-gf-text hover:text-gf-text transition-colors text-sm"
+            aria-label={t('catalog.actions.cancel')}
+            className="flex h-7 w-7 items-center justify-center rounded-s border border-line text-fg-3 hover:border-fg-1 hover:text-fg-1 transition-colors"
           >
             ✕
           </button>
@@ -156,13 +163,11 @@ function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalP
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
 
           {/* ── Section: Identifikation ── */}
-          <div className="rounded-gf-card border border-gf-border bg-gf-surface p-4 space-y-4">
-            <p className="text-[10px] uppercase tracking-widest text-gf-primary font-medium">
-              Identifikation
-            </p>
+          <div className="rounded-l border border-line bg-bg-2 p-4 space-y-4">
+            <p className="nx-label text-accent">{t('catalog.sections.identification')}</p>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className={labelCls}>SAP-Code *</label>
+                <label className={labelCls}>{t('catalog.fields.sapCode')}</label>
                 <input
                   className={inputCls}
                   value={form.code}
@@ -171,7 +176,7 @@ function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalP
                 />
               </div>
               <div>
-                <label className={labelCls}>Einheit</label>
+                <label className={labelCls}>{t('catalog.fields.unit')}</label>
                 <select
                   className={inputCls}
                   style={selectStyle}
@@ -184,7 +189,7 @@ function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalP
               </div>
             </div>
             <div>
-              <label className={labelCls}>Beschreibung (DE) *</label>
+              <label className={labelCls}>{t('catalog.fields.descDe')}</label>
               <input
                 className={inputCls}
                 value={form.description_de}
@@ -193,7 +198,7 @@ function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalP
               />
             </div>
             <div>
-              <label className={labelCls}>Descripción (ES)</label>
+              <label className={labelCls}>{t('catalog.fields.descEs')}</label>
               <input
                 className={inputCls}
                 value={form.description_es ?? ''}
@@ -204,13 +209,11 @@ function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalP
           </div>
 
           {/* ── Section: Preis & Reihenfolge ── */}
-          <div className="rounded-gf-card border border-gf-border bg-gf-surface p-4 space-y-4">
-            <p className="text-[10px] uppercase tracking-widest text-gf-primary font-medium">
-              Preis & Reihenfolge
-            </p>
+          <div className="rounded-l border border-line bg-bg-2 p-4 space-y-4">
+            <p className="nx-label text-accent">{t('catalog.sections.priceOrder')}</p>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className={labelCls}>Preis (€ netto) — leer = Nach Angebot</label>
+                <label className={labelCls}>{t('catalog.fields.price')}</label>
                 <input
                   type="number"
                   step="0.01"
@@ -222,26 +225,36 @@ function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalP
                 />
               </div>
               <div>
-                <label className={labelCls}>Anzeigereihenfolge</label>
+                <label className={labelCls}>{t('catalog.fields.priceExternal')}</label>
                 <input
                   type="number"
-                  step="1"
+                  step="0.01"
+                  min="0"
                   className={inputCls}
-                  value={form.display_order}
-                  onChange={(e) => set('display_order', Number(e.target.value))}
+                  value={form.unit_price_external ?? ''}
+                  onChange={(e) => set('unit_price_external', e.target.value === '' ? null : Number(e.target.value))}
+                  placeholder="0.00"
                 />
               </div>
+            </div>
+            <div>
+              <label className={labelCls}>{t('catalog.fields.displayOrder')}</label>
+              <input
+                type="number"
+                step="1"
+                className={inputCls}
+                value={form.display_order}
+                onChange={(e) => set('display_order', Number(e.target.value))}
+              />
             </div>
           </div>
 
           {/* ── Section: Zuordnung ── */}
-          <div className="rounded-gf-card border border-gf-border bg-gf-surface p-4 space-y-4">
-            <p className="text-[10px] uppercase tracking-widest text-gf-primary font-medium">
-              Zuordnung
-            </p>
+          <div className="rounded-l border border-line bg-bg-2 p-4 space-y-4">
+            <p className="nx-label text-accent">{t('catalog.sections.assignment')}</p>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className={labelCls}>Betreiber (Operator)</label>
+                <label className={labelCls}>{t('catalog.fields.operator')}</label>
                 <select
                   className={inputCls}
                   style={selectStyle}
@@ -255,7 +268,7 @@ function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalP
                 </select>
               </div>
               <div>
-                <label className={labelCls}>Kunde (Client)</label>
+                <label className={labelCls}>{t('catalog.fields.client')}</label>
                 <select
                   className={inputCls}
                   style={selectStyle}
@@ -270,7 +283,7 @@ function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalP
               </div>
             </div>
             <div>
-              <label className={labelCls}>Detail-Formular (technische Route)</label>
+              <label className={labelCls}>{t('catalog.fields.detailForm')}</label>
               <select
                 className={inputCls}
                 style={selectStyle}
@@ -286,7 +299,7 @@ function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalP
 
           {/* ── Notizen ── */}
           <div>
-            <label className={labelCls}>Notizen</label>
+            <label className={labelCls}>{t('catalog.fields.notes')}</label>
             <textarea
               rows={2}
               className={inputCls}
@@ -298,41 +311,40 @@ function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalP
 
           {/* Active toggle (edit only) */}
           {isEdit && (
-            <label className="flex items-center gap-3 cursor-pointer rounded-gf-btn border border-gf-border bg-gf-surface px-4 py-3 hover:border-gf-primary/50 transition-colors">
+            <label className="flex items-center gap-3 cursor-pointer rounded-s border border-line bg-bg-2 px-4 py-3 hover:border-accent/50 transition-colors">
               <input
                 type="checkbox"
                 checked={form.active}
                 onChange={(e) => set('active', e.target.checked)}
-                className="accent-[#5B9BF6]"
               />
-              <span className="text-sm text-gf-text">Artikel aktiv</span>
-              <span className="ml-auto text-xs text-gf-text-muted">
-                {form.active ? 'Sichtbar im Katalog' : 'Versteckt'}
+              <span className="text-sm text-fg-1">{t('catalog.fields.itemActive')}</span>
+              <span className="ml-auto text-xs text-fg-3">
+                {form.active ? t('catalog.status.visibleInCatalog') : t('catalog.status.hidden')}
               </span>
             </label>
           )}
 
           {err && (
-            <p className="rounded-gf-btn border border-gf-accent/40 bg-gf-accent-light px-4 py-2.5 text-sm text-gf-accent">
+            <p role="alert" className="rounded-s border border-err/40 bg-err/10 px-4 py-2.5 text-sm text-err">
               {err}
             </p>
           )}
 
           {/* Actions */}
-          <div className="flex justify-end gap-3 pt-3 border-t border-gf-border">
+          <div className="flex justify-end gap-3 pt-3 border-t border-line">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-gf-btn border border-gf-border px-4 py-2 text-sm text-gf-text-muted hover:text-gf-text hover:border-gf-text/30 transition-colors"
+              className="rounded-s border border-line px-4 py-2 text-sm text-fg-3 hover:text-fg-1 hover:border-fg-3 transition-colors"
             >
-              Abbrechen
+              {t('catalog.actions.cancel')}
             </button>
             <button
               type="submit"
               disabled={saving}
-              className="rounded-gf-btn bg-gf-primary px-6 py-2 text-sm font-medium text-white disabled:opacity-50 hover:opacity-90 transition-opacity"
+              className="rounded-s bg-accent px-6 py-2 text-sm font-medium text-ink disabled:opacity-50 hover:opacity-90 transition-opacity"
             >
-              {saving ? '[SPEICHERN…]' : isEdit ? 'Speichern' : 'Erstellen'}
+              {saving ? t('catalog.actions.saving') : isEdit ? t('catalog.actions.save') : t('catalog.actions.create')}
             </button>
           </div>
         </form>
@@ -351,42 +363,41 @@ interface DeleteDialogProps {
 }
 
 function DeleteDialog({ item, onConfirm, onCancel, deleting }: DeleteDialogProps) {
+  const { t } = useTranslation()
+  const dialogId = 'delete-dialog-title'
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={dialogId}
       onClick={(e) => { if (e.target === e.currentTarget) onCancel() }}
     >
-      <div className="w-full max-w-md rounded-gf-card border border-gf-border bg-gf-card overflow-hidden"
-           style={{ boxShadow: '0 0 0 1px #333, 0 24px 48px rgba(0,0,0,0.6)' }}>
-        {/* Accent top bar — red for destructive */}
-        <div className="h-0.5 w-full bg-gf-danger" />
+      <div className="w-full max-w-md rounded-l border border-line bg-bg-1 overflow-hidden">
+        <div className="h-0.5 w-full bg-err" aria-hidden="true" />
         <div className="p-6 space-y-4">
           <div>
-            <p className="text-[10px] uppercase tracking-widest text-gf-danger font-medium mb-1">
-              Achtung — Irreversibel
-            </p>
-            <h3 className="font-display text-base font-bold text-gf-text-inverse">Artikel löschen</h3>
+            <p className="nx-label text-err mb-1">{t('catalog.delete.warning')}</p>
+            <h3 id={dialogId} className="font-display text-base font-bold text-fg-1">{t('catalog.delete.title')}</h3>
           </div>
-          <div className="rounded-gf-btn border border-gf-border bg-gf-surface px-4 py-3">
-            <p className="font-mono text-sm font-semibold text-gf-text">{item.code}</p>
-            <p className="text-xs text-gf-text-muted mt-0.5 line-clamp-1">{item.description_de}</p>
+          <div className="rounded-s border border-line bg-bg-2 px-4 py-3">
+            <p className="font-mono text-sm font-semibold text-fg-1">{item.code}</p>
+            <p className="text-xs text-fg-3 mt-0.5 line-clamp-1">{item.description_de}</p>
           </div>
-          <p className="text-sm text-gf-text-muted">
-            Diese Aktion löscht den Artikel dauerhaft aus dem Katalog und kann nicht rückgängig gemacht werden.
-          </p>
-          <div className="flex justify-end gap-3 pt-2 border-t border-gf-border">
+          <p className="text-sm text-fg-2">{t('catalog.delete.confirm')}</p>
+          <div className="flex justify-end gap-3 pt-2 border-t border-line">
             <button
               onClick={onCancel}
-              className="rounded-gf-btn border border-gf-border px-4 py-2 text-sm text-gf-text-muted hover:text-gf-text hover:border-gf-text/30 transition-colors"
+              className="rounded-s border border-line px-4 py-2 text-sm text-fg-3 hover:text-fg-1 hover:border-fg-3 transition-colors"
             >
-              Abbrechen
+              {t('catalog.actions.cancel')}
             </button>
             <button
               onClick={onConfirm}
               disabled={deleting}
-              className="rounded-gf-btn bg-gf-danger px-5 py-2 text-sm font-medium text-white disabled:opacity-50 hover:opacity-90 transition-opacity"
+              className="rounded-s bg-err px-5 py-2 text-sm font-medium text-white disabled:opacity-50 hover:opacity-90 transition-opacity"
             >
-              {deleting ? '[LÖSCHEN…]' : 'Endgültig löschen'}
+              {deleting ? t('catalog.delete.deleting') : t('catalog.delete.action')}
             </button>
           </div>
         </div>
@@ -402,6 +413,7 @@ function DeleteDialog({ item, onConfirm, onCancel, deleting }: DeleteDialogProps
  * operator contracts. Supports create, edit, deactivate, and delete.
  */
 export function ServiceItemsPage() {
+  const { t } = useTranslation()
   const [items, setItems] = useState<ServiceItemWithRelations[]>([])
   const [operators, setOperators] = useState<RefRow[]>([])
   const [clients, setClients] = useState<RefRow[]>([])
@@ -417,7 +429,6 @@ export function ServiceItemsPage() {
   const [deleting, setDeleting] = useState(false)
   const [togglingId, setTogglingId] = useState<string | null>(null)
 
-  // Load reference data once
   useEffect(() => {
     fetchOperators().then(({ data }) => setOperators(data as RefRow[]))
     fetchClients().then(({ data }) => setClients(data as RefRow[]))
@@ -435,7 +446,6 @@ export function ServiceItemsPage() {
     load()
   }, [includeInactive])
 
-  // Filter operators/clients from loaded items for dropdown
   const visibleOperators = Array.from(
     new Map(items.filter((i) => i.operators).map((i) => [i.operators!.id, i.operators!])).values(),
   )
@@ -476,40 +486,47 @@ export function ServiceItemsPage() {
     load()
   }
 
+  const selectStyle = { colorScheme: 'dark' } as React.CSSProperties
+  const hasFilters = Boolean(search || operatorFilter || clientFilter)
+
   return (
     <div>
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="nx-page-header">
         <div>
-          <h2 className="font-display text-xl font-bold text-gf-text">Service-Katalog</h2>
-          <p className="text-sm text-gf-text-muted">
-            {filtered.length} Artikel — Vertragliche Leistungscodes
+          <h2 className="nx-page-title">{t('catalog.title')}</h2>
+          <p className="nx-label mt-2 tabular-nums">
+            {t('catalog.subtitleCount', { count: filtered.length })}
           </p>
         </div>
         <button
           onClick={() => setModalItem('new')}
-          className="rounded-gf-btn bg-gf-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 transition-opacity"
+          className="flex items-center gap-2 rounded-s bg-accent px-4 py-2 text-sm font-semibold text-ink hover:opacity-90 transition-opacity"
         >
-          + Neuer Artikel
+          <span aria-hidden="true">+</span>
+          {t('catalog.newItem')}
         </button>
       </div>
 
       {/* Filters */}
       <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <input
-          type="text"
-          placeholder="Suchen (Code, Beschreibung)…"
+          type="search"
+          placeholder={t('catalog.filter.search')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text placeholder:text-gf-text-placeholder focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+          aria-label={t('catalog.filter.search')}
+          className="rounded-s border border-line bg-bg-1 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
         />
         <select
           value={operatorFilter}
           onChange={(e) => setOperatorFilter(e.target.value)}
-          className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+          aria-label={t('catalog.filter.allOperators')}
+          style={selectStyle}
+          className="rounded-s border border-line bg-bg-1 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
         >
-          <option value="">Alle Betreiber</option>
-          <option value="__null__">— Global (kein Betreiber)</option>
+          <option value="">{t('catalog.filter.allOperators')}</option>
+          <option value="__null__">{t('catalog.filter.globalOperator')}</option>
           {visibleOperators.map((op) => (
             <option key={op.id} value={op.id}>{op.code} — {op.name}</option>
           ))}
@@ -517,114 +534,130 @@ export function ServiceItemsPage() {
         <select
           value={clientFilter}
           onChange={(e) => setClientFilter(e.target.value)}
-          className="rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text focus:border-gf-primary focus:outline-none focus:ring-1 focus:ring-gf-primary"
+          aria-label={t('catalog.filter.allClients')}
+          style={selectStyle}
+          className="rounded-s border border-line bg-bg-1 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
         >
-          <option value="">Alle Kunden</option>
+          <option value="">{t('catalog.filter.allClients')}</option>
           {visibleClients.map((cl) => (
             <option key={cl.id} value={cl.id}>{cl.code} — {cl.name}</option>
           ))}
         </select>
-        <label className="flex items-center gap-2 rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-sm text-gf-text cursor-pointer">
+        <label className="flex items-center gap-2 rounded-s border border-line bg-bg-1 px-3 py-2 text-sm text-fg-1 cursor-pointer hover:border-accent transition-colors">
           <input
             type="checkbox"
             checked={includeInactive}
             onChange={(e) => setIncludeInactive(e.target.checked)}
           />
-          <span>Inaktive anzeigen</span>
+          <span>{t('catalog.filter.showInactive')}</span>
         </label>
       </div>
 
-      {/* Table */}
+      {/* Table / states */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-gf-border border-t-gf-primary" />
+        <div className="flex items-center justify-center py-20" role="status" aria-label="Wird geladen">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-accent" aria-hidden="true" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="rounded-gf-card border border-gf-border bg-gf-card py-16 text-center">
-          <p className="text-2xl">📋</p>
-          <p className="mt-2 text-sm font-medium text-gf-text">Keine Artikel gefunden</p>
+        <div className="rounded-l border border-line bg-bg-1 py-16 text-center">
+          <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full border border-line bg-bg-0">
+            <FileText size={18} strokeWidth={1.5} className="text-fg-3" aria-hidden="true" />
+          </div>
+          <p className="text-sm font-medium text-fg-1">{t('catalog.empty')}</p>
+          <p className="mt-1 text-xs text-fg-3">
+            {hasFilters
+              ? 'Filter anpassen oder zurücksetzen.'
+              : 'Neuen Artikel anlegen, um zu beginnen.'}
+          </p>
+          {!hasFilters && (
+            <button
+              onClick={() => setModalItem('new')}
+              className="mt-4 rounded-s border border-line px-4 py-2 text-xs text-fg-2 hover:border-accent hover:text-accent transition-colors"
+            >
+              {t('catalog.newItem')}
+            </button>
+          )}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-gf-card border border-gf-border bg-gf-card">
+        <div className="overflow-hidden rounded-l border border-line bg-bg-1">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="border-b border-gf-border bg-gf-surface">
+              <thead className="border-b border-line bg-bg-2">
                 <tr>
-                  <th className="px-3 py-2 text-left font-medium text-gf-text-muted whitespace-nowrap">Code</th>
-                  <th className="px-3 py-2 text-left font-medium text-gf-text-muted">Beschreibung (DE)</th>
-                  <th className="px-3 py-2 text-left font-medium text-gf-text-muted hidden lg:table-cell">Descripción (ES)</th>
-                  <th className="px-3 py-2 text-left font-medium text-gf-text-muted whitespace-nowrap">Einh.</th>
-                  <th className="px-3 py-2 text-right font-medium text-gf-text-muted whitespace-nowrap">Preis</th>
-                  <th className="px-3 py-2 text-left font-medium text-gf-text-muted whitespace-nowrap hidden md:table-cell">Form</th>
-                  <th className="px-3 py-2 text-left font-medium text-gf-text-muted whitespace-nowrap hidden md:table-cell">Betreiber</th>
-                  <th className="px-3 py-2 text-left font-medium text-gf-text-muted whitespace-nowrap hidden sm:table-cell">Kunde</th>
-                  <th className="px-3 py-2 text-left font-medium text-gf-text-muted whitespace-nowrap">Status</th>
-                  <th className="px-3 py-2 text-right font-medium text-gf-text-muted whitespace-nowrap">Aktionen</th>
+                  <th scope="col" className="nx-label px-3 py-3 text-left whitespace-nowrap">Code</th>
+                  <th scope="col" className="nx-label px-3 py-3 text-left">Beschreibung (DE)</th>
+                  <th scope="col" className="nx-label px-3 py-3 text-left hidden lg:table-cell">Descripción (ES)</th>
+                  <th scope="col" className="nx-label px-3 py-3 text-left whitespace-nowrap">Einh.</th>
+                  <th scope="col" className="nx-label px-3 py-3 text-right whitespace-nowrap">Preis</th>
+                  <th scope="col" className="nx-label px-3 py-3 text-left whitespace-nowrap hidden md:table-cell">Form</th>
+                  <th scope="col" className="nx-label px-3 py-3 text-left whitespace-nowrap hidden md:table-cell">Betreiber</th>
+                  <th scope="col" className="nx-label px-3 py-3 text-left whitespace-nowrap hidden sm:table-cell">Kunde</th>
+                  <th scope="col" className="nx-label px-3 py-3 text-left whitespace-nowrap">Status</th>
+                  <th scope="col" className="px-3 py-3"><span className="sr-only">Aktionen</span></th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((item) => (
                   <tr
                     key={item.id}
-                    className={`border-t border-gf-border/50 transition-colors hover:bg-gf-surface/40 ${!item.active ? 'opacity-50' : ''}`}
+                    className={`border-t border-line/50 transition-colors hover:bg-bg-2 ${!item.active ? 'opacity-50' : ''}`}
                   >
-                    <td className="px-3 py-3 font-mono text-xs font-semibold text-gf-primary whitespace-nowrap">
+                    <td className="px-3 py-3 font-mono text-xs font-semibold text-accent whitespace-nowrap">
                       {item.code}
                     </td>
-                    <td className="px-3 py-3 text-gf-text max-w-xs">
+                    <td className="px-3 py-3 text-fg-1 max-w-xs">
                       <span className="line-clamp-2">{item.description_de}</span>
                     </td>
-                    <td className="px-3 py-3 text-gf-text-muted max-w-xs hidden lg:table-cell">
+                    <td className="px-3 py-3 text-fg-3 max-w-xs hidden lg:table-cell">
                       {item.description_es
                         ? <span className="line-clamp-2">{item.description_es}</span>
-                        : <span className="italic text-gf-text-placeholder">—</span>}
+                        : <span className="italic text-fg-4">—</span>}
                     </td>
-                    <td className="px-3 py-3 text-gf-text-muted font-mono text-xs whitespace-nowrap">
+                    <td className="px-3 py-3 text-fg-3 font-mono text-xs whitespace-nowrap">
                       {item.unit ?? '—'}
                     </td>
-                    <td className="px-3 py-3 text-right font-mono tabular-nums text-gf-text whitespace-nowrap">
+                    <td className="px-3 py-3 text-right font-mono tabular-nums text-fg-1 whitespace-nowrap">
                       {fmtPrice(item.unit_price)}
                     </td>
                     <td className="px-3 py-3 hidden md:table-cell">
                       {item.detail_form
-                        ? <span className="rounded bg-gf-surface px-1.5 py-0.5 font-mono text-xs text-gf-text-muted border border-gf-border">{item.detail_form}</span>
-                        : <span className="text-gf-text-placeholder">—</span>}
+                        ? <span className="rounded bg-bg-2 px-1.5 py-0.5 font-mono text-xs text-fg-3 border border-line">{item.detail_form}</span>
+                        : <span className="text-fg-4">—</span>}
                     </td>
-                    <td className="px-3 py-3 font-mono text-xs text-gf-text-muted whitespace-nowrap hidden md:table-cell">
-                      {item.operators?.code ?? <span className="italic text-gf-text-placeholder">Global</span>}
+                    <td className="px-3 py-3 font-mono text-xs text-fg-3 whitespace-nowrap hidden md:table-cell">
+                      {item.operators?.code ?? <span className="italic text-fg-4">Global</span>}
                     </td>
-                    <td className="px-3 py-3 font-mono text-xs text-gf-text-muted whitespace-nowrap hidden sm:table-cell">
-                      {item.clients?.code ?? <span className="italic text-gf-text-placeholder">—</span>}
+                    <td className="px-3 py-3 font-mono text-xs text-fg-3 whitespace-nowrap hidden sm:table-cell">
+                      {item.clients?.code ?? <span className="italic text-fg-4">—</span>}
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap">
                       {item.active
-                        ? <span className="inline-flex rounded-full bg-gf-success/15 px-2 py-0.5 text-xs font-medium text-emerald-700">Aktiv</span>
-                        : <span className="inline-flex rounded-full bg-gf-danger/10 px-2 py-0.5 text-xs font-medium text-gf-text-muted">Inaktiv</span>}
+                        ? <span className="inline-flex rounded-full bg-ok/15 px-2 py-0.5 text-xs font-medium text-ok">{t('catalog.status.active')}</span>
+                        : <span className="inline-flex rounded-full bg-err/10 px-2 py-0.5 text-xs font-medium text-fg-3">{t('catalog.status.inactive')}</span>}
                     </td>
                     <td className="px-3 py-3">
                       <div className="flex items-center justify-end gap-1">
-                        {/* Edit */}
                         <button
-                          title="Bearbeiten"
+                          aria-label={`${item.code} bearbeiten`}
                           onClick={() => setModalItem(item)}
-                          className="rounded px-2 py-1 text-xs text-gf-text-muted hover:text-gf-primary hover:bg-gf-surface transition-colors"
+                          className="rounded px-2 py-1 text-xs text-fg-3 hover:text-accent hover:bg-bg-0 transition-colors"
                         >
                           ✎
                         </button>
-                        {/* Toggle active */}
                         <button
-                          title={item.active ? 'Deaktivieren' : 'Aktivieren'}
+                          aria-label={item.active ? `${item.code} deaktivieren` : `${item.code} aktivieren`}
                           disabled={togglingId === item.id}
                           onClick={() => handleToggleActive(item)}
-                          className="rounded px-2 py-1 text-xs text-gf-text-muted hover:text-gf-warning hover:bg-gf-surface transition-colors disabled:opacity-40"
+                          className="rounded px-2 py-1 text-xs text-fg-3 hover:text-warn hover:bg-bg-0 transition-colors disabled:opacity-40"
                         >
-                          {item.active ? '⏸' : '▶'}
+                          {togglingId === item.id
+                            ? <span className="inline-block h-3 w-3 animate-spin rounded-full border border-line border-t-warn" aria-hidden="true" />
+                            : item.active ? '⏸' : '▶'}
                         </button>
-                        {/* Delete */}
                         <button
-                          title="Löschen"
+                          aria-label={`${item.code} löschen`}
                           onClick={() => setDeleteTarget(item)}
-                          className="rounded px-2 py-1 text-xs text-gf-text-muted hover:text-gf-danger hover:bg-gf-surface transition-colors"
+                          className="rounded px-2 py-1 text-xs text-fg-3 hover:text-err hover:bg-bg-0 transition-colors"
                         >
                           ✕
                         </button>
