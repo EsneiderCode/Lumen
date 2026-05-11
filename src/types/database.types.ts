@@ -127,6 +127,7 @@ export type Database = {
           priority: PriorityLevel
           assigned_team: TeamColor | null
           assigned_technician: string | null
+          assigned_collaborator_id: string | null
           assigned_date: string | null
           address: string | null
           postal_code: string | null
@@ -134,6 +135,7 @@ export type Database = {
           internal_notes: string | null
           assigned_detail_snapshot: Record<string, unknown> | null
           service_item_id: string | null
+          billing_reference: string | null
           created_by: string
           created_at: string
           updated_at: string
@@ -150,6 +152,7 @@ export type Database = {
           priority?: PriorityLevel
           assigned_team?: TeamColor | null
           assigned_technician?: string | null
+          assigned_collaborator_id?: string | null
           assigned_date?: string | null
           address?: string | null
           postal_code?: string | null
@@ -157,6 +160,7 @@ export type Database = {
           internal_notes?: string | null
           assigned_detail_snapshot?: Record<string, unknown> | null
           service_item_id?: string | null
+          billing_reference?: string | null
           created_by: string
           created_at?: string
           updated_at?: string
@@ -173,6 +177,7 @@ export type Database = {
           priority?: PriorityLevel
           assigned_team?: TeamColor | null
           assigned_technician?: string | null
+          assigned_collaborator_id?: string | null
           assigned_date?: string | null
           address?: string | null
           postal_code?: string | null
@@ -180,6 +185,7 @@ export type Database = {
           internal_notes?: string | null
           assigned_detail_snapshot?: Record<string, unknown> | null
           service_item_id?: string | null
+          billing_reference?: string | null
           created_by?: string
           created_at?: string
           updated_at?: string
@@ -195,6 +201,7 @@ export type Database = {
           description_es: string | null
           unit: string | null
           unit_price: number | null
+          unit_price_external: number | null
           operator_id: string | null
           client_id: string | null
           detail_form: string | null
@@ -211,6 +218,7 @@ export type Database = {
           description_es?: string | null
           unit?: string | null
           unit_price?: number | null
+          unit_price_external?: number | null
           operator_id?: string | null
           client_id?: string | null
           detail_form?: string | null
@@ -226,6 +234,7 @@ export type Database = {
           description_es?: string | null
           unit?: string | null
           unit_price?: number | null
+          unit_price_external?: number | null
           operator_id?: string | null
           client_id?: string | null
           detail_form?: string | null
@@ -233,6 +242,38 @@ export type Database = {
           active?: boolean
           notes?: string | null
           updated_at?: string
+        }
+        Relationships: never[]
+      }
+
+      work_order_line_items: {
+        Row: {
+          id: string
+          work_order_id: string
+          service_item_id: string
+          quantity: number
+          unit_price_snapshot: number | null
+          unit_price_external_snapshot: number | null
+          notes: string | null
+          created_by: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          work_order_id: string
+          service_item_id: string
+          quantity?: number
+          unit_price_snapshot?: number | null
+          unit_price_external_snapshot?: number | null
+          notes?: string | null
+          created_by: string
+          created_at?: string
+        }
+        Update: {
+          quantity?: number
+          unit_price_snapshot?: number | null
+          unit_price_external_snapshot?: number | null
+          notes?: string | null
         }
         Relationships: never[]
       }
