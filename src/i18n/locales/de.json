@@ -81,7 +81,7 @@
     "client_rejected": "Abgelehnt",
     "invoiced": "Fakturiert",
     "paid": "Bezahlt",
-    "returned": "Zurückgegeben",
+    "returned": "Korrektur erforderlich",
     "cancelled": "Storniert"
   },
   "workType": {
@@ -230,5 +230,110 @@
     "invalidEmail": "Ungültige E-Mail-Adresse",
     "networkError": "Netzwerkfehler. Bitte erneut versuchen.",
     "unexpected": "Etwas ist schiefgelaufen."
+  },
+  "catalog": {
+    "title": "Service-Katalog",
+    "subtitleCount": "{{count}} Artikel — Vertragliche Leistungscodes",
+    "newItem": "+ Neuer Artikel",
+    "empty": "Keine Artikel gefunden",
+    "errorRequired": "Code und Deutsche Beschreibung sind Pflichtfelder.",
+    "modal": {
+      "titleCreate": "Neuer Artikel",
+      "titleEdit": "Artikel bearbeiten",
+      "section": "Service-Katalog"
+    },
+    "sections": {
+      "identification": "Identifikation",
+      "priceOrder": "Preis & Reihenfolge",
+      "assignment": "Zuordnung"
+    },
+    "fields": {
+      "sapCode": "SAP-Code *",
+      "unit": "Einheit",
+      "descDe": "Beschreibung (DE) *",
+      "descEs": "Descripción (ES)",
+      "price": "Preis (€ netto) — leer = Nach Angebot",
+      "priceExternal": "Einkaufspreis Subunternehmer (€) — leer = Nach Angebot",
+      "displayOrder": "Anzeigereihenfolge",
+      "operator": "Betreiber (Operator)",
+      "client": "Kunde (Client)",
+      "detailForm": "Detail-Formular (technische Route)",
+      "notes": "Notizen",
+      "itemActive": "Artikel aktiv"
+    },
+    "filter": {
+      "search": "Suchen (Code, Beschreibung)…",
+      "allOperators": "Alle Betreiber",
+      "globalOperator": "— Global (kein Betreiber) —",
+      "allClients": "Alle Kunden",
+      "showInactive": "Inaktive anzeigen"
+    },
+    "status": {
+      "active": "Aktiv",
+      "inactive": "Inaktiv",
+      "visibleInCatalog": "Sichtbar im Katalog",
+      "hidden": "Versteckt"
+    },
+    "actions": {
+      "save": "Speichern",
+      "saving": "[SPEICHERN…]",
+      "create": "Erstellen",
+      "cancel": "Abbrechen"
+    },
+    "delete": {
+      "title": "Artikel löschen",
+      "warning": "Achtung — Irreversibel",
+      "confirm": "Diese Aktion löscht den Artikel dauerhaft aus dem Katalog und kann nicht rückgängig gemacht werden.",
+      "action": "Endgültig löschen",
+      "deleting": "[LÖSCHEN…]"
+    }
+  },
+  "sidebar": {
+    "sections": {
+      "operations": "Operations",
+      "catalog": "Catalog",
+      "organization": "Organization"
+    },
+    "nav": {
+      "dashboard": "Dashboard",
+      "orders": "Aufträge",
+      "certification": "Zertifizierung",
+      "serviceCatalog": "Service-Katalog",
+      "personnel": "Personal",
+      "materials": "Material",
+      "settings": "Einstellungen"
+    }
+  },
+  "adminDashboard": {
+    "kpi": {
+      "openOrders": "Offene Aufträge",
+      "inProgress": "In Bearbeitung",
+      "pendingCert": "Zertifizierung ausstehend",
+      "done": "Abgeschlossen · Monat"
+    },
+    "attention": {
+      "title": "Benötigt Aufmerksamkeit",
+      "open": "{{count}} offen",
+      "empty": "Keine offenen Meldungen.",
+      "rejected": "Abgelehnt",
+      "returned": "Korrektur erforderlich"
+    },
+    "welcome": {
+      "title": "Willkommen bei LUMEN",
+      "version": "v1.0",
+      "desc": "Zentrale Betriebsplattform für HMR Nexus Engineering GmbH. Aufträge, Zertifizierungen und Personalverwaltung an einem Ort."
+    }
+  },
+  "techDashboard": {
+    "greeting": "Hallo, {{name}}",
+    "stats": {
+      "today": "Heute",
+      "open": "Offen",
+      "done": "Erledigt"
+    },
+    "myOrders": "Meine Aufträge",
+    "viewAll": "Alle anzeigen →",
+    "noOrders": "Keine aktiven Aufträge",
+    "noOrdersDesc": "Dir sind aktuell keine Aufträge zugewiesen."
   }
 }

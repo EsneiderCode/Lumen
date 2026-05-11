@@ -32,6 +32,7 @@ import { useTranslation } from 'react-i18next'
 import { useLabels } from '@/i18n/labels'
 import { STATUS_COLORS, TEAM_DOT } from '@/constants/styles'
 import { DocumentUploader } from '@/components/ui/DocumentUploader'
+import { notifyOrderReturnedForCorrection } from '@/services/notificationService'
 
 // Catalog detail_form values for infra work — hide address, show
 // supporting-document uploaders. POP items live here too: they're
@@ -257,10 +258,13 @@ export function WorkOrderDetailPage() {
       case 'mark_paid':
         void doTransition('paid', 'Als bezahlt markiert')
         break
-      case 'return_nonconformity':
+      case 'return_nonconformity': {
         if (!modal.categoryValue || modal.inputValue.trim().length < 20) return
-        void doTransition('returned', `Nichtkonformität (${modal.categoryValue}): ${modal.inputValue.trim()}`)
+        const reason = `Nichtkonformität (${modal.categoryValue}): ${modal.inputValue.trim()}`
+        void doTransition('returned', reason)
+        if (order) void notifyOrderReturnedForCorrection(order.order_number, reason, user?.email ?? undefined)
         break
+      }
     }
   }
 
@@ -528,6 +532,25 @@ export function WorkOrderDetailPage() {
             >
               <span className="inline-flex items-center gap-1.5"><CreditCard size={14} strokeWidth={1.5} />Als bezahlt markieren</span>
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* returned — correction required banner */}
+      {order.status === 'returned' && (
+        <div className="rounded-l border border-warn/40 bg-warn/10 p-4">
+          <div className="flex items-start gap-3">
+            <Undo2 size={16} strokeWidth={1.5} className="mt-0.5 shrink-0 text-warn" />
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-warn">Korrektur erforderlich — Zurückgegeben an Techniker</p>
+              {(() => {
+                const returnEntry = [...history].reverse().find((e) => e.to_status === 'returned')
+                return returnEntry?.notes ? (
+                  <p className="mt-1 text-sm text-warn break-words">{returnEntry.notes}</p>
+                ) : null
+              })()}
+              <p className="mt-2 text-xs text-fg-2">Der Techniker sieht diesen Hinweis und kann die Rückmeldung korrigieren.</p>
+            </div>
           </div>
         </div>
       )}

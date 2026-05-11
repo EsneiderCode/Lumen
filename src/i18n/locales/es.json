@@ -81,7 +81,7 @@
     "client_rejected": "Rechazada",
     "invoiced": "Facturada",
     "paid": "Pagada",
-    "returned": "Devuelta",
+    "returned": "Requiere corrección",
     "cancelled": "Cancelada"
   },
   "workType": {
@@ -230,5 +230,110 @@
     "invalidEmail": "Correo electrónico inválido",
     "networkError": "Error de red. Probá de nuevo.",
     "unexpected": "Algo salió mal."
+  },
+  "catalog": {
+    "title": "Catálogo de servicios",
+    "subtitleCount": "{{count}} ítems — Códigos de contrato",
+    "newItem": "+ Nuevo ítem",
+    "empty": "No se encontraron ítems",
+    "errorRequired": "El código y la descripción en alemán son obligatorios.",
+    "modal": {
+      "titleCreate": "Nuevo ítem",
+      "titleEdit": "Editar ítem",
+      "section": "Catálogo de servicios"
+    },
+    "sections": {
+      "identification": "Identificación",
+      "priceOrder": "Precio y orden",
+      "assignment": "Asignación"
+    },
+    "fields": {
+      "sapCode": "Código SAP *",
+      "unit": "Unidad",
+      "descDe": "Descripción (DE) *",
+      "descEs": "Descripción (ES)",
+      "price": "Precio (€ neto) — vacío = A convenir",
+      "priceExternal": "Precio de compra subcontratista (€) — vacío = A convenir",
+      "displayOrder": "Orden de visualización",
+      "operator": "Operador",
+      "client": "Cliente",
+      "detailForm": "Formulario de detalle (ruta técnica)",
+      "notes": "Notas",
+      "itemActive": "Ítem activo"
+    },
+    "filter": {
+      "search": "Buscar (código, descripción)…",
+      "allOperators": "Todos los operadores",
+      "globalOperator": "— Global (sin operador) —",
+      "allClients": "Todos los clientes",
+      "showInactive": "Mostrar inactivos"
+    },
+    "status": {
+      "active": "Activo",
+      "inactive": "Inactivo",
+      "visibleInCatalog": "Visible en el catálogo",
+      "hidden": "Oculto"
+    },
+    "actions": {
+      "save": "Guardar",
+      "saving": "[GUARDANDO…]",
+      "create": "Crear",
+      "cancel": "Cancelar"
+    },
+    "delete": {
+      "title": "Eliminar ítem",
+      "warning": "Atención — Irreversible",
+      "confirm": "Esta acción elimina el ítem permanentemente del catálogo y no se puede deshacer.",
+      "action": "Eliminar definitivamente",
+      "deleting": "[ELIMINANDO…]"
+    }
+  },
+  "sidebar": {
+    "sections": {
+      "operations": "Operaciones",
+      "catalog": "Catálogo",
+      "organization": "Organización"
+    },
+    "nav": {
+      "dashboard": "Dashboard",
+      "orders": "Órdenes",
+      "certification": "Certificación",
+      "serviceCatalog": "Catálogo de servicios",
+      "personnel": "Personal",
+      "materials": "Material",
+      "settings": "Configuración"
+    }
+  },
+  "adminDashboard": {
+    "kpi": {
+      "openOrders": "Órdenes abiertas",
+      "inProgress": "En ejecución",
+      "pendingCert": "Certificación pendiente",
+      "done": "Completadas · Mes"
+    },
+    "attention": {
+      "title": "Requiere atención",
+      "open": "{{count}} abiertas",
+      "empty": "Sin alertas abiertas.",
+      "rejected": "Rechazada",
+      "returned": "Requiere corrección"
+    },
+    "welcome": {
+      "title": "Bienvenido a LUMEN",
+      "version": "v1.0",
+      "desc": "Plataforma operacional central de HMR Nexus Engineering GmbH. Órdenes, certificaciones y gestión de personal en un solo lugar."
+    }
+  },
+  "techDashboard": {
+    "greeting": "Hola, {{name}}",
+    "stats": {
+      "today": "Hoy",
+      "open": "Abiertas",
+      "done": "Listas"
+    },
+    "myOrders": "Mis órdenes",
+    "viewAll": "Ver todas →",
+    "noOrders": "Sin órdenes activas",
+    "noOrdersDesc": "No tenés órdenes asignadas en este momento."
   }
 }
