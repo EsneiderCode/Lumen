@@ -9,54 +9,18 @@ function TimePickerField({ label, value, onChange }: {
   value: string
   onChange: (v: string) => void
 }) {
-  const formatted = value
-    ? value.slice(0, 5)       // "HH:MM"
-    : null
-
   return (
     <div>
       <label className="mb-1.5 block text-xs font-medium text-fg-2">{label}</label>
-      <div className="relative">
-        {/* Visual layer — pointer-events-none so the input overlay catches the tap */}
-        <div
-          className={`flex items-center gap-3 rounded-l border-2 px-4 py-3.5 transition-colors pointer-events-none ${
-            value
-              ? 'border-accent/50 bg-accent/5'
-              : 'border-line bg-bg-0'
-          }`}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className={`h-5 w-5 shrink-0 ${value ? 'text-accent' : 'text-fg-2'}`}
-          >
-            <circle cx="12" cy="12" r="10" />
-            <polyline points="12 6 12 12 16 14" />
-          </svg>
-          <span
-            className={`flex-1 font-mono text-lg font-bold tracking-wider ${
-              formatted ? 'text-fg-1' : 'text-fg-4'
-            }`}
-          >
-            {formatted ?? '--:--'}
-          </span>
-          {formatted && (
-            <span className="text-xs font-semibold text-accent">Uhr</span>
-          )}
-        </div>
-        {/* Transparent native input as tap target — full overlay */}
-        <input
-          type="time"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-        />
-      </div>
+      <input
+        type="time"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={`w-full rounded-l border-2 px-3 py-3 font-mono text-base font-bold tracking-wider transition-colors
+          bg-bg-0 text-fg-1 cursor-pointer
+          ${value ? 'border-accent/50' : 'border-line'}
+          focus:border-accent focus:outline-none`}
+      />
     </div>
   )
 }
