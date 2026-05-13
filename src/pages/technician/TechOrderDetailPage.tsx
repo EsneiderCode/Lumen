@@ -82,7 +82,7 @@ export function TechOrderDetailPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-accent" />
+        <div className="nx-loader" />
       </div>
     )
   }
@@ -111,7 +111,7 @@ export function TechOrderDetailPage() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <h2 className="font-display text-lg font-bold text-fg-1 truncate">{order.order_number}</h2>
-            <span className={`shrink-0 inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[order.status]}`}>
+            <span className={`shrink-0 badge badge-dot ${STATUS_COLORS[order.status]}`}>
               {L.status(order.status)}
             </span>
           </div>
@@ -124,7 +124,7 @@ export function TechOrderDetailPage() {
         <button
           disabled={isTransitioning}
           onClick={() => handleTransition('in_progress', 'Arbeit begonnen')}
-          className="w-full rounded-s bg-err px-4 py-3.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+          className="w-full rounded-s bg-err px-4 py-3.5 text-sm font-semibold text-ink hover:opacity-90 disabled:opacity-50 transition-opacity"
         >
           {isTransitioning ? (
             'Wird aktualisiert…'
@@ -141,7 +141,7 @@ export function TechOrderDetailPage() {
         <button
           disabled={isTransitioning}
           onClick={() => handleTransition('executed', 'Ausführung abgeschlossen')}
-          className="w-full rounded-s bg-warn px-4 py-3.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+          className="w-full rounded-s bg-warn px-4 py-3.5 text-sm font-semibold text-ink hover:opacity-90 disabled:opacity-50 transition-opacity"
         >
           {isTransitioning ? (
             'Wird aktualisiert…'
@@ -188,7 +188,7 @@ export function TechOrderDetailPage() {
           })()}
           <button
             onClick={() => navigate(`/tech/orders/${order.id}/rueckmeldung`)}
-            className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-s bg-err px-4 py-3 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+            className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-s bg-err px-4 py-3 text-sm font-semibold text-ink hover:opacity-90 transition-opacity"
           >
             <PencilLine size={14} strokeWidth={1.5} />
             Rückmeldung korrigieren

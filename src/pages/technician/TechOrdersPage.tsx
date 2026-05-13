@@ -61,15 +61,15 @@ export function TechOrdersPage() {
     return (
       <button
         onClick={() => navigate(`/tech/orders/${order.id}`)}
-        className={`w-full rounded-l border p-4 text-left transition-all active:scale-[0.99] ${
+        className={`nx-card-button p-4 text-left ${
           isActive
-            ? 'border-accent/40 bg-bg-1'
-            : 'border-line bg-bg-1 opacity-75'
+            ? 'border-accent/40'
+            : 'opacity-75'
         }`}
       >
         <div className="mb-2 flex items-start justify-between gap-2">
           <span className="font-mono text-xs font-semibold text-accent">{order.order_number}</span>
-          <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[order.status]}`}>
+          <span className={`badge badge-dot ${STATUS_COLORS[order.status]}`}>
             {L.status(order.status)}
           </span>
         </div>
@@ -93,7 +93,7 @@ export function TechOrdersPage() {
             {order.clients?.code ?? '—'} · {order.projects?.code ?? '—'}
           </div>
           <div className="flex items-center gap-2">
-            <span className={`text-xs font-medium ${PRIORITY_COLORS[order.priority]}`}>
+            <span className={`badge ${PRIORITY_COLORS[order.priority]}`}>
               {L.priority(order.priority)}
             </span>
             {order.assigned_date && (
@@ -110,14 +110,17 @@ export function TechOrdersPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-accent" />
+        <div className="panel px-8 py-6 text-center">
+          <div className="nx-loader mx-auto" />
+          <div className="nx-label mt-4">[LOADING]</div>
+        </div>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="rounded-s border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
+      <div className="notice notice-err">
         {error}
       </div>
     )
@@ -125,10 +128,10 @@ export function TechOrdersPage() {
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
+      <div className="nx-page-header">
         <div>
-          <h2 className="font-display text-xl font-bold text-fg-1">{t('fieldOrders.title')}</h2>
-          <p className="text-sm text-fg-2">{t('fieldOrders.assignedCount', { count: total })}</p>
+          <h2 className="nx-page-title">{t('fieldOrders.title')}</h2>
+          <p className="nx-label mt-2">{t('fieldOrders.assignedCount', { count: total })}</p>
         </div>
       </div>
 
@@ -139,15 +142,15 @@ export function TechOrdersPage() {
             placeholder={t('fieldOrders.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-s border border-line bg-bg-1 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            className="w-full rounded-s border border-line-s bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           />
         </div>
       )}
 
       {orders.length === 0 ? (
-        <div className="rounded-l border border-line bg-bg-1 py-16 text-center">
+        <div className="nx-empty">
           <ClipboardList size={28} strokeWidth={1.5} className="mx-auto text-fg-3" />
-          <p className="mt-2 text-sm text-fg-2">{t('fieldOrders.emptyActive')}</p>
+          <p className="text-sm text-fg-2">{t('fieldOrders.emptyActive')}</p>
         </div>
       ) : (
         <div className="space-y-4">

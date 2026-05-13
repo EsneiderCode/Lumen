@@ -424,7 +424,7 @@ export function RueckmeldungPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-accent" />
+        <div className="nx-loader" />
       </div>
     )
   }
@@ -822,11 +822,11 @@ export function RueckmeldungPage() {
                           type="button"
                           disabled={deletingPhotoId === photo.id}
                           onClick={() => handlePhotoDelete(photo.id, photo.storage_path)}
-                          className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white hover:bg-err disabled:opacity-50 transition-colors"
+                          className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-bg-0/80 text-fg-1 hover:bg-err disabled:opacity-50 transition-colors"
                           aria-label="Foto löschen"
                         >
                           {deletingPhotoId === photo.id ? (
-                            <span className="h-3 w-3 animate-spin rounded-full border border-white border-t-transparent" />
+                            <span className="nx-loader-sm h-3 w-3" />
                           ) : (
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5">
                               <path d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z" />

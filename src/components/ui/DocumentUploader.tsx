@@ -198,7 +198,7 @@ export function DocumentUploader(props: DocumentUploaderProps) {
         >
           {isUploading ? (
             <>
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-line border-t-accent" />
+              <div className="nx-loader-sm" />
               <span>Hochladen…</span>
             </>
           ) : (

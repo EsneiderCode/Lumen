@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Check, Clock, FileText, Upload, XCircle } from 'lucide-react'
+import { Check, Clock, FileText, XCircle } from 'lucide-react'
 import {
   buildContractorDocumentSlots,
   fetchContractorDocuments,
@@ -113,7 +113,7 @@ export function ContractorDocumentsPanel({ contractorId, canReview = false }: Pr
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-accent" />
+        <div className="nx-loader" />
       </div>
     )
   }
@@ -212,7 +212,7 @@ export function ContractorDocumentsPanel({ contractorId, canReview = false }: Pr
                       onChange={(e) => void handleUpload(slot.type, e.target.files?.[0] ?? null)}
                       className="min-w-0 flex-1 text-xs text-fg-2 file:mr-2 file:rounded-s file:border file:border-line file:bg-bg-1 file:px-2 file:py-1 file:text-xs file:text-fg-1"
                     />
-                    {workingType === slot.type && <Upload size={15} strokeWidth={1.5} className="animate-pulse text-accent" />}
+                    {workingType === slot.type && <span className="nx-loader-sm" aria-label="[LOADING]" />}
                   </span>
                 </label>
               </div>

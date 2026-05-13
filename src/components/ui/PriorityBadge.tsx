@@ -11,7 +11,7 @@ interface Props {
 export function PriorityBadge({ priority, className = '' }: Props) {
   const L = useLabels()
   return (
-    <span className={`text-xs font-medium ${PRIORITY_COLORS[priority]} ${className}`}>
+    <span className={`badge ${PRIORITY_COLORS[priority]} ${className}`}>
       {L.priority(priority)}
     </span>
   )

@@ -111,8 +111,8 @@ export function AdminDashboard() {
         </div>
         <div>
           {isLoading ? (
-            <div className="nx-panel-body flex items-center justify-center py-6">
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-line border-t-accent" />
+          <div className="nx-panel-body flex items-center justify-center py-6">
+              <div className="nx-loader-sm" />
             </div>
           ) : alerts.length === 0 ? (
             <div className="nx-panel-body text-sm text-fg-2">{t('dashboard.admin.attentionEmpty')}</div>

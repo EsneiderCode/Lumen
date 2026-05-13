@@ -286,7 +286,7 @@ export function UsersPage() {
       <div className="overflow-hidden rounded-l border border-line bg-bg-1">
         {isLoading ? (
           <div className="flex items-center justify-center py-16">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-accent" />
+            <div className="nx-loader" />
           </div>
         ) : (
           <table className="w-full border-collapse text-sm">

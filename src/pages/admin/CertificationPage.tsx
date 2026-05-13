@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
-import { FileSpreadsheet, Check, Send, Receipt, Download } from 'lucide-react'
+import { ArrowRight, Check, Clock3, Download, Euro, FileSpreadsheet, Filter, Receipt, Send, ShieldCheck, Workflow } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { buildDatevCsv, downloadDatevCsv } from '@/services/datevExportService'
 import {
@@ -18,6 +18,7 @@ import { useAuth } from '@/hooks/useAuth'
 import type { WorkOrderStatus, TeamColor, UserRole } from '@/types/enums'
 import { useLabels } from '@/i18n/labels'
 import { TEAM_DOT } from '@/constants/styles'
+import { Alert, Badge, Button, EmptyState, KPI, KPIGrid, Panel } from '@/components/ui/nexus'
 
 interface Project {
   id: string
@@ -42,6 +43,15 @@ const SECTIONS: { status: WorkOrderStatus; label: string; description: string; b
   { status: 'client_accepted', label: 'Akzeptiert', description: 'Bereit zur Fakturierung', bulkAction: 'invoice' },
   { status: 'invoiced', label: 'Fakturiert', description: 'Warten auf Zahlungseingang' },
 ]
+
+const SECTION_TONE: Partial<Record<WorkOrderStatus, 'neutral' | 'info' | 'ok' | 'warn' | 'err' | 'accent'>> = {
+  rueckmeldung_sent: 'warn',
+  internally_certified: 'ok',
+  sent_to_client: 'info',
+  client_rejected: 'err',
+  client_accepted: 'accent',
+  invoiced: 'neutral',
+}
 
 interface BulkInvoiceModal {
   open: boolean
@@ -260,338 +270,359 @@ export function CertificationPage() {
   const hasSelection = selected.size > 0
 
   const total = orders.length
+  const activeSection = SECTIONS.find((s) => s.status === activeTab) ?? SECTIONS[0]
+  const activeItems = byStatus(activeTab)
+  const allActiveSelected = activeItems.length > 0 && activeItems.every((o) => selected.has(o.id))
+  const totalClient = orders.reduce((sum, order) => sum + (orderTotals[order.id]?.client ?? 0), 0)
+  const totalExternal = orders.reduce((sum, order) => sum + (orderTotals[order.id]?.external ?? 0), 0)
+  const selectedInvoiced = selected.size > 0 && [...selected].some((id) => orders.find((o) => o.id === id)?.status === 'invoiced')
+  const datevDisabled = byStatus('invoiced').length === 0 && !selectedInvoiced
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="nx-page-header">
+      <div className="ph">
         <div>
-          <h2 className="nx-page-title">Zertifizierung</h2>
-          <p className="nx-label mt-2 tabular-nums">
-            {total === 0 ? 'Keine Aufträge · im Prozess' : `${total} Aufträge · im Prozess`}
-          </p>
+          <div className="sub">§ LUMEN · CERTIFICATION PIPELINE</div>
+          <h1>Certification <em>Control</em></h1>
         </div>
-        <div className="flex items-center gap-2">
-          <button
+        <div className="r">
+          <Button
+            disabled={datevDisabled}
+            icon={Download}
             onClick={handleDatevExport}
-            disabled={byStatus('invoiced').length === 0 && (selected.size === 0 || ![...selected].some((id) => orders.find((o) => o.id === id)?.status === 'invoiced'))}
-            className="flex items-center gap-1.5 rounded-s border border-accent/40 bg-accent/10 px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent/20 disabled:opacity-40 transition-colors"
             title="Fakturierte Aufträge als DATEV-Buchungsstapel exportieren"
+            variant="ghost"
           >
-            <Download size={14} strokeWidth={1.5} />
             DATEV
-          </button>
-          <button
-            onClick={handleExcelExport}
-            disabled={total === 0}
-            className="flex items-center gap-1.5 rounded-s border border-line px-3 py-1.5 text-xs font-medium text-fg-2 hover:border-accent hover:text-accent disabled:opacity-40 transition-colors"
-          >
-            <FileSpreadsheet size={14} strokeWidth={1.5} />
+          </Button>
+          <Button disabled={total === 0} icon={FileSpreadsheet} onClick={handleExcelExport} variant="secondary">
             Excel {hasSelection ? `(${selected.size})` : ''}
-          </button>
+          </Button>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-2">
-        <select
-          value={filterTeam}
-          onChange={(e) => setFilterTeam(e.target.value as TeamColor | '')}
-          className="rounded-s border border-line bg-bg-0 px-3 py-1.5 text-sm text-fg-1 focus:border-accent focus:outline-none"
-        >
-          <option value="">Alle Teams</option>
-          <option value="rot">Rot</option>
-          <option value="gruen">Grün</option>
-          <option value="blau">Blau</option>
-          <option value="gelb">Gelb</option>
-        </select>
-
-        <select
-          value={filterProject}
-          onChange={(e) => setFilterProject(e.target.value)}
-          className="rounded-s border border-line bg-bg-0 px-3 py-1.5 text-sm text-fg-1 focus:border-accent focus:outline-none"
-        >
-          <option value="">Alle Projekte</option>
-          {projects.map((p) => (
-            <option key={p.id} value={p.id}>{p.code} – {p.name}</option>
-          ))}
-        </select>
-
-        <select
-          value={filterCollab}
-          onChange={(e) => setFilterCollab(e.target.value as '' | CollaboratorType)}
-          className="rounded-s border border-line bg-bg-0 px-3 py-1.5 text-sm text-fg-1 focus:border-accent focus:outline-none"
-          title="Mitarbeiter-Typ"
-        >
-          <option value="">Alle Mitarbeiter</option>
-          <option value="internal">Intern</option>
-          <option value="external">Extern</option>
-        </select>
-
-        <input
-          type="date"
-          value={filterDateFrom}
-          onChange={(e) => setFilterDateFrom(e.target.value)}
-          className="rounded-s border border-line bg-bg-0 px-3 py-1.5 text-sm text-fg-1 focus:border-accent focus:outline-none"
+      <KPIGrid columns={4}>
+        <KPI
+          delta={total === 0 ? 'No active certification load' : `${total} work orders in scope`}
+          icon={Workflow}
+          label="Pipeline Load"
+          value={total}
         />
-        <input
-          type="date"
-          value={filterDateTo}
-          onChange={(e) => setFilterDateTo(e.target.value)}
-          className="rounded-s border border-line bg-bg-0 px-3 py-1.5 text-sm text-fg-1 focus:border-accent focus:outline-none"
+        <KPI
+          delta="Requires admin approval"
+          icon={ShieldCheck}
+          label="Internal Queue"
+          tone="warn"
+          value={byStatus('rueckmeldung_sent').length}
         />
+        <KPI
+          delta={`${byStatus('client_accepted').length} ready for billing`}
+          icon={Clock3}
+          label="Client Accepted"
+          tone="accent"
+          value={byStatus('client_accepted').length}
+        />
+        <KPI
+          delta={`External payable ${fmtMoney(totalExternal)}`}
+          icon={Euro}
+          label="Client Volume"
+          value={fmtMoney(totalClient)}
+        />
+      </KPIGrid>
 
-        {(filterTeam || filterProject || filterDateFrom || filterDateTo || filterCollab) && (
-          <button
-            onClick={() => {
-              setFilterTeam('')
-              setFilterProject('')
-              setFilterDateFrom('')
-              setFilterDateTo('')
-              setFilterCollab('')
-            }}
-            className="rounded-s border border-err/30 px-3 py-1.5 text-xs font-medium text-err hover:bg-err/10 transition-colors"
-          >
-            × Filter löschen
-          </button>
-        )}
-      </div>
-
-      {/* Bulk action bar */}
-      {hasSelection && (
-        <div className="flex flex-wrap items-center gap-3 rounded-l border border-accent/30 bg-accent/5 px-4 py-3">
-          <span className="text-sm font-semibold text-accent">{selected.size} ausgewählt</span>
-          <div className="flex flex-wrap gap-2 ml-auto">
-            {selectedCertifiable > 0 && (
-              <button
-                disabled={isBulkWorking}
-                onClick={() => void handleBulkCertify()}
-                className="inline-flex items-center gap-1.5 rounded-s bg-ok px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
-              >
-                {isBulkWorking ? (
-                  '…'
-                ) : (
-                  <>
-                    <Check size={14} strokeWidth={1.5} />
-                    Intern zertifizieren ({selectedCertifiable})
-                  </>
-                )}
-              </button>
-            )}
-            {selectedSendable > 0 && (
-              <button
-                disabled={isBulkWorking}
-                onClick={() => void handleBulkSendToClient()}
-                className="inline-flex items-center gap-1.5 rounded-s bg-accent px-3 py-1.5 text-xs font-semibold text-ink hover:bg-accent disabled:opacity-50 transition-colors"
-              >
-                {isBulkWorking ? (
-                  '…'
-                ) : (
-                  <>
-                    <Send size={14} strokeWidth={1.5} />
-                    An Kunden senden ({selectedSendable})
-                  </>
-                )}
-              </button>
-            )}
-            {selectedInvoiceable > 0 && (
-              <button
-                disabled={isBulkWorking}
-                onClick={() => setBulkInvoiceModal({ open: true, invoiceNumber: '' })}
-                className="inline-flex items-center gap-1.5 rounded-s bg-err px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
-              >
-                <Receipt size={14} strokeWidth={1.5} />
-                Fakturieren ({selectedInvoiceable})
-              </button>
-            )}
-            <button
-              onClick={() => setSelected(new Set())}
-              className="rounded-s border border-line px-3 py-1.5 text-xs font-medium text-fg-2 hover:border-accent hover:text-accent transition-colors"
-            >
-              Auswahl aufheben
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Status tabs */}
-      <div className="nx-tabs -mb-px overflow-x-auto">
-        {SECTIONS.map(({ status, label }) => {
-          const count = byStatus(status).length
-          return (
-            <button
-              key={status}
-              onClick={() => setActiveTab(status)}
-              className={`nx-tab ${activeTab === status ? 'active' : ''}`}
-            >
-              {label}
-              {count > 0 && (
-                <span className="ml-2 font-mono text-[10px] tabular-nums opacity-70">
-                  {count}
-                </span>
-              )}
-            </button>
-          )
-        })}
-      </div>
-
-      {/* Active section */}
-      {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-accent" />
-        </div>
-      ) : total === 0 ? (
-        <div className="rounded-l border border-line bg-bg-1 px-6 py-12 text-center">
-          <p className="text-fg-2">Keine Aufträge im Zertifizierungsprozess.</p>
-        </div>
-      ) : (
-        (() => {
-          const section = SECTIONS.find((s) => s.status === activeTab)!
-          const items = byStatus(activeTab)
-          const allSectionSelected = items.length > 0 && items.every((o) => selected.has(o.id))
-          if (items.length === 0) {
-            return (
-              <div className="rounded-l border border-line bg-bg-1 px-6 py-12 text-center">
-                <p className="nx-label mb-1">{section.label}</p>
-                <p className="text-sm text-fg-2">Keine Aufträge in diesem Status.</p>
-              </div>
-            )
-          }
-          return (
-            <div>
-              <div className="mb-3 flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={allSectionSelected}
-                  onChange={() => toggleSection(activeTab)}
-                  className="h-3.5 w-3.5 rounded accent-accent cursor-pointer"
-                />
-                <span className="text-sm text-fg-2">{section.description}</span>
-                <span className="ml-auto nx-label tabular-nums">{items.length} items</span>
-              </div>
-              <div className="overflow-hidden rounded-l border border-line bg-bg-1">
-                {items.map((order, i) => {
-                  const collab = orderCollabType(order)
-                  const isExternal = collab === 'external'
-                  const isDirect = order.client_id == null
-                  const totals = orderTotals[order.id] ?? { client: 0, external: 0 }
-                  const margin = isExternal ? totals.client - totals.external : 0
-                  return (
-                    <div
-                      key={order.id}
-                      className={`flex w-full items-center gap-3 px-4 py-3.5 transition-colors ${
-                        selected.has(order.id) ? 'bg-accent/5' : 'hover:bg-bg-0'
-                      } ${i < items.length - 1 ? 'border-b border-line' : ''}`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selected.has(order.id)}
-                        onChange={() => toggleOne(order.id)}
-                        className="h-3.5 w-3.5 rounded accent-accent cursor-pointer shrink-0"
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                      <button
-                        onClick={() => navigate(`/admin/orders/${order.id}`)}
-                        className="flex flex-1 items-center gap-4 text-left min-w-0"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-mono text-sm font-semibold text-fg-1">{order.order_number}</span>
-                            <span className="text-xs text-fg-2">{L.workType(order.work_type)}</span>
-                            {isDirect && (
-                              <span className="rounded-full border border-fg-2/40 bg-bg-0 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider text-fg-2">
-                                Direkt
-                              </span>
-                            )}
-                            {isExternal && (
-                              <span className="rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wider text-accent">
-                                Extern
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs text-fg-2">
-                            {order.clients?.name ?? (isDirect ? '— direkt —' : '—')} · {order.projects?.code ?? '—'}
-                          </p>
-                        </div>
-
-                        {/* Money columns — visible only to admin (this page is admin-only) */}
-                        <div className="flex items-center gap-3 shrink-0">
-                          {totals.client > 0 && (
-                            <div className="flex flex-col items-end">
-                              <span className="text-[10px] uppercase tracking-wider text-fg-2">Kunde</span>
-                              <span className="font-mono text-xs font-semibold text-fg-1 tabular-nums">{fmtMoney(totals.client)}</span>
-                            </div>
-                          )}
-                          {isExternal && totals.external > 0 && (
-                            <>
-                              <div className="flex flex-col items-end">
-                                <span className="text-[10px] uppercase tracking-wider text-fg-2">Extern</span>
-                                <span className="font-mono text-xs font-semibold text-fg-1 tabular-nums">{fmtMoney(totals.external)}</span>
-                              </div>
-                              <div className="flex flex-col items-end">
-                                <span className="text-[10px] uppercase tracking-wider text-accent">Marge</span>
-                                <span className={`font-mono text-xs font-semibold tabular-nums ${margin >= 0 ? 'text-ok' : 'text-err'}`}>
-                                  {fmtMoney(margin)}
-                                </span>
-                              </div>
-                            </>
-                          )}
-                          {order.assigned_team && (
-                            <div className="flex items-center gap-1.5">
-                              <span className={`h-2 w-2 rounded-full ${TEAM_DOT[order.assigned_team]}`} />
-                              <span className="text-xs capitalize text-fg-2">{order.assigned_team}</span>
-                            </div>
-                          )}
-                          {order.assigned_date && (
-                            <span className="text-xs text-fg-2">
-                              {new Date(order.assigned_date).toLocaleDateString('de-DE')}
-                            </span>
-                          )}
-                          <span className="text-xs text-fg-2">→</span>
-                        </div>
-                      </button>
-                    </div>
-                  )
-                })}
-              </div>
+      <div className="nx-cert-console">
+        <div className="space-y-4">
+          <Panel title="Pipeline" meta="Status queue · click to focus" padding="sm">
+            <div className="nx-cert-pipeline">
+              {SECTIONS.map(({ status, label, description }) => {
+                const count = byStatus(status).length
+                const active = activeTab === status
+                return (
+                  <button
+                    className={['nx-cert-stage', active ? 'nx-cert-stage-active' : ''].filter(Boolean).join(' ')}
+                    key={status}
+                    onClick={() => setActiveTab(status)}
+                    type="button"
+                  >
+                    <span className="nx-cert-stage-top">
+                      <span className="nx-cert-stage-label">{label}</span>
+                      <span className="nx-cert-stage-count">{count}</span>
+                    </span>
+                    <span className="nx-cert-stage-desc">{description}</span>
+                  </button>
+                )
+              })}
             </div>
-          )
-        })()
-      )}
+          </Panel>
 
-      {/* Bulk invoice modal */}
+          <Panel
+            title={
+              <span className="inline-flex items-center gap-2">
+                <Filter size={14} strokeWidth={1.5} />
+                Filter
+              </span>
+            }
+            meta="Team · project · collaborator · date"
+          >
+            <div className="nx-filter-grid">
+              <div className="input">
+                <label>Team</label>
+                <select value={filterTeam} onChange={(e) => setFilterTeam(e.target.value as TeamColor | '')}>
+                  <option value="">Alle Teams</option>
+                  <option value="rot">Rot</option>
+                  <option value="gruen">Grün</option>
+                  <option value="blau">Blau</option>
+                  <option value="gelb">Gelb</option>
+                </select>
+              </div>
+
+              <div className="input">
+                <label>Projekt</label>
+                <select value={filterProject} onChange={(e) => setFilterProject(e.target.value)}>
+                  <option value="">Alle Projekte</option>
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id}>{p.code} - {p.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="input">
+                <label>Mitarbeiter</label>
+                <select value={filterCollab} onChange={(e) => setFilterCollab(e.target.value as '' | CollaboratorType)}>
+                  <option value="">Alle Mitarbeiter</option>
+                  <option value="internal">Intern</option>
+                  <option value="external">Extern</option>
+                </select>
+              </div>
+
+              <div className="input">
+                <label>Von</label>
+                <input type="date" value={filterDateFrom} onChange={(e) => setFilterDateFrom(e.target.value)} />
+              </div>
+
+              <div className="input">
+                <label>Bis</label>
+                <input type="date" value={filterDateTo} onChange={(e) => setFilterDateTo(e.target.value)} />
+              </div>
+
+              {(filterTeam || filterProject || filterDateFrom || filterDateTo || filterCollab) && (
+                <Button
+                  onClick={() => {
+                    setFilterTeam('')
+                    setFilterProject('')
+                    setFilterDateFrom('')
+                    setFilterDateTo('')
+                    setFilterCollab('')
+                  }}
+                  variant="danger"
+                >
+                  Filter löschen
+                </Button>
+              )}
+            </div>
+          </Panel>
+        </div>
+
+        <div className="space-y-4">
+          {hasSelection && (
+            <Alert
+              actions={
+                <>
+                  {selectedCertifiable > 0 && (
+                    <Button
+                      disabled={isBulkWorking}
+                      icon={Check}
+                      loading={isBulkWorking}
+                      onClick={() => void handleBulkCertify()}
+                      size="sm"
+                      variant="secondary"
+                    >
+                      Intern zertifizieren ({selectedCertifiable})
+                    </Button>
+                  )}
+                  {selectedSendable > 0 && (
+                    <Button
+                      disabled={isBulkWorking}
+                      icon={Send}
+                      loading={isBulkWorking}
+                      onClick={() => void handleBulkSendToClient()}
+                      size="sm"
+                      variant="primary"
+                    >
+                      An Kunden senden ({selectedSendable})
+                    </Button>
+                  )}
+                  {selectedInvoiceable > 0 && (
+                    <Button
+                      disabled={isBulkWorking}
+                      icon={Receipt}
+                      onClick={() => setBulkInvoiceModal({ open: true, invoiceNumber: '' })}
+                      size="sm"
+                      variant="secondary"
+                    >
+                      Fakturieren ({selectedInvoiceable})
+                    </Button>
+                  )}
+                  <Button onClick={() => setSelected(new Set())} size="sm" variant="ghost">
+                    Auswahl aufheben
+                  </Button>
+                </>
+              }
+              title={`${selected.size} ausgewählt`}
+              tone="info"
+            >
+              Bulk actions affect only compatible status lanes.
+            </Alert>
+          )}
+
+          {isLoading ? (
+            <Panel>
+              <div className="flex h-56 items-center justify-center">
+                <div className="nx-loader" />
+              </div>
+            </Panel>
+          ) : total === 0 ? (
+            <EmptyState
+              description="Keine Aufträge im Zertifizierungsprozess für die aktuelle Filterkombination."
+              title="Certification queue empty"
+            />
+          ) : (
+            <Panel
+              actions={
+                activeItems.length > 0 ? (
+                  <label className="nx-toggle-wrap">
+                    <input
+                      checked={allActiveSelected}
+                      className="nx-selection-checkbox"
+                      onChange={() => toggleSection(activeTab)}
+                      type="checkbox"
+                    />
+                    <span className="nx-toggle-label">Select lane</span>
+                  </label>
+                ) : null
+              }
+              meta={`${activeItems.length} items · ${fmtMoney(activeItems.reduce((sum, order) => sum + (orderTotals[order.id]?.client ?? 0), 0))}`}
+              padding="sm"
+              title={
+                <span className="inline-flex items-center gap-2">
+                  {activeSection.label}
+                  <Badge tone={SECTION_TONE[activeTab] ?? 'neutral'}>{L.status(activeTab) || activeTab}</Badge>
+                </span>
+              }
+            >
+              {activeItems.length === 0 ? (
+                <EmptyState
+                  description="Keine Aufträge in diesem Status. Wechsel die Pipeline-Lane oder passe die Filter an."
+                  title={activeSection.label}
+                />
+              ) : (
+                <div className="nx-cert-rows">
+                  {activeItems.map((order) => {
+                    const collab = orderCollabType(order)
+                    const isExternal = collab === 'external'
+                    const isDirect = order.client_id == null
+                    const totals = orderTotals[order.id] ?? { client: 0, external: 0 }
+                    const margin = isExternal ? totals.client - totals.external : 0
+
+                    return (
+                      <div className="nx-cert-row" key={order.id}>
+                        <input
+                          checked={selected.has(order.id)}
+                          className="nx-selection-checkbox"
+                          onChange={() => toggleOne(order.id)}
+                          type="checkbox"
+                        />
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="nx-cert-row-title">{order.order_number}</span>
+                            <Badge tone="neutral">{L.workType(order.work_type)}</Badge>
+                            {isDirect ? <Badge tone="info">Direkt</Badge> : null}
+                            {isExternal ? <Badge tone="accent">Extern</Badge> : null}
+                          </div>
+                          <div className="nx-cert-row-meta">
+                            <span>{order.clients?.name ?? (isDirect ? 'direkt' : 'client missing')}</span>
+                            <span>·</span>
+                            <span>{order.projects?.code ?? 'project missing'}</span>
+                            {order.assigned_team ? (
+                              <>
+                                <span>·</span>
+                                <span className="inline-flex items-center gap-1.5">
+                                  <span className={`h-2 w-2 rounded-full ${TEAM_DOT[order.assigned_team]}`} />
+                                  {order.assigned_team}
+                                </span>
+                              </>
+                            ) : null}
+                          </div>
+                        </div>
+
+                        <div>
+                          <span className="nx-cert-cell-label">Date</span>
+                          <span className="nx-cert-cell-value">
+                            {order.assigned_date ? new Date(order.assigned_date).toLocaleDateString('de-DE') : '—'}
+                          </span>
+                        </div>
+
+                        <div>
+                          <span className="nx-cert-cell-label">Client</span>
+                          <span className="nx-cert-cell-value">{totals.client > 0 ? fmtMoney(totals.client) : '—'}</span>
+                        </div>
+
+                        <div>
+                          <span className="nx-cert-cell-label">{isExternal ? 'Ext / Margin' : 'Internal'}</span>
+                          <span className="nx-cert-cell-value">
+                            {isExternal && totals.external > 0 ? `${fmtMoney(totals.external)} / ${fmtMoney(margin)}` : '—'}
+                          </span>
+                        </div>
+
+                        <Button iconRight={ArrowRight} onClick={() => navigate(`/admin/orders/${order.id}`)} size="sm" variant="ghost">
+                          Öffnen
+                        </Button>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </Panel>
+          )}
+        </div>
+      </div>
+
       {bulkInvoiceModal.open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          className="modal-scrim centered"
           onClick={(e) => { if (e.target === e.currentTarget) setBulkInvoiceModal({ open: false, invoiceNumber: '' }) }}
         >
-          <div className="w-full max-w-sm rounded-l border border-line bg-bg-1 p-6">
-            <h3 className="mb-2 font-display text-base font-bold text-fg-1">Sammel-Fakturierung</h3>
-            <p className="mb-3 text-sm text-fg-2">
-              Rechnungsnummer für {selectedInvoiceable} Aufträge (Pflichtfeld).
-            </p>
-            <input
-              type="text"
-              value={bulkInvoiceModal.invoiceNumber}
-              onChange={(e) => setBulkInvoiceModal((m) => ({ ...m, invoiceNumber: e.target.value }))}
-              placeholder="z.B. RE-2026-0042"
-              autoFocus
-              className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder-fg-4 focus:border-accent focus:outline-none mb-5"
-            />
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setBulkInvoiceModal({ open: false, invoiceNumber: '' })}
-                className="rounded-s border border-line px-4 py-2 text-sm font-medium text-fg-2 hover:border-accent hover:text-accent transition-colors"
-              >
-                Abbrechen
-              </button>
-              <button
-                onClick={() => void handleBulkInvoice()}
-                disabled={!bulkInvoiceModal.invoiceNumber.trim() || isBulkWorking}
-                className="rounded-s bg-err px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
-              >
-                {isBulkWorking ? '…' : 'Fakturieren'}
-              </button>
+          <div className="modal-card compact">
+            <div className="phead">
+              <div>
+                <div className="title">Sammel-Fakturierung</div>
+                <div className="m">{selectedInvoiceable} Aufträge · Pflichtfeld</div>
+              </div>
+            </div>
+            <div className="pbody space-y-5">
+              <div className="input">
+                <label>Rechnungsnummer</label>
+                <input
+                  autoFocus
+                  onChange={(e) => setBulkInvoiceModal((m) => ({ ...m, invoiceNumber: e.target.value }))}
+                  placeholder="z.B. RE-2026-0042"
+                  type="text"
+                  value={bulkInvoiceModal.invoiceNumber}
+                />
+              </div>
+              <div className="flex justify-end gap-3">
+                <Button onClick={() => setBulkInvoiceModal({ open: false, invoiceNumber: '' })} variant="ghost">
+                  Abbrechen
+                </Button>
+                <Button
+                  disabled={!bulkInvoiceModal.invoiceNumber.trim() || isBulkWorking}
+                  loading={isBulkWorking}
+                  onClick={() => void handleBulkInvoice()}
+                  variant="primary"
+                >
+                  Fakturieren
+                </Button>
+              </div>
             </div>
           </div>
         </div>

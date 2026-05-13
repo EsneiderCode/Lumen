@@ -105,7 +105,7 @@ export function InvoicePreviewModal({ order, collaboratorType, onClose, onConfir
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/95 px-4 py-8"
+      className="modal-scrim"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
       <div className="w-full max-w-3xl rounded-l border border-line bg-bg-1 overflow-hidden">
@@ -139,7 +139,7 @@ export function InvoicePreviewModal({ order, collaboratorType, onClose, onConfir
         <div className="p-6 space-y-5">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-line border-t-accent" />
+              <div className="nx-loader-sm" />
             </div>
           ) : lines.length === 0 ? (
             <div className="rounded-s border border-err/30 bg-err/5 px-4 py-3 text-sm text-err">

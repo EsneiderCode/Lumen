@@ -9,14 +9,14 @@ export function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div className="flex h-screen flex-col">
+    <div className="nx-app-shell flex h-screen flex-col">
       <OfflineBanner />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <div className="flex flex-1 flex-col overflow-hidden">
           <Topbar onOpenSidebar={() => setSidebarOpen(true)} />
-          <main className="flex-1 overflow-auto nexus-bg p-4 md:p-8">
-            <div className="page-fade-in">
+          <main className="nx-main flex-1 overflow-auto px-4 py-5 md:px-7 md:py-6">
+            <div className="nx-main-inner page-fade-in">
               <ErrorBoundary>
                 <Outlet />
               </ErrorBoundary>

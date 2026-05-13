@@ -88,7 +88,7 @@ Convenciones:
 
 ## Standards
 
-- **Design system**: Nothing Design System. See `BRIEF.md`. No `bg-gray-*`, no shadows, no `rounded-xl+`, accent reserved for CTAs/active/`.OS`.
+- **Design system**: NEXUS.OS pure from `/Users/jarl/Desktop/📦 Archives/Nexus.zip`. No generic Tailwind colors, shadows, blur, gradients, `rounded-xl+`, or solid semantic status buttons.
 - **State machine**: never write to `work_orders.status` directly. Always go through `transitionWorkOrderStatus()` in `src/services/workOrderService.ts`. The SQL trigger `validate_work_order_status_transition()` in `rls_policies.sql` enforces the same — keep both in sync.
 - **DB writes from this machine**: never apply migrations directly. Ship `.sql`, Alejandro applies in his Supabase, regenerates `src/types/database.types.ts`, ships in his merge.
 

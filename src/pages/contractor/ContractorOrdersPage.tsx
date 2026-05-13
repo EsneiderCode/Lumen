@@ -79,7 +79,7 @@ export function ContractorOrdersPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-accent" />
+        <div className="nx-loader" />
       </div>
     )
   }
@@ -171,7 +171,7 @@ function OrderCard({ order }: { order: WorkOrderWithRelations }) {
           {order.order_number}
         </span>
         <span
-          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[order.status]}`}
+          className={`badge badge-dot ${STATUS_COLORS[order.status]}`}
         >
           {L.status(order.status)}
         </span>

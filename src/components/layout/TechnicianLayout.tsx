@@ -26,25 +26,28 @@ export function TechnicianLayout() {
   ]
 
   return (
-    <div className="flex min-h-screen flex-col nexus-bg">
+    <div className="nx-app-shell flex min-h-screen flex-col">
       <OfflineBanner />
-      <header className="flex h-14 items-center gap-3 border-b border-line bg-bg-1 px-4">
+      <header className="nx-field-header">
         <div className={`h-3 w-3 rounded-full ${teamColorClass}`} />
-        <span className="font-display text-sm font-semibold text-fg-1">LUMEN</span>
+        <div>
+          <span className="nx-brand-name text-sm">LUMEN<span className="text-accent">.OS</span></span>
+          <div className="nx-brand-meta leading-none">FIELD MODE</div>
+        </div>
         <div className="ml-auto flex items-center gap-2">
           <LanguageSelector />
           <span className="hidden text-xs text-fg-2 sm:inline">{user?.fullName}</span>
           <button
             onClick={signOut}
-            className="rounded-s px-2 py-1 text-xs text-fg-2 transition-colors hover:text-err"
+            className="btn btn-g btn-sm"
           >
             {t('auth.signOut')}
           </button>
         </div>
       </header>
 
-      <main className="flex-1 p-4 pb-20">
-        <div className="page-fade-in">
+      <main className="nx-main flex-1 p-4 pb-20">
+        <div className="nx-main-inner page-fade-in">
           <ErrorBoundary>
             <Outlet />
           </ErrorBoundary>

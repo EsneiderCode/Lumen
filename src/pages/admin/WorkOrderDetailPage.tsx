@@ -319,7 +319,7 @@ export function WorkOrderDetailPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20" role="status" aria-label="Wird geladen">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-accent" aria-hidden="true" />
+        <div className="nx-loader" aria-hidden="true" />
       </div>
     )
   }
@@ -376,7 +376,7 @@ export function WorkOrderDetailPage() {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="font-display text-xl font-bold text-fg-1">{order.order_number}</h2>
-              <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[order.status]}`}>
+              <span className={`badge badge-dot ${STATUS_COLORS[order.status]}`}>
                 {L.status(order.status)}
               </span>
             </div>
@@ -444,7 +444,7 @@ export function WorkOrderDetailPage() {
               <button
                 disabled={isTransitioning}
                 onClick={handleCertify}
-                className="flex-1 rounded-s bg-ok px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity sm:flex-none"
+                className="flex-1 rounded-s bg-ok px-4 py-2 text-sm font-semibold text-ink hover:opacity-90 disabled:opacity-50 transition-opacity sm:flex-none"
               >
                 {isTransitioning ? (
                   'Wird zertifiziert…'
@@ -507,7 +507,7 @@ export function WorkOrderDetailPage() {
               <button
                 disabled={isTransitioning}
                 onClick={() => openModal('accept')}
-                className="flex-1 rounded-s bg-ok px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity sm:flex-none"
+                className="flex-1 rounded-s bg-ok px-4 py-2 text-sm font-semibold text-ink hover:opacity-90 disabled:opacity-50 transition-opacity sm:flex-none"
               >
                 <span className="inline-flex items-center gap-1.5"><CheckCircle2 size={14} strokeWidth={1.5} />Akzeptiert</span>
               </button>
@@ -555,7 +555,7 @@ export function WorkOrderDetailPage() {
             <button
               disabled={isTransitioning}
               onClick={() => setPreviewOpen(true)}
-              className="shrink-0 rounded-s bg-err px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+              className="shrink-0 rounded-s bg-err px-4 py-2 text-sm font-semibold text-ink hover:opacity-90 disabled:opacity-50 transition-opacity"
             >
               <span className="inline-flex items-center gap-1.5"><Receipt size={14} strokeWidth={1.5} />Fakturierung vorbereiten</span>
             </button>
@@ -574,7 +574,7 @@ export function WorkOrderDetailPage() {
             <button
               disabled={isTransitioning}
               onClick={() => setPreviewOpen(true)}
-              className="shrink-0 rounded-s bg-err px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+              className="shrink-0 rounded-s bg-err px-4 py-2 text-sm font-semibold text-ink hover:opacity-90 disabled:opacity-50 transition-opacity"
             >
               <span className="inline-flex items-center gap-1.5"><Receipt size={14} strokeWidth={1.5} />Direkt fakturieren</span>
             </button>
@@ -627,7 +627,7 @@ export function WorkOrderDetailPage() {
             <button
               disabled={isTransitioning}
               onClick={() => openModal('mark_paid')}
-              className="shrink-0 rounded-s bg-ok px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
+              className="shrink-0 rounded-s bg-ok px-4 py-2 text-sm font-semibold text-ink hover:opacity-90 disabled:opacity-50 transition-opacity"
             >
               <span className="inline-flex items-center gap-1.5"><CreditCard size={14} strokeWidth={1.5} />Als bezahlt markieren</span>
             </button>
@@ -967,7 +967,7 @@ export function WorkOrderDetailPage() {
                 </div>
                 <div className="flex-1 pb-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[entry.to_status]}`}>
+                    <span className={`badge badge-dot ${STATUS_COLORS[entry.to_status]}`}>
                       {L.status(entry.to_status)}
                     </span>
                     {entry.from_status && (
@@ -996,7 +996,7 @@ export function WorkOrderDetailPage() {
       {/* ── Modal ── */}
       {modal.type && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          className="modal-scrim centered"
           role="dialog"
           aria-modal="true"
           aria-label="Aktion bestätigen"
@@ -1145,7 +1145,7 @@ export function WorkOrderDetailPage() {
       {/* External-collaborator certification confirmation */}
       {externalCertOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4"
+          className="modal-scrim centered"
           onClick={(e) => { if (e.target === e.currentTarget) setExternalCertOpen(false) }}
         >
           <div className="w-full max-w-md rounded-l border border-accent/40 bg-bg-1 overflow-hidden">

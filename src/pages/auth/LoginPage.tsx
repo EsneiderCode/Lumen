@@ -62,25 +62,65 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center nexus-bg px-4">
-      <div className="relative z-10 w-full max-w-sm">
-        {/* Logo */}
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-l border border-accent/20 bg-bg-1">
-            <span className="font-display text-2xl font-bold text-accent">L</span>
+    <div className="nx-auth-shell">
+      <div className="nx-auth-grid">
+        <section className="nx-auth-brief" aria-label="NEXUS operations">
+          <div className="nx-brand-lockup">
+            <div className="nx-brand-mark">
+              <svg width="24" height="24" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                <rect x="6" y="6" width="6" height="28" fill="var(--color-fg-1)" />
+                <rect x="28" y="6" width="6" height="28" fill="var(--color-fg-1)" />
+                <path d="M12 8 L28 32 L28 26 L12 2 Z" fill="var(--color-accent)" />
+              </svg>
+            </div>
+            <div>
+              <div className="nx-brand-name">LUMEN<span className="text-accent">.OS</span></div>
+              <div className="nx-brand-meta">NEXUS ENGINEERING OPERATIONS</div>
+            </div>
           </div>
-          <h1 className="font-display text-2xl font-bold text-fg-1">LUMEN</h1>
-          <p className="mt-1 text-sm text-fg-2">Nexus Engineering Operations</p>
-        </div>
 
-        {/* Card */}
-        <div className="rounded-l border border-line-s bg-bg-1 p-6">
-          <div className="mb-5 grid grid-cols-2 border border-line-s">
+          <div>
+            <p className="nx-label mb-3">ACCESS CONTROL</p>
+            <h1 className="font-display text-4xl font-light leading-none text-fg-1">
+              Field execution, certification and billing command.
+            </h1>
+          </div>
+
+          <div className="nx-command-lines">
+            <span><b>NE3</b><em>WORK ORDERS</em></span>
+            <span><b>NE4</b><em>WORK MANAGER BRIDGE</em></span>
+            <span><b>PIN</b><em>TECH / CONTRACTOR FIELD MODE</em></span>
+          </div>
+        </section>
+
+        <div className="nx-auth-panel">
+          <div className="mb-6 md:hidden">
+            <div className="nx-brand-lockup">
+              <div className="nx-brand-mark">
+                <svg width="24" height="24" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                  <rect x="6" y="6" width="6" height="28" fill="var(--color-fg-1)" />
+                  <rect x="28" y="6" width="6" height="28" fill="var(--color-fg-1)" />
+                  <path d="M12 8 L28 32 L28 26 L12 2 Z" fill="var(--color-accent)" />
+                </svg>
+              </div>
+              <div>
+                <div className="nx-brand-name">LUMEN<span className="text-accent">.OS</span></div>
+                <div className="nx-brand-meta">NEXUS FIELD OPS</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mb-5">
+            <p className="nx-label">AUTHENTICATION</p>
+            <h2 className="mt-2 font-display text-2xl font-light text-fg-1">Secure entry</h2>
+          </div>
+
+          <div className="mb-5 grid grid-cols-2 border border-line-s bg-bg-0">
             <button
               type="button"
               onClick={() => { setMode('pin'); setError(null) }}
-              className={`flex items-center justify-center gap-2 px-3 py-2 text-sm transition-colors ${
-                mode === 'pin' ? 'bg-bg-3 text-fg-1' : 'text-fg-2 hover:bg-bg-2 hover:text-fg-1'
+              className={`flex items-center justify-center gap-2 px-3 py-2.5 text-sm transition-colors ${
+                mode === 'pin' ? 'bg-accent/10 text-accent' : 'text-fg-2 hover:bg-bg-2 hover:text-fg-1'
               }`}
             >
               <KeyRound size={15} strokeWidth={1.5} />
@@ -89,8 +129,8 @@ export function LoginPage() {
             <button
               type="button"
               onClick={() => { setMode('email'); setError(null) }}
-              className={`flex items-center justify-center gap-2 border-l border-line-s px-3 py-2 text-sm transition-colors ${
-                mode === 'email' ? 'bg-bg-3 text-fg-1' : 'text-fg-2 hover:bg-bg-2 hover:text-fg-1'
+              className={`flex items-center justify-center gap-2 border-l border-line-s px-3 py-2.5 text-sm transition-colors ${
+                mode === 'email' ? 'bg-accent/10 text-accent' : 'text-fg-2 hover:bg-bg-2 hover:text-fg-1'
               }`}
             >
               <Mail size={15} strokeWidth={1.5} />
@@ -99,15 +139,15 @@ export function LoginPage() {
           </div>
 
           {error && (
-            <div className="mb-4 rounded-s border border-err/20 bg-err/10 px-4 py-3 text-sm text-err">
+            <div className="notice notice-err mb-4">
               {error}
             </div>
           )}
 
           {mode === 'pin' ? (
             <form onSubmit={handlePinLogin} className="space-y-4">
-              <div>
-                <label htmlFor="login-code" className="block text-sm font-medium text-fg-3">
+              <div className="input">
+                <label htmlFor="login-code">
                   {t('authPin.loginCode')}
                 </label>
                 <input
@@ -118,12 +158,11 @@ export function LoginPage() {
                   required
                   autoCapitalize="none"
                   autoComplete="username"
-                  className="mt-1 block w-full rounded-s border border-line-s bg-bg-2 px-3 py-2.5 text-sm text-fg-1 placeholder-fg-4 transition-colors focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none"
                   placeholder={t('authPin.loginCodePlaceholder')}
                 />
               </div>
-              <div>
-                <label htmlFor="pin" className="block text-sm font-medium text-fg-3">
+              <div className="input">
+                <label htmlFor="pin">
                   {t('authPin.pin')}
                 </label>
                 <input
@@ -137,22 +176,22 @@ export function LoginPage() {
                   onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 8))}
                   required
                   autoComplete="current-password"
-                  className="mt-1 block w-full rounded-s border border-line-s bg-bg-2 px-3 py-2.5 text-center font-mono text-lg text-fg-1 placeholder-fg-4 transition-colors focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none"
+                  className="text-center font-mono text-lg"
                   placeholder="••••"
                 />
               </div>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full rounded-s bg-accent px-4 py-2.5 text-sm font-semibold text-fg-1 transition-colors hover:bg-accent disabled:opacity-50"
+                className="btn btn-p w-full"
               >
                 {isSubmitting ? t('auth.signingIn') : t('authPin.signIn')}
               </button>
             </form>
           ) : (
             <form onSubmit={handleEmailLogin} className="space-y-4">
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-fg-3">
+              <div className="input">
+                <label htmlFor="email">
                   {t('auth.email')}
                 </label>
                 <input
@@ -162,12 +201,11 @@ export function LoginPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   autoComplete="email"
-                  className="mt-1 block w-full rounded-s border border-line-s bg-bg-2 px-3 py-2.5 text-sm text-fg-1 placeholder-fg-4 transition-colors focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none"
                   placeholder="name@nexus-engineering.de"
                 />
               </div>
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-fg-3">
+              <div className="input">
+                <label htmlFor="password">
                   {t('auth.password')}
                 </label>
                 <input
@@ -177,30 +215,28 @@ export function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   autoComplete="current-password"
-                  className="mt-1 block w-full rounded-s border border-line-s bg-bg-2 px-3 py-2.5 text-sm text-fg-1 placeholder-fg-4 transition-colors focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none"
                 />
               </div>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full rounded-s bg-accent px-4 py-2.5 text-sm font-semibold text-fg-1 transition-colors hover:bg-accent disabled:opacity-50"
+                className="btn btn-p w-full"
               >
                 {isSubmitting ? t('auth.signingIn') : t('auth.signIn')}
               </button>
               <button
                 type="button"
                 onClick={() => navigate(ROUTES.FORGOT_PASSWORD)}
-                className="w-full text-center text-xs text-fg-2 transition-colors hover:text-accent"
+                className="nx-label w-full text-center transition-colors hover:text-accent"
               >
                 {t('auth.forgotPassword')}
               </button>
             </form>
           )}
-        </div>
 
-        {/* Language selector at bottom of login screen */}
-        <div className="mt-6 flex justify-center">
-          <LanguageSelector />
+          <div className="mt-6 flex justify-center border-t border-line pt-5">
+            <LanguageSelector />
+          </div>
         </div>
       </div>
     </div>

@@ -77,14 +77,15 @@ export function WorkOrdersPage() {
         </div>
         <button
           onClick={() => navigate('/admin/orders/new')}
-          className="flex items-center gap-2 rounded-s bg-accent px-4 py-2 text-sm font-semibold text-ink hover:bg-accent transition-colors"
+          className="btn btn-p"
         >
           <span className="text-base leading-none">+</span> Neuer Auftrag
         </button>
       </div>
 
       {/* Filters */}
-      <div className="mb-4 rounded-l border border-line bg-bg-1 p-4 space-y-3">
+      <div className="panel mb-4">
+        <div className="pbody space-y-3">
         {/* Row 1 */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {/* Search */}
@@ -94,11 +95,11 @@ export function WorkOrdersPage() {
               placeholder="Suchen…"
               value={search}
               onChange={(e) => { setPage(0); setSearch(e.target.value) }}
-              className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 pr-8 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              className="w-full rounded-s border border-line-s bg-bg-0 px-3 py-2 pr-8 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
             />
             {(search !== debouncedSearch || (isLoading && debouncedSearch !== '')) && (
               <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2">
-                <span className="block h-3.5 w-3.5 animate-spin rounded-full border-2 border-line border-t-accent" />
+                <span className="nx-loader-sm block h-3.5 w-3.5" />
               </span>
             )}
           </div>
@@ -110,7 +111,7 @@ export function WorkOrdersPage() {
               setPage(0)
               setFilters((f) => ({ ...f, status: (e.target.value as WorkOrderStatus) || undefined }))
             }}
-            className="rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            className="rounded-s border border-line-s bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           >
             <option value="">Alle Status</option>
             {L.statusOptions().map(({ value, label }) => (
@@ -125,7 +126,7 @@ export function WorkOrdersPage() {
               setPage(0)
               setFilters((f) => ({ ...f, team: (e.target.value as TeamColor) || undefined }))
             }}
-            className="rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            className="rounded-s border border-line-s bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           >
             <option value="">Alle Teams</option>
             <option value="rot">Rot</option>
@@ -141,7 +142,7 @@ export function WorkOrdersPage() {
               setPage(0)
               setFilters((f) => ({ ...f, work_type: (e.target.value as WorkType) || undefined }))
             }}
-            className="rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            className="rounded-s border border-line-s bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           >
             <option value="">Alle Typen</option>
             {L.workTypeOptions().map(({ value, label }) => (
@@ -159,7 +160,7 @@ export function WorkOrdersPage() {
               setPage(0)
               setFilters((f) => ({ ...f, client_id: e.target.value || undefined }))
             }}
-            className="rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            className="rounded-s border border-line-s bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           >
             <option value="">Alle Kunden</option>
             {clients.map((c) => (
@@ -174,7 +175,7 @@ export function WorkOrdersPage() {
               setPage(0)
               setFilters((f) => ({ ...f, project_id: e.target.value || undefined }))
             }}
-            className="rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            className="rounded-s border border-line-s bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           >
             <option value="">Alle Projekte</option>
             {projects.map((p) => (
@@ -189,7 +190,7 @@ export function WorkOrdersPage() {
               setPage(0)
               setFilters((f) => ({ ...f, priority: (e.target.value as 'normal' | 'alta' | 'urgente') || undefined }))
             }}
-            className="rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            className="rounded-s border border-line-s bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           >
             <option value="">Alle Prioritäten</option>
             {L.priorityOptions().map(({ value, label }) => (
@@ -205,7 +206,7 @@ export function WorkOrdersPage() {
               setPage(0)
               setFilters((f) => ({ ...f, date_from: e.target.value || undefined }))
             }}
-            className="rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            className="rounded-s border border-line-s bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
             title="Einsatzdatum von"
           />
 
@@ -217,28 +218,29 @@ export function WorkOrdersPage() {
               setPage(0)
               setFilters((f) => ({ ...f, date_to: e.target.value || undefined }))
             }}
-            className="rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            className="rounded-s border border-line-s bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
             title="Einsatzdatum bis"
           />
 
           {/* Reset */}
           <button
             onClick={() => { setPage(0); setFilters({}); setSearch('') }}
-            className="rounded-s border border-line px-3 py-2 text-sm text-fg-2 hover:border-accent hover:text-accent transition-colors"
+            className="btn btn-g"
           >
             Zurücksetzen
           </button>
+        </div>
         </div>
       </div>
 
       {/* Error */}
       {error && (
-        <div role="alert" className="mb-4 flex items-center justify-between gap-4 rounded-s border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
+        <div role="alert" className="notice notice-err mb-4 flex items-center justify-between gap-4">
           <span>{error}</span>
           <button
             onClick={() => { setError(null); setPage(0) }}
             aria-label="Erneut versuchen"
-            className="flex shrink-0 items-center gap-1.5 rounded-s border border-err/30 px-2.5 py-1 text-xs text-err hover:bg-err/10 transition-colors"
+            className="btn btn-danger btn-sm shrink-0"
           >
             <RefreshCw size={12} strokeWidth={1.5} aria-hidden="true" />
             Wiederholen
@@ -247,14 +249,14 @@ export function WorkOrdersPage() {
       )}
 
       {/* Table */}
-      <div className="rounded-l border border-line bg-bg-1 overflow-hidden">
+      <div className="panel">
         {isLoading ? (
           <div className="flex items-center justify-center py-16" role="status" aria-label="Wird geladen">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-accent" aria-hidden="true" />
+            <div className="nx-loader" aria-hidden="true" />
           </div>
         ) : orders.length === 0 ? (
-          <div className="py-16 text-center">
-            <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full border border-line bg-bg-0">
+          <div className="nx-empty border-0">
+            <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full border border-line bg-bg-0">
               <ClipboardList size={18} strokeWidth={1.5} className="text-fg-3" aria-hidden="true" />
             </div>
             <p className="text-sm font-medium text-fg-1">Keine Aufträge gefunden</p>
@@ -266,7 +268,7 @@ export function WorkOrdersPage() {
             {Object.keys(filters).length === 0 && !debouncedSearch && (
               <button
                 onClick={() => navigate('/admin/orders/new')}
-                className="mt-4 rounded-s border border-line px-4 py-2 text-xs text-fg-2 hover:border-accent hover:text-accent transition-colors"
+                className="btn btn-g mt-2"
               >
                 + Neuer Auftrag
               </button>
@@ -291,7 +293,7 @@ export function WorkOrdersPage() {
                 {orders.map((order) => (
                   <tr
                     key={order.id}
-                    className={`hover:bg-bg-0/50 transition-colors ${order.status === 'rueckmeldung_sent' ? 'bg-warn/60' : ''}`}
+                    className={`hover:bg-bg-0/50 transition-colors ${order.status === 'rueckmeldung_sent' ? 'bg-warn/10' : ''}`}
                   >
                     <td className="px-4 py-3">
                       <span className="font-mono font-semibold text-accent text-xs">
@@ -317,12 +319,12 @@ export function WorkOrdersPage() {
                       )}
                     </td>
                     <td className="px-4 py-3 hidden md:table-cell">
-                      <span className={`text-xs font-medium ${PRIORITY_COLORS[order.priority]}`}>
+                      <span className={`badge ${PRIORITY_COLORS[order.priority]}`}>
                         {L.priority(order.priority)}
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[order.status]}`}>
+                      <span className={`badge badge-dot ${STATUS_COLORS[order.status]}`}>
                         {L.status(order.status)}
                       </span>
                     </td>
@@ -410,12 +412,12 @@ export function WorkOrdersPage() {
       {/* Delete confirmation modal */}
       {deleteId && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          className="modal-scrim centered"
           role="dialog"
           aria-modal="true"
           aria-labelledby="delete-order-title"
         >
-          <div className="w-full max-w-sm rounded-l border border-line bg-bg-1 p-6">
+          <div className="modal-card compact p-6">
             <h3 id="delete-order-title" className="mb-2 font-display text-base font-semibold text-fg-1">
               Auftrag löschen?
             </h3>
@@ -425,13 +427,13 @@ export function WorkOrdersPage() {
             <div className="flex gap-3">
               <button
                 onClick={() => setDeleteId(null)}
-                className="flex-1 rounded-s border border-line px-4 py-2 text-sm font-medium text-fg-1 hover:bg-bg-0 transition-colors"
+                className="btn btn-g flex-1"
               >
                 Abbrechen
               </button>
               <button
                 onClick={() => handleDelete(deleteId)}
-                className="flex-1 rounded-s bg-err px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+                className="btn btn-danger flex-1"
               >
                 Löschen
               </button>

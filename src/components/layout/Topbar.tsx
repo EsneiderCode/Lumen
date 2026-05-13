@@ -17,7 +17,7 @@ export function Topbar({ onOpenSidebar }: TopbarProps) {
   const { isInstallable, promptInstall } = useInstallPrompt()
 
   return (
-    <header className="flex h-12 items-center gap-5 border-b border-line bg-bg-1 px-4 md:px-5">
+    <header className="flex h-12 items-center gap-4 border-b border-line bg-bg-1 px-4 md:px-5">
       {/* Hamburger — mobile only */}
       <button
         onClick={onOpenSidebar}
@@ -53,7 +53,7 @@ export function Topbar({ onOpenSidebar }: TopbarProps) {
       <LanguageSelector />
 
       {/* User + signout */}
-      <span className="nx-label hidden md:inline-block">{user?.fullName}</span>
+      <span className="nx-label hidden max-w-44 truncate md:inline-block">{user?.fullName}</span>
       <button onClick={signOut} className="nx-tb-btn" aria-label={t('auth.signOut')}>
         {t('auth.signOut')}
       </button>
