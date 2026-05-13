@@ -1,6 +1,6 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- Migration 007 — Contractor documents + external payment certification gate
--- Depends on: 001_initial_schema.sql, 005_billing_direct_orders.sql
+-- Migration 011 — Contractor documents + external payment certification gate
+-- Depends on: 001_initial_schema.sql, 009_billing_flow_extensions.sql, 010_pin_auth_operational_users.sql
 -- Purpose:
 --   - Track required contractor compliance documents.
 --   - Allow admin/contractor uploads with admin approval.

@@ -1,5 +1,5 @@
--- Migration 008 — Material inventory by vehicle + Rückmeldung consumption
--- Depends on: 007_contractor_documents.sql
+-- Migration 012 — Material inventory by vehicle + Rückmeldung consumption
+-- Depends on: 011_contractor_documents.sql
 --
 -- Adds client-scoped material catalog data, vehicles assigned to exactly one
 -- team, vehicle stock balances, stock movement audit, and material consumption

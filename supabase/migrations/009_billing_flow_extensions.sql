@@ -1,6 +1,6 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- Migration 005 — Billing flow + direct orders
--- Depends on: 001_initial_schema.sql, 002_cert_audit.sql, 004_service_catalog_seed.sql
+-- Migration 009 — Billing flow extensions + direct orders
+-- Depends on: 001_initial_schema.sql, 002_cert_audit.sql, 004_service_catalog_seed.sql, 005_direct_orders_and_billing.sql, 006_collaborator_pricing.sql, 008_wo_service_item_id.sql
 -- Purpose:
 --   - Direct orders can exist without client_id.
 --   - Service catalog stores internal and external collaborator prices.

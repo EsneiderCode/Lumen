@@ -1,6 +1,6 @@
 -- ─────────────────────────────────────────────────────────────────────────────
--- Migration 006 — PIN auth + operational user management
--- Depends on: 001_initial_schema.sql, 005_billing_direct_orders.sql
+-- Migration 010 — PIN auth + operational user management
+-- Depends on: 001_initial_schema.sql, 009_billing_flow_extensions.sql
 -- Purpose:
 --   - Store technician/contractor PINs as one-way hashes.
 --   - Add simple login codes for field PIN login.
