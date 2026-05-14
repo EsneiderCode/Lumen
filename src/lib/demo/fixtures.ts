@@ -330,8 +330,12 @@ export const initialFixtures = () => ({
   wo_detail_fusion_dp: [],
 
   wo_detail_alta: [
-    { id: 'd3000000-0000-0000-0000-000000000003', work_order_id: WO_3, access_type: 'Tiefbau', equipment_installed: 'NT-1234, ONT-5678', client_signature: true, created_at: NOW },
-    { id: 'd3000000-0000-0000-0000-000000000007', work_order_id: WO_7_EXTERNAL, access_type: 'Hausanschluss', equipment_installed: 'NT-9001, ONT-7700, Patchkabel 5m', client_signature: true, created_at: LAST_WEEK },
+    { id: 'd3000000-0000-0000-0000-000000000003', work_order_id: WO_3, access_type: 'Tiefbau', equipment_installed: 'NT-1234, ONT-5678', client_signature: true, reported_service_items: [], created_at: NOW },
+    { id: 'd3000000-0000-0000-0000-000000000007', work_order_id: WO_7_EXTERNAL, access_type: 'Hausanschluss', equipment_installed: 'NT-9001, ONT-7700, Patchkabel 5m', client_signature: true, reported_service_items: [
+      { service_item_id: SI_ALTA_BASIC, qty: 1, notes: null },
+      { service_item_id: SI_ALTA_NT, qty: 1, notes: null },
+      { service_item_id: SI_PATCHKABEL, qty: 1, notes: null },
+    ], created_at: LAST_WEEK },
   ],
 
   wo_detail_nt: [],

@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { workTypeToDetailTable, generateDataHash } from '@/services/workOrderService'
+import {
+  workTypeToDetailTable,
+  generateDataHash,
+  normalizeReportedServiceItems,
+  buildBillingDraftsFromReportedItems,
+} from '@/services/workOrderService'
 import type { WorkType } from '@/types/enums'
 
 // ── workTypeToDetailTable ───────────────────────────────────────────────────
@@ -42,6 +47,78 @@ describe('generateDataHash', () => {
   it('handles nested objects and arrays', async () => {
     const hash = await generateDataHash({ nested: { x: [1, 2, 3] } })
     expect(hash).toHaveLength(64)
+  })
+})
+
+// ── reported service items → billing drafts ────────────────────────────────
+
+describe('reported service items', () => {
+  it('normalizes only valid non-priced technician reports', () => {
+    expect(normalizeReportedServiceItems([
+      { service_item_id: ' item-1 ', qty: '2', notes: ' Router ' },
+      { service_item_id: '', qty: 3 },
+      { service_item_id: 'item-2', qty: 0 },
+      { service_item_id: 'item-3', qty: Number.NaN },
+      null,
+    ])).toEqual([
+      { service_item_id: 'item-1', qty: 2, notes: 'Router' },
+    ])
+  })
+
+  it('builds admin billing drafts from reported items and priced catalog', () => {
+    const drafts = buildBillingDraftsFromReportedItems(
+      [
+        { service_item_id: 'item-1', qty: 2, notes: 'Router' },
+        { service_item_id: 'missing', qty: 1, notes: null },
+        { service_item_id: 'no-price', qty: 1, notes: null },
+      ],
+      [
+        {
+          id: 'item-1',
+          code: 'ALT-001',
+          description_de: 'Installation',
+          description_es: null,
+          unit: 'Stk',
+          unit_price: 120,
+          unit_price_external: 95,
+          operator_id: null,
+          client_id: null,
+          detail_form: 'alta',
+          display_order: 1,
+          active: true,
+          notes: null,
+          created_at: '2026-01-01T00:00:00Z',
+          updated_at: '2026-01-01T00:00:00Z',
+        },
+        {
+          id: 'no-price',
+          code: 'ALT-NP',
+          description_de: 'Missing price',
+          description_es: null,
+          unit: 'Stk',
+          unit_price: null,
+          unit_price_external: null,
+          operator_id: null,
+          client_id: null,
+          detail_form: 'alta',
+          display_order: 2,
+          active: true,
+          notes: null,
+          created_at: '2026-01-01T00:00:00Z',
+          updated_at: '2026-01-01T00:00:00Z',
+        },
+      ],
+    )
+
+    expect(drafts).toEqual([
+      {
+        service_item_id: 'item-1',
+        qty: 2,
+        unit_price_snapshot: 120,
+        unit_price_external_snapshot: 95,
+        notes: 'Router',
+      },
+    ])
   })
 })
 

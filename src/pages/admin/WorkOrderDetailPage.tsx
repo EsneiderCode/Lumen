@@ -19,12 +19,16 @@ import {
   fetchWorkOrderDetail,
   fetchWorkOrderPhotos,
   fetchStateHistory,
+  fetchBillingLines,
+  buildBillingDraftsFromReportedItems,
+  normalizeReportedServiceItems,
   transitionWorkOrderStatus,
   workTypeToDetailTable,
   getPhotoSignedUrls,
   generateDataHash,
   insertCertificationAudit,
   fetchCertificationAudits,
+  upsertBillingLines,
   getCollaboratorType,
   type CollaboratorType,
   type WorkOrderWithRelations,
@@ -36,6 +40,7 @@ import { useLabels } from '@/i18n/labels'
 import { STATUS_COLORS, TEAM_DOT } from '@/constants/styles'
 import { DocumentUploader } from '@/components/ui/DocumentUploader'
 import { notifyOrderReturnedForCorrection } from '@/services/notificationService'
+import { fetchServiceItems } from '@/services/serviceItemService'
 import { InvoicePreviewModal } from '@/components/admin/InvoicePreviewModal'
 import { fetchContractorDocumentCompliance } from '@/services/contractorDocumentService'
 import type { ContractorDocumentType } from '@/types/contractor-documents'
@@ -251,6 +256,56 @@ export function WorkOrderDetailPage() {
 
   async function handleCertify() {
     if (!order || !user) return
+    // Prices belong to admin certification, not to the service order visible
+    // in the field. Before sealing an Alta order, refresh price snapshots from
+    // the admin-only billing/catalog query so technicians never need to carry
+    // or see amounts.
+    if (order.work_type === 'alta') {
+      const reportedItems = normalizeReportedServiceItems(detail.reported_service_items)
+      let drafts = []
+
+      if (reportedItems.length > 0) {
+        const { data: catalog, error: catalogErr } = await fetchServiceItems({
+          includeInactive: true,
+          includePrices: true,
+        })
+        if (catalogErr) {
+          setError(catalogErr)
+          return
+        }
+
+        drafts = buildBillingDraftsFromReportedItems(reportedItems, catalog)
+        if (drafts.length !== reportedItems.length) {
+          setError('Ein oder mehrere gemeldete Service-Posten fehlen im Katalog oder haben keinen internen Preis.')
+          return
+        }
+      } else {
+        // Backward compatibility for Alta orders reported before migration 015.
+        const { data: lines, error: lineErr } = await fetchBillingLines(order.id)
+        if (lineErr) {
+          setError(lineErr)
+          return
+        }
+        if (lines.length === 0) {
+          setError('Keine geleisteten Posten für diese Alta-Rückmeldung vorhanden.')
+          return
+        }
+        drafts = lines.map((line) => ({
+          id: line.id,
+          service_item_id: line.service_item_id,
+          qty: Number(line.qty),
+          unit_price_snapshot: Number(line.service_items?.unit_price ?? line.unit_price_snapshot ?? 0),
+          unit_price_external_snapshot: line.service_items?.unit_price_external ?? line.unit_price_external_snapshot ?? null,
+          notes: line.notes,
+        }))
+      }
+
+      const { error: priceErr } = await upsertBillingLines(order.id, drafts)
+      if (priceErr) {
+        setError(priceErr)
+        return
+      }
+    }
     // LUM-024: generate audit hash before transitioning.
     // Include sorted photo paths so swapping a photo post-certification
     // invalidates the hash — photos are load-bearing evidence, they must
@@ -720,9 +775,6 @@ export function WorkOrderDetailPage() {
             </div>
             <div className="flex items-center gap-3 text-xs text-fg-2 font-mono">
               {order.service_items.unit && <span>{order.service_items.unit}</span>}
-              {order.service_items.unit_price != null && (
-                <span className="text-fg-1">{order.service_items.unit_price.toFixed(2)} €</span>
-              )}
             </div>
           </div>
         </div>

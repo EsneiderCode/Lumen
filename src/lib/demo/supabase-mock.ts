@@ -618,7 +618,8 @@ function makeFunctions() {
 export function createDemoSupabaseClient() {
   return {
     from(table: string) {
-      return makeBuilder(table as keyof DemoStore)
+      const physicalTable = table === 'service_items_public' ? 'service_items' : table
+      return makeBuilder(physicalTable as keyof DemoStore)
     },
     auth: makeAuth(),
     storage: makeStorage(),

@@ -36,9 +36,8 @@ import {
   transitionWorkOrderStatus,
   workTypeToDetailTable,
   getPhotoSignedUrls,
-  fetchBillingLines,
-  upsertBillingLines,
-  type BillingLineDraft,
+  normalizeReportedServiceItems,
+  type ReportedServiceItemDraft,
   type WorkOrderWithRelations,
 } from '@/services/workOrderService'
 import { fetchServiceItems } from '@/services/serviceItemService'
@@ -88,10 +87,9 @@ export function RueckmeldungPage() {
   const [savedOk, setSavedOk] = useState(false)
   const [returnedNote, setReturnedNote] = useState<string | null>(null)
 
-  // Alta multi-item billing lines (work_order_billing_lines)
-  // Loaded only when work_type === 'alta'. Each draft holds an `id` when
-  // existing in DB so upsert can distinguish updates from inserts.
-  const [billingDrafts, setBillingDrafts] = useState<Array<BillingLineDraft & { _key: string }>>([])
+  // Alta multi-item service report. Technicians record executed items without
+  // price data; admin certification materializes protected billing lines.
+  const [reportedDrafts, setReportedDrafts] = useState<Array<ReportedServiceItemDraft & { _key: string }>>([])
   const [catalog, setCatalog] = useState<ServiceItemWithRelations[]>([])
   const [vehicles, setVehicles] = useState<InventoryVehicle[]>([])
   const [selectedVehicleId, setSelectedVehicleId] = useState('')
@@ -135,25 +133,16 @@ export function RueckmeldungPage() {
         setDetail(rest)
       }
 
-      // For Alta orders, load existing billing lines + the service-item catalog
-      // (filtered by client+operator so technician only sees relevant rates).
+      // For Alta orders, load field-reported service items + the service-item
+      // catalog. Price columns are deliberately omitted from this field screen.
       if (orderData.work_type === 'alta') {
-        const [{ data: lines }, { data: items }] = await Promise.all([
-          fetchBillingLines(id),
-          fetchServiceItems({ includeInactive: false }),
-        ])
-        const drafts = lines.map((l) => ({
-          _key: l.id,
-          id: l.id,
-          service_item_id: l.service_item_id,
-          qty: Number(l.qty),
-          unit_price_snapshot: Number(l.unit_price_snapshot),
-          unit_price_external_snapshot: l.unit_price_external_snapshot != null
-            ? Number(l.unit_price_external_snapshot)
-            : null,
-          notes: l.notes,
-        }))
-        setBillingDrafts(drafts)
+        const { data: items } = await fetchServiceItems({ includeInactive: false })
+        const drafts = normalizeReportedServiceItems((detailData as Record<string, unknown> | null)?.reported_service_items)
+          .map((item, index) => ({
+            _key: `reported-${index}-${item.service_item_id}`,
+            ...item,
+          }))
+        setReportedDrafts(drafts)
         // Filter catalog by order's client and operator so the picker only shows
         // applicable rates (catalog rows with NULL client/operator stay visible
         // as "global" entries).
@@ -184,45 +173,39 @@ export function RueckmeldungPage() {
     fetchVehicleStock(selectedVehicleId).then(({ data }) => setVehicleStock(data))
   }, [selectedVehicleId])
 
-  // Billing-line CRUD on the local drafts (saved on handleSave / handleSend)
-  function addBillingLine() {
-    setBillingDrafts((prev) => [
+  // Reported service-item CRUD on the local drafts (saved on handleSave / handleSend)
+  function addReportedLine() {
+    setReportedDrafts((prev) => [
       ...prev,
       {
         _key: `new-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         service_item_id: '',
         qty: 1,
-        unit_price_snapshot: 0,
-        unit_price_external_snapshot: null,
         notes: null,
       },
     ])
   }
 
-  function removeBillingLine(key: string) {
-    setBillingDrafts((prev) => prev.filter((d) => d._key !== key))
+  function removeReportedLine(key: string) {
+    setReportedDrafts((prev) => prev.filter((d) => d._key !== key))
   }
 
-  function setBillingLineField<K extends keyof BillingLineDraft>(
+  function setReportedLineField<K extends keyof ReportedServiceItemDraft>(
     key: string,
     field: K,
-    value: BillingLineDraft[K],
+    value: ReportedServiceItemDraft[K],
   ) {
-    setBillingDrafts((prev) => prev.map((d) => {
-      if (d._key !== key) return d
-      const updated = { ...d, [field]: value }
-      // When the technician picks a service_item, snapshot both prices from the catalog.
-      // The technician never sees these — they are written to DB for the admin's
-      // CertificationPage to read later.
-      if (field === 'service_item_id') {
-        const item = catalog.find((c) => c.id === value)
-        if (item) {
-          updated.unit_price_snapshot = item.unit_price ?? 0
-          updated.unit_price_external_snapshot = item.unit_price_external ?? null
-        }
-      }
-      return updated
-    }))
+    setReportedDrafts((prev) => prev.map((d) => (
+      d._key === key ? { ...d, [field]: value } : d
+    )))
+  }
+
+  function detailWithReportedItems() {
+    if (order?.work_type !== 'alta') return detail
+    return {
+      ...detail,
+      reported_service_items: normalizeReportedServiceItems(reportedDrafts),
+    }
   }
 
   function setDetailField(key: string, value: unknown) {
@@ -309,26 +292,13 @@ export function RueckmeldungPage() {
     setSavedOk(false)
 
     const table = workTypeToDetailTable(order.work_type)
-    const { error } = await upsertWorkOrderDetail(table, id, detail)
+    const { error } = await upsertWorkOrderDetail(table, id, detailWithReportedItems())
     if (error) {
       setError(error)
       setIsSaving(false)
       return
     }
 
-    // For Alta orders, also persist billing lines (multi-item)
-    if (order.work_type === 'alta') {
-      const valid = billingDrafts.filter((d) => d.service_item_id && d.qty > 0)
-      const { error: blErr } = await upsertBillingLines(
-        id,
-        valid.map(({ _key: _k, ...rest }) => { void _k; return rest }),
-      )
-      if (blErr) {
-        setError(blErr)
-        setIsSaving(false)
-        return
-      }
-    }
 
     setSavedOk(true)
     setTimeout(() => setSavedOk(false), 3000)
@@ -342,26 +312,13 @@ export function RueckmeldungPage() {
 
     // First save detail
     const table = workTypeToDetailTable(order.work_type)
-    const { error: detailError } = await upsertWorkOrderDetail(table, id, detail)
+    const { error: detailError } = await upsertWorkOrderDetail(table, id, detailWithReportedItems())
     if (detailError) {
       setError(detailError)
       setIsSending(false)
       return
     }
 
-    // For Alta orders, also persist billing lines before transitioning
-    if (order.work_type === 'alta') {
-      const valid = billingDrafts.filter((d) => d.service_item_id && d.qty > 0)
-      const { error: blErr } = await upsertBillingLines(
-        id,
-        valid.map(({ _key: _k, ...rest }) => { void _k; return rest }),
-      )
-      if (blErr) {
-        setError(blErr)
-        setIsSending(false)
-        return
-      }
-    }
 
     const validConsumption = consumptionDrafts.filter((d) => d.material_id && d.quantity > 0)
     if (validConsumption.length > 0) {
@@ -508,20 +465,20 @@ export function RueckmeldungPage() {
             </div>
             <button
               type="button"
-              onClick={addBillingLine}
+              onClick={addReportedLine}
               className="rounded-s border border-accent bg-accent/10 px-3 py-1.5 text-xs font-semibold text-accent hover:bg-accent/20 transition-colors"
             >
               + Posten
             </button>
           </div>
 
-          {billingDrafts.length === 0 ? (
+          {reportedDrafts.length === 0 ? (
             <p className="rounded-s border border-dashed border-line bg-bg-0 p-3 text-center text-xs text-fg-2">
               Noch keine Posten. Klick auf <span className="font-semibold text-accent">+ Posten</span>.
             </p>
           ) : (
             <div className="space-y-2">
-              {billingDrafts.map((line) => {
+              {reportedDrafts.map((line) => {
                 const selectedItem = catalog.find((c) => c.id === line.service_item_id)
                 return (
                   <div
@@ -534,7 +491,7 @@ export function RueckmeldungPage() {
                       </label>
                       <select
                         value={line.service_item_id}
-                        onChange={(e) => setBillingLineField(line._key, 'service_item_id', e.target.value)}
+                        onChange={(e) => setReportedLineField(line._key, 'service_item_id', e.target.value)}
                         className="w-full rounded-s border border-line bg-bg-1 px-2 py-1.5 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                       >
                         <option value="">— wählen —</option>
@@ -557,14 +514,14 @@ export function RueckmeldungPage() {
                         step="0.01"
                         min="0"
                         value={line.qty}
-                        onChange={(e) => setBillingLineField(line._key, 'qty', Number(e.target.value))}
+                        onChange={(e) => setReportedLineField(line._key, 'qty', Number(e.target.value))}
                         className="w-full rounded-s border border-line bg-bg-1 px-2 py-1.5 text-right font-mono text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                       />
                     </div>
                     <div className="flex items-end">
                       <button
                         type="button"
-                        onClick={() => removeBillingLine(line._key)}
+                        onClick={() => removeReportedLine(line._key)}
                         className="rounded-s border border-err/40 px-3 py-1.5 text-xs text-err hover:bg-err/10 transition-colors"
                         title="Posten entfernen"
                       >

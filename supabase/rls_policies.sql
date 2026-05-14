@@ -43,15 +43,12 @@ CREATE POLICY "profiles_insert_admin"
   ON profiles FOR INSERT TO authenticated
   WITH CHECK (public.get_user_role() = 'admin');
 
--- Admins can update any profile
+-- Admins can update any profile. Non-admin self-updates are intentionally
+-- disabled because authorization-sensitive fields live on profiles.
 CREATE POLICY "profiles_update_admin"
   ON profiles FOR UPDATE TO authenticated
-  USING (public.get_user_role() = 'admin');
-
--- Users can update their own profile
-CREATE POLICY "profiles_update_own"
-  ON profiles FOR UPDATE TO authenticated
-  USING (id = auth.uid()) WITH CHECK (id = auth.uid());
+  USING (public.get_user_role() = 'admin')
+  WITH CHECK (public.get_user_role() = 'admin');
 
 
 -- ============================================================

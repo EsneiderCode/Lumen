@@ -30,3 +30,7 @@ dev-dist
 *.sln
 *.sw?
 docs/
+# Local Pi runtime state
+.atl/
+.pi/
+.pi-lens/

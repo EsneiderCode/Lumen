@@ -294,6 +294,8 @@ export async function commitMaterialImport(args: {
   }
 }
 
+// TODO(db): move this client-side stock mutation flow into a transactional
+// Postgres RPC/Edge Function with row locks on (vehicle_id, material_id).
 export async function registerMaterialConsumption(args: {
   workOrderId: string
   vehicleId: string

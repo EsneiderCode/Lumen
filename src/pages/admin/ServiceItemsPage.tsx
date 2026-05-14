@@ -413,7 +413,7 @@ export function ServiceItemsPage() {
 
   const load = useCallback(async (showLoading = true) => {
     if (showLoading) setIsLoading(true)
-    const { data } = await fetchServiceItems({ includeInactive })
+    const { data } = await fetchServiceItems({ includeInactive, includePrices: true })
     setItems(data)
     setIsLoading(false)
   }, [includeInactive])

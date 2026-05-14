@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase'
 import type { Database } from '@/types/database.types'
 import type { WorkOrderStatus, WorkType, TeamColor, UserRole } from '@/types/enums'
 import { fetchContractorDocumentCompliance } from '@/services/contractorDocumentService'
+import type { ServiceItem } from '@/types/service-items'
 
 // ── State machine ──────────────────────────────────────────────────────────
 
@@ -228,8 +229,6 @@ export interface WorkOrderWithRelations extends WorkOrderRow {
     description_de: string
     description_es: string | null
     unit: string | null
-    unit_price: number | null
-    unit_price_external: number | null
     detail_form: string | null
   } | null
 }
@@ -336,7 +335,7 @@ export async function fetchWorkOrder(id: string) {
       clients ( name, code ),
       projects ( name, code ),
       operators ( name, code ),
-      service_items ( id, code, description_de, description_es, unit, unit_price, unit_price_external, detail_form )
+      service_items ( id, code, description_de, description_es, unit, detail_form )
     `)
     .eq('id', id)
     .single()
@@ -794,7 +793,52 @@ export async function fetchCertificationAudits(workOrderId: string) {
   }
 }
 
-// ── Billing lines (Migration 005 + 006) ────────────────────────────────────
+// ── Field-reported service items + admin billing lines ─────────────────────
+
+export interface ReportedServiceItemDraft {
+  service_item_id: string
+  qty: number
+  notes?: string | null
+}
+
+export function normalizeReportedServiceItems(value: unknown): ReportedServiceItemDraft[] {
+  if (!Array.isArray(value)) return []
+
+  return value.flatMap((item) => {
+    if (!item || typeof item !== 'object') return []
+    const row = item as Record<string, unknown>
+    const serviceItemId = typeof row.service_item_id === 'string' ? row.service_item_id.trim() : ''
+    const qty = Number(row.qty)
+    if (!serviceItemId || !Number.isFinite(qty) || qty <= 0) return []
+
+    const rawNotes = row.notes
+    return [{
+      service_item_id: serviceItemId,
+      qty,
+      notes: typeof rawNotes === 'string' && rawNotes.trim() ? rawNotes.trim() : null,
+    }]
+  })
+}
+
+export function buildBillingDraftsFromReportedItems(
+  reportedItems: ReportedServiceItemDraft[],
+  catalog: ServiceItem[],
+): BillingLineDraft[] {
+  const catalogById = new Map(catalog.map((item) => [item.id, item]))
+
+  return normalizeReportedServiceItems(reportedItems).flatMap((item) => {
+    const catalogItem = catalogById.get(item.service_item_id)
+    if (!catalogItem || catalogItem.unit_price == null) return []
+
+    return [{
+      service_item_id: item.service_item_id,
+      qty: item.qty,
+      unit_price_snapshot: Number(catalogItem.unit_price),
+      unit_price_external_snapshot: catalogItem.unit_price_external ?? null,
+      notes: item.notes ?? null,
+    }]
+  })
+}
 
 export interface BillingLine {
   id: string
@@ -847,6 +891,8 @@ export async function fetchBillingLines(workOrderId: string) {
  * captured at insert time and never re-derived from service_items, so
  * historical billings survive catalog price edits.
  */
+// TODO(db): replace this multi-step client-side delete/update/insert flow
+// with an atomic Postgres RPC before billing is used in production accounting.
 export async function upsertBillingLines(
   workOrderId: string,
   drafts: BillingLineDraft[],

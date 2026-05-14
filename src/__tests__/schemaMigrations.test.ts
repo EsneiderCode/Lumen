@@ -11,14 +11,26 @@ const migrationSql = readdirSync(migrationsDir)
   .map((file) => readFileSync(join(migrationsDir, file), 'utf8'))
   .join('\n')
   .toLowerCase()
+const notificationServiceSource = readFileSync(
+  join(process.cwd(), 'src', 'services', 'notificationService.ts'),
+  'utf8',
+).toLowerCase()
+const supabaseConfig = readFileSync(
+  join(process.cwd(), 'supabase', 'config.toml'),
+  'utf8',
+).toLowerCase()
 
 describe('database migrations cover billing workflow schema', () => {
   it('allows direct orders without a client', () => {
-    expect(migrationSql).toMatch(/alter\s+table\s+(public\.)?work_orders[\s\S]*alter\s+column\s+client_id\s+drop\s+not\s+null/)
+    expect(migrationSql).toMatch(
+      /alter\s+table\s+(public\.)?work_orders[\s\S]*alter\s+column\s+client_id\s+drop\s+not\s+null/,
+    )
   })
 
   it('adds external pricing to service items', () => {
-    expect(migrationSql).toMatch(/alter\s+table\s+(public\.)?service_items[\s\S]*add\s+column\s+if\s+not\s+exists\s+unit_price_external/)
+    expect(migrationSql).toMatch(
+      /alter\s+table\s+(public\.)?service_items[\s\S]*add\s+column\s+if\s+not\s+exists\s+unit_price_external/,
+    )
   })
 
   it('creates billing lines with price snapshots', () => {
@@ -61,11 +73,52 @@ describe('database migrations cover billing workflow schema', () => {
   it('tracks material inventory by vehicle and Rückmeldung consumption', () => {
     expect(migrationSql).toContain('create table if not exists public.inventory_vehicles')
     expect(migrationSql).toContain('create table if not exists public.vehicle_material_stock')
-    expect(migrationSql).toContain('create table if not exists public.work_order_material_consumptions')
+    expect(migrationSql).toContain(
+      'create table if not exists public.work_order_material_consumptions',
+    )
     expect(migrationSql).toContain('create table if not exists public.stock_movements')
     expect(migrationSql).toContain('catalog_source')
     expect(migrationSql).toContain('idx_materials_catalog_sku_unique')
     expect(migrationSql).toContain('movement_type')
     expect(migrationSql).toContain('tech_correction')
+  })
+
+  it('locks down profile self-updates that could change authorization fields', () => {
+    expect(migrationSql).toContain('013_lock_down_profile_self_updates')
+    expect(migrationSql).toContain('drop policy if exists "users can update own profile"')
+    expect(migrationSql).toContain('drop policy if exists "profiles_update_own"')
+    expect(migrationSql).toContain('drop policy if exists "profiles_update_admin"')
+    expect(migrationSql).toMatch(
+      /create\s+policy\s+"profiles_update_admin"[\s\S]*with check \(public\.get_user_role\(\) = 'admin'\)/,
+    )
+  })
+
+  it('keeps Telegram bot credentials out of the browser bundle', () => {
+    expect(notificationServiceSource).not.toContain('vite_telegram_bot_token')
+    expect(notificationServiceSource).toContain("functions.invoke('send-telegram'")
+    expect(supabaseConfig).toContain('[functions.send-telegram]')
+    expect(supabaseConfig).toContain('verify_jwt = true')
+  })
+
+  it('keeps pricing admin-only outside certification/accounting screens', () => {
+    expect(migrationSql).toContain('migration 014')
+    expect(migrationSql).toContain('drop policy if exists "si_read_active"')
+    expect(migrationSql).toContain('create view public.service_items_public')
+    expect(migrationSql).not.toContain('si.unit_price')
+    expect(migrationSql).not.toContain('si.unit_price_external')
+    expect(migrationSql).toContain('drop policy if exists "wobl_assignee_select"')
+    expect(migrationSql).toMatch(
+      /create\s+policy\s+"wobl_admin_all"[\s\S]*with check \(public\.get_user_role\(\) = 'admin'\)/,
+    )
+  })
+
+  it('stores technician-reported Alta service items outside billing lines', () => {
+    expect(migrationSql).toContain('migration 015')
+    expect(migrationSql).toContain('depends on: 014_lock_down_service_pricing.sql')
+    expect(migrationSql).toMatch(
+      /alter\s+table\s+(public\.)?wo_detail_alta[\s\S]*add\s+column\s+if\s+not\s+exists\s+reported_service_items\s+jsonb\s+not\s+null\s+default\s+'\[\]'::jsonb/,
+    )
+    expect(migrationSql).toContain('wo_detail_alta_reported_service_items_array')
+    expect(migrationSql).toContain("check (jsonb_typeof(reported_service_items) = 'array')")
   })
 })

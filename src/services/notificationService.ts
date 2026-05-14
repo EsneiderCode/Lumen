@@ -1,20 +1,17 @@
 /**
- * Notification service — Telegram webhook integration.
- * Reads VITE_TELEGRAM_BOT_TOKEN and VITE_TELEGRAM_CHAT_ID from env.
+ * Notification service — Telegram integration via Supabase Edge Function.
+ * Bot credentials stay server-side in TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID.
  * All functions are fire-and-forget: failures are logged but never thrown.
  */
 
-const BOT_TOKEN = import.meta.env.VITE_TELEGRAM_BOT_TOKEN as string | undefined
-const CHAT_ID = import.meta.env.VITE_TELEGRAM_CHAT_ID as string | undefined
+import { supabase } from '@/lib/supabase'
 
-async function sendTelegram(text: string): Promise<void> {
-  if (!BOT_TOKEN || !CHAT_ID) return
+async function sendTelegram(payload: Record<string, string>): Promise<void> {
   try {
-    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: CHAT_ID, text, parse_mode: 'HTML' }),
+    const { error } = await supabase.functions.invoke('send-telegram', {
+      body: payload,
     })
+    if (error) console.warn('[notification] send-telegram failed', error.message)
   } catch {
     // Non-critical — never break the main flow
   }
@@ -29,11 +26,10 @@ export async function notifyOrderReturnedForCorrection(
   reason: string,
   adminName?: string,
 ): Promise<void> {
-  const who = adminName ? ` por <b>${adminName}</b>` : ''
-  const text =
-    `⚠️ <b>Orden devuelta para corrección</b>\n\n` +
-    `🔖 OS: <b>${orderNumber}</b>\n` +
-    `👤 Devuelta${who}\n\n` +
-    `📋 <b>Motivo:</b>\n${reason}`
-  await sendTelegram(text)
+  await sendTelegram({
+    type: 'order_returned_for_correction',
+    orderNumber,
+    reason,
+    ...(adminName ? { adminName } : {}),
+  })
 }
