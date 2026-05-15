@@ -12,6 +12,11 @@
 
 import { getStore, saveStore, demoUuid } from './store'
 import { DEMO_PASSWORD, DEMO_TECH_PIN, type DemoStore } from './fixtures'
+import {
+  buildContractorDocumentFailureReasons,
+  reasonsToMessage,
+} from '@/services/workOrderBusinessRules'
+import type { ContractorDocument } from '@/types/contractor-documents'
 
 type Row = Record<string, unknown>
 type FilterOp = 'eq' | 'gte' | 'lte' | 'is' | 'in'
@@ -75,7 +80,9 @@ function applyOr(rows: Row[], or: OrFilter): Row[] {
           return r[col] === valRaw
         case 'ilike': {
           const pattern = valRaw.replace(/%/g, '').toLowerCase()
-          return String(r[col] ?? '').toLowerCase().includes(pattern)
+          return String(r[col] ?? '')
+            .toLowerCase()
+            .includes(pattern)
         }
         default:
           return false
@@ -153,7 +160,12 @@ function parseSelect(input: string): ParsedSelect {
   }
 }
 
-function attachRelations(rows: Row[], parent: keyof DemoStore, parsed: ParsedSelect, store: DemoStore): Row[] {
+function attachRelations(
+  rows: Row[],
+  parent: keyof DemoStore,
+  parsed: ParsedSelect,
+  store: DemoStore,
+): Row[] {
   if (parsed.relations.length === 0) return rows
 
   return rows.map((row) => {
@@ -161,8 +173,9 @@ function attachRelations(rows: Row[], parent: keyof DemoStore, parsed: ParsedSel
     for (const rel of parsed.relations) {
       const relTable = rel.name as keyof DemoStore
       if (!(relTable in store)) continue
-      const fkCol = rel.fkCol
-        ?? (parent === 'materials' && rel.name === 'clients'
+      const fkCol =
+        rel.fkCol ??
+        (parent === 'materials' && rel.name === 'clients'
           ? 'catalog_client_id'
           : `${rel.name.replace(/s$/, '')}_id`) // clients → client_id
       const relRows = store[relTable] as unknown as Row[]
@@ -284,16 +297,18 @@ function makeBuilder(table: keyof DemoStore): MockBuilder {
       return builder
     },
     single() {
-      return execute(state, 'single') as Promise<{ data: Row | null; error: { message: string } | null }>
+      return execute(state, 'single') as Promise<{
+        data: Row | null
+        error: { message: string } | null
+      }>
     },
     maybeSingle() {
       return execute(state, 'maybe') as Promise<{ data: Row | null; error: null }>
     },
     then(onFulfilled, onRejected) {
-      return (execute(state, 'list') as Promise<{ data: Row[] | null; error: null; count?: number }>).then(
-        onFulfilled,
-        onRejected,
-      )
+      return (
+        execute(state, 'list') as Promise<{ data: Row[] | null; error: null; count?: number }>
+      ).then(onFulfilled, onRejected)
     },
     catch(onRejected) {
       return execute(state, 'list').catch(onRejected)
@@ -327,7 +342,10 @@ interface MockBuilder {
   catch: (onRejected: (reason: unknown) => unknown) => Promise<unknown>
 }
 
-async function execute(state: BuilderState, kind: 'list' | 'single' | 'maybe' = 'list'): Promise<{
+async function execute(
+  state: BuilderState,
+  kind: 'list' | 'single' | 'maybe' = 'list',
+): Promise<{
   data: Row | Row[] | null
   count?: number
   error: { message: string } | null
@@ -407,7 +425,9 @@ async function execute(state: BuilderState, kind: 'list' | 'single' | 'maybe' = 
   if (kind === 'maybe') {
     return { data: rows[0] ?? null, error: null }
   }
-  return state.countMode ? { data: rows, count: totalCount, error: null } : { data: rows, error: null }
+  return state.countMode
+    ? { data: rows, count: totalCount, error: null }
+    : { data: rows, error: null }
 }
 
 // ── Auth ────────────────────────────────────────────────────────────────────
@@ -423,20 +443,32 @@ function makeAuth() {
   return {
     async signInWithPassword({ email, password }: { email: string; password: string }) {
       if (password !== DEMO_PASSWORD) {
-        return { data: { user: null, session: null }, error: { message: 'Invalid login (use demo123)' } }
+        return {
+          data: { user: null, session: null },
+          error: { message: 'Invalid login (use demo123)' },
+        }
       }
       const store = getStore()
       const user = store.profiles.find((p) => p.email === email)
       if (!user) {
-        return { data: { user: null, session: null }, error: { message: `No demo account for ${email}` } }
+        return {
+          data: { user: null, session: null },
+          error: { message: `No demo account for ${email}` },
+        }
       }
-      store._session = { user: { id: user.id, email: user.email ?? '' }, access_token: 'demo-token' }
+      store._session = {
+        user: { id: user.id, email: user.email ?? '' },
+        access_token: 'demo-token',
+      }
       saveStore(store)
       notifyAll('SIGNED_IN', { user })
       return { data: { user, session: { user, access_token: 'demo-token' } }, error: null }
     },
     async signInWithOtp() {
-      return { data: { user: null, session: null }, error: { message: 'OTP not supported in demo mode' } }
+      return {
+        data: { user: null, session: null },
+        error: { message: 'OTP not supported in demo mode' },
+      }
     },
     async signOut() {
       const store = getStore()
@@ -510,8 +542,47 @@ function makeStorage() {
 
 // ── RPC ─────────────────────────────────────────────────────────────────────
 
+function addStateHistory(
+  store: DemoStore,
+  workOrderId: string,
+  fromStatus: unknown,
+  toStatus: string,
+  changedBy: string,
+  notes: string | null,
+) {
+  ;(store.work_order_state_history as Row[]).push({
+    id: demoUuid(),
+    work_order_id: workOrderId,
+    from_status: fromStatus as string | null,
+    to_status: toStatus,
+    changed_by: changedBy,
+    notes,
+    created_at: new Date().toISOString(),
+  })
+}
+
+function addCertificationAudit(
+  store: DemoStore,
+  workOrderId: string,
+  certType: string,
+  changedBy: string,
+  dataHash: string,
+  notes: string | null,
+) {
+  ;(store.certification_audits as Row[]).push({
+    id: demoUuid(),
+    work_order_id: workOrderId,
+    cert_type: certType,
+    certified_by: changedBy,
+    certified_at: new Date().toISOString(),
+    data_hash: dataHash,
+    notes,
+    created_at: new Date().toISOString(),
+  })
+}
+
 function makeRpc() {
-  return async (fn: string, _params?: Record<string, unknown>) => {
+  return async (fn: string, params: Record<string, unknown> = {}) => {
     if (fn === 'generate_order_number') {
       const store = getStore()
       const today = new Date().toISOString().slice(0, 10).replace(/-/g, '')
@@ -522,6 +593,138 @@ function makeRpc() {
       const seq = String(todayCount + 1).padStart(4, '0')
       return { data: `${todayPrefix}${seq}`, error: null }
     }
+
+    if (fn === 'assign_work_order_checked') {
+      const store = getStore()
+      const workOrderId = String(params.p_work_order_id ?? '')
+      const assigneeId = String(params.p_assignee_id ?? '')
+      const changedBy = String(params.p_changed_by ?? '')
+      const assignedDate = String(params.p_assigned_date ?? new Date().toISOString().slice(0, 10))
+      const notes = (params.p_notes as string | null | undefined) ?? null
+      const order = store.work_orders.find((item) => item.id === workOrderId)
+      if (!order) return { data: null, error: { message: 'Work order not found' } }
+
+      const assignee = store.profiles.find((profile) => profile.id === assigneeId)
+      if (assignee?.role === 'contractor') {
+        const docs = store.contractor_documents.filter((doc) => doc.contractor_id === assigneeId)
+        const reasons = buildContractorDocumentFailureReasons(
+          docs as ContractorDocument[],
+          assignedDate,
+        )
+        if (reasons.length > 0) {
+          const message = reasons
+            .map(
+              (reason) =>
+                `${reason.requirementId ?? reason.documentType ?? reason.code}: ${reason.message}`,
+            )
+            .join('; ')
+          return { data: null, error: { message: message || reasonsToMessage(reasons) } }
+        }
+      }
+
+      const fromStatus = order.status
+      Object.assign(order as Row, {
+        assigned_team: (params.p_team as string | null | undefined) ?? null,
+        assigned_technician: assigneeId || null,
+        assigned_date: assignedDate,
+        status: 'assigned',
+        updated_at: new Date().toISOString(),
+      })
+      addStateHistory(store, workOrderId, fromStatus, 'assigned', changedBy, notes)
+      saveStore(store)
+      return { data: order, error: null }
+    }
+
+    if (fn === 'certify_work_order_internal') {
+      const store = getStore()
+      const workOrderId = String(params.p_work_order_id ?? '')
+      const changedBy = String(params.p_changed_by ?? '')
+      const dataHash = String(params.p_data_hash ?? '')
+      const notes = (params.p_notes as string | null | undefined) ?? null
+      const order = store.work_orders.find((item) => item.id === workOrderId)
+      if (!order) return { data: null, error: { message: 'Work order not found' } }
+      if (!dataHash)
+        return { data: null, error: { message: 'Internal audit data hash is required' } }
+      if (order.status !== 'rueckmeldung_sent') {
+        return {
+          data: null,
+          error: { message: 'Internal certification requires rueckmeldung_sent status' },
+        }
+      }
+
+      const fromStatus = order.status
+      Object.assign(order as Row, {
+        status: 'internally_certified',
+        updated_at: new Date().toISOString(),
+      })
+      addCertificationAudit(store, workOrderId, 'internal', changedBy, dataHash, notes)
+      addStateHistory(store, workOrderId, fromStatus, 'internally_certified', changedBy, notes)
+      saveStore(store)
+      return { data: order, error: null }
+    }
+
+    if (fn === 'accept_work_order_client') {
+      const store = getStore()
+      const workOrderId = String(params.p_work_order_id ?? '')
+      const changedBy = String(params.p_changed_by ?? '')
+      const dataHash = String(params.p_data_hash ?? '')
+      const notes = (params.p_notes as string | null | undefined) ?? null
+      const order = store.work_orders.find((item) => item.id === workOrderId)
+      if (!order) return { data: null, error: { message: 'Work order not found' } }
+      if (!dataHash) return { data: null, error: { message: 'Client audit data hash is required' } }
+      if (order.client_id === null) {
+        return { data: null, error: { message: 'Direct orders cannot be client accepted' } }
+      }
+      if (order.status !== 'sent_to_client') {
+        return {
+          data: null,
+          error: { message: 'Client acceptance requires sent_to_client status' },
+        }
+      }
+
+      const fromStatus = order.status
+      Object.assign(order as Row, {
+        status: 'client_accepted',
+        updated_at: new Date().toISOString(),
+      })
+      addCertificationAudit(store, workOrderId, 'client', changedBy, dataHash, notes)
+      addStateHistory(store, workOrderId, fromStatus, 'client_accepted', changedBy, notes)
+      saveStore(store)
+      return { data: order, error: null }
+    }
+
+    if (fn === 'invoice_work_order_checked') {
+      const store = getStore()
+      const workOrderId = String(params.p_work_order_id ?? '')
+      const changedBy = String(params.p_changed_by ?? '')
+      const billingReference = (params.p_billing_reference as string | null | undefined) ?? null
+      const notes = (params.p_notes as string | null | undefined) ?? null
+      const order = store.work_orders.find((item) => item.id === workOrderId)
+      if (!order) return { data: null, error: { message: 'Work order not found' } }
+      const isDirect = order.client_id === null
+      const requiredCert = isDirect ? 'internal' : 'client'
+      const requiredStatus = isDirect ? 'internally_certified' : 'client_accepted'
+      const hasAudit = store.certification_audits.some(
+        (audit) => audit.work_order_id === workOrderId && audit.cert_type === requiredCert,
+      )
+      if (order.status !== requiredStatus) {
+        return { data: null, error: { message: `Invoice requires ${requiredStatus} status` } }
+      }
+      if (!hasAudit) {
+        return { data: null, error: { message: `Invoice requires ${requiredCert} audit` } }
+      }
+
+      const fromStatus = order.status
+      Object.assign(order as Row, {
+        status: 'invoiced',
+        billing_reference: billingReference,
+        updated_at: new Date().toISOString(),
+      })
+      addStateHistory(store, workOrderId, fromStatus, 'invoiced', changedBy, notes)
+      saveStore(store)
+      return { data: order, error: null }
+    }
+
     return { data: null, error: { message: `RPC ${fn} not supported in demo mode` } }
   }
 }
@@ -536,16 +739,20 @@ function makeFunctions() {
       if (functionName === 'pin-login') {
         const loginCode = String(options.body?.loginCode ?? '').toLowerCase()
         const pin = String(options.body?.pin ?? '')
-        const user = store.profiles.find((p) =>
-          p.pin_login_code === loginCode &&
-          p.is_active &&
-          ['technician', 'contractor'].includes(String(p.role)),
+        const user = store.profiles.find(
+          (p) =>
+            p.pin_login_code === loginCode &&
+            p.is_active &&
+            ['technician', 'contractor'].includes(String(p.role)),
         )
         if (!user || pin !== DEMO_TECH_PIN) {
           return { data: null, error: { message: 'Invalid demo PIN (use 1234)' } }
         }
         user.last_pin_login_at = new Date().toISOString()
-        store._session = { user: { id: user.id, email: user.email ?? '' }, access_token: 'demo-pin-token' }
+        store._session = {
+          user: { id: user.id, email: user.email ?? '' },
+          access_token: 'demo-pin-token',
+        }
         saveStore(store)
         return {
           data: {
@@ -608,7 +815,10 @@ function makeFunctions() {
         }
       }
 
-      return { data: null, error: { message: `Function ${functionName} not supported in demo mode` } }
+      return {
+        data: null,
+        error: { message: `Function ${functionName} not supported in demo mode` },
+      }
     },
   }
 }

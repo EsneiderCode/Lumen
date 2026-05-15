@@ -1,5 +1,6 @@
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Migration 014 — Lock down service catalog pricing
+-- Depends on: 013_lock_down_profile_self_updates.sql
 -- Purpose:
 --   Service orders should not expose prices to technicians/contractors.
 --   Only admins see price columns in catalog/billing/certification flows.

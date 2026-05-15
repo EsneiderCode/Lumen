@@ -1,17 +1,32 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
-import { ArrowRight, Check, Clock3, Download, Euro, FileSpreadsheet, Filter, Receipt, Send, ShieldCheck, Workflow } from 'lucide-react'
+import {
+  ArrowRight,
+  Check,
+  Clock3,
+  Download,
+  Euro,
+  FileSpreadsheet,
+  Filter,
+  Receipt,
+  Send,
+  ShieldCheck,
+  Workflow,
+} from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { buildDatevCsv, downloadDatevCsv } from '@/services/datevExportService'
 import {
   fetchWorkOrders,
-  transitionWorkOrderStatus,
+  bulkWorkOrderAction,
+  generateDataHash,
   fetchProjects,
   fetchTechnicians,
   fetchBillingLines,
   getCollaboratorType,
   type WorkOrderWithRelations,
   type CollaboratorType,
+  type BulkWorkOrderAction,
+  type BulkWorkOrderResult,
 } from '@/services/workOrderService'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
@@ -35,16 +50,38 @@ const CERT_STATUSES: WorkOrderStatus[] = [
   'invoiced',
 ]
 
-const SECTIONS: { status: WorkOrderStatus; label: string; description: string; bulkAction?: string }[] = [
-  { status: 'rueckmeldung_sent', label: 'Rückmeldung eingegangen', description: 'Warten auf interne Zertifizierung', bulkAction: 'certify' },
-  { status: 'internally_certified', label: 'Intern zertifiziert', description: 'Bereit zur Weiterleitung an den Kunden', bulkAction: 'send_to_client' },
+const SECTIONS: {
+  status: WorkOrderStatus
+  label: string
+  description: string
+  bulkAction?: string
+}[] = [
+  {
+    status: 'rueckmeldung_sent',
+    label: 'Rückmeldung eingegangen',
+    description: 'Warten auf interne Zertifizierung',
+    bulkAction: 'certify',
+  },
+  {
+    status: 'internally_certified',
+    label: 'Intern zertifiziert',
+    description: 'Bereit zur Weiterleitung an den Kunden',
+    bulkAction: 'send_to_client',
+  },
   { status: 'sent_to_client', label: 'Beim Kunden', description: 'Warten auf Kundenentscheid' },
   { status: 'client_rejected', label: 'Abgelehnt', description: 'Zur Überarbeitung zurückgegeben' },
-  { status: 'client_accepted', label: 'Akzeptiert', description: 'Bereit zur Fakturierung', bulkAction: 'invoice' },
+  {
+    status: 'client_accepted',
+    label: 'Akzeptiert',
+    description: 'Bereit zur Fakturierung',
+    bulkAction: 'invoice',
+  },
   { status: 'invoiced', label: 'Fakturiert', description: 'Warten auf Zahlungseingang' },
 ]
 
-const SECTION_TONE: Partial<Record<WorkOrderStatus, 'neutral' | 'info' | 'ok' | 'warn' | 'err' | 'accent'>> = {
+const SECTION_TONE: Partial<
+  Record<WorkOrderStatus, 'neutral' | 'info' | 'ok' | 'warn' | 'err' | 'accent'>
+> = {
   rueckmeldung_sent: 'warn',
   internally_certified: 'ok',
   sent_to_client: 'info',
@@ -66,6 +103,7 @@ export function CertificationPage() {
   const [orders, setOrders] = useState<WorkOrderWithRelations[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isBulkWorking, setIsBulkWorking] = useState(false)
+  const [bulkResult, setBulkResult] = useState<BulkWorkOrderResult | null>(null)
 
   // Filters
   const [filterTeam, setFilterTeam] = useState<TeamColor | ''>('')
@@ -78,13 +116,18 @@ export function CertificationPage() {
   // Profiles map (id → role) — drives internal vs external classification
   // Plus per-order billing-line totals derived from work_order_billing_lines
   const [profileRoles, setProfileRoles] = useState<Record<string, UserRole>>({})
-  const [orderTotals, setOrderTotals] = useState<Record<string, { client: number; external: number }>>({})
+  const [orderTotals, setOrderTotals] = useState<
+    Record<string, { client: number; external: number }>
+  >({})
 
   // Selection
   const [selected, setSelected] = useState<Set<string>>(new Set())
 
   // Bulk invoice modal
-  const [bulkInvoiceModal, setBulkInvoiceModal] = useState<BulkInvoiceModal>({ open: false, invoiceNumber: '' })
+  const [bulkInvoiceModal, setBulkInvoiceModal] = useState<BulkInvoiceModal>({
+    open: false,
+    invoiceNumber: '',
+  })
 
   // refreshKey increments to re-trigger the load effect after bulk actions
   const [refreshKey, setRefreshKey] = useState(0)
@@ -102,7 +145,9 @@ export function CertificationPage() {
         date_from: filterDateFrom || undefined,
         date_to: filterDateTo || undefined,
       }
-      const results = await Promise.all(CERT_STATUSES.map((s) => fetchWorkOrders({ ...filters, status: s })))
+      const results = await Promise.all(
+        CERT_STATUSES.map((s) => fetchWorkOrders({ ...filters, status: s })),
+      )
       if (cancelled) return
       const all = results.flatMap((r) => r.data)
       setOrders(all)
@@ -112,24 +157,28 @@ export function CertificationPage() {
       // in the row. work_order_billing_lines.subtotal is GENERATED in DB, so
       // summing `qty * unit_price_snapshot` here mirrors the DB result.
       const totals: Record<string, { client: number; external: number }> = {}
-      await Promise.all(all.map(async (o) => {
-        const { data: lines } = await fetchBillingLines(o.id)
-        let client = 0
-        let external = 0
-        for (const l of lines) {
-          client += Number(l.qty) * Number(l.unit_price_snapshot)
-          if (l.unit_price_external_snapshot != null) {
-            external += Number(l.qty) * Number(l.unit_price_external_snapshot)
+      await Promise.all(
+        all.map(async (o) => {
+          const { data: lines } = await fetchBillingLines(o.id)
+          let client = 0
+          let external = 0
+          for (const l of lines) {
+            client += Number(l.qty) * Number(l.unit_price_snapshot)
+            if (l.unit_price_external_snapshot != null) {
+              external += Number(l.qty) * Number(l.unit_price_external_snapshot)
+            }
           }
-        }
-        totals[o.id] = { client, external }
-      }))
+          totals[o.id] = { client, external }
+        }),
+      )
       if (cancelled) return
       setOrderTotals(totals)
       setIsLoading(false)
     }
     void load()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [filterTeam, filterProject, filterDateFrom, filterDateTo, refreshKey])
 
   useEffect(() => {
@@ -147,7 +196,7 @@ export function CertificationPage() {
       ])
       const map: Record<string, UserRole> = {}
       for (const t of (techs ?? []) as Array<{ id: string }>) map[t.id] = 'technician'
-      for (const c of ((contractorRes.data ?? []) as Array<{ id: string; role: UserRole }>)) {
+      for (const c of (contractorRes.data ?? []) as Array<{ id: string; role: UserRole }>) {
         map[c.id] = c.role
       }
       setProfileRoles(map)
@@ -159,11 +208,12 @@ export function CertificationPage() {
     return getCollaboratorType(profileRoles[order.assigned_technician])
   }
 
-  const byStatus = (status: WorkOrderStatus) => orders.filter((o) => {
-    if (o.status !== status) return false
-    if (filterCollab && orderCollabType(o) !== filterCollab) return false
-    return true
-  })
+  const byStatus = (status: WorkOrderStatus) =>
+    orders.filter((o) => {
+      if (o.status !== status) return false
+      if (filterCollab && orderCollabType(o) !== filterCollab) return false
+      return true
+    })
 
   function fmtMoney(n: number): string {
     return n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'
@@ -189,42 +239,80 @@ export function CertificationPage() {
     })
   }
 
-  async function bulkTransition(ids: string[], toStatus: WorkOrderStatus, notes: string) {
+  async function runBulkAction(args: {
+    action: BulkWorkOrderAction
+    ids: string[]
+    notes: string
+    dataHash?: string
+    billingReference?: string | null
+  }) {
     if (!user) return
+    const workOrders = orders
+      .filter((order) => args.ids.includes(order.id))
+      .map((order) => ({ id: order.id, orderNumber: order.order_number }))
     setIsBulkWorking(true)
-    await Promise.all(ids.map((id) => transitionWorkOrderStatus(id, toStatus, user.id, notes, user.role)))
+    setBulkResult(null)
+    const result = await bulkWorkOrderAction({
+      action: args.action,
+      workOrders,
+      changedBy: user.id,
+      dataHash: args.dataHash,
+      billingReference: args.billingReference ?? null,
+      notes: args.notes,
+    })
+    setBulkResult(result)
     setIsBulkWorking(false)
     setRefreshKey((k) => k + 1)
   }
 
   async function handleBulkCertify() {
-    const ids = orders.filter((o) => o.status === 'rueckmeldung_sent' && selected.has(o.id)).map((o) => o.id)
+    const ids = orders
+      .filter((o) => o.status === 'rueckmeldung_sent' && selected.has(o.id))
+      .map((o) => o.id)
     if (!ids.length) return
-    await bulkTransition(ids, 'internally_certified', 'Bulk intern zertifiziert durch Admin')
+    const dataHash = await generateDataHash({
+      action: 'bulk_internal_certify',
+      ids,
+      certified_by: user?.id,
+      certified_at: new Date().toISOString(),
+    })
+    await runBulkAction({
+      action: 'internal_certify',
+      ids,
+      dataHash,
+      notes: 'Bulk intern zertifiziert durch Admin',
+    })
   }
 
   async function handleBulkSendToClient() {
-    const ids = orders.filter((o) => o.status === 'internally_certified' && selected.has(o.id)).map((o) => o.id)
+    const ids = orders
+      .filter((o) => o.status === 'internally_certified' && selected.has(o.id))
+      .map((o) => o.id)
     if (!ids.length) return
-    await bulkTransition(ids, 'sent_to_client', 'Bulk an Kunden gesendet')
+    await runBulkAction({ action: 'send_to_client', ids, notes: 'Bulk an Kunden gesendet' })
   }
 
   async function handleBulkInvoice() {
     const invoiceNum = bulkInvoiceModal.invoiceNumber.trim()
     if (!invoiceNum) return
-    const ids = orders.filter((o) => o.status === 'client_accepted' && selected.has(o.id)).map((o) => o.id)
+    const ids = orders
+      .filter((o) => o.status === 'client_accepted' && selected.has(o.id))
+      .map((o) => o.id)
     if (!ids.length) return
     setBulkInvoiceModal({ open: false, invoiceNumber: '' })
-    await bulkTransition(ids, 'invoiced', `Rechnung: ${invoiceNum}`)
+    await runBulkAction({
+      action: 'invoice',
+      ids,
+      billingReference: invoiceNum,
+      notes: `Rechnung: ${invoiceNum}`,
+    })
   }
 
   /** Builds a DATEV-Buchungsstapel CSV from invoiced orders.
    *  If selection is non-empty, only selected orders ship; otherwise all
    *  invoiced orders in the current view are exported. */
   function handleDatevExport() {
-    const candidatePool = selected.size > 0
-      ? orders.filter((o) => selected.has(o.id))
-      : orders
+    const candidatePool = selected.size > 0 ? orders.filter((o) => selected.has(o.id)) : orders
     const invoicedOrders = candidatePool.filter((o) => o.status === 'invoiced')
     if (invoicedOrders.length === 0) return
 
@@ -240,21 +328,17 @@ export function CertificationPage() {
   }
 
   function handleExcelExport() {
-    const selectedOrders = selected.size > 0
-      ? orders.filter((o) => selected.has(o.id))
-      : orders
+    const selectedOrders = selected.size > 0 ? orders.filter((o) => selected.has(o.id)) : orders
 
     const rows = selectedOrders.map((o) => ({
-      'Auftragsnummer': o.order_number,
-      'Typ': L.workType(o.work_type),
-      'Status': L.status(o.status) || o.status,
-      'Kunde': o.clients?.name ?? '',
-      'Projekt': o.projects?.code ?? '',
-      'Team': o.assigned_team ?? '',
-      'Einsatzdatum': o.assigned_date
-        ? new Date(o.assigned_date).toLocaleDateString('de-DE')
-        : '',
-      'Priorität': o.priority,
+      Auftragsnummer: o.order_number,
+      Typ: L.workType(o.work_type),
+      Status: L.status(o.status) || o.status,
+      Kunde: o.clients?.name ?? '',
+      Projekt: o.projects?.code ?? '',
+      Team: o.assigned_team ?? '',
+      Einsatzdatum: o.assigned_date ? new Date(o.assigned_date).toLocaleDateString('de-DE') : '',
+      Priorität: o.priority,
     }))
 
     const ws = XLSX.utils.json_to_sheet(rows)
@@ -264,9 +348,15 @@ export function CertificationPage() {
   }
 
   // Derive bulk action availability
-  const selectedCertifiable = orders.filter((o) => o.status === 'rueckmeldung_sent' && selected.has(o.id)).length
-  const selectedSendable = orders.filter((o) => o.status === 'internally_certified' && selected.has(o.id)).length
-  const selectedInvoiceable = orders.filter((o) => o.status === 'client_accepted' && selected.has(o.id)).length
+  const selectedCertifiable = orders.filter(
+    (o) => o.status === 'rueckmeldung_sent' && selected.has(o.id),
+  ).length
+  const selectedSendable = orders.filter(
+    (o) => o.status === 'internally_certified' && selected.has(o.id),
+  ).length
+  const selectedInvoiceable = orders.filter(
+    (o) => o.status === 'client_accepted' && selected.has(o.id),
+  ).length
   const hasSelection = selected.size > 0
 
   const total = orders.length
@@ -274,8 +364,13 @@ export function CertificationPage() {
   const activeItems = byStatus(activeTab)
   const allActiveSelected = activeItems.length > 0 && activeItems.every((o) => selected.has(o.id))
   const totalClient = orders.reduce((sum, order) => sum + (orderTotals[order.id]?.client ?? 0), 0)
-  const totalExternal = orders.reduce((sum, order) => sum + (orderTotals[order.id]?.external ?? 0), 0)
-  const selectedInvoiced = selected.size > 0 && [...selected].some((id) => orders.find((o) => o.id === id)?.status === 'invoiced')
+  const totalExternal = orders.reduce(
+    (sum, order) => sum + (orderTotals[order.id]?.external ?? 0),
+    0,
+  )
+  const selectedInvoiced =
+    selected.size > 0 &&
+    [...selected].some((id) => orders.find((o) => o.id === id)?.status === 'invoiced')
   const datevDisabled = byStatus('invoiced').length === 0 && !selectedInvoiced
 
   return (
@@ -283,7 +378,9 @@ export function CertificationPage() {
       <div className="ph">
         <div>
           <div className="sub">§ LUMEN · CERTIFICATION PIPELINE</div>
-          <h1>Certification <em>Control</em></h1>
+          <h1>
+            Certification <em>Control</em>
+          </h1>
         </div>
         <div className="r">
           <Button
@@ -295,7 +392,12 @@ export function CertificationPage() {
           >
             DATEV
           </Button>
-          <Button disabled={total === 0} icon={FileSpreadsheet} onClick={handleExcelExport} variant="secondary">
+          <Button
+            disabled={total === 0}
+            icon={FileSpreadsheet}
+            onClick={handleExcelExport}
+            variant="secondary"
+          >
             Excel {hasSelection ? `(${selected.size})` : ''}
           </Button>
         </div>
@@ -339,7 +441,9 @@ export function CertificationPage() {
                 const active = activeTab === status
                 return (
                   <button
-                    className={['nx-cert-stage', active ? 'nx-cert-stage-active' : ''].filter(Boolean).join(' ')}
+                    className={['nx-cert-stage', active ? 'nx-cert-stage-active' : '']
+                      .filter(Boolean)
+                      .join(' ')}
                     key={status}
                     onClick={() => setActiveTab(status)}
                     type="button"
@@ -367,7 +471,10 @@ export function CertificationPage() {
             <div className="nx-filter-grid">
               <div className="input">
                 <label>Team</label>
-                <select value={filterTeam} onChange={(e) => setFilterTeam(e.target.value as TeamColor | '')}>
+                <select
+                  value={filterTeam}
+                  onChange={(e) => setFilterTeam(e.target.value as TeamColor | '')}
+                >
                   <option value="">Alle Teams</option>
                   <option value="rot">Rot</option>
                   <option value="gruen">Grün</option>
@@ -381,14 +488,19 @@ export function CertificationPage() {
                 <select value={filterProject} onChange={(e) => setFilterProject(e.target.value)}>
                   <option value="">Alle Projekte</option>
                   {projects.map((p) => (
-                    <option key={p.id} value={p.id}>{p.code} - {p.name}</option>
+                    <option key={p.id} value={p.id}>
+                      {p.code} - {p.name}
+                    </option>
                   ))}
                 </select>
               </div>
 
               <div className="input">
                 <label>Mitarbeiter</label>
-                <select value={filterCollab} onChange={(e) => setFilterCollab(e.target.value as '' | CollaboratorType)}>
+                <select
+                  value={filterCollab}
+                  onChange={(e) => setFilterCollab(e.target.value as '' | CollaboratorType)}
+                >
                   <option value="">Alle Mitarbeiter</option>
                   <option value="internal">Intern</option>
                   <option value="external">Extern</option>
@@ -397,12 +509,20 @@ export function CertificationPage() {
 
               <div className="input">
                 <label>Von</label>
-                <input type="date" value={filterDateFrom} onChange={(e) => setFilterDateFrom(e.target.value)} />
+                <input
+                  type="date"
+                  value={filterDateFrom}
+                  onChange={(e) => setFilterDateFrom(e.target.value)}
+                />
               </div>
 
               <div className="input">
                 <label>Bis</label>
-                <input type="date" value={filterDateTo} onChange={(e) => setFilterDateTo(e.target.value)} />
+                <input
+                  type="date"
+                  value={filterDateTo}
+                  onChange={(e) => setFilterDateTo(e.target.value)}
+                />
               </div>
 
               {(filterTeam || filterProject || filterDateFrom || filterDateTo || filterCollab) && (
@@ -475,6 +595,44 @@ export function CertificationPage() {
             </Alert>
           )}
 
+          {bulkResult && (
+            <Alert
+              title={`Bulk result: ${bulkResult.succeeded} succeeded, ${bulkResult.failed} failed, ${bulkResult.skipped} skipped`}
+              tone={bulkResult.failed > 0 || bulkResult.skipped > 0 ? 'warn' : 'ok'}
+            >
+              <div className="mt-2 max-h-40 overflow-auto border border-line">
+                {bulkResult.items.map((item) => (
+                  <div
+                    key={item.workOrderId}
+                    className="flex items-start justify-between gap-3 border-b border-line px-3 py-2 last:border-b-0"
+                  >
+                    <div>
+                      <div className="t font-mono text-xs">
+                        {item.orderNumber ?? item.workOrderId}
+                      </div>
+                      {item.reasons.length > 0 && (
+                        <div className="m mt-1 text-xs">
+                          {item.reasons.map((reason) => reason.message).join('; ')}
+                        </div>
+                      )}
+                    </div>
+                    <Badge
+                      tone={
+                        item.outcome === 'succeeded'
+                          ? 'ok'
+                          : item.outcome === 'failed'
+                            ? 'err'
+                            : 'warn'
+                      }
+                    >
+                      {item.outcome}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </Alert>
+          )}
+
           {isLoading ? (
             <Panel>
               <div className="flex h-56 items-center justify-center">
@@ -506,7 +664,9 @@ export function CertificationPage() {
               title={
                 <span className="inline-flex items-center gap-2">
                   {activeSection.label}
-                  <Badge tone={SECTION_TONE[activeTab] ?? 'neutral'}>{L.status(activeTab) || activeTab}</Badge>
+                  <Badge tone={SECTION_TONE[activeTab] ?? 'neutral'}>
+                    {L.status(activeTab) || activeTab}
+                  </Badge>
                 </span>
               }
             >
@@ -540,14 +700,18 @@ export function CertificationPage() {
                             {isExternal ? <Badge tone="accent">Extern</Badge> : null}
                           </div>
                           <div className="nx-cert-row-meta">
-                            <span>{order.clients?.name ?? (isDirect ? 'direkt' : 'client missing')}</span>
+                            <span>
+                              {order.clients?.name ?? (isDirect ? 'direkt' : 'client missing')}
+                            </span>
                             <span>·</span>
                             <span>{order.projects?.code ?? 'project missing'}</span>
                             {order.assigned_team ? (
                               <>
                                 <span>·</span>
                                 <span className="inline-flex items-center gap-1.5">
-                                  <span className={`h-2 w-2 rounded-full ${TEAM_DOT[order.assigned_team]}`} />
+                                  <span
+                                    className={`h-2 w-2 rounded-full ${TEAM_DOT[order.assigned_team]}`}
+                                  />
                                   {order.assigned_team}
                                 </span>
                               </>
@@ -558,23 +722,36 @@ export function CertificationPage() {
                         <div>
                           <span className="nx-cert-cell-label">Date</span>
                           <span className="nx-cert-cell-value">
-                            {order.assigned_date ? new Date(order.assigned_date).toLocaleDateString('de-DE') : '—'}
+                            {order.assigned_date
+                              ? new Date(order.assigned_date).toLocaleDateString('de-DE')
+                              : '—'}
                           </span>
                         </div>
 
                         <div>
                           <span className="nx-cert-cell-label">Client</span>
-                          <span className="nx-cert-cell-value">{totals.client > 0 ? fmtMoney(totals.client) : '—'}</span>
-                        </div>
-
-                        <div>
-                          <span className="nx-cert-cell-label">{isExternal ? 'Ext / Margin' : 'Internal'}</span>
                           <span className="nx-cert-cell-value">
-                            {isExternal && totals.external > 0 ? `${fmtMoney(totals.external)} / ${fmtMoney(margin)}` : '—'}
+                            {totals.client > 0 ? fmtMoney(totals.client) : '—'}
                           </span>
                         </div>
 
-                        <Button iconRight={ArrowRight} onClick={() => navigate(`/admin/orders/${order.id}`)} size="sm" variant="ghost">
+                        <div>
+                          <span className="nx-cert-cell-label">
+                            {isExternal ? 'Ext / Margin' : 'Internal'}
+                          </span>
+                          <span className="nx-cert-cell-value">
+                            {isExternal && totals.external > 0
+                              ? `${fmtMoney(totals.external)} / ${fmtMoney(margin)}`
+                              : '—'}
+                          </span>
+                        </div>
+
+                        <Button
+                          iconRight={ArrowRight}
+                          onClick={() => navigate(`/admin/orders/${order.id}`)}
+                          size="sm"
+                          variant="ghost"
+                        >
                           Öffnen
                         </Button>
                       </div>
@@ -590,7 +767,10 @@ export function CertificationPage() {
       {bulkInvoiceModal.open && (
         <div
           className="modal-scrim centered"
-          onClick={(e) => { if (e.target === e.currentTarget) setBulkInvoiceModal({ open: false, invoiceNumber: '' }) }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget)
+              setBulkInvoiceModal({ open: false, invoiceNumber: '' })
+          }}
         >
           <div className="modal-card compact">
             <div className="phead">
@@ -604,14 +784,19 @@ export function CertificationPage() {
                 <label>Rechnungsnummer</label>
                 <input
                   autoFocus
-                  onChange={(e) => setBulkInvoiceModal((m) => ({ ...m, invoiceNumber: e.target.value }))}
+                  onChange={(e) =>
+                    setBulkInvoiceModal((m) => ({ ...m, invoiceNumber: e.target.value }))
+                  }
                   placeholder="z.B. RE-2026-0042"
                   type="text"
                   value={bulkInvoiceModal.invoiceNumber}
                 />
               </div>
               <div className="flex justify-end gap-3">
-                <Button onClick={() => setBulkInvoiceModal({ open: false, invoiceNumber: '' })} variant="ghost">
+                <Button
+                  onClick={() => setBulkInvoiceModal({ open: false, invoiceNumber: '' })}
+                  variant="ghost"
+                >
                   Abbrechen
                 </Button>
                 <Button

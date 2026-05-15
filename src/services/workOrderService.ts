@@ -1,7 +1,19 @@
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/types/database.types'
 import type { WorkOrderStatus, WorkType, TeamColor, UserRole } from '@/types/enums'
-import { fetchContractorDocumentCompliance } from '@/services/contractorDocumentService'
+import {
+  fetchContractorDocumentCompliance,
+  fetchContractorDocuments,
+} from '@/services/contractorDocumentService'
+import {
+  buildContractorDocumentFailureReasons,
+  isDirectWorkOrder,
+  reasonsToMessage,
+  toFailureResult,
+  toSuccessResult,
+  type WorkOrderActionReason,
+  type WorkOrderActionResult,
+} from '@/services/workOrderBusinessRules'
 import type { ServiceItem } from '@/types/service-items'
 
 // ── State machine ──────────────────────────────────────────────────────────
@@ -11,20 +23,20 @@ import type { ServiceItem } from '@/types/service-items'
  * Any transition not listed here is illegal.
  */
 export const VALID_TRANSITIONS: Record<WorkOrderStatus, readonly WorkOrderStatus[]> = {
-  created:              ['assigned', 'cancelled'],
-  assigned:             ['in_progress', 'cancelled'],
-  in_progress:          ['executed', 'cancelled'],
-  executed:             ['rueckmeldung_pending', 'cancelled'],
+  created: ['assigned', 'cancelled'],
+  assigned: ['in_progress', 'cancelled'],
+  in_progress: ['executed', 'cancelled'],
+  executed: ['rueckmeldung_pending', 'cancelled'],
   rueckmeldung_pending: ['rueckmeldung_sent', 'cancelled'],
-  rueckmeldung_sent:    ['internally_certified', 'returned', 'cancelled'],
+  rueckmeldung_sent: ['internally_certified', 'returned', 'cancelled'],
   internally_certified: ['sent_to_client', 'cancelled'],
-  sent_to_client:       ['client_accepted', 'client_rejected'],
-  client_accepted:      ['invoiced'],
-  client_rejected:      ['internally_certified'],
-  invoiced:             ['paid'],
-  returned:             ['rueckmeldung_pending'],
-  paid:                 [],
-  cancelled:            [],
+  sent_to_client: ['client_accepted', 'client_rejected'],
+  client_accepted: ['invoiced'],
+  client_rejected: ['internally_certified'],
+  invoiced: ['paid'],
+  returned: ['rueckmeldung_pending'],
+  paid: [],
+  cancelled: [],
 }
 
 /**
@@ -84,12 +96,12 @@ export function validateStatusTransition(
  * cannot currently be certified through this path.
  */
 const REQUIRED_DETAIL_FIELDS: Partial<Record<WorkType, readonly string[]>> = {
-  soplado:         ['meters', 'section'],
-  fusion_ap:       ['cabinet_code', 'fiber_type', 'has_measurement_cert'],
-  fusion_dp:       ['cabinet_code', 'fiber_type', 'has_measurement_cert'],
-  alta:            ['access_type', 'equipment_installed', 'client_signature'],
+  soplado: ['meters', 'section'],
+  fusion_ap: ['cabinet_code', 'fiber_type', 'has_measurement_cert'],
+  fusion_dp: ['cabinet_code', 'fiber_type', 'has_measurement_cert'],
+  alta: ['access_type', 'equipment_installed', 'client_signature'],
   nt_installation: ['nt_type', 'serial_number', 'location'],
-  patchkabel:      ['connected_section', 'cable_length', 'connector_type', 'test_result'],
+  patchkabel: ['connected_section', 'cable_length', 'connector_type', 'test_result'],
 }
 
 function isFieldFilled(value: unknown): boolean {
@@ -156,9 +168,7 @@ export async function validateTransitionPrerequisites(
       .eq('work_order_id', workOrderId)
 
     const photoTypes = new Set((photos ?? []).map((p) => p.photo_type as string))
-    const missingPhotos = (['before', 'during', 'after'] as const).filter(
-      (t) => !photoTypes.has(t),
-    )
+    const missingPhotos = (['before', 'during', 'after'] as const).filter((t) => !photoTypes.has(t))
     if (missingPhotos.length > 0) {
       return `Fehlende Fotos (${missingPhotos.join(', ')}) — Auftrag kann nicht zertifiziert werden`
     }
@@ -166,7 +176,7 @@ export async function validateTransitionPrerequisites(
 
   // ── Rules 2/3: invoiced requires the right certification audit
   if (toStatus === 'invoiced') {
-    const isDirect = order.client_id === null
+    const isDirect = isDirectWorkOrder(order)
     const requiredCertType: 'internal' | 'client' = isDirect ? 'internal' : 'client'
 
     const { data: audits } = await supabase
@@ -202,16 +212,16 @@ export type CollaboratorType = 'internal' | 'external'
  * Anything other than 'contractor' is treated as internal — that's the
  * safer default (admin and technician are payroll, no external liquidation).
  */
-export function getCollaboratorType(
-  profileRole: UserRole | null | undefined,
-): CollaboratorType {
+export function getCollaboratorType(profileRole: UserRole | null | undefined): CollaboratorType {
   return profileRole === 'contractor' ? 'external' : 'internal'
 }
 
 type WorkOrderRow = Database['public']['Tables']['work_orders']['Row']
 type WorkOrderInsert = Database['public']['Tables']['work_orders']['Insert']
 type WorkOrderUpdate = Database['public']['Tables']['work_orders']['Update']
-type DirectOrderInsert = Omit<WorkOrderInsert, 'order_number' | 'created_by' | 'client_id'> & { client_id: string | null }
+type DirectOrderInsert = Omit<WorkOrderInsert, 'order_number' | 'created_by' | 'client_id'> & {
+  client_id: string | null
+}
 type DirectOrderUpdate = Omit<WorkOrderUpdate, 'client_id' | 'service_item_id'> & {
   client_id?: string | null
   service_item_id?: string | null
@@ -241,7 +251,7 @@ export interface WorkOrderFilters {
   client_id?: string
   search?: string
   date_from?: string // ISO date YYYY-MM-DD
-  date_to?: string   // ISO date YYYY-MM-DD
+  date_to?: string // ISO date YYYY-MM-DD
   priority?: 'normal' | 'alta' | 'urgente'
 }
 
@@ -284,22 +294,21 @@ export async function fetchTechnicians() {
 
 // ── Work Orders CRUD ─────────────────────────────────────────
 
-export async function fetchWorkOrders(
-  filters: WorkOrderFilters = {},
-  page = 0,
-  pageSize = 25,
-) {
+export async function fetchWorkOrders(filters: WorkOrderFilters = {}, page = 0, pageSize = 25) {
   const from = page * pageSize
   const to = from + pageSize - 1
 
   let query = supabase
     .from('work_orders')
-    .select(`
+    .select(
+      `
       *,
       clients ( name, code ),
       projects ( name, code ),
       operators ( name, code )
-    `, { count: 'exact' })
+    `,
+      { count: 'exact' },
+    )
     .order('created_at', { ascending: false })
     .range(from, to)
 
@@ -311,9 +320,7 @@ export async function fetchWorkOrders(
   if (filters.search) {
     // Strip PostgREST operator characters to prevent filter-string injection
     const term = filters.search.replace(/[.,()]/g, '')
-    query = query.or(
-      `order_number.ilike.%${term}%,address.ilike.%${term}%`,
-    )
+    query = query.or(`order_number.ilike.%${term}%,address.ilike.%${term}%`)
   }
   if (filters.date_from) query = query.gte('assigned_date', filters.date_from)
   if (filters.date_to) query = query.lte('assigned_date', filters.date_to)
@@ -330,27 +337,29 @@ export async function fetchWorkOrders(
 export async function fetchWorkOrder(id: string) {
   const { data, error } = await supabase
     .from('work_orders')
-    .select(`
+    .select(
+      `
       *,
       clients ( name, code ),
       projects ( name, code ),
       operators ( name, code ),
       service_items ( id, code, description_de, description_es, unit, detail_form )
-    `)
+    `,
+    )
     .eq('id', id)
     .single()
   return { data: data as unknown as WorkOrderWithRelations | null, error: error?.message ?? null }
 }
 
-export async function createWorkOrder(
-  payload: DirectOrderInsert,
-  userId: string,
-) {
+export async function createWorkOrder(payload: DirectOrderInsert, userId: string) {
   // Generate order number atomically via DB sequence (migration 003)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: seqData, error: seqError } = await (supabase as any).rpc('generate_order_number')
   if (seqError || !seqData) {
-    return { data: null, error: seqError?.message ?? 'Auftragsnummer konnte nicht generiert werden' }
+    return {
+      data: null,
+      error: seqError?.message ?? 'Auftragsnummer konnte nicht generiert werden',
+    }
   }
   const order_number = seqData as string
 
@@ -397,7 +406,52 @@ export async function assignWorkOrder(
   technicianId: string | null,
   assignedDate: string | null,
   changedBy: string,
-) {
+): Promise<{
+  data: WorkOrderRow | null
+  error: string | null
+  reasons?: WorkOrderActionReason[]
+}> {
+  if (technicianId) {
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', technicianId)
+      .single()
+
+    if (profileError) return { data: null, error: profileError.message }
+
+    if (getCollaboratorType(profile?.role as UserRole | null) === 'external') {
+      const { data: documents, error: documentError } = await fetchContractorDocuments(technicianId)
+      if (documentError) return { data: null, error: documentError }
+
+      const reasons = buildContractorDocumentFailureReasons(
+        documents,
+        assignedDate ?? new Date().toISOString().slice(0, 10),
+      )
+      if (reasons.length > 0) {
+        return { data: null, error: reasonsToMessage(reasons), reasons }
+      }
+
+      const { data, error } = await (
+        supabase as unknown as {
+          rpc: (
+            fn: string,
+            args: Record<string, unknown>,
+          ) => Promise<{ data: WorkOrderRow | null; error: { message: string } | null }>
+        }
+      ).rpc('assign_work_order_checked', {
+        p_work_order_id: id,
+        p_team: team,
+        p_assignee_id: technicianId,
+        p_assigned_date: assignedDate,
+        p_changed_by: changedBy,
+        p_notes: null,
+      })
+
+      return { data, error: error?.message ?? null }
+    }
+  }
+
   // Fetch current status first
   const { data: current } = await supabase
     .from('work_orders')
@@ -427,9 +481,7 @@ export async function assignWorkOrder(
     from_status: fromStatus,
     to_status: 'assigned',
     changed_by: changedBy,
-    notes: technicianId
-      ? 'Zugewiesen an Mitarbeiter'
-      : `Zugewiesen an Team ${team ?? '-'}`,
+    notes: technicianId ? 'Zugewiesen an Mitarbeiter' : `Zugewiesen an Team ${team ?? '-'}`,
   })
 
   return { data, error: null }
@@ -510,12 +562,15 @@ export async function fetchMyWorkOrders(
 
   let query = supabase
     .from('work_orders')
-    .select(`
+    .select(
+      `
       *,
       clients ( name, code ),
       projects ( name, code ),
       operators ( name, code )
-    `, { count: 'exact' })
+    `,
+      { count: 'exact' },
+    )
     .not('status', 'in', '("cancelled","paid")')
     .order('assigned_date', { ascending: true, nullsFirst: false })
     .range(from, to)
@@ -548,7 +603,7 @@ export async function transitionWorkOrderStatus(
     .single()
 
   const fromStatus = current?.status ?? null
-  const isDirectOrder = current?.client_id === null
+  const isDirectOrder = current ? isDirectWorkOrder(current) : false
 
   if (fromStatus) {
     const validationError = validateStatusTransition(
@@ -583,6 +638,224 @@ export async function transitionWorkOrderStatus(
   return { data, error: null }
 }
 
+interface LifecycleRpcArgs {
+  workOrderId: string
+  changedBy: string
+  dataHash?: string
+  billingReference?: string | null
+  notes?: string | null
+}
+
+function mapLifecycleValidationError(message: string): WorkOrderActionReason {
+  const lower = message.toLowerCase()
+  if (lower.includes('foto')) {
+    return { code: 'missing_required_photos', message }
+  }
+  if (lower.includes('rückmeldung') || lower.includes('rueckmeldung')) {
+    return { code: 'incomplete_rueckmeldung', message }
+  }
+  return { code: 'invalid_transition', message }
+}
+
+function mapRpcLifecycleError(message: string): WorkOrderActionReason {
+  const lower = message.toLowerCase()
+  if (lower.includes('client') && lower.includes('audit')) {
+    return { code: 'missing_client_audit', message }
+  }
+  if (lower.includes('internal') && lower.includes('audit')) {
+    return { code: 'missing_internal_audit', message }
+  }
+  if (lower.includes('rueckmeldung')) {
+    return { code: 'incomplete_rueckmeldung', message }
+  }
+  if (lower.includes('not found')) {
+    return { code: 'not_found', message }
+  }
+  if (lower.includes('invalid') || lower.includes('requires')) {
+    return { code: 'invalid_transition', message }
+  }
+  return { code: 'server_error', message }
+}
+
+function validateLifecycleDataHash(dataHash: string | undefined): WorkOrderActionReason[] {
+  if (!dataHash || dataHash.trim().length === 0) {
+    return [{ code: 'invalid_transition', message: 'Certification audit data hash is required' }]
+  }
+  return []
+}
+
+async function callLifecycleRpc(
+  fn: string,
+  args: Record<string, unknown>,
+): Promise<WorkOrderActionResult<WorkOrderRow>> {
+  const { data, error } = await (
+    supabase as unknown as {
+      rpc: (
+        fn: string,
+        args: Record<string, unknown>,
+      ) => Promise<{ data: WorkOrderRow | null; error: { message: string } | null }>
+    }
+  ).rpc(fn, args)
+
+  if (error) return toFailureResult([mapRpcLifecycleError(error.message)])
+  return toSuccessResult(data as WorkOrderRow)
+}
+
+export async function certifyWorkOrderInternal(
+  args: LifecycleRpcArgs,
+): Promise<WorkOrderActionResult<WorkOrderRow>> {
+  const hashErrors = validateLifecycleDataHash(args.dataHash)
+  if (hashErrors.length > 0) return toFailureResult(hashErrors)
+
+  const prerequisiteError = await validateTransitionPrerequisites(
+    args.workOrderId,
+    'internally_certified',
+  )
+  if (prerequisiteError) {
+    return toFailureResult([mapLifecycleValidationError(prerequisiteError)])
+  }
+
+  return callLifecycleRpc('certify_work_order_internal', {
+    p_work_order_id: args.workOrderId,
+    p_changed_by: args.changedBy,
+    p_data_hash: args.dataHash!.trim(),
+    p_notes: args.notes ?? null,
+  })
+}
+
+export async function acceptWorkOrderClient(
+  args: LifecycleRpcArgs,
+): Promise<WorkOrderActionResult<WorkOrderRow>> {
+  const hashErrors = validateLifecycleDataHash(args.dataHash)
+  if (hashErrors.length > 0) return toFailureResult(hashErrors)
+
+  return callLifecycleRpc('accept_work_order_client', {
+    p_work_order_id: args.workOrderId,
+    p_changed_by: args.changedBy,
+    p_data_hash: args.dataHash!.trim(),
+    p_notes: args.notes ?? null,
+  })
+}
+
+export async function invoiceWorkOrder(
+  args: LifecycleRpcArgs,
+): Promise<WorkOrderActionResult<WorkOrderRow>> {
+  return callLifecycleRpc('invoice_work_order_checked', {
+    p_work_order_id: args.workOrderId,
+    p_changed_by: args.changedBy,
+    p_billing_reference: args.billingReference ?? null,
+    p_notes: args.notes ?? null,
+  })
+}
+
+export type BulkWorkOrderAction =
+  | 'internal_certify'
+  | 'send_to_client'
+  | 'client_accept'
+  | 'invoice'
+export type BulkWorkOrderOutcome = 'succeeded' | 'failed' | 'skipped'
+
+export interface BulkWorkOrderInputItem {
+  id: string
+  orderNumber?: string
+}
+
+export interface BulkWorkOrderItemResult {
+  workOrderId: string
+  orderNumber?: string
+  outcome: BulkWorkOrderOutcome
+  reasons: WorkOrderActionReason[]
+}
+
+export interface BulkWorkOrderResult {
+  action: BulkWorkOrderAction
+  total: number
+  succeeded: number
+  failed: number
+  skipped: number
+  items: BulkWorkOrderItemResult[]
+}
+
+export async function bulkWorkOrderAction(args: {
+  action: BulkWorkOrderAction
+  workOrders: BulkWorkOrderInputItem[]
+  changedBy: string
+  dataHash?: string
+  billingReference?: string | null
+  notes?: string | null
+}): Promise<BulkWorkOrderResult> {
+  const items: BulkWorkOrderItemResult[] = []
+
+  for (const workOrder of args.workOrders) {
+    try {
+      let result: WorkOrderActionResult<WorkOrderRow>
+      if (args.action === 'invoice') {
+        result = await invoiceWorkOrder({
+          workOrderId: workOrder.id,
+          changedBy: args.changedBy,
+          billingReference: args.billingReference ?? null,
+          notes: args.notes ?? null,
+        })
+      } else if (args.action === 'internal_certify') {
+        result = await certifyWorkOrderInternal({
+          workOrderId: workOrder.id,
+          changedBy: args.changedBy,
+          dataHash: args.dataHash ?? '',
+          notes: args.notes ?? null,
+        })
+      } else if (args.action === 'client_accept') {
+        result = await acceptWorkOrderClient({
+          workOrderId: workOrder.id,
+          changedBy: args.changedBy,
+          dataHash: args.dataHash ?? '',
+          notes: args.notes ?? null,
+        })
+      } else {
+        items.push({
+          workOrderId: workOrder.id,
+          orderNumber: workOrder.orderNumber,
+          outcome: 'skipped',
+          reasons: [
+            {
+              code: 'invalid_transition',
+              message: `Bulk action ${args.action} is not supported by the RPC workflow yet`,
+            },
+          ],
+        })
+        continue
+      }
+
+      items.push({
+        workOrderId: workOrder.id,
+        orderNumber: workOrder.orderNumber,
+        outcome: result.ok ? 'succeeded' : 'failed',
+        reasons: result.reasons,
+      })
+    } catch (error) {
+      items.push({
+        workOrderId: workOrder.id,
+        orderNumber: workOrder.orderNumber,
+        outcome: 'failed',
+        reasons: [
+          {
+            code: 'server_error',
+            message: error instanceof Error ? error.message : 'Unexpected bulk action error',
+          },
+        ],
+      })
+    }
+  }
+
+  return {
+    action: args.action,
+    total: args.workOrders.length,
+    succeeded: items.filter((item) => item.outcome === 'succeeded').length,
+    failed: items.filter((item) => item.outcome === 'failed').length,
+    skipped: items.filter((item) => item.outcome === 'skipped').length,
+    items,
+  }
+}
+
 export async function fetchStateHistory(workOrderId: string) {
   const { data, error } = await supabase
     .from('work_order_state_history')
@@ -597,15 +870,20 @@ export async function fetchStateHistory(workOrderId: string) {
 export async function fetchContractorWorkOrders(userId: string) {
   const { data, error } = await supabase
     .from('work_orders')
-    .select(`
+    .select(
+      `
       *,
       clients ( name, code ),
       projects ( name, code ),
       operators ( name, code )
-    `)
+    `,
+    )
     .eq('assigned_technician', userId)
     .order('assigned_date', { ascending: false, nullsFirst: false })
-  return { data: (data ?? []) as unknown as WorkOrderWithRelations[], error: error?.message ?? null }
+  return {
+    data: (data ?? []) as unknown as WorkOrderWithRelations[],
+    error: error?.message ?? null,
+  }
 }
 
 export async function fetchWorkOrderPhotos(workOrderId: string) {
@@ -670,9 +948,7 @@ export async function getPhotoSignedUrls(
     .createSignedUrls(storagePaths, expiresIn)
   if (error || !data) return {}
   return Object.fromEntries(
-    data
-      .filter((item) => item.signedUrl)
-      .map((item) => [item.path, item.signedUrl]),
+    data.filter((item) => item.signedUrl).map((item) => [item.path, item.signedUrl]),
   )
 }
 
@@ -682,10 +958,7 @@ export async function deleteWorkOrderPhoto(photoId: string, storagePath: string)
     .remove([storagePath])
   if (storageError) return { error: storageError.message }
 
-  const { error: dbError } = await supabase
-    .from('work_order_photos')
-    .delete()
-    .eq('id', photoId)
+  const { error: dbError } = await supabase.from('work_order_photos').delete().eq('id', photoId)
   return { error: dbError?.message ?? null }
 }
 
@@ -750,7 +1023,9 @@ export async function insertCertificationAudit(
       return { error: 'External certification requires a contractor assignee' }
     }
 
-    const { data: compliance, error: complianceError } = await fetchContractorDocumentCompliance(order.assigned_technician)
+    const { data: compliance, error: complianceError } = await fetchContractorDocumentCompliance(
+      order.assigned_technician,
+    )
     if (complianceError) return { error: complianceError }
     if (!compliance.isCompliant) {
       return {
@@ -812,11 +1087,13 @@ export function normalizeReportedServiceItems(value: unknown): ReportedServiceIt
     if (!serviceItemId || !Number.isFinite(qty) || qty <= 0) return []
 
     const rawNotes = row.notes
-    return [{
-      service_item_id: serviceItemId,
-      qty,
-      notes: typeof rawNotes === 'string' && rawNotes.trim() ? rawNotes.trim() : null,
-    }]
+    return [
+      {
+        service_item_id: serviceItemId,
+        qty,
+        notes: typeof rawNotes === 'string' && rawNotes.trim() ? rawNotes.trim() : null,
+      },
+    ]
   })
 }
 
@@ -830,13 +1107,15 @@ export function buildBillingDraftsFromReportedItems(
     const catalogItem = catalogById.get(item.service_item_id)
     if (!catalogItem || catalogItem.unit_price == null) return []
 
-    return [{
-      service_item_id: item.service_item_id,
-      qty: item.qty,
-      unit_price_snapshot: Number(catalogItem.unit_price),
-      unit_price_external_snapshot: catalogItem.unit_price_external ?? null,
-      notes: item.notes ?? null,
-    }]
+    return [
+      {
+        service_item_id: item.service_item_id,
+        qty: item.qty,
+        unit_price_snapshot: Number(catalogItem.unit_price),
+        unit_price_external_snapshot: catalogItem.unit_price_external ?? null,
+        notes: item.notes ?? null,
+      },
+    ]
   })
 }
 
@@ -854,10 +1133,10 @@ export interface BillingLine {
 }
 
 export interface BillingLineDraft {
-  id?: string                       // present = update, absent = insert
+  id?: string // present = update, absent = insert
   service_item_id: string
   qty: number
-  unit_price_snapshot: number       // snapshot at create — never re-derived
+  unit_price_snapshot: number // snapshot at create — never re-derived
   unit_price_external_snapshot?: number | null
   notes?: string | null
 }
@@ -865,21 +1144,25 @@ export interface BillingLineDraft {
 export async function fetchBillingLines(workOrderId: string) {
   const { data, error } = await supabase
     .from('work_order_billing_lines' as 'work_orders')
-    .select('*, service_items ( id, code, description_de, description_es, unit, unit_price, unit_price_external )')
+    .select(
+      '*, service_items ( id, code, description_de, description_es, unit, unit_price, unit_price_external )',
+    )
     .eq('work_order_id', workOrderId)
     .order('created_at', { ascending: true })
   return {
-    data: (data ?? []) as unknown as Array<BillingLine & {
-      service_items: {
-        id: string
-        code: string
-        description_de: string
-        description_es: string | null
-        unit: string | null
-        unit_price: number | null
-        unit_price_external: number | null
-      } | null
-    }>,
+    data: (data ?? []) as unknown as Array<
+      BillingLine & {
+        service_items: {
+          id: string
+          code: string
+          description_de: string
+          description_es: string | null
+          unit: string | null
+          unit_price: number | null
+          unit_price_external: number | null
+        } | null
+      }
+    >,
     error: error?.message ?? null,
   }
 }
@@ -893,10 +1176,7 @@ export async function fetchBillingLines(workOrderId: string) {
  */
 // TODO(db): replace this multi-step client-side delete/update/insert flow
 // with an atomic Postgres RPC before billing is used in production accounting.
-export async function upsertBillingLines(
-  workOrderId: string,
-  drafts: BillingLineDraft[],
-) {
+export async function upsertBillingLines(workOrderId: string, drafts: BillingLineDraft[]) {
   const { data: existing, error: fetchErr } = await supabase
     .from('work_order_billing_lines' as 'work_orders')
     .select('id')
@@ -930,16 +1210,14 @@ export async function upsertBillingLines(
         .eq('id', draft.id)
       if (error) return { error: error.message }
     } else {
-      const { error } = await supabase
-        .from('work_order_billing_lines' as 'work_orders')
-        .insert({
-          work_order_id: workOrderId,
-          service_item_id: draft.service_item_id,
-          qty: draft.qty,
-          unit_price_snapshot: draft.unit_price_snapshot,
-          unit_price_external_snapshot: draft.unit_price_external_snapshot ?? null,
-          notes: draft.notes ?? null,
-        } as never)
+      const { error } = await supabase.from('work_order_billing_lines' as 'work_orders').insert({
+        work_order_id: workOrderId,
+        service_item_id: draft.service_item_id,
+        qty: draft.qty,
+        unit_price_snapshot: draft.unit_price_snapshot,
+        unit_price_external_snapshot: draft.unit_price_external_snapshot ?? null,
+        notes: draft.notes ?? null,
+      } as never)
       if (error) return { error: error.message }
     }
   }
