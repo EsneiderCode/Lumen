@@ -27,6 +27,7 @@ const TechDashboard      = lazy(() => import('@/pages/technician/TechDashboard')
 const TechOrdersPage     = lazy(() => import('@/pages/technician/TechOrdersPage').then(m => ({ default: m.TechOrdersPage })))
 const TechOrderDetailPage = lazy(() => import('@/pages/technician/TechOrderDetailPage').then(m => ({ default: m.TechOrderDetailPage })))
 const RueckmeldungPage   = lazy(() => import('@/pages/technician/RueckmeldungPage').then(m => ({ default: m.RueckmeldungPage })))
+const TechSettingsPage   = lazy(() => import('@/pages/technician/TechSettingsPage').then(m => ({ default: m.TechSettingsPage })))
 
 // Contractor chunk
 const ContractorDashboard  = lazy(() => import('@/pages/contractor/ContractorDashboard').then(m => ({ default: m.ContractorDashboard })))
@@ -63,6 +64,7 @@ function App() {
                 <Route path={ROUTES.TECHNICIAN.ORDERS} element={<TechOrdersPage />} />
                 <Route path={ROUTES.TECHNICIAN.ORDERS_DETAIL} element={<TechOrderDetailPage />} />
                 <Route path={ROUTES.TECHNICIAN.RUECKMELDUNG_FORM} element={<RueckmeldungPage />} />
+                <Route path={ROUTES.TECHNICIAN.SETTINGS} element={<TechSettingsPage />} />
               </Route>
             </Route>
 

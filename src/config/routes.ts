@@ -24,6 +24,7 @@ export const ROUTES = {
     RUECKMELDUNG: '/tech/rueckmeldung',
     RUECKMELDUNG_FORM: '/tech/orders/:id/rueckmeldung',
     SCHEDULE: '/tech/schedule',
+    SETTINGS: '/tech/settings',
   },
 
   CONTRACTOR: {

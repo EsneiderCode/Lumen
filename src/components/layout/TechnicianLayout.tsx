@@ -1,6 +1,6 @@
 import { Outlet } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { ClipboardList, Calendar } from 'lucide-react'
+import { ClipboardList, Calendar, Settings } from 'lucide-react'
 import { BottomNav, type BottomNavItem } from './BottomNav'
 import { LanguageSelector } from '@/components/ui/LanguageSelector'
 import { ROUTES } from '@/config/routes'
@@ -23,6 +23,7 @@ export function TechnicianLayout() {
   const navItems: BottomNavItem[] = [
     { label: t('nav.workOrders'), path: ROUTES.TECHNICIAN.ORDERS, icon: ClipboardList },
     { label: t('nav.schedule', { defaultValue: 'Kalender' }), path: ROUTES.TECHNICIAN.SCHEDULE, icon: Calendar },
+    { label: t('nav.settings', { defaultValue: 'Einstellungen' }), path: ROUTES.TECHNICIAN.SETTINGS, icon: Settings },
   ]
 
   return (

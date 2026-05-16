@@ -67,6 +67,22 @@
       "unknown": "No se pudo iniciar sesión. Probá de nuevo.",
       "passwordTooShort": "La contraseña debe tener al menos 8 caracteres.",
       "passwordMismatch": "Las contraseñas no coinciden."
+    },
+    "pin": {
+      "tabLabel": "PIN de equipo",
+      "emailTab": "Correo",
+      "selectTeamLabel": "Seleccioná el equipo",
+      "selectTeam": "Primero seleccioná un equipo.",
+      "pinLabel": "PIN de 6 dígitos",
+      "enter6Digits": "El PIN debe tener exactamente 6 dígitos.",
+      "settingsTitle": "Cambiar PIN",
+      "stepNew": "Nuevo PIN",
+      "stepConfirm": "Confirmar",
+      "enterNew": "Ingresá el nuevo PIN",
+      "reenterNew": "Ingresá el PIN de nuevo",
+      "mismatch": "Los PINs no coinciden.",
+      "savePIN": "Guardar PIN",
+      "changeSuccess": "PIN cambiado exitosamente."
     }
   },
   "nav": {
