@@ -213,6 +213,8 @@
     "streetNumber": "Calle / Número",
     "supportingDocs": "Documentos de apoyo",
     "supportingDocsDesc": "En trabajos lineales (Soplado / Fusión), el plano y los protocolos de empalme reemplazan a la dirección.",
+    "assignNow": "Asignación inmediata (opcional)",
+    "assignNowDesc": "Puedes asignar la orden a un equipo ahora mismo o hacerlo más tarde desde el listado de órdenes.",
     "createAction": "Crear orden",
     "saveChanges": "Guardar cambios",
     "workTypeLabel": "Tipo",

@@ -8,12 +8,15 @@ import {
   fetchClients,
   fetchProjects,
   fetchOperators,
+  fetchTechnicians,
+  assignWorkOrder,
   upsertWorkOrderDetail,
   fetchWorkOrderDetail,
   workTypeToDetailTable,
   saveAssignedDetailSnapshot,
 } from '@/services/workOrderService'
-import type { WorkType } from '@/types/enums'
+import type { TeamColor, WorkType } from '@/types/enums'
+import { TEAMS } from '@/constants/styles'
 import { useTranslation } from 'react-i18next'
 import { useLabels } from '@/i18n/labels'
 import { DETAIL_FIELDS } from '@/constants/detail-fields'
@@ -127,11 +130,18 @@ export function WorkOrderFormPage() {
     other: [],
   })
 
+  // Optional inline assignment (create mode only)
+  const [technicians, setTechnicians] = useState<{ id: string; full_name: string; team: string | null }[]>([])
+  const [assignTeam, setAssignTeam] = useState<TeamColor | ''>('')
+  const [assignTechnician, setAssignTechnician] = useState('')
+  const [assignDate, setAssignDate] = useState(new Date().toISOString().split('T')[0])
+
   // Load lookups
   useEffect(() => {
     fetchClients().then(({ data }) => setClients(data))
     fetchOperators().then(({ data }) => setOperators(data))
     fetchProjects().then(({ data }) => setProjects(data))
+    fetchTechnicians().then(({ data }) => setTechnicians(data))
   }, [])
 
   // Load service items scoped to the selected operator (global items
@@ -271,6 +281,11 @@ export function WorkOrderFormPage() {
           return
         }
       }
+    }
+
+    // Optional inline assignment on creation
+    if (!isEdit && orderId && assignTeam && user) {
+      await assignWorkOrder(orderId, assignTeam, assignTechnician || null, assignDate || null, user.id)
     }
 
     navigate('/admin/orders')
@@ -611,6 +626,68 @@ export function WorkOrderFormPage() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Optional inline assignment — create mode only */}
+        {!isEdit && (
+          <div className="rounded-l border border-line bg-bg-1 p-5 space-y-4">
+            <div>
+              <h3 className="font-display text-sm font-semibold text-fg-1">{t('workOrder.assignNow')}</h3>
+              <p className="mt-0.5 text-xs text-fg-2">{t('workOrder.assignNowDesc')}</p>
+            </div>
+
+            {/* Team */}
+            <div>
+              <label className="mb-2 block text-xs font-medium text-fg-2">Team</label>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {TEAMS.map((team) => (
+                  <button
+                    key={team.value}
+                    type="button"
+                    onClick={() => { setAssignTeam(team.value); setAssignTechnician('') }}
+                    className={`flex items-center gap-2 rounded-s border px-3 py-2.5 text-sm font-medium transition-all ${
+                      assignTeam === team.value
+                        ? 'border-accent bg-accent/10 text-accent'
+                        : 'border-line bg-bg-0 text-fg-1 hover:border-accent/50'
+                    }`}
+                  >
+                    <span className={`h-2.5 w-2.5 rounded-full ${team.dot}`} />
+                    {team.label.replace('Team ', '')}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {assignTeam && (
+              <>
+                {/* Technician */}
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-fg-2">{t('assign.internalEmployee')}</label>
+                  <select
+                    value={assignTechnician}
+                    onChange={(e) => setAssignTechnician(e.target.value)}
+                    className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                  >
+                    <option value="">{t('assign.selectEmployee')}</option>
+                    {technicians.filter((tech) => tech.team === assignTeam).map((tech) => (
+                      <option key={tech.id} value={tech.id}>{tech.full_name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Date */}
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-fg-2">{t('workOrder.deploymentDate')}</label>
+                  <input
+                    type="date"
+                    value={assignDate}
+                    onChange={(e) => setAssignDate(e.target.value)}
+                    className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                  />
+                </div>
+              </>
+            )}
           </div>
         )}
 

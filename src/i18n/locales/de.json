@@ -213,6 +213,8 @@
     "streetNumber": "Straße / Hausnummer",
     "supportingDocs": "Unterstützende Dokumente",
     "supportingDocsDesc": "Bei linearen Arbeiten (Soplado / Fusion) sind Plan und Spleißprotokolle anstelle einer Adresse relevant.",
+    "assignNow": "Sofortzuweisung (optional)",
+    "assignNowDesc": "Du kannst den Auftrag jetzt direkt einem Team zuweisen oder das später über die Auftragsübersicht erledigen.",
     "createAction": "Auftrag erstellen",
     "saveChanges": "Änderungen speichern",
     "workTypeLabel": "Typ",
