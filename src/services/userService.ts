@@ -36,6 +36,7 @@ export async function fetchOperationalUsers() {
   const { data, error } = await supabase.functions.invoke<{ users: OperationalUser[] }>('admin-users', {
     method: 'GET',
   })
+  if (error) console.error('[userService] admin-users error:', error)
   return { data: data?.users ?? [], error: errorMessage(error) }
 }
 
