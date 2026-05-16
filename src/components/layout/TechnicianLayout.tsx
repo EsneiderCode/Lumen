@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { Outlet } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { ClipboardList, Calendar } from 'lucide-react'
@@ -49,7 +50,9 @@ export function TechnicianLayout() {
       <main className="nx-main flex-1 p-4 pb-20">
         <div className="nx-main-inner page-fade-in">
           <ErrorBoundary>
-            <Outlet />
+            <Suspense fallback={<div className="flex items-center justify-center py-20"><div className="nx-loader" /></div>}>
+              <Outlet />
+            </Suspense>
           </ErrorBoundary>
         </div>
       </main>

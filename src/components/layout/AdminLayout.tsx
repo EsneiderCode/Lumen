@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { Outlet, useLocation } from 'react-router'
 import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
@@ -19,7 +19,9 @@ export function AdminLayout() {
           <main className="nx-main flex-1 overflow-auto px-4 py-5 md:px-7 md:py-6">
             <div className="nx-main-inner page-fade-in">
               <ErrorBoundary key={location.pathname}>
-                <Outlet />
+                <Suspense fallback={<div className="flex items-center justify-center py-20"><div className="nx-loader" /></div>}>
+                  <Outlet />
+                </Suspense>
               </ErrorBoundary>
             </div>
           </main>
