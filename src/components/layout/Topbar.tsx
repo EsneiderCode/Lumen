@@ -17,12 +17,12 @@ export function Topbar({ onOpenSidebar }: TopbarProps) {
   const { isInstallable, promptInstall } = useInstallPrompt()
 
   return (
-    <header className="flex h-12 items-center gap-5 border-b border-line bg-bg-1 px-4 md:px-5">
+    <header className="flex h-12 items-center gap-4 border-b border-line bg-bg-1 px-4 md:px-5">
       {/* Hamburger — mobile only */}
       <button
         onClick={onOpenSidebar}
         className="nx-tb-btn md:hidden"
-        aria-label={t('nav.menuOpen', { defaultValue: 'Menü öffnen' })}
+        aria-label={t('nav.menuOpen')}
       >
         <Menu size={18} strokeWidth={1.5} />
       </button>
@@ -34,8 +34,8 @@ export function Topbar({ onOpenSidebar }: TopbarProps) {
         <Search size={14} strokeWidth={1.5} />
         <input
           type="text"
-          placeholder={t('nav.search', { defaultValue: 'Suchen…' })}
-          aria-label="Suchen"
+          placeholder={t('nav.search')}
+          aria-label={t('nav.search')}
         />
         <span className="nx-kbd">⌘K</span>
       </div>
@@ -46,14 +46,14 @@ export function Topbar({ onOpenSidebar }: TopbarProps) {
       {/* Install CTA (if available) */}
       {isInstallable && (
         <button onClick={promptInstall} className="nx-tb-btn hidden lg:inline-flex">
-          {t('nav.installApp', { defaultValue: 'Install' })}
+          {t('nav.installApp')}
         </button>
       )}
 
       <LanguageSelector />
 
       {/* User + signout */}
-      <span className="nx-label hidden md:inline-block">{user?.fullName}</span>
+      <span className="nx-label hidden max-w-44 truncate md:inline-block">{user?.fullName}</span>
       <button onClick={signOut} className="nx-tb-btn" aria-label={t('auth.signOut')}>
         {t('auth.signOut')}
       </button>

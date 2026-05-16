@@ -11,7 +11,12 @@
  */
 
 import { getStore, saveStore, demoUuid } from './store'
-import { DEMO_PASSWORD, type DemoStore } from './fixtures'
+import { DEMO_PASSWORD, DEMO_TECH_PIN, type DemoStore } from './fixtures'
+import {
+  buildContractorDocumentFailureReasons,
+  reasonsToMessage,
+} from '@/services/workOrderBusinessRules'
+import type { ContractorDocument } from '@/types/contractor-documents'
 
 type Row = Record<string, unknown>
 type FilterOp = 'eq' | 'gte' | 'lte' | 'is' | 'in'
@@ -75,7 +80,9 @@ function applyOr(rows: Row[], or: OrFilter): Row[] {
           return r[col] === valRaw
         case 'ilike': {
           const pattern = valRaw.replace(/%/g, '').toLowerCase()
-          return String(r[col] ?? '').toLowerCase().includes(pattern)
+          return String(r[col] ?? '')
+            .toLowerCase()
+            .includes(pattern)
         }
         default:
           return false
@@ -117,7 +124,7 @@ function applyOrder(rows: Row[], ord: OrderBy | null): Row[] {
 
 interface ParsedSelect {
   columns: string[] | '*'
-  relations: Array<{ name: string; columns: string[] | '*' }>
+  relations: Array<{ name: string; columns: string[] | '*'; fkCol?: string }>
 }
 
 function parseSelect(input: string): ParsedSelect {
@@ -126,17 +133,19 @@ function parseSelect(input: string): ParsedSelect {
   if (s === '*') return { columns: '*', relations: [] }
 
   const relations: ParsedSelect['relations'] = []
-  // Capture "name ( fields )" blocks.
-  const relationRe = /(\w+)\s*\(\s*([^()]+)\s*\)/g
+  // Capture "name ( fields )" and "alias:fk_column ( fields )" blocks.
+  const relationRe = /(?:(\w+):)?(\w+)\s*\(\s*([^()]+)\s*\)/g
   let stripped = s
   let m: RegExpExecArray | null
   while ((m = relationRe.exec(s)) !== null) {
-    const [full, name, inner] = m
+    const [full, alias, nameOrFk, inner] = m
+    const name = alias || nameOrFk
+    const fkCol = alias ? nameOrFk : undefined
     const cols = inner
       .split(',')
       .map((c) => c.trim())
       .filter(Boolean)
-    relations.push({ name, columns: cols.length ? cols : '*' })
+    relations.push({ name, fkCol, columns: cols.length ? cols : '*' })
     stripped = stripped.replace(full, '')
   }
 
@@ -151,7 +160,12 @@ function parseSelect(input: string): ParsedSelect {
   }
 }
 
-function attachRelations(rows: Row[], parent: keyof DemoStore, parsed: ParsedSelect, store: DemoStore): Row[] {
+function attachRelations(
+  rows: Row[],
+  parent: keyof DemoStore,
+  parsed: ParsedSelect,
+  store: DemoStore,
+): Row[] {
   if (parsed.relations.length === 0) return rows
 
   return rows.map((row) => {
@@ -159,7 +173,11 @@ function attachRelations(rows: Row[], parent: keyof DemoStore, parsed: ParsedSel
     for (const rel of parsed.relations) {
       const relTable = rel.name as keyof DemoStore
       if (!(relTable in store)) continue
-      const fkCol = `${rel.name.replace(/s$/, '')}_id` // clients → client_id
+      const fkCol =
+        rel.fkCol ??
+        (parent === 'materials' && rel.name === 'clients'
+          ? 'catalog_client_id'
+          : `${rel.name.replace(/s$/, '')}_id`) // clients → client_id
       const relRows = store[relTable] as unknown as Row[]
 
       if (parent === 'work_order_state_history' && rel.name === 'profiles') {
@@ -279,13 +297,18 @@ function makeBuilder(table: keyof DemoStore): MockBuilder {
       return builder
     },
     single() {
-      return execute(state, 'single')
+      return execute(state, 'single') as Promise<{
+        data: Row | null
+        error: { message: string } | null
+      }>
     },
     maybeSingle() {
-      return execute(state, 'maybe')
+      return execute(state, 'maybe') as Promise<{ data: Row | null; error: null }>
     },
     then(onFulfilled, onRejected) {
-      return execute(state, 'list').then(onFulfilled, onRejected)
+      return (
+        execute(state, 'list') as Promise<{ data: Row[] | null; error: null; count?: number }>
+      ).then(onFulfilled, onRejected)
     },
     catch(onRejected) {
       return execute(state, 'list').catch(onRejected)
@@ -319,7 +342,10 @@ interface MockBuilder {
   catch: (onRejected: (reason: unknown) => unknown) => Promise<unknown>
 }
 
-async function execute(state: BuilderState, kind: 'list' | 'single' | 'maybe' = 'list'): Promise<{
+async function execute(
+  state: BuilderState,
+  kind: 'list' | 'single' | 'maybe' = 'list',
+): Promise<{
   data: Row | Row[] | null
   count?: number
   error: { message: string } | null
@@ -329,7 +355,14 @@ async function execute(state: BuilderState, kind: 'list' | 'single' | 'maybe' = 
 
   if (state.mode === 'insert') {
     const rows = Array.isArray(state.payload) ? state.payload : [state.payload!]
-    const inserted = rows.map((r) => ({ ...r, id: r.id ?? demoUuid(), created_at: r.created_at ?? new Date().toISOString() }))
+    const now = new Date().toISOString()
+    const inserted = rows.map((r) => ({
+      ...r,
+      id: r.id ?? demoUuid(),
+      created_at: r.created_at ?? now,
+      updated_at: r.updated_at ?? now,
+      ...(table === 'contractor_documents' ? { uploaded_at: r.uploaded_at ?? now } : {}),
+    }))
     ;(store[table] as unknown as Row[]).push(...inserted)
     saveStore(store)
     if (kind === 'single') return { data: inserted[0] ?? null, error: null }
@@ -338,7 +371,7 @@ async function execute(state: BuilderState, kind: 'list' | 'single' | 'maybe' = 
 
   if (state.mode === 'update') {
     const list = store[table] as unknown as Row[]
-    let updated: Row[] = []
+    const updated: Row[] = []
     for (let i = 0; i < list.length; i++) {
       const row = list[i]
       let match = state.filters.every((f) => applyFilter([row], f).length > 0)
@@ -356,11 +389,10 @@ async function execute(state: BuilderState, kind: 'list' | 'single' | 'maybe' = 
   if (state.mode === 'delete') {
     const list = store[table] as unknown as Row[]
     const survivors: Row[] = []
-    let deleted = 0
     for (const row of list) {
       const match = state.filters.every((f) => applyFilter([row], f).length > 0)
       if (match) {
-        deleted++
+        continue
       } else {
         survivors.push(row)
       }
@@ -393,7 +425,9 @@ async function execute(state: BuilderState, kind: 'list' | 'single' | 'maybe' = 
   if (kind === 'maybe') {
     return { data: rows[0] ?? null, error: null }
   }
-  return state.countMode ? { data: rows, count: totalCount, error: null } : { data: rows, error: null }
+  return state.countMode
+    ? { data: rows, count: totalCount, error: null }
+    : { data: rows, error: null }
 }
 
 // ── Auth ────────────────────────────────────────────────────────────────────
@@ -409,20 +443,32 @@ function makeAuth() {
   return {
     async signInWithPassword({ email, password }: { email: string; password: string }) {
       if (password !== DEMO_PASSWORD) {
-        return { data: { user: null, session: null }, error: { message: 'Invalid login (use demo123)' } }
+        return {
+          data: { user: null, session: null },
+          error: { message: 'Invalid login (use demo123)' },
+        }
       }
       const store = getStore()
       const user = store.profiles.find((p) => p.email === email)
       if (!user) {
-        return { data: { user: null, session: null }, error: { message: `No demo account for ${email}` } }
+        return {
+          data: { user: null, session: null },
+          error: { message: `No demo account for ${email}` },
+        }
       }
-      store._session = { user: { id: user.id, email: user.email ?? '' }, access_token: 'demo-token' }
+      store._session = {
+        user: { id: user.id, email: user.email ?? '' },
+        access_token: 'demo-token',
+      }
       saveStore(store)
       notifyAll('SIGNED_IN', { user })
       return { data: { user, session: { user, access_token: 'demo-token' } }, error: null }
     },
     async signInWithOtp() {
-      return { data: { user: null, session: null }, error: { message: 'OTP not supported in demo mode' } }
+      return {
+        data: { user: null, session: null },
+        error: { message: 'OTP not supported in demo mode' },
+      }
     },
     async signOut() {
       const store = getStore()
@@ -496,8 +542,47 @@ function makeStorage() {
 
 // ── RPC ─────────────────────────────────────────────────────────────────────
 
+function addStateHistory(
+  store: DemoStore,
+  workOrderId: string,
+  fromStatus: unknown,
+  toStatus: string,
+  changedBy: string,
+  notes: string | null,
+) {
+  ;(store.work_order_state_history as Row[]).push({
+    id: demoUuid(),
+    work_order_id: workOrderId,
+    from_status: fromStatus as string | null,
+    to_status: toStatus,
+    changed_by: changedBy,
+    notes,
+    created_at: new Date().toISOString(),
+  })
+}
+
+function addCertificationAudit(
+  store: DemoStore,
+  workOrderId: string,
+  certType: string,
+  changedBy: string,
+  dataHash: string,
+  notes: string | null,
+) {
+  ;(store.certification_audits as Row[]).push({
+    id: demoUuid(),
+    work_order_id: workOrderId,
+    cert_type: certType,
+    certified_by: changedBy,
+    certified_at: new Date().toISOString(),
+    data_hash: dataHash,
+    notes,
+    created_at: new Date().toISOString(),
+  })
+}
+
 function makeRpc() {
-  return async (fn: string, _params?: Record<string, unknown>) => {
+  return async (fn: string, params: Record<string, unknown> = {}) => {
     if (fn === 'generate_order_number') {
       const store = getStore()
       const today = new Date().toISOString().slice(0, 10).replace(/-/g, '')
@@ -508,7 +593,233 @@ function makeRpc() {
       const seq = String(todayCount + 1).padStart(4, '0')
       return { data: `${todayPrefix}${seq}`, error: null }
     }
+
+    if (fn === 'assign_work_order_checked') {
+      const store = getStore()
+      const workOrderId = String(params.p_work_order_id ?? '')
+      const assigneeId = String(params.p_assignee_id ?? '')
+      const changedBy = String(params.p_changed_by ?? '')
+      const assignedDate = String(params.p_assigned_date ?? new Date().toISOString().slice(0, 10))
+      const notes = (params.p_notes as string | null | undefined) ?? null
+      const order = store.work_orders.find((item) => item.id === workOrderId)
+      if (!order) return { data: null, error: { message: 'Work order not found' } }
+
+      const assignee = store.profiles.find((profile) => profile.id === assigneeId)
+      if (assignee?.role === 'contractor') {
+        const docs = store.contractor_documents.filter((doc) => doc.contractor_id === assigneeId)
+        const reasons = buildContractorDocumentFailureReasons(
+          docs as ContractorDocument[],
+          assignedDate,
+        )
+        if (reasons.length > 0) {
+          const message = reasons
+            .map(
+              (reason) =>
+                `${reason.requirementId ?? reason.documentType ?? reason.code}: ${reason.message}`,
+            )
+            .join('; ')
+          return { data: null, error: { message: message || reasonsToMessage(reasons) } }
+        }
+      }
+
+      const fromStatus = order.status
+      Object.assign(order as Row, {
+        assigned_team: (params.p_team as string | null | undefined) ?? null,
+        assigned_technician: assigneeId || null,
+        assigned_date: assignedDate,
+        status: 'assigned',
+        updated_at: new Date().toISOString(),
+      })
+      addStateHistory(store, workOrderId, fromStatus, 'assigned', changedBy, notes)
+      saveStore(store)
+      return { data: order, error: null }
+    }
+
+    if (fn === 'certify_work_order_internal') {
+      const store = getStore()
+      const workOrderId = String(params.p_work_order_id ?? '')
+      const changedBy = String(params.p_changed_by ?? '')
+      const dataHash = String(params.p_data_hash ?? '')
+      const notes = (params.p_notes as string | null | undefined) ?? null
+      const order = store.work_orders.find((item) => item.id === workOrderId)
+      if (!order) return { data: null, error: { message: 'Work order not found' } }
+      if (!dataHash)
+        return { data: null, error: { message: 'Internal audit data hash is required' } }
+      if (order.status !== 'rueckmeldung_sent') {
+        return {
+          data: null,
+          error: { message: 'Internal certification requires rueckmeldung_sent status' },
+        }
+      }
+
+      const fromStatus = order.status
+      Object.assign(order as Row, {
+        status: 'internally_certified',
+        updated_at: new Date().toISOString(),
+      })
+      addCertificationAudit(store, workOrderId, 'internal', changedBy, dataHash, notes)
+      addStateHistory(store, workOrderId, fromStatus, 'internally_certified', changedBy, notes)
+      saveStore(store)
+      return { data: order, error: null }
+    }
+
+    if (fn === 'accept_work_order_client') {
+      const store = getStore()
+      const workOrderId = String(params.p_work_order_id ?? '')
+      const changedBy = String(params.p_changed_by ?? '')
+      const dataHash = String(params.p_data_hash ?? '')
+      const notes = (params.p_notes as string | null | undefined) ?? null
+      const order = store.work_orders.find((item) => item.id === workOrderId)
+      if (!order) return { data: null, error: { message: 'Work order not found' } }
+      if (!dataHash) return { data: null, error: { message: 'Client audit data hash is required' } }
+      if (order.client_id === null) {
+        return { data: null, error: { message: 'Direct orders cannot be client accepted' } }
+      }
+      if (order.status !== 'sent_to_client') {
+        return {
+          data: null,
+          error: { message: 'Client acceptance requires sent_to_client status' },
+        }
+      }
+
+      const fromStatus = order.status
+      Object.assign(order as Row, {
+        status: 'client_accepted',
+        updated_at: new Date().toISOString(),
+      })
+      addCertificationAudit(store, workOrderId, 'client', changedBy, dataHash, notes)
+      addStateHistory(store, workOrderId, fromStatus, 'client_accepted', changedBy, notes)
+      saveStore(store)
+      return { data: order, error: null }
+    }
+
+    if (fn === 'invoice_work_order_checked') {
+      const store = getStore()
+      const workOrderId = String(params.p_work_order_id ?? '')
+      const changedBy = String(params.p_changed_by ?? '')
+      const billingReference = (params.p_billing_reference as string | null | undefined) ?? null
+      const notes = (params.p_notes as string | null | undefined) ?? null
+      const order = store.work_orders.find((item) => item.id === workOrderId)
+      if (!order) return { data: null, error: { message: 'Work order not found' } }
+      const isDirect = order.client_id === null
+      const requiredCert = isDirect ? 'internal' : 'client'
+      const requiredStatus = isDirect ? 'internally_certified' : 'client_accepted'
+      const hasAudit = store.certification_audits.some(
+        (audit) => audit.work_order_id === workOrderId && audit.cert_type === requiredCert,
+      )
+      if (order.status !== requiredStatus) {
+        return { data: null, error: { message: `Invoice requires ${requiredStatus} status` } }
+      }
+      if (!hasAudit) {
+        return { data: null, error: { message: `Invoice requires ${requiredCert} audit` } }
+      }
+
+      const fromStatus = order.status
+      Object.assign(order as Row, {
+        status: 'invoiced',
+        billing_reference: billingReference,
+        updated_at: new Date().toISOString(),
+      })
+      addStateHistory(store, workOrderId, fromStatus, 'invoiced', changedBy, notes)
+      saveStore(store)
+      return { data: order, error: null }
+    }
+
     return { data: null, error: { message: `RPC ${fn} not supported in demo mode` } }
+  }
+}
+
+// ── Functions ────────────────────────────────────────────────────────────────
+
+function makeFunctions() {
+  return {
+    async invoke(functionName: string, options: { method?: string; body?: Row } = {}) {
+      const store = getStore()
+
+      if (functionName === 'pin-login') {
+        const loginCode = String(options.body?.loginCode ?? '').toLowerCase()
+        const pin = String(options.body?.pin ?? '')
+        const user = store.profiles.find(
+          (p) =>
+            p.pin_login_code === loginCode &&
+            p.is_active &&
+            ['technician', 'contractor'].includes(String(p.role)),
+        )
+        if (!user || pin !== DEMO_TECH_PIN) {
+          return { data: null, error: { message: 'Invalid demo PIN (use 1234)' } }
+        }
+        user.last_pin_login_at = new Date().toISOString()
+        store._session = {
+          user: { id: user.id, email: user.email ?? '' },
+          access_token: 'demo-pin-token',
+        }
+        saveStore(store)
+        return {
+          data: {
+            accessToken: 'demo-pin-token',
+            expiresAt: Math.floor(Date.now() / 1000) + 60 * 60 * 12,
+            user: {
+              id: user.id,
+              email: user.email,
+              fullName: user.full_name,
+              role: user.role,
+              team: user.team,
+              loginCode: user.pin_login_code,
+            },
+          },
+          error: null,
+        }
+      }
+
+      if (functionName === 'admin-users') {
+        if (options.method === 'GET') {
+          return { data: { users: store.profiles }, error: null }
+        }
+
+        const body = options.body ?? {}
+        if (options.method === 'POST') {
+          const id = demoUuid()
+          const role = String(body.role ?? 'technician')
+          const user = {
+            id,
+            email: typeof body.email === 'string' && body.email ? body.email : null,
+            full_name: String(body.fullName ?? 'Neuer Benutzer'),
+            role,
+            team: (body.team as string | null) ?? null,
+            pin_login_code: role === 'admin' ? null : String(body.loginCode ?? '').toLowerCase(),
+            pin_set_at: body.pin ? new Date().toISOString() : null,
+            last_pin_login_at: null,
+            is_active: body.isActive !== false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          }
+          store.profiles.push(user)
+          saveStore(store)
+          return { data: { users: store.profiles }, error: null }
+        }
+
+        if (options.method === 'PATCH') {
+          const id = String(body.id ?? '')
+          const user = store.profiles.find((p) => p.id === id)
+          if (!user) return { data: null, error: { message: 'Demo user not found' } }
+          if (body.email !== undefined) user.email = body.email as string | null
+          if (body.fullName !== undefined) user.full_name = String(body.fullName)
+          if (body.role !== undefined) user.role = String(body.role)
+          if (body.team !== undefined) user.team = body.team as string | null
+          if (body.loginCode !== undefined) user.pin_login_code = body.loginCode as string | null
+          if (body.isActive !== undefined) user.is_active = Boolean(body.isActive)
+          if (body.pin) user.pin_set_at = new Date().toISOString()
+          user.updated_at = new Date().toISOString()
+          saveStore(store)
+          return { data: { users: store.profiles }, error: null }
+        }
+      }
+
+      return {
+        data: null,
+        error: { message: `Function ${functionName} not supported in demo mode` },
+      }
+    },
   }
 }
 
@@ -517,11 +828,13 @@ function makeRpc() {
 export function createDemoSupabaseClient() {
   return {
     from(table: string) {
-      return makeBuilder(table as keyof DemoStore)
+      const physicalTable = table === 'service_items_public' ? 'service_items' : table
+      return makeBuilder(physicalTable as keyof DemoStore)
     },
     auth: makeAuth(),
     storage: makeStorage(),
     rpc: makeRpc(),
+    functions: makeFunctions(),
   }
 }
 

@@ -74,29 +74,29 @@ export function AdminDashboard() {
   }, [])
 
   const stats = [
-    { label: t('adminDashboard.kpi.openOrders'), value: counts.open,        color: 'bg-accent' },
-    { label: t('adminDashboard.kpi.inProgress'), value: counts.inProgress,  color: 'bg-info' },
-    { label: t('adminDashboard.kpi.pendingCert'),value: counts.pendingCert, color: 'bg-warn' },
-    { label: t('adminDashboard.kpi.done'),       value: counts.done,        color: 'bg-ok' },
+    { label: t('dashboard.admin.statOpen'),         value: counts.open,        color: 'bg-accent' },
+    { label: t('dashboard.admin.statInProgress'),   value: counts.inProgress,  color: 'bg-info' },
+    { label: t('dashboard.admin.statPendingCert'),  value: counts.pendingCert, color: 'bg-warn' },
+    { label: t('dashboard.admin.statDone'),         value: counts.done,        color: 'bg-ok' },
   ]
 
   return (
     <div>
       <div className="nx-page-header">
         <div>
-          <h2 className="nx-page-title">Dashboard</h2>
-          <p className="nx-label mt-2">§ Operations · Overview</p>
+          <h2 className="nx-page-title">{t('dashboard.admin.title')}</h2>
+          <p className="nx-label mt-2">{t('dashboard.admin.subtitle')}</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4" aria-live="polite" aria-busy={isLoading}>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
           <div key={stat.label} className="nx-kpi-card">
             <p className="nx-kpi-label">{stat.label}</p>
-            <p className="nx-kpi-value" aria-label={`${stat.label}: ${isLoading ? 'wird geladen' : stat.value}`}>
-              {isLoading ? <span className="text-fg-3" aria-hidden="true">—</span> : stat.value}
+            <p className="nx-kpi-value">
+              {isLoading ? <span className="text-fg-3">—</span> : stat.value}
             </p>
-            <div className={`h-0.5 w-8 rounded-full ${stat.color}`} aria-hidden="true" />
+            <div className={`h-0.5 w-8 rounded-full ${stat.color}`} />
           </div>
         ))}
       </div>
@@ -104,29 +104,29 @@ export function AdminDashboard() {
       {/* Attention feed */}
       <div className="nx-panel mt-8">
         <div className="nx-panel-head">
-          <h3 className="nx-panel-title">{t('adminDashboard.attention.title')}</h3>
+          <h3 className="nx-panel-title">{t('dashboard.admin.attentionTitle')}</h3>
           <span className="nx-panel-meta tabular-nums">
-            {t('adminDashboard.attention.open', { count: alerts.length })}
+            {t('dashboard.admin.attentionOpen', { count: alerts.length })}
           </span>
         </div>
         <div>
           {isLoading ? (
-            <div className="nx-panel-body flex items-center justify-center py-6" role="status" aria-label="Wird geladen">
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-line border-t-accent" aria-hidden="true" />
+          <div className="nx-panel-body flex items-center justify-center py-6">
+              <div className="nx-loader-sm" />
             </div>
           ) : alerts.length === 0 ? (
-            <div className="nx-panel-body text-sm text-fg-2">{t('adminDashboard.attention.empty')}</div>
+            <div className="nx-panel-body text-sm text-fg-2">{t('dashboard.admin.attentionEmpty')}</div>
           ) : (
             alerts.map((order) => {
               const sev = order.status === 'client_rejected' ? 'crit' : 'warn'
-              const label = order.status === 'client_rejected'
-                ? t('adminDashboard.attention.rejected')
-                : t('adminDashboard.attention.returned')
+              const label =
+                order.status === 'client_rejected'
+                  ? t('dashboard.admin.attentionRejected')
+                  : t('dashboard.admin.attentionReturned')
               return (
                 <button
                   key={order.id}
                   onClick={() => navigate(`/admin/orders/${order.id}`)}
-                  aria-label={`Auftrag ${order.order_number} öffnen`}
                   className="nx-alert-row w-full text-left hover:bg-bg-2 transition-colors"
                 >
                   <span className={`nx-alert-sev ${sev}`}>
@@ -141,7 +141,7 @@ export function AdminDashboard() {
                     </strong>
                     <div className="nx-alert-meta">
                       {order.projects?.code ?? '—'}
-                      {order.assigned_team && ` · Team ${order.assigned_team}`}
+                      {order.assigned_team && ` · ${t('dashboard.admin.team', { team: order.assigned_team })}`}
                     </div>
                   </div>
                   <span className="nx-alert-ts">
@@ -157,12 +157,12 @@ export function AdminDashboard() {
       {/* Welcome panel */}
       <div className="nx-panel mt-6">
         <div className="nx-panel-head">
-          <h3 className="nx-panel-title">{t('adminDashboard.welcome.title')}</h3>
-          <span className="nx-panel-meta">{t('adminDashboard.welcome.version')}</span>
+          <h3 className="nx-panel-title">{t('dashboard.admin.welcomeTitle')}</h3>
+          <span className="nx-panel-meta">v1.0</span>
         </div>
         <div className="nx-panel-body">
           <p className="text-sm text-fg-2">
-            {t('adminDashboard.welcome.desc')}
+            {t('dashboard.admin.welcomeBody')}
           </p>
         </div>
       </div>

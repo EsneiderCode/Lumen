@@ -13,7 +13,7 @@ interface BottomNavProps {
 
 export function BottomNav({ items }: BottomNavProps) {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-line bg-bg-1">
+    <nav className="nx-bottom-nav fixed bottom-0 left-0 right-0 z-50">
       <div className="flex items-center justify-around">
         {items.map((item) => {
           const Icon = item.icon
@@ -23,8 +23,8 @@ export function BottomNav({ items }: BottomNavProps) {
               to={item.path}
               end={item.path.split('/').length <= 2}
               className={({ isActive }) =>
-                `flex flex-1 flex-col items-center gap-1 py-2.5 text-xs font-medium transition-colors ${
-                  isActive ? 'text-accent' : 'text-fg-2 hover:text-fg-1'
+                `nx-bottom-nav-link flex flex-1 flex-col items-center justify-center gap-1 transition-colors ${
+                  isActive ? 'active' : 'hover:text-fg-1'
                 }`
               }
             >

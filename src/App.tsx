@@ -21,6 +21,8 @@ const WorkOrderAssignPage = lazy(() => import('@/pages/admin/WorkOrderAssignPage
 const WorkOrderDetailPage = lazy(() => import('@/pages/admin/WorkOrderDetailPage').then(m => ({ default: m.WorkOrderDetailPage })))
 const CertificationPage  = lazy(() => import('@/pages/admin/CertificationPage').then(m => ({ default: m.CertificationPage })))
 const ServiceItemsPage   = lazy(() => import('@/pages/admin/ServiceItemsPage').then(m => ({ default: m.ServiceItemsPage })))
+const UsersPage          = lazy(() => import('@/pages/admin/UsersPage').then(m => ({ default: m.UsersPage })))
+const MaterialsPage      = lazy(() => import('@/pages/admin/MaterialsPage').then(m => ({ default: m.MaterialsPage })))
 
 // Technician chunk (field technicians on slow connections — keep lean)
 const TechDashboard      = lazy(() => import('@/pages/technician/TechDashboard').then(m => ({ default: m.TechDashboard })))
@@ -32,6 +34,7 @@ const TechSettingsPage   = lazy(() => import('@/pages/technician/TechSettingsPag
 // Contractor chunk
 const ContractorDashboard  = lazy(() => import('@/pages/contractor/ContractorDashboard').then(m => ({ default: m.ContractorDashboard })))
 const ContractorOrdersPage = lazy(() => import('@/pages/contractor/ContractorOrdersPage').then(m => ({ default: m.ContractorOrdersPage })))
+const ContractorDocumentsPage = lazy(() => import('@/pages/contractor/ContractorDocumentsPage').then(m => ({ default: m.ContractorDocumentsPage })))
 
 function App() {
   return (
@@ -54,6 +57,8 @@ function App() {
                 <Route path={ROUTES.ADMIN.ORDERS_DETAIL} element={<WorkOrderDetailPage />} />
                 <Route path={ROUTES.ADMIN.CERTIFICATION} element={<CertificationPage />} />
                 <Route path={ROUTES.ADMIN.SERVICE_ITEMS} element={<ServiceItemsPage />} />
+                <Route path={ROUTES.ADMIN.PERSONNEL} element={<UsersPage />} />
+                <Route path={ROUTES.ADMIN.MATERIALS} element={<MaterialsPage />} />
               </Route>
             </Route>
 
@@ -73,6 +78,7 @@ function App() {
               <Route element={<ContractorLayout />}>
                 <Route path={ROUTES.CONTRACTOR.DASHBOARD} element={<ContractorDashboard />} />
                 <Route path={ROUTES.CONTRACTOR.ORDERS} element={<ContractorOrdersPage />} />
+                <Route path={ROUTES.CONTRACTOR.DOCUMENTS} element={<ContractorDocumentsPage />} />
               </Route>
             </Route>
 

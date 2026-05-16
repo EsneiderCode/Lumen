@@ -10,7 +10,7 @@ export function OfflineBanner() {
   return (
     <div
       role="alert"
-      className="flex items-center gap-2 border-b border-warn bg-bg-1 px-4 py-2"
+      className="flex items-center gap-2 border-b border-warn bg-bg-0 px-4 py-2"
     >
       {/* wifi-off icon — 1.5px monoline, 20×20 */}
       <svg
@@ -34,7 +34,7 @@ export function OfflineBanner() {
         <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
         <line x1="12" y1="20" x2="12.01" y2="20" />
       </svg>
-      <span className="text-xs font-medium text-warn">
+      <span className="nx-label text-warn">
         {t('offline.banner', { defaultValue: 'Keine Verbindung — Änderungen werden lokal gespeichert' })}
       </span>
     </div>

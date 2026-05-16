@@ -29,3 +29,8 @@ dev-dist
 *.njsproj
 *.sln
 *.sw?
+docs/
+# Local Pi runtime state
+.atl/
+.pi/
+.pi-lens/

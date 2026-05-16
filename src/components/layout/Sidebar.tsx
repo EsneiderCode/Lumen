@@ -19,31 +19,31 @@ interface NavItem {
 }
 
 interface NavSection {
-  sectionKey: string
+  labelKey: string
   items: NavItem[]
 }
 
 const NAV_SECTIONS: NavSection[] = [
   {
-    sectionKey: 'operations',
+    labelKey: 'nav.operations',
     items: [
-      { labelKey: 'dashboard',    path: ROUTES.ADMIN.DASHBOARD,     icon: LayoutGrid },
-      { labelKey: 'orders',       path: ROUTES.ADMIN.ORDERS,        icon: ClipboardList },
-      { labelKey: 'certification',path: ROUTES.ADMIN.CERTIFICATION, icon: CheckCircle2 },
+      { labelKey: 'nav.dashboard',     path: ROUTES.ADMIN.DASHBOARD,     icon: LayoutGrid },
+      { labelKey: 'nav.orders',        path: ROUTES.ADMIN.ORDERS,        icon: ClipboardList },
+      { labelKey: 'nav.certification', path: ROUTES.ADMIN.CERTIFICATION, icon: CheckCircle2 },
     ],
   },
   {
-    sectionKey: 'catalog',
+    labelKey: 'nav.catalog',
     items: [
-      { labelKey: 'serviceCatalog', path: ROUTES.ADMIN.SERVICE_ITEMS, icon: FileText },
+      { labelKey: 'nav.serviceCatalog', path: ROUTES.ADMIN.SERVICE_ITEMS, icon: FileText },
     ],
   },
   {
-    sectionKey: 'organization',
+    labelKey: 'nav.organization',
     items: [
-      { labelKey: 'personnel', path: ROUTES.ADMIN.PERSONNEL, icon: Users },
-      { labelKey: 'materials', path: ROUTES.ADMIN.MATERIALS, icon: Package },
-      { labelKey: 'settings',  path: ROUTES.ADMIN.SETTINGS,  icon: Settings },
+      { labelKey: 'nav.personnel', path: ROUTES.ADMIN.PERSONNEL, icon: Users },
+      { labelKey: 'nav.materials', path: ROUTES.ADMIN.MATERIALS, icon: Package },
+      { labelKey: 'nav.settings',  path: ROUTES.ADMIN.SETTINGS,  icon: Settings },
     ],
   },
 ]
@@ -60,34 +60,39 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       {/* Mobile backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          className="fixed inset-0 z-40 bg-bg-0/80 md:hidden"
           onClick={onClose}
         />
       )}
 
       {/* Sidebar panel */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex h-screen w-64 flex-col border-r border-line bg-bg-1 transition-transform duration-200 ease-in-out md:relative md:z-auto md:translate-x-0 ${
+        className={`nx-sidebar fixed inset-y-0 left-0 z-50 flex h-screen flex-col transition-transform duration-200 ease-in-out md:relative md:z-auto md:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Brand */}
-        <div className="flex h-12 items-center gap-3 border-b border-line px-5">
-          <svg width="22" height="22" viewBox="0 0 40 40" fill="none" aria-hidden="true">
-            <rect x="6"  y="6" width="6" height="28" fill="var(--color-fg-1)"/>
-            <rect x="28" y="6" width="6" height="28" fill="var(--color-fg-1)"/>
-            <path d="M12 8 L28 32 L28 26 L12 2 Z" fill="var(--color-accent)"/>
-          </svg>
-          <div className="font-display text-[15px] font-medium tracking-tight text-fg-1">
-            LUMEN<span className="text-accent">.OS</span>
+        <div className="nx-sb-brand">
+          <div className="nx-brand-mark h-8 w-8">
+            <svg width="18" height="18" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+              <rect x="6"  y="6" width="6" height="28" fill="var(--color-fg-1)"/>
+              <rect x="28" y="6" width="6" height="28" fill="var(--color-fg-1)"/>
+              <path d="M12 8 L28 32 L28 26 L12 2 Z" fill="var(--color-accent)"/>
+            </svg>
+          </div>
+          <div>
+            <div className="nx-brand-name text-[14px]">
+              LUMEN<span className="text-accent">.OS</span>
+            </div>
+            <div className="nx-brand-meta">NEXUS FIELD OPS</div>
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-auto px-3 py-2">
+        <nav className="flex-1 overflow-auto px-2 py-2">
           {NAV_SECTIONS.map((section) => (
-            <div key={section.sectionKey}>
-              <div className="nx-sb-section">{t(`sidebar.sections.${section.sectionKey}`)}</div>
+            <div key={section.labelKey}>
+              <div className="nx-sb-section">{t(section.labelKey)}</div>
               {section.items.map((item) => {
                 const Icon = item.icon
                 return (
@@ -97,21 +102,22 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                     end={item.path === ROUTES.ADMIN.DASHBOARD}
                     onClick={onClose}
                     className={({ isActive }) =>
-                      `flex items-center gap-2.5 rounded-s px-2 py-1.5 text-[13px] transition-colors ${
-                        isActive
-                          ? 'bg-bg-3 text-fg-1'
-                          : 'text-fg-2 hover:bg-bg-2 hover:text-fg-1'
-                      }`
+                      `nx-sb-link ${isActive ? 'nx-sb-link-active' : ''}`
                     }
                   >
                     <Icon size={14} strokeWidth={1.5} className="opacity-70" />
-                    {t(`sidebar.nav.${item.labelKey}`)}
+                    {t(item.labelKey)}
                   </NavLink>
                 )
               })}
             </div>
           ))}
         </nav>
+
+        <div className="nx-sb-foot">
+          <span className="nx-label">Tenant</span>
+          <span className="text-[12px] text-fg-2">HMR Nexus GmbH</span>
+        </div>
       </aside>
     </>
   )

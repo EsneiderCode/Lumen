@@ -32,14 +32,7 @@
     "retry": "Reintentar",
     "error": "Error",
     "success": "Éxito",
-    "warning": "Advertencia",
-    "reset": "Restablecer",
-    "of": "de",
-    "prevPage": "← Anterior",
-    "nextPage": "Siguiente →",
-    "irreversible": "Esta acción no se puede deshacer.",
-    "active": "Activo",
-    "closed": "Cerrado"
+    "warning": "Advertencia"
   },
   "auth": {
     "signIn": "Iniciar sesión",
@@ -55,34 +48,11 @@
     "resetPasswordInstructions": "Ingresá tu correo electrónico y te enviaremos un enlace para restablecer la contraseña.",
     "sendResetLink": "Enviar enlace",
     "backToSignIn": "Volver al inicio de sesión",
-    "forgotPasswordSent": "Si existe una cuenta con ese correo, recibirás un enlace para restablecer la contraseña.",
-    "newPassword": "Nueva contraseña",
-    "newPasswordInstructions": "Ingresá tu nueva contraseña.",
-    "confirmPassword": "Confirmar contraseña",
-    "savePassword": "Guardar contraseña",
     "errors": {
       "invalidCredentials": "Correo o contraseña incorrectos.",
       "emailNotConfirmed": "El correo no fue confirmado.",
       "tooManyAttempts": "Demasiados intentos. Probá más tarde.",
-      "unknown": "No se pudo iniciar sesión. Probá de nuevo.",
-      "passwordTooShort": "La contraseña debe tener al menos 8 caracteres.",
-      "passwordMismatch": "Las contraseñas no coinciden."
-    },
-    "pin": {
-      "tabLabel": "PIN de equipo",
-      "emailTab": "Correo",
-      "selectTeamLabel": "Seleccioná el equipo",
-      "selectTeam": "Primero seleccioná un equipo.",
-      "pinLabel": "PIN de 6 dígitos",
-      "enter6Digits": "El PIN debe tener exactamente 6 dígitos.",
-      "settingsTitle": "Cambiar PIN",
-      "stepNew": "Nuevo PIN",
-      "stepConfirm": "Confirmar",
-      "enterNew": "Ingresá el nuevo PIN",
-      "reenterNew": "Ingresá el PIN de nuevo",
-      "mismatch": "Los PINs no coinciden.",
-      "savePIN": "Guardar PIN",
-      "changeSuccess": "PIN cambiado exitosamente."
+      "unknown": "No se pudo iniciar sesión. Probá de nuevo."
     }
   },
   "nav": {
@@ -199,70 +169,13 @@
     "markPaid": "Marcar como pagada",
     "rejectReason": "Motivo del rechazo",
     "invoiceNumber": "Número de factura",
-    "acceptOptionalComment": "Comentario (opcional)",
-    "newOrder": "Nueva orden",
-    "newTitle": "Nueva orden",
-    "editTitle": "Editar orden",
-    "searchPlaceholder": "Buscar…",
-    "allStatus": "Todos los estados",
-    "allTeams": "Todos los equipos",
-    "allTypes": "Todos los tipos",
-    "allClients": "Todos los clientes",
-    "allProjects": "Todos los proyectos",
-    "allPriorities": "Todas las prioridades",
-    "noOrdersFound": "No se encontraron órdenes",
-    "adjustFilters": "Ajustá o restablecé los filtros.",
-    "createFirst": "Crea la primera orden.",
-    "deleteTitle": "¿Eliminar orden?",
-    "assign": "Asignar",
-    "editShort": "Editar",
-    "detail": "Detalle",
-    "generalData": "Datos generales",
-    "selectClient": "— Seleccionar cliente —",
-    "selectProject": "— Seleccionar proyecto —",
-    "selectOperator": "— Seleccionar operador —",
-    "selectService": "— Seleccionar servicio del catálogo —",
-    "serviceCatalogLabel": "Servicio (Catálogo)",
-    "workTypeDerivedLabel": "Tipo de trabajo (del catálogo)",
-    "detailsSubtitle": "Campos específicos del tipo de trabajo",
-    "line": "Línea",
-    "streetNumber": "Calle / Número",
-    "supportingDocs": "Documentos de apoyo",
-    "supportingDocsDesc": "En trabajos lineales (Soplado / Fusión), el plano y los protocolos de empalme reemplazan a la dirección.",
-    "assignNow": "Asignación inmediata (opcional)",
-    "assignNowDesc": "Puedes asignar la orden a un equipo ahora mismo o hacerlo más tarde desde el listado de órdenes.",
-    "createAction": "Crear orden",
-    "saveChanges": "Guardar cambios",
-    "workTypeLabel": "Tipo",
-    "statusLabel": "Estado"
+    "acceptOptionalComment": "Comentario (opcional)"
   },
   "rueckmeldung": {
     "pending": "Rückmeldung pendiente",
     "sent": "Rückmeldung enviada",
     "submitReport": "Enviar Rückmeldung",
-    "technicianData": "Datos cargados por el técnico",
-    "title": "Rückmeldung",
-    "deploymentTimes": "Horarios de trabajo",
-    "start": "Inicio",
-    "end": "Fin",
-    "technicalData": "Datos técnicos — {{workType}}",
-    "documentWork": "Documentar el trabajo realizado",
-    "photos": "Fotos",
-    "noPhotos": "Sin fotos · Tocá para agregar",
-    "addPhoto": "+ Foto",
-    "uploading": "Subiendo…",
-    "notesLabel": "Notas / Observaciones",
-    "notesPlaceholder": "Observaciones, problemas, notas para el admin…",
-    "savedOk": "Datos guardados.",
-    "saveTemp": "Guardar borrador",
-    "send": "Enviar Rückmeldung",
-    "sendCorrected": "Enviar RM corregida",
-    "sendHint": "\"Enviar Rückmeldung\" envía todos los datos al admin para certificación.",
-    "returnedBanner": "Orden devuelta — No conformidad",
-    "returnedCorrectHint": "Realizá las correcciones y enviá la Rückmeldung nuevamente.",
-    "selectOption": "— seleccionar —",
-    "photoUploadError": "Error al subir foto: {{error}}",
-    "photoDeleteError": "Error al eliminar foto: {{error}}"
+    "technicianData": "Datos cargados por el técnico"
   },
   "certification": {
     "internal": "Certificación interna",
@@ -298,20 +211,7 @@
   "contractor": {
     "documentStatus": "Estado de documentos",
     "pending": "Pendiente",
-    "settled": "Liquidado",
-    "welcome": "Bienvenido, {{name}}",
-    "subcontractor": "Subcontratista",
-    "activeOrders": "Órdenes activas",
-    "viewAllOrders": "Ver todas las órdenes →",
-    "orders": "Órdenes",
-    "noOrders": "Sin órdenes",
-    "noOrdersDesc": "No tenés órdenes asignadas aún.",
-    "active": "Activas",
-    "closed": "Cerradas",
-    "searchPlaceholder": "Buscar orden…",
-    "billingPending": "Liquidación pendiente",
-    "paidBadge": "Pagada",
-    "invoicedBadge": "Facturada"
+    "settled": "Liquidado"
   },
   "language": {
     "label": "Idioma",
@@ -320,9 +220,285 @@
     "change": "Cambiar idioma"
   },
   "offline": {
-    "banner": "Sin conexión — los cambios se guardan en el dispositivo",
-    "title": "Sin conexión",
-    "message": "Verificá tu conexión a internet y volvé a intentarlo."
+    "banner": "Sin conexión — los cambios se guardan en el dispositivo"
+  },
+  "authPin": {
+    "tabPin": "PIN",
+    "tabAdmin": "Admin",
+    "loginCode": "Código de técnico",
+    "loginCodePlaceholder": "ej. equipo-rojo-01",
+    "pin": "PIN",
+    "signIn": "Entrar con PIN"
+  },
+  "fieldOrders": {
+    "title": "Mis órdenes",
+    "count": "{{count}} órdenes",
+    "assignedCount": "{{count}} órdenes asignadas",
+    "searchPlaceholder": "Buscar orden...",
+    "emptyTitle": "Sin órdenes",
+    "emptyActive": "Sin órdenes activas",
+    "emptyAssigned": "Todavía no tienes órdenes asignadas.",
+    "returnedSection": "Devueltas — corrección requerida ({{count}})",
+    "activeSection": "Activas ({{count}})",
+    "closedSection": "Cerradas ({{count}})",
+    "closedSentSection": "Cerradas / enviadas ({{count}})",
+    "pageRange": "{{from}}–{{to}} de {{total}}",
+    "paymentPaid": "Pagado",
+    "paymentInvoiced": "Facturado",
+    "paymentPending": "Liquidación pendiente"
+  },
+  "users": {
+    "title": "Usuarios",
+    "subtitle": "{{count}} perfiles operativos",
+    "new": "Nuevo",
+    "profile": "Perfil",
+    "createProfile": "Crear perfil",
+    "editProfile": "Editar perfil",
+    "cancelEdit": "Cancelar edición",
+    "pinHint": "El PIN solo se cambia si completas ese campo.",
+    "name": "Nombre",
+    "role": "Rol",
+    "roles": {
+      "admin": "Admin",
+      "technician": "Técnico",
+      "contractor": "Subcontratista"
+    },
+    "noTeam": "Sin equipo",
+    "pinLoginCode": "Código de login PIN",
+    "newPin": "Nuevo PIN",
+    "pinPlaceholder": "4-8 dígitos",
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "status": "Estado",
+    "pinSet": "creado",
+    "pinLogin": "Login PIN",
+    "activate": "Activar",
+    "deactivate": "Desactivar"
+  },
+  "assignment": {
+    "title": "Asignar orden",
+    "section": "Asignación",
+    "workType": "Tipo de trabajo",
+    "assignee": "Técnico / subcontratista",
+    "chooseProfile": "— elegir perfil —",
+    "noAssigneesForTeam": "No hay perfiles para este equipo.",
+    "assigning": "Asignando...",
+    "assignSubmit": "Asignar y pasar a Assigned"
+  },
+  "contractorDocs": {
+    "title": "Documentos del contratista",
+    "pageTitle": "Documentos",
+    "pageSubtitle": "Documentación requerida para certificación y pago",
+    "subtitle": "{{valid}}/{{total}} documentos válidos",
+    "compliant": "Completo",
+    "incomplete": "Incompleto",
+    "expires": "vence",
+    "noFile": "Sin archivo cargado",
+    "expired": "Vencido",
+    "expiringSoon": "Vence pronto",
+    "missing": "Falta",
+    "issuedAt": "Emitido",
+    "expiresAt": "Vence",
+    "uploadReplacement": "Cargar PDF o foto",
+    "reviewNotes": "Nota de revisión",
+    "reject": "Rechazar",
+    "approve": "Aprobar",
+    "certificationBlocked": "Certificación externa bloqueada por documentación incompleta.",
+    "certificationBlockedWithList": "Certificación externa bloqueada. Faltan o no están aprobados: {{docs}}.",
+    "types": {
+      "gewerbeanmeldung": "Gewerbeanmeldung",
+      "haftpflichtversicherung": "Haftpflichtversicherung",
+      "unbedenklichkeit_finanzamt": "Unbedenklichkeitsbescheinigung Finanzamt",
+      "unbedenklichkeit_sozialkasse": "Unbedenklichkeitsbescheinigung Sozialkasse",
+      "id_passport": "ID / pasaporte",
+      "subcontractor_agreement": "Contrato de subcontratista firmado"
+    },
+    "status": {
+      "pending_review": "Pendiente de revisión",
+      "approved": "Aprobado",
+      "rejected": "Rechazado"
+    }
+  },
+  "nav": {
+    "operations": "Operaciones",
+    "catalog": "Catálogo",
+    "organization": "Organización",
+    "dashboard": "Tablero",
+    "orders": "Órdenes",
+    "workOrders": "Órdenes",
+    "schedule": "Calendario",
+    "documents": "Documentos",
+    "certification": "Certificación",
+    "serviceCatalog": "Catálogo de servicios",
+    "personnel": "Personal",
+    "materials": "Material",
+    "settings": "Configuración",
+    "menuOpen": "Abrir menú",
+    "search": "Buscar...",
+    "installApp": "Instalar"
+  },
+  "breadcrumb": {
+    "admin": "Operaciones",
+    "tech": "Campo",
+    "contractor": "Subcontratista",
+    "orders": "Órdenes",
+    "new": "Nueva",
+    "edit": "Editar",
+    "assign": "Asignar",
+    "certification": "Certificación",
+    "service-items": "Servicios",
+    "personnel": "Personal",
+    "materials": "Inventario",
+    "settings": "Configuración",
+    "rueckmeldung": "Rückmeldung",
+    "schedule": "Calendario",
+    "documents": "Documentos",
+    "certifications": "Certificaciones",
+    "overview": "Resumen",
+    "dashboard": "Tablero"
+  },
+  "dashboard": {
+    "admin": {
+      "title": "Tablero",
+      "subtitle": "§ Operaciones · Resumen",
+      "statOpen": "Órdenes abiertas",
+      "statInProgress": "En curso",
+      "statPendingCert": "Certificación pendiente",
+      "statDone": "Cerradas · mes",
+      "attentionTitle": "Requiere atención",
+      "attentionOpen": "{{count}} abiertas",
+      "attentionEmpty": "Sin alertas abiertas.",
+      "attentionRejected": "Rechazada",
+      "attentionReturned": "Devuelta",
+      "team": "Equipo {{team}}",
+      "welcomeTitle": "Bienvenido a LUMEN",
+      "welcomeBody": "Plataforma operativa central para HMR Nexus Engineering GmbH. Órdenes, certificaciones y gestión de personal en un solo lugar."
+    },
+    "tech": {
+      "greeting": "Hola, {{name}}",
+      "team": "Equipo {{name}}",
+      "statToday": "Hoy",
+      "statOpen": "Abiertas",
+      "statDone": "Hechas",
+      "myOrders": "Mis órdenes",
+      "viewAll": "Ver todo →",
+      "emptyTitle": "Sin órdenes activas",
+      "emptyBody": "No tenés órdenes asignadas en este momento."
+    }
+  },
+  "rueckmeldung": {
+    "materialConsumption": {
+      "title": "Consumo de material",
+      "subtitle": "Opcional. El consumo se descuenta del stock del vehículo del equipo.",
+      "empty": "Sin consumo de material reportado.",
+      "correctionRequired": "Stock real obligatorio: {{items}}",
+      "optionStock": "Stock {{quantity}} {{unit}}",
+      "registered": "Registrado: {{quantity}} {{unit}}",
+      "fields": {
+        "vehicle": "Vehículo",
+        "material": "Material",
+        "quantity": "Cantidad",
+        "realStockBefore": "Stock real antes del consumo"
+      },
+      "actions": {
+        "add": "Material",
+        "remove": "Quitar material"
+      },
+      "placeholders": {
+        "noVehicle": "— sin consumo / elegir vehículo —",
+        "choose": "— elegir —",
+        "minimum": "mín. {{quantity}}"
+      },
+      "errors": {
+        "vehicleRequired": "Elegí un vehículo para reportar consumo de material.",
+        "stockCorrectionRequired": "El stock registrado no alcanza. Ingresá el stock real antes del consumo."
+      },
+      "notes": {
+        "summary": "Consumo de material: {{count}} posición(es)"
+      }
+    }
+  },
+  "materials": {
+    "eyebrow": "Stock por vehículo · Consumo en campo",
+    "title": "Inventario",
+    "kpi": {
+      "materials": "Materiales",
+      "vehicles": "Vehículos",
+      "alerts": "Alertas"
+    },
+    "vehicles": {
+      "title": "Vehículos / equipos",
+      "meta": "1 equipo"
+    },
+    "manual": {
+      "title": "Material manual",
+      "meta": "Ítems sueltos"
+    },
+    "stock": {
+      "title": "Stock por vehículo",
+      "noVehicle": "Ningún vehículo seleccionado",
+      "lowStock": "{{count}} posiciones en o debajo del stock mínimo.",
+      "empty": "No hay stock para este vehículo."
+    },
+    "import": {
+      "title": "Importar Excel",
+      "previewCount": "{{count}} filas detectadas"
+    },
+    "catalog": {
+      "title": "Catálogo de materiales",
+      "meta": "GFP · Westconnect · Manual",
+      "noSku": "sin SKU"
+    },
+    "fields": {
+      "name": "Nombre",
+      "team": "Equipo",
+      "licensePlate": "Matrícula",
+      "notes": "Observaciones",
+      "catalog": "Catálogo",
+      "category": "Categoría",
+      "unit": "Unidad",
+      "minStock": "Mín."
+    },
+    "table": {
+      "material": "Material",
+      "name": "Nombre",
+      "category": "Categoría",
+      "stock": "Stock",
+      "min": "Mín.",
+      "quantity": "Cantidad",
+      "catalog": "Catálogo",
+      "unit": "Unidad",
+      "actions": "Acción"
+    },
+    "actions": {
+      "create": "Crear",
+      "update": "Actualizar",
+      "reset": "Limpiar",
+      "edit": "Editar",
+      "off": "Off",
+      "deactivate": "Desactivar",
+      "file": "Archivo",
+      "applyImport": "Aplicar importación"
+    },
+    "placeholders": {
+      "optional": "opcional",
+      "choose": "— elegir —",
+      "catalog": "Elegir catálogo/cliente",
+      "vehicle": "Elegir vehículo"
+    },
+    "status": {
+      "inactive": "inactivo"
+    },
+    "messages": {
+      "materialRequired": "Nombre, categoría y catálogo/cliente son obligatorios.",
+      "vehicleRequired": "El nombre del vehículo es obligatorio.",
+      "materialCreated": "Material creado.",
+      "materialUpdated": "Material actualizado.",
+      "vehicleCreated": "Vehículo creado.",
+      "vehicleUpdated": "Vehículo actualizado.",
+      "rowsDetected": "{{count}} posiciones detectadas en {{file}}.",
+      "imported": "{{count}} posiciones importadas y sumadas al stock del vehículo."
+    }
   },
   "errors": {
     "boundary": "Ocurrió un error inesperado.",
@@ -333,6 +509,113 @@
     "networkError": "Error de red. Probá de nuevo.",
     "unexpected": "Algo salió mal."
   },
+  "catalog": {
+    "title": "Catálogo de servicios",
+    "subtitleCount": "{{count}} ítems — Códigos de contrato",
+    "newItem": "+ Nuevo ítem",
+    "empty": "No se encontraron ítems",
+    "errorRequired": "El código y la descripción en alemán son obligatorios.",
+    "modal": {
+      "titleCreate": "Nuevo ítem",
+      "titleEdit": "Editar ítem",
+      "section": "Catálogo de servicios"
+    },
+    "sections": {
+      "identification": "Identificación",
+      "priceOrder": "Precio y orden",
+      "assignment": "Asignación"
+    },
+    "fields": {
+      "sapCode": "Código SAP *",
+      "unit": "Unidad",
+      "descDe": "Descripción (DE) *",
+      "descEs": "Descripción (ES)",
+      "price": "Precio (€ neto) — vacío = A convenir",
+      "priceExternal": "Precio de compra subcontratista (€) — vacío = A convenir",
+      "displayOrder": "Orden de visualización",
+      "operator": "Operador",
+      "client": "Cliente",
+      "detailForm": "Formulario de detalle (ruta técnica)",
+      "notes": "Notas",
+      "itemActive": "Ítem activo"
+    },
+    "filter": {
+      "search": "Buscar (código, descripción)…",
+      "allOperators": "Todos los operadores",
+      "globalOperator": "— Global (sin operador) —",
+      "allClients": "Todos los clientes",
+      "showInactive": "Mostrar inactivos"
+    },
+    "status": {
+      "active": "Activo",
+      "inactive": "Inactivo",
+      "visibleInCatalog": "Visible en el catálogo",
+      "hidden": "Oculto"
+    },
+    "actions": {
+      "save": "Guardar",
+      "saving": "[GUARDANDO…]",
+      "create": "Crear",
+      "cancel": "Cancelar"
+    },
+    "table": {
+      "code": "Código",
+      "descriptionDe": "Descripción (DE)",
+      "descriptionEs": "Descripción (ES)",
+      "unit": "Unidad",
+      "price": "Precio",
+      "quote": "A cotizar",
+      "form": "Tipo",
+      "operator": "Operador",
+      "client": "Cliente",
+      "status": "Estado",
+      "actions": "Acciones",
+      "active": "Activo",
+      "inactive": "Inactivo"
+    },
+    "modal": {
+      "category": "Catálogo de servicios",
+      "createTitle": "Nuevo artículo",
+      "editTitle": "Editar artículo",
+      "sectionIdentification": "Identificación",
+      "sectionPrice": "Precio y orden",
+      "sectionAssignment": "Asignación",
+      "fieldCode": "Código SAP",
+      "fieldCodePlaceholder": "ej. DGF_ACT_001",
+      "fieldUnit": "Unidad",
+      "fieldUnitNone": "— ninguna —",
+      "fieldDescDe": "Descripción (DE)",
+      "fieldDescDePlaceholder": "Descripción del servicio en alemán",
+      "fieldDescEs": "Descripción (ES)",
+      "fieldDescEsPlaceholder": "Descripción en español (opcional)",
+      "fieldPrice": "Precio (€ neto) — vacío = a cotizar",
+      "fieldExternalPrice": "Precio externo",
+      "fieldDisplayOrder": "Orden de visualización",
+      "fieldOperator": "Operador",
+      "fieldOperatorGlobal": "— Global / Todos —",
+      "fieldClient": "Cliente",
+      "fieldClientNone": "— sin cliente —",
+      "fieldDetailForm": "Formulario de detalle (ruta técnica)",
+      "fieldNotes": "Notas",
+      "fieldNotesPlaceholder": "Notas internas del artículo…",
+      "active": "Artículo activo",
+      "activeVisible": "Visible en catálogo",
+      "activeHidden": "Oculto",
+      "errorRequired": "El código y la descripción en alemán son obligatorios.",
+      "buttonCancel": "Cancelar",
+      "buttonClose": "Cerrar",
+      "buttonCreate": "Crear",
+      "buttonSave": "Guardar",
+      "buttonSaving": "[GUARDANDO…]"
+    },
+    "delete": {
+      "title": "Eliminar ítem",
+      "warning": "Atención — Irreversible",
+      "confirm": "Esta acción elimina el ítem permanentemente del catálogo y no se puede deshacer.",
+      "action": "Eliminar definitivamente",
+      "deleting": "[ELIMINANDO…]"
+    }
+  },
   "serviceItems": {
     "title": "Catálogo de servicios",
     "subtitle": "{{count}} ítems — Códigos de contrato",
@@ -340,7 +623,7 @@
     "search": "Buscar (código, descripción)…",
     "filters": {
       "allOperators": "Todos los operadores",
-      "globalNoOperator": "— Global (sin operador)",
+      "globalNoOperator": "Global (sin operador)",
       "allClients": "Todos los clientes",
       "showInactive": "Mostrar inactivos"
     },
@@ -348,9 +631,10 @@
       "code": "Código",
       "descriptionDe": "Descripción (DE)",
       "descriptionEs": "Descripción (ES)",
-      "unit": "Unid.",
+      "unit": "Unidad",
       "price": "Precio",
-      "form": "Form",
+      "quote": "A cotizar",
+      "form": "Tipo",
       "operator": "Operador",
       "client": "Cliente",
       "status": "Estado",
@@ -359,8 +643,8 @@
       "inactive": "Inactivo",
       "global": "Global",
       "edit": "Editar",
-      "deactivate": "Desactivar",
       "activate": "Activar",
+      "deactivate": "Desactivar",
       "delete": "Eliminar",
       "empty": "No se encontraron ítems"
     },
@@ -376,30 +660,32 @@
       "fieldUnit": "Unidad",
       "fieldUnitNone": "— ninguna —",
       "fieldDescDe": "Descripción (DE)",
-      "fieldDescDePlaceholder": "Descripción de la prestación en alemán",
+      "fieldDescDePlaceholder": "Descripción del servicio en alemán",
       "fieldDescEs": "Descripción (ES)",
       "fieldDescEsPlaceholder": "Descripción en español (opcional)",
-      "fieldPrice": "Precio (€ neto) — vacío = A convenir",
+      "fieldPrice": "Precio (€ neto) — vacío = a cotizar",
+      "fieldExternalPrice": "Precio externo",
       "fieldDisplayOrder": "Orden de visualización",
       "fieldOperator": "Operador",
       "fieldOperatorGlobal": "— Global / Todos —",
       "fieldClient": "Cliente",
-      "fieldClientNone": "— ninguno —",
+      "fieldClientNone": "— sin cliente —",
       "fieldDetailForm": "Formulario de detalle (ruta técnica)",
       "fieldNotes": "Notas",
-      "fieldNotesPlaceholder": "Notas internas del ítem…",
-      "active": "Ítem activo",
-      "activeVisible": "Visible en el catálogo",
+      "fieldNotesPlaceholder": "Notas internas del artículo…",
+      "active": "Artículo activo",
+      "activeVisible": "Visible en catálogo",
       "activeHidden": "Oculto",
       "errorRequired": "El código y la descripción en alemán son obligatorios.",
       "buttonCancel": "Cancelar",
+      "buttonClose": "Cerrar",
       "buttonCreate": "Crear",
       "buttonSave": "Guardar",
       "buttonSaving": "[GUARDANDO…]"
     },
     "deleteDialog": {
-      "warning": "Atención — Irreversible",
       "title": "Eliminar ítem",
+      "warning": "Atención — Irreversible",
       "body": "Esta acción elimina el ítem permanentemente del catálogo y no se puede deshacer.",
       "buttonCancel": "Cancelar",
       "buttonConfirm": "Eliminar definitivamente",
@@ -453,61 +739,5 @@
     "viewAll": "Ver todas →",
     "noOrders": "Sin órdenes activas",
     "noOrdersDesc": "No tenés órdenes asignadas en este momento."
-  },
-  "tech": {
-    "myOrders": "Mis órdenes",
-    "ordersAssigned": "{{total}} órdenes asignadas",
-    "searchPlaceholder": "Buscar orden…",
-    "returnedSection": "Devueltas — Requieren corrección",
-    "activeSection": "Activas",
-    "closedSection": "Completadas / Enviadas",
-    "orderDetails": "Detalles de la orden",
-    "technicalSpecs": "Especificaciones técnicas — {{workType}}",
-    "history": "Historial",
-    "startWork": "Iniciar trabajo",
-    "completeWork": "Ejecución completada",
-    "fillRueckmeldung": "Completar Rückmeldung",
-    "correctRueckmeldung": "Corregir Rückmeldung",
-    "updatingStatus": "Actualizando…",
-    "rueckmeldungSentInfo": "Rückmeldung enviada. El admin revisará los datos.",
-    "returnedBanner": "Orden devuelta — No conformidad"
-  },
-  "assign": {
-    "title": "Asignar orden",
-    "assignment": "Asignación",
-    "internalEmployee": "Empleado interno (opcional)",
-    "selectEmployee": "— Seleccionar empleado —",
-    "noEmployees": "No hay empleados para este equipo.",
-    "action": "Asignar y cambiar estado → Asignada",
-    "assigning": "Asignando…"
-  },
-  "certificationPage": {
-    "ordersInProcess": "Sin órdenes en proceso",
-    "ordersCount": "{{count}} órdenes en proceso",
-    "clearFilters": "× Limpiar filtros",
-    "selected": "{{count}} seleccionadas",
-    "certifyBulk": "Certificar internamente ({{count}})",
-    "sendBulk": "Enviar al cliente ({{count}})",
-    "invoiceBulk": "Facturar ({{count}})",
-    "clearSelection": "Quitar selección",
-    "noOrdersInStatus": "Sin órdenes en este estado.",
-    "noOrdersInProcess": "Sin órdenes en proceso de certificación.",
-    "bulkInvoiceTitle": "Facturación masiva",
-    "bulkInvoiceDesc": "Número de factura para {{count}} órdenes (obligatorio).",
-    "invoicePlaceholder": "ej. RE-2026-0042",
-    "tabs": {
-      "rueckmeldung_sent": "Rückmeldung recibida",
-      "rueckmeldung_sent_desc": "Pendiente de certificación interna",
-      "internally_certified": "Cert. interna",
-      "internally_certified_desc": "Listo para enviar al cliente",
-      "sent_to_client": "En el cliente",
-      "sent_to_client_desc": "Esperando decisión del cliente",
-      "client_rejected": "Rechazada",
-      "client_rejected_desc": "Devuelta para revisión",
-      "client_accepted": "Aceptada",
-      "client_accepted_desc": "Lista para facturar",
-      "invoiced": "Facturada",
-      "invoiced_desc": "Esperando pago"
-    }
   }
 }

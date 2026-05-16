@@ -8,16 +8,12 @@ import {
   fetchClients,
   fetchProjects,
   fetchOperators,
-  fetchTechnicians,
-  assignWorkOrder,
   upsertWorkOrderDetail,
   fetchWorkOrderDetail,
   workTypeToDetailTable,
   saveAssignedDetailSnapshot,
 } from '@/services/workOrderService'
-import type { TeamColor, WorkType } from '@/types/enums'
-import { TEAMS } from '@/constants/styles'
-import { useTranslation } from 'react-i18next'
+import type { WorkType } from '@/types/enums'
 import { useLabels } from '@/i18n/labels'
 import { DETAIL_FIELDS } from '@/constants/detail-fields'
 import { fetchServiceItems } from '@/services/serviceItemService'
@@ -75,6 +71,7 @@ const DETAIL_FORM_TO_WORK_TYPE: Record<string, WorkType> = {
 // ── Form ─────────────────────────────────────────────────────
 
 interface FormValues {
+  is_direct_order: boolean
   client_id: string
   project_id: string
   operator_id: string
@@ -89,6 +86,7 @@ interface FormValues {
 }
 
 const EMPTY_FORM: FormValues = {
+  is_direct_order: false,
   client_id: '',
   project_id: '',
   operator_id: '',
@@ -103,7 +101,6 @@ const EMPTY_FORM: FormValues = {
 }
 
 export function WorkOrderFormPage() {
-  const { t } = useTranslation()
   const L = useLabels()
   const { id } = useParams()
   const navigate = useNavigate()
@@ -130,18 +127,11 @@ export function WorkOrderFormPage() {
     other: [],
   })
 
-  // Optional inline assignment (create mode only)
-  const [technicians, setTechnicians] = useState<{ id: string; full_name: string; team: string | null }[]>([])
-  const [assignTeam, setAssignTeam] = useState<TeamColor | ''>('')
-  const [assignTechnician, setAssignTechnician] = useState('')
-  const [assignDate, setAssignDate] = useState(new Date().toISOString().split('T')[0])
-
   // Load lookups
   useEffect(() => {
     fetchClients().then(({ data }) => setClients(data))
     fetchOperators().then(({ data }) => setOperators(data))
     fetchProjects().then(({ data }) => setProjects(data))
-    fetchTechnicians().then(({ data }) => setTechnicians(data))
   }, [])
 
   // Load service items scoped to the selected operator (global items
@@ -165,7 +155,8 @@ export function WorkOrderFormPage() {
     fetchWorkOrder(id).then(async ({ data, error }) => {
       if (error || !data) { setSaveError(error ?? 'Auftrag nicht gefunden'); setIsLoading(false); return }
       setForm({
-        client_id: data.client_id,
+        is_direct_order: data.client_id == null,
+        client_id: data.client_id ?? '',
         project_id: data.project_id,
         operator_id: data.operator_id,
         line: data.line,
@@ -206,11 +197,13 @@ export function WorkOrderFormPage() {
 
   function validate(): boolean {
     const e: Partial<Record<keyof FormValues, string>> = {}
-    if (!form.client_id) e.client_id = t('common.required')
-    if (!form.project_id) e.project_id = t('common.required')
-    if (!form.operator_id) e.operator_id = t('common.required')
-    if (!form.service_item_id) e.service_item_id = t('common.required')
-    if (!form.work_type) e.work_type = t('common.required')
+    // Direktauftrag: client_id is intentionally null. Project + operator stay required
+    // (orders still belong to a project and an operator even when there is no external client).
+    if (!form.is_direct_order && !form.client_id) e.client_id = 'Pflichtfeld'
+    if (!form.project_id) e.project_id = 'Pflichtfeld'
+    if (!form.operator_id) e.operator_id = 'Pflichtfeld'
+    if (!form.service_item_id) e.service_item_id = 'Pflichtfeld'
+    if (!form.work_type) e.work_type = 'Pflichtfeld'
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -224,7 +217,8 @@ export function WorkOrderFormPage() {
     setSaveError(null)
 
     const payload = {
-      client_id: form.client_id,
+      // Direct order = client_id IS NULL (per migration 005). DB FK is nullable.
+      client_id: form.is_direct_order ? null : form.client_id,
       project_id: form.project_id,
       operator_id: form.operator_id,
       line: form.line,
@@ -283,18 +277,13 @@ export function WorkOrderFormPage() {
       }
     }
 
-    // Optional inline assignment on creation
-    if (!isEdit && orderId && assignTeam && user) {
-      await assignWorkOrder(orderId, assignTeam, assignTechnician || null, assignDate || null, user.id)
-    }
-
     navigate('/admin/orders')
   }
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-accent" />
+        <div className="nx-loader" />
       </div>
     )
   }
@@ -320,7 +309,7 @@ export function WorkOrderFormPage() {
         </button>
         <div>
           <h2 className="font-display text-xl font-bold text-fg-1">
-            {isEdit ? t('workOrder.editTitle') : t('workOrder.newTitle')}
+            {isEdit ? 'Auftrag bearbeiten' : 'Neuer Auftrag'}
           </h2>
           {isEdit && <p className="text-sm text-fg-2">ID: {id}</p>}
         </div>
@@ -329,38 +318,57 @@ export function WorkOrderFormPage() {
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Core info card */}
         <div className="rounded-l border border-line bg-bg-1 p-5">
-          <h3 className="mb-4 font-display text-sm font-semibold text-fg-1">{t('workOrder.generalData')}</h3>
+          <h3 className="mb-4 font-display text-sm font-semibold text-fg-1">Allgemeine Daten</h3>
+
+          {/* Direct order toggle — when checked, client_id is NULL on save */}
+          <label className="mb-4 flex items-start gap-3 cursor-pointer rounded-s border border-line bg-bg-0 p-3 hover:border-accent/50 transition-colors">
+            <input
+              type="checkbox"
+              checked={form.is_direct_order}
+              onChange={(e) => setField('is_direct_order', e.target.checked)}
+              className="mt-0.5 accent-[var(--color-accent)]"
+            />
+            <div className="text-sm">
+              <div className="font-medium text-fg-1">Direktauftrag (kein externer Kunde)</div>
+              <div className="text-xs text-fg-2 mt-0.5">
+                Direkte Aufträge überspringen die Kundenfreigabe und gehen von der internen Zertifizierung direkt zur Fakturierung.
+              </div>
+            </div>
+          </label>
+
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 
-            {/* Client */}
-            <div>
-              <label className="mb-1 block text-xs font-medium text-fg-2">
-                {t('workOrder.customer')} <span className="text-err">*</span>
-              </label>
-              <select
-                value={form.client_id}
-                onChange={(e) => setField('client_id', e.target.value)}
-                className={`w-full rounded-s border px-3 py-2 text-sm text-fg-1 focus:outline-none focus:ring-1 focus:ring-accent ${errors.client_id ? 'border-err bg-err/5' : 'border-line bg-bg-0'}`}
-              >
-                <option value="">{t('workOrder.selectClient')}</option>
-                {clients.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name} ({c.code})</option>
-                ))}
-              </select>
-              {errors.client_id && <p className="mt-1 text-xs text-err">{errors.client_id}</p>}
-            </div>
+            {/* Client (hidden when direct order) */}
+            {!form.is_direct_order && (
+              <div>
+                <label className="mb-1 block text-xs font-medium text-fg-2">
+                  Kunde <span className="text-err">*</span>
+                </label>
+                <select
+                  value={form.client_id}
+                  onChange={(e) => setField('client_id', e.target.value)}
+                  className={`w-full rounded-s border px-3 py-2 text-sm text-fg-1 focus:outline-none focus:ring-1 focus:ring-accent ${errors.client_id ? 'border-err bg-err/5' : 'border-line bg-bg-0'}`}
+                >
+                  <option value="">— Kunde wählen —</option>
+                  {clients.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name} ({c.code})</option>
+                  ))}
+                </select>
+                {errors.client_id && <p className="mt-1 text-xs text-err">{errors.client_id}</p>}
+              </div>
+            )}
 
             {/* Project */}
             <div>
               <label className="mb-1 block text-xs font-medium text-fg-2">
-                {t('workOrder.project')} <span className="text-err">*</span>
+                Projekt <span className="text-err">*</span>
               </label>
               <select
                 value={form.project_id}
                 onChange={(e) => setField('project_id', e.target.value)}
                 className={`w-full rounded-s border px-3 py-2 text-sm text-fg-1 focus:outline-none focus:ring-1 focus:ring-accent ${errors.project_id ? 'border-err bg-err/5' : 'border-line bg-bg-0'}`}
               >
-                <option value="">{t('workOrder.selectProject')}</option>
+                <option value="">— Projekt wählen —</option>
                 {filteredProjects.map((p) => (
                   <option key={p.id} value={p.id}>{p.code} – {p.name}</option>
                 ))}
@@ -371,14 +379,14 @@ export function WorkOrderFormPage() {
             {/* Operator */}
             <div>
               <label className="mb-1 block text-xs font-medium text-fg-2">
-                {t('workOrder.operator')} <span className="text-err">*</span>
+                Betreiber <span className="text-err">*</span>
               </label>
               <select
                 value={form.operator_id}
                 onChange={(e) => setField('operator_id', e.target.value)}
                 className={`w-full rounded-s border px-3 py-2 text-sm text-fg-1 focus:outline-none focus:ring-1 focus:ring-accent ${errors.operator_id ? 'border-err bg-err/5' : 'border-line bg-bg-0'}`}
               >
-                <option value="">{t('workOrder.selectOperator')}</option>
+                <option value="">— Betreiber wählen —</option>
                 {operators.map((o) => (
                   <option key={o.id} value={o.id}>{o.name} ({o.code})</option>
                 ))}
@@ -388,7 +396,7 @@ export function WorkOrderFormPage() {
 
             {/* Line */}
             <div>
-              <label className="mb-1 block text-xs font-medium text-fg-2">{t('workOrder.line')}</label>
+              <label className="mb-1 block text-xs font-medium text-fg-2">Linie</label>
               <select
                 value={form.line}
                 onChange={(e) => setField('line', e.target.value)}
@@ -405,7 +413,7 @@ export function WorkOrderFormPage() {
                 wo_detail_* shape). */}
             <div className="sm:col-span-2">
               <label className="mb-1 block text-xs font-medium text-fg-2">
-                {t('workOrder.serviceCatalogLabel')} <span className="text-err">*</span>
+                Leistung (Katalog) <span className="text-err">*</span>
               </label>
               <select
                 value={form.service_item_id}
@@ -425,7 +433,7 @@ export function WorkOrderFormPage() {
                 }}
                 className={`w-full rounded-s border px-3 py-2 text-sm text-fg-1 focus:outline-none focus:ring-1 focus:ring-accent ${errors.service_item_id ? 'border-err bg-err/5' : 'border-line bg-bg-0'}`}
               >
-                <option value="">{t('workOrder.selectService')}</option>
+                <option value="">— Leistung aus Katalog wählen —</option>
                 {serviceItems.map((si) => (
                   <option key={si.id} value={si.id}>
                     {si.code} — {si.description_de}
@@ -440,9 +448,6 @@ export function WorkOrderFormPage() {
                     <div className="flex items-center gap-2">
                       <span className="font-mono font-semibold text-accent">{selected.code}</span>
                       {selected.unit && <span>· {selected.unit}</span>}
-                      {selected.unit_price != null && (
-                        <span>· {selected.unit_price.toFixed(2)} €</span>
-                      )}
                       {selected.operators?.code && <span>· {selected.operators.code}</span>}
                     </div>
                     {selected.description_es && (
@@ -459,7 +464,7 @@ export function WorkOrderFormPage() {
                 which detail form the catalog item routes to. */}
             <div className="sm:col-span-2">
               <label className="mb-1 block text-xs font-medium text-fg-2">
-                {t('workOrder.workTypeDerivedLabel')}
+                Arbeitstyp (abgeleitet aus Katalog)
               </label>
               <input
                 type="text"
@@ -471,15 +476,15 @@ export function WorkOrderFormPage() {
 
             {/* Priority */}
             <div>
-              <label className="mb-1 block text-xs font-medium text-fg-2">{t('workOrder.priority')}</label>
+              <label className="mb-1 block text-xs font-medium text-fg-2">Priorität</label>
               <select
                 value={form.priority}
                 onChange={(e) => setField('priority', e.target.value as 'normal' | 'alta' | 'urgente')}
                 className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:outline-none focus:ring-1 focus:ring-accent"
               >
-                {L.priorityOptions().map(({ value, label }) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
+                <option value="normal">Normal</option>
+                <option value="alta">Hoch</option>
+                <option value="urgente">Dringend</option>
               </select>
             </div>
           </div>
@@ -492,10 +497,10 @@ export function WorkOrderFormPage() {
             customer addresses. */}
         {selectedDetailForm && !isInfra && (
           <div className="rounded-l border border-line bg-bg-1 p-5">
-            <h3 className="mb-4 font-display text-sm font-semibold text-fg-1">{t('workOrder.address')}</h3>
+            <h3 className="mb-4 font-display text-sm font-semibold text-fg-1">Adresse</h3>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="sm:col-span-3">
-                <label className="mb-1 block text-xs font-medium text-fg-2">{t('workOrder.streetNumber')}</label>
+                <label className="mb-1 block text-xs font-medium text-fg-2">Straße / Hausnummer</label>
                 <input
                   type="text"
                   value={form.address}
@@ -505,7 +510,7 @@ export function WorkOrderFormPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-fg-2">{t('workOrder.postalCode')}</label>
+                <label className="mb-1 block text-xs font-medium text-fg-2">PLZ</label>
                 <input
                   type="text"
                   value={form.postal_code}
@@ -515,7 +520,7 @@ export function WorkOrderFormPage() {
                 />
               </div>
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-xs font-medium text-fg-2">{t('workOrder.city')}</label>
+                <label className="mb-1 block text-xs font-medium text-fg-2">Stadt</label>
                 <input
                   type="text"
                   value={form.city}
@@ -536,9 +541,10 @@ export function WorkOrderFormPage() {
         {isInfra && (
           <div className="rounded-l border border-accent/30 bg-bg-1 p-5 space-y-5">
             <div>
-              <h3 className="font-display text-sm font-semibold text-fg-1">{t('workOrder.supportingDocs')}</h3>
+              <h3 className="font-display text-sm font-semibold text-fg-1">Unterstützende Dokumente</h3>
               <p className="mt-0.5 text-xs text-fg-2">
-                {t('workOrder.supportingDocsDesc')}
+                Bei linearen Arbeiten (Soplado / Fusion) sind Plan und Spleißprotokolle
+                anstelle einer Adresse relevant.
               </p>
             </div>
             <div className={`grid grid-cols-1 gap-5 ${documentTypes.length > 1 ? 'md:grid-cols-2' : ''}`}>
@@ -578,7 +584,7 @@ export function WorkOrderFormPage() {
             <h3 className="mb-1 font-display text-sm font-semibold text-fg-1">
               Details: {L.workType(form.work_type as WorkType)}
             </h3>
-            <p className="mb-4 text-xs text-fg-2">{t('workOrder.detailsSubtitle')}</p>
+            <p className="mb-4 text-xs text-fg-2">Arbeitstyp-spezifische Felder</p>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {detailFields.map((field) => (
                 <div key={field.key} className={field.type === 'checkbox' ? 'flex items-center gap-2 sm:col-span-2' : ''}>
@@ -603,7 +609,7 @@ export function WorkOrderFormPage() {
                         onChange={(e) => setDetailField(field.key, e.target.value)}
                         className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                       >
-                        <option value="">{t('rueckmeldung.selectOption')}</option>
+                        <option value="">— wählen —</option>
                         {field.options?.map((opt) => (
                           <option key={opt} value={opt}>{opt}</option>
                         ))}
@@ -629,76 +635,14 @@ export function WorkOrderFormPage() {
           </div>
         )}
 
-        {/* Optional inline assignment — create mode only */}
-        {!isEdit && (
-          <div className="rounded-l border border-line bg-bg-1 p-5 space-y-4">
-            <div>
-              <h3 className="font-display text-sm font-semibold text-fg-1">{t('workOrder.assignNow')}</h3>
-              <p className="mt-0.5 text-xs text-fg-2">{t('workOrder.assignNowDesc')}</p>
-            </div>
-
-            {/* Team */}
-            <div>
-              <label className="mb-2 block text-xs font-medium text-fg-2">Team</label>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {TEAMS.map((team) => (
-                  <button
-                    key={team.value}
-                    type="button"
-                    onClick={() => { setAssignTeam(team.value); setAssignTechnician('') }}
-                    className={`flex items-center gap-2 rounded-s border px-3 py-2.5 text-sm font-medium transition-all ${
-                      assignTeam === team.value
-                        ? 'border-accent bg-accent/10 text-accent'
-                        : 'border-line bg-bg-0 text-fg-1 hover:border-accent/50'
-                    }`}
-                  >
-                    <span className={`h-2.5 w-2.5 rounded-full ${team.dot}`} />
-                    {team.label.replace('Team ', '')}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {assignTeam && (
-              <>
-                {/* Technician */}
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-fg-2">{t('assign.internalEmployee')}</label>
-                  <select
-                    value={assignTechnician}
-                    onChange={(e) => setAssignTechnician(e.target.value)}
-                    className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-                  >
-                    <option value="">{t('assign.selectEmployee')}</option>
-                    {technicians.filter((tech) => tech.team === assignTeam).map((tech) => (
-                      <option key={tech.id} value={tech.id}>{tech.full_name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Date */}
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-fg-2">{t('workOrder.deploymentDate')}</label>
-                  <input
-                    type="date"
-                    value={assignDate}
-                    onChange={(e) => setAssignDate(e.target.value)}
-                    className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-                  />
-                </div>
-              </>
-            )}
-          </div>
-        )}
-
         {/* Notes */}
         <div className="rounded-l border border-line bg-bg-1 p-5">
-          <label className="mb-1 block text-xs font-medium text-fg-2">{t('workOrder.internalNotes')}</label>
+          <label className="mb-1 block text-xs font-medium text-fg-2">Interne Notizen</label>
           <textarea
             value={form.internal_notes}
             onChange={(e) => setField('internal_notes', e.target.value)}
             rows={3}
-            placeholder={t('workOrder.internalNotes') + '…'}
+            placeholder="Interne Hinweise für das Team…"
             className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent resize-none"
           />
         </div>
@@ -717,14 +661,14 @@ export function WorkOrderFormPage() {
             onClick={() => navigate('/admin/orders')}
             className="flex-1 rounded-s border border-line px-4 py-2.5 text-sm font-medium text-fg-1 hover:bg-bg-0 transition-colors"
           >
-            {t('common.cancel')}
+            Abbrechen
           </button>
           <button
             type="submit"
             disabled={isSaving}
             className="flex-1 rounded-s bg-accent px-4 py-2.5 text-sm font-semibold text-ink hover:bg-accent disabled:opacity-50 transition-colors"
           >
-            {isSaving ? t('common.saving') : isEdit ? t('workOrder.saveChanges') : t('workOrder.createAction')}
+            {isSaving ? 'Speichern…' : isEdit ? 'Änderungen speichern' : 'Auftrag erstellen'}
           </button>
         </div>
       </form>

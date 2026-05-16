@@ -1,17 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { workTypeToDetailTable, generateDataHash } from '@/services/workOrderService'
+import {
+  workTypeToDetailTable,
+  generateDataHash,
+  normalizeReportedServiceItems,
+  buildBillingDraftsFromReportedItems,
+} from '@/services/workOrderService'
 import type { WorkType } from '@/types/enums'
 
 // ── workTypeToDetailTable ───────────────────────────────────────────────────
 
 describe('workTypeToDetailTable', () => {
   const cases: [WorkType, string][] = [
-    ['soplado',        'wo_detail_soplado'],
-    ['fusion_ap',      'wo_detail_fusion_ap'],
-    ['fusion_dp',      'wo_detail_fusion_dp'],
-    ['alta',           'wo_detail_alta'],
-    ['nt_installation','wo_detail_nt'],
-    ['patchkabel',     'wo_detail_patchkabel'],
+    ['soplado', 'wo_detail_soplado'],
+    ['fusion_ap', 'wo_detail_fusion_ap'],
+    ['fusion_dp', 'wo_detail_fusion_dp'],
+    ['alta', 'wo_detail_alta'],
+    ['nt_installation', 'wo_detail_nt'],
+    ['patchkabel', 'wo_detail_patchkabel'],
   ]
 
   it.each(cases)('maps %s → %s', (workType, expected) => {
@@ -45,15 +50,100 @@ describe('generateDataHash', () => {
   })
 })
 
+// ── reported service items → billing drafts ────────────────────────────────
+
+describe('reported service items', () => {
+  it('normalizes only valid non-priced technician reports', () => {
+    expect(
+      normalizeReportedServiceItems([
+        { service_item_id: ' item-1 ', qty: '2', notes: ' Router ' },
+        { service_item_id: '', qty: 3 },
+        { service_item_id: 'item-2', qty: 0 },
+        { service_item_id: 'item-3', qty: Number.NaN },
+        null,
+      ]),
+    ).toEqual([{ service_item_id: 'item-1', qty: 2, notes: 'Router' }])
+  })
+
+  it('builds admin billing drafts from reported items and priced catalog', () => {
+    const drafts = buildBillingDraftsFromReportedItems(
+      [
+        { service_item_id: 'item-1', qty: 2, notes: 'Router' },
+        { service_item_id: 'missing', qty: 1, notes: null },
+        { service_item_id: 'no-price', qty: 1, notes: null },
+      ],
+      [
+        {
+          id: 'item-1',
+          code: 'ALT-001',
+          description_de: 'Installation',
+          description_es: null,
+          unit: 'Stk',
+          unit_price: 120,
+          unit_price_external: 95,
+          operator_id: null,
+          client_id: null,
+          detail_form: 'alta',
+          display_order: 1,
+          active: true,
+          notes: null,
+          created_at: '2026-01-01T00:00:00Z',
+          updated_at: '2026-01-01T00:00:00Z',
+        },
+        {
+          id: 'no-price',
+          code: 'ALT-NP',
+          description_de: 'Missing price',
+          description_es: null,
+          unit: 'Stk',
+          unit_price: null,
+          unit_price_external: null,
+          operator_id: null,
+          client_id: null,
+          detail_form: 'alta',
+          display_order: 2,
+          active: true,
+          notes: null,
+          created_at: '2026-01-01T00:00:00Z',
+          updated_at: '2026-01-01T00:00:00Z',
+        },
+      ],
+    )
+
+    expect(drafts).toEqual([
+      {
+        service_item_id: 'item-1',
+        qty: 2,
+        unit_price_snapshot: 120,
+        unit_price_external_snapshot: 95,
+        notes: 'Router',
+      },
+    ])
+  })
+})
+
 // ── Supabase-dependent functions (mocked) ──────────────────────────────────
 
 vi.mock('@/lib/supabase', () => {
   const chain = () => {
     const obj: Record<string, unknown> = {}
     const methods = [
-      'from', 'select', 'insert', 'update', 'delete', 'eq',
-      'order', 'range', 'not', 'or', 'gte', 'lte', 'is',
-      'maybeSingle', 'single', 'limit',
+      'from',
+      'select',
+      'insert',
+      'update',
+      'delete',
+      'eq',
+      'order',
+      'range',
+      'not',
+      'or',
+      'gte',
+      'lte',
+      'is',
+      'maybeSingle',
+      'single',
+      'limit',
     ]
     for (const m of methods) obj[m] = vi.fn(() => obj)
     return obj
@@ -191,7 +281,7 @@ const ALL_PHOTOS = ['before', 'during', 'after']
 
 describe('validateTransitionPrerequisites — short-circuit', () => {
   it('returns null for transitions that do not need prerequisites', async () => {
-    setupSupabaseFor({})  // would fail any DB query
+    setupSupabaseFor({}) // would fail any DB query
     expect(await validateTransitionPrerequisites('id-1', 'assigned')).toBeNull()
     expect(await validateTransitionPrerequisites('id-1', 'in_progress')).toBeNull()
     expect(await validateTransitionPrerequisites('id-1', 'rueckmeldung_sent')).toBeNull()
@@ -335,7 +425,13 @@ describe('validateTransitionPrerequisites — invoiced', () => {
 
 // ── getCollaboratorType (Migration 006 — collaborator pricing) ─────────────
 
-import { getCollaboratorType } from '@/services/workOrderService'
+import {
+  acceptWorkOrderClient,
+  assignWorkOrder,
+  certifyWorkOrderInternal,
+  getCollaboratorType,
+  invoiceWorkOrder,
+} from '@/services/workOrderService'
 
 describe('getCollaboratorType', () => {
   it('returns external for contractor role', () => {
@@ -356,5 +452,207 @@ describe('getCollaboratorType', () => {
 
   it('returns internal when role is undefined', () => {
     expect(getCollaboratorType(undefined)).toBe('internal')
+  })
+})
+
+function setupSupabaseForAssignment(args: {
+  profileRole: 'admin' | 'technician' | 'contractor'
+  contractorDocuments?: Array<Record<string, unknown>>
+  rpcResult?: { data: unknown; error: { message: string } | null }
+}) {
+  mockSupabase.rpc = vi.fn().mockResolvedValue(
+    args.rpcResult ?? {
+      data: { id: 'wo-1', status: 'assigned' },
+      error: null,
+    },
+  )
+  mockSupabase.from = vi.fn((table: string) => {
+    if (table === 'profiles') {
+      return {
+        select: () => ({
+          eq: () => ({
+            single: () => Promise.resolve({ data: { role: args.profileRole }, error: null }),
+          }),
+        }),
+      }
+    }
+    if (table === 'contractor_documents') {
+      return {
+        select: () => ({
+          eq: () => ({
+            order: () => Promise.resolve({ data: args.contractorDocuments ?? [], error: null }),
+          }),
+        }),
+      }
+    }
+    return {
+      select: () => ({
+        eq: () => ({ single: () => Promise.resolve({ data: { status: 'created' }, error: null }) }),
+      }),
+      update: () => ({
+        eq: () => ({
+          select: () => ({
+            single: () =>
+              Promise.resolve({ data: { id: 'wo-1', status: 'assigned' }, error: null }),
+          }),
+        }),
+      }),
+      insert: () => Promise.resolve({ data: null, error: null }),
+    }
+  })
+}
+
+describe('single-order lifecycle RPC adapters', () => {
+  it('accepts client work orders through the atomic client acceptance RPC', async () => {
+    mockSupabase.rpc = vi
+      .fn()
+      .mockResolvedValue({ data: { id: 'wo-1', status: 'client_accepted' }, error: null })
+
+    const result = await acceptWorkOrderClient({
+      workOrderId: 'wo-1',
+      changedBy: 'admin-1',
+      dataHash: 'hash-1',
+      notes: 'Client accepted',
+    })
+
+    expect(result.ok).toBe(true)
+    expect(mockSupabase.rpc).toHaveBeenCalledWith('accept_work_order_client', {
+      p_work_order_id: 'wo-1',
+      p_changed_by: 'admin-1',
+      p_data_hash: 'hash-1',
+      p_notes: 'Client accepted',
+    })
+  })
+
+  it('maps missing client audit RPC errors to structured reasons', async () => {
+    mockSupabase.rpc = vi.fn().mockResolvedValue({
+      data: null,
+      error: { message: 'client invoice requires client_accepted status and client audit' },
+    })
+
+    const result = await invoiceWorkOrder({
+      workOrderId: 'wo-1',
+      changedBy: 'admin-1',
+      billingReference: 'INV-1',
+      notes: 'Invoice',
+    })
+
+    expect(result.ok).toBe(false)
+    expect(result.reasons).toEqual([expect.objectContaining({ code: 'missing_client_audit' })])
+  })
+
+  it('certifies internally through the atomic internal certification RPC', async () => {
+    setupSupabaseFor({
+      order: { work_type: 'alta', client_id: 'client-1' },
+      detail: { access_type: 'Hausanschluss', equipment_installed: 'NT', client_signature: true },
+      photoTypes: ['before', 'during', 'after'],
+    })
+    mockSupabase.rpc = vi
+      .fn()
+      .mockResolvedValue({ data: { id: 'wo-1', status: 'internally_certified' }, error: null })
+
+    const result = await certifyWorkOrderInternal({
+      workOrderId: 'wo-1',
+      changedBy: 'admin-1',
+      dataHash: 'hash-2',
+      notes: 'Internal cert',
+    })
+
+    expect(result.ok).toBe(true)
+    expect(mockSupabase.rpc).toHaveBeenCalledWith('certify_work_order_internal', {
+      p_work_order_id: 'wo-1',
+      p_changed_by: 'admin-1',
+      p_data_hash: 'hash-2',
+      p_notes: 'Internal cert',
+    })
+  })
+
+  it('rejects incomplete Rückmeldung before calling the internal certification RPC', async () => {
+    setupSupabaseFor({
+      order: { work_type: 'alta', client_id: 'client-1' },
+      detail: null,
+      photoTypes: ['before', 'during', 'after'],
+    })
+    mockSupabase.rpc = vi.fn()
+
+    const result = await certifyWorkOrderInternal({
+      workOrderId: 'wo-1',
+      changedBy: 'admin-1',
+      dataHash: 'hash-2',
+      notes: 'Internal cert',
+    })
+
+    expect(result.ok).toBe(false)
+    expect(result.reasons).toEqual([expect.objectContaining({ code: 'incomplete_rueckmeldung' })])
+    expect(mockSupabase.rpc).not.toHaveBeenCalled()
+  })
+
+  it('rejects empty lifecycle audit hashes before calling RPCs', async () => {
+    mockSupabase.rpc = vi.fn()
+
+    const internal = await certifyWorkOrderInternal({
+      workOrderId: 'wo-1',
+      changedBy: 'admin-1',
+      dataHash: '   ',
+    })
+    const client = await acceptWorkOrderClient({
+      workOrderId: 'wo-1',
+      changedBy: 'admin-1',
+      dataHash: '',
+    })
+
+    expect(internal.ok).toBe(false)
+    expect(client.ok).toBe(false)
+    expect(internal.reasons).toEqual([expect.objectContaining({ code: 'invalid_transition' })])
+    expect(client.reasons).toEqual([expect.objectContaining({ code: 'invalid_transition' })])
+    expect(mockSupabase.rpc).not.toHaveBeenCalled()
+  })
+})
+
+describe('assignWorkOrder — contractor compliance', () => {
+  it('blocks contractor assignment with all missing document reasons before RPC/update', async () => {
+    setupSupabaseForAssignment({ profileRole: 'contractor', contractorDocuments: [] })
+
+    const result = await assignWorkOrder('wo-1', 'rot', 'contractor-1', '2026-05-15', 'admin-1')
+
+    expect(result.data).toBeNull()
+    expect(result.error).toMatch(/Gewerbeanmeldung fehlt/)
+    expect(result.error).toMatch(/Subunternehmervertrag fehlt/)
+    expect(result.reasons).toHaveLength(6)
+    expect(result.reasons?.map((reason) => reason.code)).toEqual(
+      Array(6).fill('contractor_documents_missing'),
+    )
+    expect(mockSupabase.rpc).not.toHaveBeenCalled()
+  })
+
+  it('uses checked assignment RPC for compliant contractor assignment', async () => {
+    const validDocs = [
+      'gewerbeanmeldung',
+      'haftpflichtversicherung',
+      'unbedenklichkeit_finanzamt',
+      'unbedenklichkeit_sozialkasse',
+      'id_passport',
+      'subcontractor_agreement',
+    ].map((document_type) => ({
+      id: `doc-${document_type}`,
+      contractor_id: 'contractor-1',
+      document_type,
+      status: 'approved',
+      expires_at: null,
+      uploaded_at: '2026-01-01T00:00:00Z',
+    }))
+    setupSupabaseForAssignment({ profileRole: 'contractor', contractorDocuments: validDocs })
+
+    const result = await assignWorkOrder('wo-1', 'rot', 'contractor-1', '2026-05-15', 'admin-1')
+
+    expect(result.error).toBeNull()
+    expect(mockSupabase.rpc).toHaveBeenCalledWith('assign_work_order_checked', {
+      p_work_order_id: 'wo-1',
+      p_team: 'rot',
+      p_assignee_id: 'contractor-1',
+      p_assigned_date: '2026-05-15',
+      p_changed_by: 'admin-1',
+      p_notes: null,
+    })
   })
 })

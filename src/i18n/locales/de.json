@@ -32,14 +32,7 @@
     "retry": "Wiederholen",
     "error": "Fehler",
     "success": "Erfolg",
-    "warning": "Warnung",
-    "reset": "Zurücksetzen",
-    "of": "von",
-    "prevPage": "← Zurück",
-    "nextPage": "Weiter →",
-    "irreversible": "Diese Aktion kann nicht rückgängig gemacht werden.",
-    "active": "Aktiv",
-    "closed": "Abgeschlossen"
+    "warning": "Warnung"
   },
   "auth": {
     "signIn": "Anmelden",
@@ -55,34 +48,11 @@
     "resetPasswordInstructions": "Geben Sie Ihre E-Mail-Adresse ein, um einen Link zum Zurücksetzen zu erhalten.",
     "sendResetLink": "Link senden",
     "backToSignIn": "Zurück zur Anmeldung",
-    "forgotPasswordSent": "Falls ein Konto mit dieser E-Mail existiert, erhalten Sie in Kürze einen Link zum Zurücksetzen.",
-    "newPassword": "Neues Passwort",
-    "newPasswordInstructions": "Geben Sie Ihr neues Passwort ein.",
-    "confirmPassword": "Passwort bestätigen",
-    "savePassword": "Passwort speichern",
     "errors": {
       "invalidCredentials": "E-Mail oder Passwort ist falsch.",
       "emailNotConfirmed": "E-Mail-Adresse wurde nicht bestätigt.",
       "tooManyAttempts": "Zu viele Versuche. Bitte später erneut versuchen.",
-      "unknown": "Anmeldung fehlgeschlagen. Bitte erneut versuchen.",
-      "passwordTooShort": "Das Passwort muss mindestens 8 Zeichen lang sein.",
-      "passwordMismatch": "Die Passwörter stimmen nicht überein."
-    },
-    "pin": {
-      "tabLabel": "Team-PIN",
-      "emailTab": "E-Mail",
-      "selectTeamLabel": "Team auswählen",
-      "selectTeam": "Bitte zuerst ein Team auswählen.",
-      "pinLabel": "6-stelliger PIN",
-      "enter6Digits": "Der PIN muss genau 6 Ziffern haben.",
-      "settingsTitle": "PIN ändern",
-      "stepNew": "Neuer PIN",
-      "stepConfirm": "Bestätigen",
-      "enterNew": "Neuen PIN eingeben",
-      "reenterNew": "PIN erneut eingeben",
-      "mismatch": "Die PINs stimmen nicht überein.",
-      "savePIN": "PIN speichern",
-      "changeSuccess": "PIN erfolgreich geändert."
+      "unknown": "Anmeldung fehlgeschlagen. Bitte erneut versuchen."
     }
   },
   "nav": {
@@ -199,70 +169,13 @@
     "markPaid": "Als bezahlt markieren",
     "rejectReason": "Ablehnungsgrund",
     "invoiceNumber": "Rechnungsnummer",
-    "acceptOptionalComment": "Kommentar (optional)",
-    "newOrder": "Neuer Auftrag",
-    "newTitle": "Neuer Auftrag",
-    "editTitle": "Auftrag bearbeiten",
-    "searchPlaceholder": "Suchen…",
-    "allStatus": "Alle Status",
-    "allTeams": "Alle Teams",
-    "allTypes": "Alle Typen",
-    "allClients": "Alle Kunden",
-    "allProjects": "Alle Projekte",
-    "allPriorities": "Alle Prioritäten",
-    "noOrdersFound": "Keine Aufträge gefunden",
-    "adjustFilters": "Filter anpassen oder zurücksetzen.",
-    "createFirst": "Erstellen Sie den ersten Auftrag.",
-    "deleteTitle": "Auftrag löschen?",
-    "assign": "Zuweisen",
-    "editShort": "Bearb.",
-    "detail": "Detail",
-    "generalData": "Allgemeine Daten",
-    "selectClient": "— Kunde wählen —",
-    "selectProject": "— Projekt wählen —",
-    "selectOperator": "— Betreiber wählen —",
-    "selectService": "— Leistung aus Katalog wählen —",
-    "serviceCatalogLabel": "Leistung (Katalog)",
-    "workTypeDerivedLabel": "Arbeitstyp (abgeleitet aus Katalog)",
-    "detailsSubtitle": "Arbeitstyp-spezifische Felder",
-    "line": "Linie",
-    "streetNumber": "Straße / Hausnummer",
-    "supportingDocs": "Unterstützende Dokumente",
-    "supportingDocsDesc": "Bei linearen Arbeiten (Soplado / Fusion) sind Plan und Spleißprotokolle anstelle einer Adresse relevant.",
-    "assignNow": "Sofortzuweisung (optional)",
-    "assignNowDesc": "Du kannst den Auftrag jetzt direkt einem Team zuweisen oder das später über die Auftragsübersicht erledigen.",
-    "createAction": "Auftrag erstellen",
-    "saveChanges": "Änderungen speichern",
-    "workTypeLabel": "Typ",
-    "statusLabel": "Status"
+    "acceptOptionalComment": "Kommentar (optional)"
   },
   "rueckmeldung": {
     "pending": "Rückmeldung ausstehend",
     "sent": "Rückmeldung gesendet",
     "submitReport": "Rückmeldung abgeben",
-    "technicianData": "Vom Techniker eingetragene Daten",
-    "title": "Rückmeldung",
-    "deploymentTimes": "Einsatzzeiten",
-    "start": "Beginn",
-    "end": "Ende",
-    "technicalData": "Technische Daten — {{workType}}",
-    "documentWork": "Ausgeführte Arbeit dokumentieren",
-    "photos": "Fotos",
-    "noPhotos": "Keine Fotos · Tippen um hinzuzufügen",
-    "addPhoto": "+ Foto",
-    "uploading": "Lädt…",
-    "notesLabel": "Notizen / Besonderheiten",
-    "notesPlaceholder": "Besonderheiten, Probleme, Hinweise für Admin…",
-    "savedOk": "Daten gespeichert.",
-    "saveTemp": "Zwischenspeichern",
-    "send": "Rückmeldung senden",
-    "sendCorrected": "Korrigierte RM senden",
-    "sendHint": "\"Rückmeldung senden\" übermittelt alle Daten an den Admin zur Zertifizierung.",
-    "returnedBanner": "Auftrag zurückgegeben — Nichtkonformität",
-    "returnedCorrectHint": "Korrekturen vornehmen und die Rückmeldung erneut senden.",
-    "selectOption": "— wählen —",
-    "photoUploadError": "Foto-Upload fehlgeschlagen: {{error}}",
-    "photoDeleteError": "Foto löschen fehlgeschlagen: {{error}}"
+    "technicianData": "Vom Techniker eingetragene Daten"
   },
   "certification": {
     "internal": "Interne Zertifizierung",
@@ -298,20 +211,7 @@
   "contractor": {
     "documentStatus": "Dokumentenstatus",
     "pending": "Ausstehend",
-    "settled": "Abgerechnet",
-    "welcome": "Willkommen, {{name}}",
-    "subcontractor": "Subunternehmer",
-    "activeOrders": "Aktive Aufträge",
-    "viewAllOrders": "Alle Aufträge anzeigen →",
-    "orders": "Aufträge",
-    "noOrders": "Keine Aufträge",
-    "noOrdersDesc": "Ihnen wurden noch keine Aufträge zugewiesen.",
-    "active": "Aktiv",
-    "closed": "Abgeschlossen",
-    "searchPlaceholder": "Auftrag suchen…",
-    "billingPending": "Abrechnung ausstehend",
-    "paidBadge": "Bezahlt",
-    "invoicedBadge": "Fakturiert"
+    "settled": "Abgerechnet"
   },
   "language": {
     "label": "Sprache",
@@ -320,9 +220,285 @@
     "change": "Sprache ändern"
   },
   "offline": {
-    "banner": "Keine Verbindung — Änderungen werden lokal gespeichert",
-    "title": "Sie sind offline",
-    "message": "Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut."
+    "banner": "Keine Verbindung — Änderungen werden lokal gespeichert"
+  },
+  "authPin": {
+    "tabPin": "PIN",
+    "tabAdmin": "Admin",
+    "loginCode": "Techniker-Code",
+    "loginCodePlaceholder": "z.B. team-rot-01",
+    "pin": "PIN",
+    "signIn": "Mit PIN anmelden"
+  },
+  "fieldOrders": {
+    "title": "Meine Aufträge",
+    "count": "{{count}} Aufträge",
+    "assignedCount": "{{count}} Aufträge zugewiesen",
+    "searchPlaceholder": "Auftrag suchen...",
+    "emptyTitle": "Keine Aufträge",
+    "emptyActive": "Keine aktiven Aufträge",
+    "emptyAssigned": "Ihnen wurden noch keine Aufträge zugewiesen.",
+    "returnedSection": "Zurückgegeben — Korrektur erforderlich ({{count}})",
+    "activeSection": "Aktiv ({{count}})",
+    "closedSection": "Abgeschlossen ({{count}})",
+    "closedSentSection": "Abgeschlossen / gesendet ({{count}})",
+    "pageRange": "{{from}}–{{to}} von {{total}}",
+    "paymentPaid": "Bezahlt",
+    "paymentInvoiced": "Fakturiert",
+    "paymentPending": "Abrechnung ausstehend"
+  },
+  "users": {
+    "title": "Benutzer",
+    "subtitle": "{{count}} operative Profile",
+    "new": "Neu",
+    "profile": "Profil",
+    "createProfile": "Profil erstellen",
+    "editProfile": "Profil bearbeiten",
+    "cancelEdit": "Bearbeitung abbrechen",
+    "pinHint": "PIN wird nur gesetzt, wenn das Feld ausgefüllt ist.",
+    "name": "Name",
+    "role": "Rolle",
+    "roles": {
+      "admin": "Admin",
+      "technician": "Techniker",
+      "contractor": "Subunternehmer"
+    },
+    "noTeam": "Kein Team",
+    "pinLoginCode": "PIN Login-Code",
+    "newPin": "Neuer PIN",
+    "pinPlaceholder": "4-8 Ziffern",
+    "active": "Aktiv",
+    "inactive": "Inaktiv",
+    "status": "Status",
+    "pinSet": "gesetzt",
+    "pinLogin": "PIN Login",
+    "activate": "Aktivieren",
+    "deactivate": "Deaktivieren"
+  },
+  "assignment": {
+    "title": "Auftrag zuweisen",
+    "section": "Zuweisung",
+    "workType": "Arbeitstyp",
+    "assignee": "Techniker / Contractor",
+    "chooseProfile": "— Profil wählen —",
+    "noAssigneesForTeam": "Keine Profile für dieses Team gefunden.",
+    "assigning": "Zuweisen...",
+    "assignSubmit": "Zuweisen & Status → Assigned"
+  },
+  "contractorDocs": {
+    "title": "Contractor-Dokumente",
+    "pageTitle": "Dokumente",
+    "pageSubtitle": "Pflichtdokumente für Zertifizierung und Auszahlung",
+    "subtitle": "{{valid}}/{{total}} Dokumente gültig",
+    "compliant": "Vollständig",
+    "incomplete": "Unvollständig",
+    "expires": "läuft ab",
+    "noFile": "Keine Datei hochgeladen",
+    "expired": "Abgelaufen",
+    "expiringSoon": "Läuft bald ab",
+    "missing": "Fehlt",
+    "issuedAt": "Ausgestellt",
+    "expiresAt": "Gültig bis",
+    "uploadReplacement": "PDF oder Foto hochladen",
+    "reviewNotes": "Prüfnotiz",
+    "reject": "Ablehnen",
+    "approve": "Freigeben",
+    "certificationBlocked": "Externe Zertifizierung durch unvollständige Dokumente blockiert.",
+    "certificationBlockedWithList": "Externe Zertifizierung blockiert. Fehlt oder nicht freigegeben: {{docs}}.",
+    "types": {
+      "gewerbeanmeldung": "Gewerbeanmeldung",
+      "haftpflichtversicherung": "Haftpflichtversicherung",
+      "unbedenklichkeit_finanzamt": "Unbedenklichkeitsbescheinigung Finanzamt",
+      "unbedenklichkeit_sozialkasse": "Unbedenklichkeitsbescheinigung Sozialkasse",
+      "id_passport": "Ausweis / Reisepass",
+      "subcontractor_agreement": "Unterschriebener Subunternehmervertrag"
+    },
+    "status": {
+      "pending_review": "In Prüfung",
+      "approved": "Freigegeben",
+      "rejected": "Abgelehnt"
+    }
+  },
+  "nav": {
+    "operations": "Operations",
+    "catalog": "Katalog",
+    "organization": "Organisation",
+    "dashboard": "Dashboard",
+    "orders": "Aufträge",
+    "workOrders": "Aufträge",
+    "schedule": "Kalender",
+    "documents": "Dokumente",
+    "certification": "Zertifizierung",
+    "serviceCatalog": "Service-Katalog",
+    "personnel": "Personal",
+    "materials": "Material",
+    "settings": "Einstellungen",
+    "menuOpen": "Menü öffnen",
+    "search": "Suchen...",
+    "installApp": "Installieren"
+  },
+  "breadcrumb": {
+    "admin": "Operations",
+    "tech": "Field",
+    "contractor": "Contractor",
+    "orders": "Aufträge",
+    "new": "Neu",
+    "edit": "Bearbeiten",
+    "assign": "Zuweisen",
+    "certification": "Zertifizierung",
+    "service-items": "Services",
+    "personnel": "Personal",
+    "materials": "Inventar",
+    "settings": "Einstellungen",
+    "rueckmeldung": "Rückmeldung",
+    "schedule": "Kalender",
+    "documents": "Dokumente",
+    "certifications": "Zertifizierungen",
+    "overview": "Übersicht",
+    "dashboard": "Dashboard"
+  },
+  "dashboard": {
+    "admin": {
+      "title": "Dashboard",
+      "subtitle": "§ Operations · Übersicht",
+      "statOpen": "Offene Aufträge",
+      "statInProgress": "In Bearbeitung",
+      "statPendingCert": "Zertifizierung ausstehend",
+      "statDone": "Abgeschlossen · Monat",
+      "attentionTitle": "Benötigt Aufmerksamkeit",
+      "attentionOpen": "{{count}} offen",
+      "attentionEmpty": "Keine offenen Meldungen.",
+      "attentionRejected": "Abgelehnt",
+      "attentionReturned": "Zurück",
+      "team": "Team {{team}}",
+      "welcomeTitle": "Willkommen bei LUMEN",
+      "welcomeBody": "Zentrale Betriebsplattform für HMR Nexus Engineering GmbH. Aufträge, Zertifizierungen und Personalverwaltung an einem Ort."
+    },
+    "tech": {
+      "greeting": "Hallo, {{name}}",
+      "team": "Team {{name}}",
+      "statToday": "Heute",
+      "statOpen": "Offen",
+      "statDone": "Erledigt",
+      "myOrders": "Meine Aufträge",
+      "viewAll": "Alle anzeigen →",
+      "emptyTitle": "Keine aktiven Aufträge",
+      "emptyBody": "Dir sind aktuell keine Aufträge zugewiesen."
+    }
+  },
+  "rueckmeldung": {
+    "materialConsumption": {
+      "title": "Materialverbrauch",
+      "subtitle": "Optional. Der Verbrauch wird vom Fahrzeugbestand des Teams abgezogen.",
+      "empty": "Kein Materialverbrauch gemeldet.",
+      "correctionRequired": "Realbestand erforderlich: {{items}}",
+      "optionStock": "Bestand {{quantity}} {{unit}}",
+      "registered": "Registriert: {{quantity}} {{unit}}",
+      "fields": {
+        "vehicle": "Fahrzeug",
+        "material": "Material",
+        "quantity": "Menge",
+        "realStockBefore": "Realer Bestand vor Verbrauch"
+      },
+      "actions": {
+        "add": "Material",
+        "remove": "Material entfernen"
+      },
+      "placeholders": {
+        "noVehicle": "— kein Verbrauch / Fahrzeug wählen —",
+        "choose": "— wählen —",
+        "minimum": "mind. {{quantity}}"
+      },
+      "errors": {
+        "vehicleRequired": "Fahrzeug für Materialverbrauch wählen.",
+        "stockCorrectionRequired": "Bestand reicht nicht aus. Bitte den realen Bestand vor Verbrauch eintragen."
+      },
+      "notes": {
+        "summary": "Materialverbrauch: {{count}} Position(en)"
+      }
+    }
+  },
+  "materials": {
+    "eyebrow": "Vehicle Stock · Field Verbrauch",
+    "title": "Inventar",
+    "kpi": {
+      "materials": "Material",
+      "vehicles": "Fahrzeuge",
+      "alerts": "Warnungen"
+    },
+    "vehicles": {
+      "title": "Fahrzeuge / Teams",
+      "meta": "1 Team"
+    },
+    "manual": {
+      "title": "Material manuell",
+      "meta": "Einzelposten"
+    },
+    "stock": {
+      "title": "Bestand nach Fahrzeug",
+      "noVehicle": "Kein Fahrzeug gewählt",
+      "lowStock": "{{count}} Materialpositionen unter oder auf Mindestbestand.",
+      "empty": "Kein Bestand für dieses Fahrzeug."
+    },
+    "import": {
+      "title": "Excel Import",
+      "previewCount": "{{count}} erkannte Zeilen"
+    },
+    "catalog": {
+      "title": "Materialkatalog",
+      "meta": "GFP · Westconnect · Manual",
+      "noSku": "ohne SKU"
+    },
+    "fields": {
+      "name": "Name",
+      "team": "Team",
+      "licensePlate": "Kennzeichen",
+      "notes": "Notizen",
+      "catalog": "Katalog",
+      "category": "Kategorie",
+      "unit": "Einheit",
+      "minStock": "Min."
+    },
+    "table": {
+      "material": "Material",
+      "name": "Name",
+      "category": "Kategorie",
+      "stock": "Bestand",
+      "min": "Min.",
+      "quantity": "Menge",
+      "catalog": "Katalog",
+      "unit": "Einheit",
+      "actions": "Aktion"
+    },
+    "actions": {
+      "create": "Anlegen",
+      "update": "Aktualisieren",
+      "reset": "Zurücksetzen",
+      "edit": "Edit",
+      "off": "Off",
+      "deactivate": "Deaktivieren",
+      "file": "Datei",
+      "applyImport": "Import anwenden"
+    },
+    "placeholders": {
+      "optional": "optional",
+      "choose": "— wählen —",
+      "catalog": "Katalog/Kunde wählen",
+      "vehicle": "Fahrzeug wählen"
+    },
+    "status": {
+      "inactive": "inaktiv"
+    },
+    "messages": {
+      "materialRequired": "Name, Kategorie und Katalog/Kunde sind Pflichtfelder.",
+      "vehicleRequired": "Fahrzeugname ist Pflicht.",
+      "materialCreated": "Material angelegt.",
+      "materialUpdated": "Material aktualisiert.",
+      "vehicleCreated": "Fahrzeug angelegt.",
+      "vehicleUpdated": "Fahrzeug aktualisiert.",
+      "rowsDetected": "{{count}} Positionen aus {{file}} erkannt.",
+      "imported": "{{count}} Materialpositionen importiert und dem Fahrzeugbestand gutgeschrieben."
+    }
   },
   "errors": {
     "boundary": "Ein unerwarteter Fehler ist aufgetreten.",
@@ -333,16 +509,54 @@
     "networkError": "Netzwerkfehler. Bitte erneut versuchen.",
     "unexpected": "Etwas ist schiefgelaufen."
   },
-  "serviceItems": {
+  "catalog": {
     "title": "Service-Katalog",
-    "subtitle": "{{count}} Artikel — Vertragliche Leistungscodes",
-    "newItem": "Neuer Artikel",
-    "search": "Suchen (Code, Beschreibung)…",
-    "filters": {
+    "subtitleCount": "{{count}} Artikel — Vertragliche Leistungscodes",
+    "newItem": "+ Neuer Artikel",
+    "empty": "Keine Artikel gefunden",
+    "errorRequired": "Code und Deutsche Beschreibung sind Pflichtfelder.",
+    "modal": {
+      "titleCreate": "Neuer Artikel",
+      "titleEdit": "Artikel bearbeiten",
+      "section": "Service-Katalog"
+    },
+    "sections": {
+      "identification": "Identifikation",
+      "priceOrder": "Preis & Reihenfolge",
+      "assignment": "Zuordnung"
+    },
+    "fields": {
+      "sapCode": "SAP-Code *",
+      "unit": "Einheit",
+      "descDe": "Beschreibung (DE) *",
+      "descEs": "Descripción (ES)",
+      "price": "Preis (€ netto) — leer = Nach Angebot",
+      "priceExternal": "Einkaufspreis Subunternehmer (€) — leer = Nach Angebot",
+      "displayOrder": "Anzeigereihenfolge",
+      "operator": "Betreiber (Operator)",
+      "client": "Kunde (Client)",
+      "detailForm": "Detail-Formular (technische Route)",
+      "notes": "Notizen",
+      "itemActive": "Artikel aktiv"
+    },
+    "filter": {
+      "search": "Suchen (Code, Beschreibung)…",
       "allOperators": "Alle Betreiber",
-      "globalNoOperator": "— Global (kein Betreiber)",
+      "globalOperator": "— Global (kein Betreiber) —",
       "allClients": "Alle Kunden",
       "showInactive": "Inaktive anzeigen"
+    },
+    "status": {
+      "active": "Aktiv",
+      "inactive": "Inaktiv",
+      "visibleInCatalog": "Sichtbar im Katalog",
+      "hidden": "Versteckt"
+    },
+    "actions": {
+      "save": "Speichern",
+      "saving": "[SPEICHERN…]",
+      "create": "Erstellen",
+      "cancel": "Abbrechen"
     },
     "table": {
       "code": "Code",
@@ -350,19 +564,14 @@
       "descriptionEs": "Descripción (ES)",
       "unit": "Einh.",
       "price": "Preis",
+      "quote": "Angebot",
       "form": "Form",
       "operator": "Betreiber",
       "client": "Kunde",
       "status": "Status",
       "actions": "Aktionen",
       "active": "Aktiv",
-      "inactive": "Inaktiv",
-      "global": "Global",
-      "edit": "Bearbeiten",
-      "deactivate": "Deaktivieren",
-      "activate": "Aktivieren",
-      "delete": "Löschen",
-      "empty": "Keine Artikel gefunden"
+      "inactive": "Inaktiv"
     },
     "modal": {
       "category": "Service-Katalog",
@@ -380,6 +589,7 @@
       "fieldDescEs": "Descripción (ES)",
       "fieldDescEsPlaceholder": "Descripción en español (opcional)",
       "fieldPrice": "Preis (€ netto) — leer = Nach Angebot",
+      "fieldExternalPrice": "Preis extern",
       "fieldDisplayOrder": "Anzeigereihenfolge",
       "fieldOperator": "Betreiber (Operator)",
       "fieldOperatorGlobal": "— Global / Alle —",
@@ -393,13 +603,89 @@
       "activeHidden": "Versteckt",
       "errorRequired": "Code und Deutsche Beschreibung sind Pflichtfelder.",
       "buttonCancel": "Abbrechen",
+      "buttonClose": "Schließen",
+      "buttonCreate": "Erstellen",
+      "buttonSave": "Speichern",
+      "buttonSaving": "[SPEICHERN…]"
+    },
+    "delete": {
+      "title": "Artikel löschen",
+      "warning": "Achtung — Irreversibel",
+      "confirm": "Diese Aktion löscht den Artikel dauerhaft aus dem Katalog und kann nicht rückgängig gemacht werden.",
+      "action": "Endgültig löschen",
+      "deleting": "[LÖSCHEN…]"
+    }
+  },
+  "serviceItems": {
+    "title": "Service-Katalog",
+    "subtitle": "{{count}} Artikel — Vertragliche Leistungscodes",
+    "newItem": "Neuer Artikel",
+    "search": "Suchen (Code, Beschreibung)…",
+    "filters": {
+      "allOperators": "Alle Betreiber",
+      "globalNoOperator": "Global (kein Betreiber)",
+      "allClients": "Alle Kunden",
+      "showInactive": "Inaktive anzeigen"
+    },
+    "table": {
+      "code": "Code",
+      "descriptionDe": "Beschreibung (DE)",
+      "descriptionEs": "Beschreibung (ES)",
+      "unit": "Einh.",
+      "price": "Preis",
+      "quote": "Angebot",
+      "form": "Form",
+      "operator": "Betreiber",
+      "client": "Kunde",
+      "status": "Status",
+      "actions": "Aktionen",
+      "active": "Aktiv",
+      "inactive": "Inaktiv",
+      "global": "Global",
+      "edit": "Bearbeiten",
+      "activate": "Aktivieren",
+      "deactivate": "Deaktivieren",
+      "delete": "Löschen",
+      "empty": "Keine Artikel gefunden"
+    },
+    "modal": {
+      "category": "Service-Katalog",
+      "createTitle": "Neuer Artikel",
+      "editTitle": "Artikel bearbeiten",
+      "sectionIdentification": "Identifikation",
+      "sectionPrice": "Preis & Reihenfolge",
+      "sectionAssignment": "Zuordnung",
+      "fieldCode": "SAP-Code",
+      "fieldCodePlaceholder": "z.B. DGF_ACT_001",
+      "fieldUnit": "Einheit",
+      "fieldUnitNone": "— keine —",
+      "fieldDescDe": "Beschreibung (DE)",
+      "fieldDescDePlaceholder": "Leistungsbeschreibung auf Deutsch",
+      "fieldDescEs": "Beschreibung (ES)",
+      "fieldDescEsPlaceholder": "Beschreibung auf Spanisch (optional)",
+      "fieldPrice": "Preis (€ netto) — leer = Nach Angebot",
+      "fieldExternalPrice": "Preis extern",
+      "fieldDisplayOrder": "Anzeigereihenfolge",
+      "fieldOperator": "Betreiber (Operator)",
+      "fieldOperatorGlobal": "— Global / Alle —",
+      "fieldClient": "Kunde (Client)",
+      "fieldClientNone": "— kein —",
+      "fieldDetailForm": "Detail-Formular (technische Route)",
+      "fieldNotes": "Notizen",
+      "fieldNotesPlaceholder": "Interne Hinweise zum Artikel…",
+      "active": "Artikel aktiv",
+      "activeVisible": "Sichtbar im Katalog",
+      "activeHidden": "Versteckt",
+      "errorRequired": "Code und Deutsche Beschreibung sind Pflichtfelder.",
+      "buttonCancel": "Abbrechen",
+      "buttonClose": "Schließen",
       "buttonCreate": "Erstellen",
       "buttonSave": "Speichern",
       "buttonSaving": "[SPEICHERN…]"
     },
     "deleteDialog": {
-      "warning": "Achtung — Irreversibel",
       "title": "Artikel löschen",
+      "warning": "Achtung — Irreversibel",
       "body": "Diese Aktion löscht den Artikel dauerhaft aus dem Katalog und kann nicht rückgängig gemacht werden.",
       "buttonCancel": "Abbrechen",
       "buttonConfirm": "Endgültig löschen",
@@ -453,61 +739,5 @@
     "viewAll": "Alle anzeigen →",
     "noOrders": "Keine aktiven Aufträge",
     "noOrdersDesc": "Dir sind aktuell keine Aufträge zugewiesen."
-  },
-  "tech": {
-    "myOrders": "Meine Aufträge",
-    "ordersAssigned": "{{total}} Aufträge zugewiesen",
-    "searchPlaceholder": "Auftrag suchen…",
-    "returnedSection": "Zurückgegeben — Korrektur erforderlich",
-    "activeSection": "Aktiv",
-    "closedSection": "Abgeschlossen / Gesendet",
-    "orderDetails": "Auftragsdetails",
-    "technicalSpecs": "Technische Vorgaben — {{workType}}",
-    "history": "Verlauf",
-    "startWork": "In Bearbeitung setzen",
-    "completeWork": "Ausführung abgeschlossen",
-    "fillRueckmeldung": "Rückmeldung ausfüllen",
-    "correctRueckmeldung": "Rückmeldung korrigieren",
-    "updatingStatus": "Wird aktualisiert…",
-    "rueckmeldungSentInfo": "Rückmeldung wurde gesendet. Der Admin prüft die Daten.",
-    "returnedBanner": "Auftrag zurückgegeben — Nichtkonformität"
-  },
-  "assign": {
-    "title": "Auftrag zuweisen",
-    "assignment": "Zuweisung",
-    "internalEmployee": "Interner Mitarbeiter (optional)",
-    "selectEmployee": "— Mitarbeiter wählen —",
-    "noEmployees": "Keine Mitarbeiter für dieses Team gefunden.",
-    "action": "Zuweisen & Status → Assigned",
-    "assigning": "Zuweisen…"
-  },
-  "certificationPage": {
-    "ordersInProcess": "Keine Aufträge · im Prozess",
-    "ordersCount": "{{count}} Aufträge · im Prozess",
-    "clearFilters": "× Filter löschen",
-    "selected": "{{count}} ausgewählt",
-    "certifyBulk": "Intern zertifizieren ({{count}})",
-    "sendBulk": "An Kunden senden ({{count}})",
-    "invoiceBulk": "Fakturieren ({{count}})",
-    "clearSelection": "Auswahl aufheben",
-    "noOrdersInStatus": "Keine Aufträge in diesem Status.",
-    "noOrdersInProcess": "Keine Aufträge im Zertifizierungsprozess.",
-    "bulkInvoiceTitle": "Sammel-Fakturierung",
-    "bulkInvoiceDesc": "Rechnungsnummer für {{count}} Aufträge (Pflichtfeld).",
-    "invoicePlaceholder": "z.B. RE-2026-0042",
-    "tabs": {
-      "rueckmeldung_sent": "Rückmeldung eingegangen",
-      "rueckmeldung_sent_desc": "Warten auf interne Zertifizierung",
-      "internally_certified": "Intern zertifiziert",
-      "internally_certified_desc": "Bereit zur Weiterleitung an den Kunden",
-      "sent_to_client": "Beim Kunden",
-      "sent_to_client_desc": "Warten auf Kundenentscheid",
-      "client_rejected": "Abgelehnt",
-      "client_rejected_desc": "Zur Überarbeitung zurückgegeben",
-      "client_accepted": "Akzeptiert",
-      "client_accepted_desc": "Bereit zur Fakturierung",
-      "invoiced": "Fakturiert",
-      "invoiced_desc": "Warten auf Zahlungseingang"
-    }
   }
 }

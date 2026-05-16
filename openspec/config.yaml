@@ -1,0 +1,65 @@
+strict_tdd: true
+context: |
+  lumen is a Node.js/TypeScript ESM, React project.
+  Detected markers: package.json, tsconfig.json, npm package manager.
+  Package managers: npm.
+  Additional evidence: Test-like files detected (8); examples: .pi/agents/sdd-spec.md, src/__tests__/authService.test.ts, src/__tests__/datevExportService.test.ts, src/__tests__/materialInventoryService.test.ts, src/__tests__/schemaMigrations.test.ts.
+  Primary test command: npm test.
+  Unit tests: Vitest (npm test).
+  Integration tests: Testing Library (npm test).
+  E2E tests: none.
+rules:
+  proposal:
+    require_problem_statement: true
+  spec:
+    require_acceptance_criteria: true
+  design:
+    require_tradeoffs: true
+  tasks:
+    protect_review_workload: true
+  apply:
+    test_command: "npm test"
+  verify:
+    test_command: "npm test"
+testing:
+  detected: "2026-05-14"
+  runner:
+    command: "npm test"
+    framework: "Vitest"
+  layers:
+    unit: "Vitest"
+    integration: "Testing Library"
+    e2e: ""
+  commands:
+    unit:
+      - scope: "."
+        command: "npm test"
+        framework: "Vitest"
+    integration:
+      - scope: "."
+        command: "npm test"
+        framework: "Testing Library"
+    e2e:
+      []
+  coverage:
+    command: "npm run test:coverage"
+    commands:
+      - scope: "."
+        command: "npm run test:coverage"
+        framework: "coverage"
+quality:
+  lint: "npm run lint"
+  lint_commands:
+    - scope: "."
+      command: "npm run lint"
+      framework: "linter"
+  typecheck: "npm run typecheck"
+  typecheck_commands:
+    - scope: "."
+      command: "npm run typecheck"
+      framework: "type checker"
+  format: "npm run format"
+  format_commands:
+    - scope: "."
+      command: "npm run format"
+      framework: "formatter"

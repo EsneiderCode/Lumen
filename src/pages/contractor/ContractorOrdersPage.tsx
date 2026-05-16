@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Check, Receipt, ClipboardList } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { fetchContractorWorkOrders, type WorkOrderWithRelations } from '@/services/workOrderService'
 import type { WorkOrderStatus, TeamColor } from '@/types/enums'
-import { useTranslation } from 'react-i18next'
 import { useLabels } from '@/i18n/labels'
 import { STATUS_COLORS, TEAM_DOT } from '@/constants/styles'
 
@@ -14,7 +14,7 @@ function PaymentBadge({ status }: { status: WorkOrderStatus }) {
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-ok/20 px-2 py-0.5 text-xs font-semibold text-ok">
         <Check size={12} strokeWidth={1.5} />
-        {t('contractor.paidBadge')}
+        {t('fieldOrders.paymentPaid')}
       </span>
     )
   }
@@ -22,14 +22,14 @@ function PaymentBadge({ status }: { status: WorkOrderStatus }) {
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-err/10 px-2 py-0.5 text-xs font-semibold text-info">
         <Receipt size={12} strokeWidth={1.5} />
-        {t('contractor.invoicedBadge')}
+        {t('fieldOrders.paymentInvoiced')}
       </span>
     )
   }
   if (status === 'client_accepted') {
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-warn/15 px-2 py-0.5 text-xs font-medium text-warn">
-        {t('contractor.billingPending')}
+        {t('fieldOrders.paymentPending')}
       </span>
     )
   }
@@ -79,7 +79,7 @@ export function ContractorOrdersPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-accent" />
+        <div className="nx-loader" />
       </div>
     )
   }
@@ -96,8 +96,8 @@ export function ContractorOrdersPage() {
     <div>
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h2 className="font-display text-xl font-bold text-fg-1">{t('contractor.orders')}</h2>
-          <p className="text-sm text-fg-2">{orders.length} {t('contractor.orders').toLowerCase()}</p>
+          <h2 className="font-display text-xl font-bold text-fg-1">{t('fieldOrders.title')}</h2>
+          <p className="text-sm text-fg-2">{t('fieldOrders.count', { count: orders.length })}</p>
         </div>
       </div>
 
@@ -106,7 +106,7 @@ export function ContractorOrdersPage() {
         <div className="mb-4">
           <input
             type="text"
-            placeholder={t('contractor.searchPlaceholder')}
+            placeholder={t('fieldOrders.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full rounded-s border border-line bg-bg-1 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
@@ -117,15 +117,15 @@ export function ContractorOrdersPage() {
       {orders.length === 0 ? (
         <div className="rounded-l border border-line bg-bg-1 py-16 text-center">
           <ClipboardList size={28} strokeWidth={1.5} className="mx-auto text-fg-3" />
-          <p className="mt-2 text-sm font-medium text-fg-1">{t('contractor.noOrders')}</p>
-          <p className="text-xs text-fg-2">{t('contractor.noOrdersDesc')}</p>
+          <p className="mt-2 text-sm font-medium text-fg-1">{t('fieldOrders.emptyTitle')}</p>
+          <p className="text-xs text-fg-2">{t('fieldOrders.emptyAssigned')}</p>
         </div>
       ) : (
         <div className="space-y-5">
           {activeOrders.length > 0 && (
             <section>
               <p className="mb-2 nx-label">
-                {t('contractor.active')} ({activeOrders.length})
+                {t('fieldOrders.activeSection', { count: activeOrders.length })}
               </p>
               <div className="space-y-2">
                 {activeOrders.map((order) => (
@@ -138,7 +138,7 @@ export function ContractorOrdersPage() {
           {closedOrders.length > 0 && (
             <section>
               <p className="mb-2 nx-label">
-                {t('contractor.closed')} ({closedOrders.length})
+                {t('fieldOrders.closedSection', { count: closedOrders.length })}
               </p>
               <div className="space-y-2">
                 {closedOrders.map((order) => (
@@ -155,6 +155,7 @@ export function ContractorOrdersPage() {
 
 function OrderCard({ order }: { order: WorkOrderWithRelations }) {
   const L = useLabels()
+  const { i18n } = useTranslation()
   const isActive = ACTIVE_STATUSES.includes(order.status)
   return (
     <div
@@ -170,7 +171,7 @@ function OrderCard({ order }: { order: WorkOrderWithRelations }) {
           {order.order_number}
         </span>
         <span
-          className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[order.status]}`}
+          className={`badge badge-dot ${STATUS_COLORS[order.status]}`}
         >
           {L.status(order.status)}
         </span>
@@ -204,7 +205,7 @@ function OrderCard({ order }: { order: WorkOrderWithRelations }) {
           </p>
           {order.assigned_date && (
             <p className="text-xs text-fg-2">
-              {new Date(order.assigned_date).toLocaleDateString('de-DE')}
+              {new Date(order.assigned_date).toLocaleDateString(i18n.language === 'es' ? 'es-ES' : 'de-DE')}
             </p>
           )}
         </div>

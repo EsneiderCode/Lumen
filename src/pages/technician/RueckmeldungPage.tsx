@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
-import { AlertTriangle } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
+import { AlertTriangle, Package, Plus, Trash2 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 
 // ── Time picker ────────────────────────────────────────────────
@@ -35,9 +36,19 @@ import {
   transitionWorkOrderStatus,
   workTypeToDetailTable,
   getPhotoSignedUrls,
+  normalizeReportedServiceItems,
+  type ReportedServiceItemDraft,
   type WorkOrderWithRelations,
 } from '@/services/workOrderService'
-import { useTranslation } from 'react-i18next'
+import { fetchServiceItems } from '@/services/serviceItemService'
+import {
+  fetchVehicles,
+  fetchVehicleStock,
+  registerMaterialConsumption,
+} from '@/services/materialInventoryService'
+import type { ServiceItemWithRelations } from '@/types/service-items'
+import type { ConsumptionCorrectionRequired, ConsumptionDraft, InventoryVehicle, VehicleStockRow } from '@/types/material-inventory'
+import type { TeamColor } from '@/types/enums'
 import { useLabels } from '@/i18n/labels'
 import { DETAIL_FIELDS } from '@/constants/detail-fields'
 
@@ -50,9 +61,11 @@ interface Photo {
   caption: string | null
 }
 
+type ConsumptionDraftRow = ConsumptionDraft & { _key: string }
+
 export function RueckmeldungPage() {
-  const { t } = useTranslation()
   const L = useLabels()
+  const { t } = useTranslation()
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -73,6 +86,16 @@ export function RueckmeldungPage() {
   const [error, setError] = useState<string | null>(null)
   const [savedOk, setSavedOk] = useState(false)
   const [returnedNote, setReturnedNote] = useState<string | null>(null)
+
+  // Alta multi-item service report. Technicians record executed items without
+  // price data; admin certification materializes protected billing lines.
+  const [reportedDrafts, setReportedDrafts] = useState<Array<ReportedServiceItemDraft & { _key: string }>>([])
+  const [catalog, setCatalog] = useState<ServiceItemWithRelations[]>([])
+  const [vehicles, setVehicles] = useState<InventoryVehicle[]>([])
+  const [selectedVehicleId, setSelectedVehicleId] = useState('')
+  const [vehicleStock, setVehicleStock] = useState<VehicleStockRow[]>([])
+  const [consumptionDrafts, setConsumptionDrafts] = useState<ConsumptionDraftRow[]>([])
+  const [stockCorrections, setStockCorrections] = useState<ConsumptionCorrectionRequired[]>([])
 
   const fileInputRefs = {
     before: useRef<HTMLInputElement>(null),
@@ -109,12 +132,112 @@ export function RueckmeldungPage() {
         void _i; void _w; void _c
         setDetail(rest)
       }
+
+      // For Alta orders, load field-reported service items + the service-item
+      // catalog. Price columns are deliberately omitted from this field screen.
+      if (orderData.work_type === 'alta') {
+        const { data: items } = await fetchServiceItems({ includeInactive: false })
+        const drafts = normalizeReportedServiceItems((detailData as Record<string, unknown> | null)?.reported_service_items)
+          .map((item, index) => ({
+            _key: `reported-${index}-${item.service_item_id}`,
+            ...item,
+          }))
+        setReportedDrafts(drafts)
+        // Filter catalog by order's client and operator so the picker only shows
+        // applicable rates (catalog rows with NULL client/operator stay visible
+        // as "global" entries).
+        const filtered = items.filter((it) => {
+          const okClient = it.client_id == null || it.client_id === orderData.client_id
+          const okOp = it.operator_id == null || it.operator_id === orderData.operator_id
+          return okClient && okOp
+        })
+        setCatalog(filtered)
+      }
+
+      const team = (orderData.assigned_team ?? user?.team ?? null) as TeamColor | null
+      if (team) {
+        const { data: teamVehicles } = await fetchVehicles({ team, includeInactive: false })
+        setVehicles(teamVehicles)
+        if (teamVehicles.length === 1) setSelectedVehicleId(teamVehicles[0].id)
+      }
+
       setIsLoading(false)
     })
-  }, [id])
+  }, [id, user?.team])
+
+  useEffect(() => {
+    if (!selectedVehicleId) {
+      queueMicrotask(() => setVehicleStock([]))
+      return
+    }
+    fetchVehicleStock(selectedVehicleId).then(({ data }) => setVehicleStock(data))
+  }, [selectedVehicleId])
+
+  // Reported service-item CRUD on the local drafts (saved on handleSave / handleSend)
+  function addReportedLine() {
+    setReportedDrafts((prev) => [
+      ...prev,
+      {
+        _key: `new-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        service_item_id: '',
+        qty: 1,
+        notes: null,
+      },
+    ])
+  }
+
+  function removeReportedLine(key: string) {
+    setReportedDrafts((prev) => prev.filter((d) => d._key !== key))
+  }
+
+  function setReportedLineField<K extends keyof ReportedServiceItemDraft>(
+    key: string,
+    field: K,
+    value: ReportedServiceItemDraft[K],
+  ) {
+    setReportedDrafts((prev) => prev.map((d) => (
+      d._key === key ? { ...d, [field]: value } : d
+    )))
+  }
+
+  function detailWithReportedItems() {
+    if (order?.work_type !== 'alta') return detail
+    return {
+      ...detail,
+      reported_service_items: normalizeReportedServiceItems(reportedDrafts),
+    }
+  }
 
   function setDetailField(key: string, value: unknown) {
     setDetail((d) => ({ ...d, [key]: value }))
+  }
+
+  function addConsumptionLine() {
+    setConsumptionDrafts((prev) => [
+      ...prev,
+      {
+        _key: `cons-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        material_id: '',
+        quantity: 0,
+        stock_real_before: null,
+        notes: null,
+      },
+    ])
+  }
+
+  function removeConsumptionLine(key: string) {
+    setConsumptionDrafts((prev) => prev.filter((line) => line._key !== key))
+  }
+
+  function setConsumptionField<K extends keyof ConsumptionDraft>(
+    key: string,
+    field: K,
+    value: ConsumptionDraft[K],
+  ) {
+    setStockCorrections([])
+    setConsumptionDrafts((prev) => prev.map((line) => (
+      line._key === key ? { ...line, [field]: value } : line
+    )))
   }
 
   async function handlePhotoUpload(photoType: PhotoType, files: FileList | null) {
@@ -125,7 +248,7 @@ export function RueckmeldungPage() {
     for (const file of Array.from(files)) {
       const { data, error } = await uploadWorkOrderPhoto(id, photoType, file, user.id)
       if (error) {
-        setError(t('rueckmeldung.photoUploadError', { error }))
+        setError(`Foto-Upload fehlgeschlagen: ${error}`)
         break
       }
       if (data) {
@@ -144,7 +267,7 @@ export function RueckmeldungPage() {
     setError(null)
     const { error } = await deleteWorkOrderPhoto(photoId, storagePath)
     if (error) {
-      setError(t('rueckmeldung.photoDeleteError', { error }))
+      setError(`Foto löschen fehlgeschlagen: ${error}`)
     } else {
       setPhotos((prev) => {
         const updated = prev.filter((p) => p.id !== photoId)
@@ -169,14 +292,16 @@ export function RueckmeldungPage() {
     setSavedOk(false)
 
     const table = workTypeToDetailTable(order.work_type)
-    const { error } = await upsertWorkOrderDetail(table, id, detail)
-
+    const { error } = await upsertWorkOrderDetail(table, id, detailWithReportedItems())
     if (error) {
       setError(error)
-    } else {
-      setSavedOk(true)
-      setTimeout(() => setSavedOk(false), 3000)
+      setIsSaving(false)
+      return
     }
+
+
+    setSavedOk(true)
+    setTimeout(() => setSavedOk(false), 3000)
     setIsSaving(false)
   }
 
@@ -187,11 +312,38 @@ export function RueckmeldungPage() {
 
     // First save detail
     const table = workTypeToDetailTable(order.work_type)
-    const { error: detailError } = await upsertWorkOrderDetail(table, id, detail)
+    const { error: detailError } = await upsertWorkOrderDetail(table, id, detailWithReportedItems())
     if (detailError) {
       setError(detailError)
       setIsSending(false)
       return
+    }
+
+
+    const validConsumption = consumptionDrafts.filter((d) => d.material_id && d.quantity > 0)
+    if (validConsumption.length > 0) {
+      if (!selectedVehicleId) {
+        setError(t('rueckmeldung.materialConsumption.errors.vehicleRequired'))
+        setIsSending(false)
+        return
+      }
+      const result = await registerMaterialConsumption({
+        workOrderId: id,
+        vehicleId: selectedVehicleId,
+        reportedBy: user.id,
+        drafts: validConsumption.map(({ _key: _k, ...rest }) => { void _k; return rest }),
+      })
+      if (result.correctionRequired.length > 0) {
+        setStockCorrections(result.correctionRequired)
+        setError(t('rueckmeldung.materialConsumption.errors.stockCorrectionRequired'))
+        setIsSending(false)
+        return
+      }
+      if (result.error) {
+        setError(result.error)
+        setIsSending(false)
+        return
+      }
     }
 
     // Build notes string with tech input
@@ -199,6 +351,9 @@ export function RueckmeldungPage() {
     if (techNotes.trim()) noteParts.push(`Notizen: ${techNotes.trim()}`)
     if (startTime) noteParts.push(`Beginn: ${startTime}`)
     if (endTime) noteParts.push(`Ende: ${endTime}`)
+    if (validConsumption.length > 0) {
+      noteParts.push(t('rueckmeldung.materialConsumption.notes.summary', { count: validConsumption.length }))
+    }
     const notes = noteParts.length > 0 ? noteParts.join(' | ') : 'Rückmeldung gesendet'
 
     // If the order is in 'executed' or 'returned', first move to 'rueckmeldung_pending'
@@ -226,7 +381,7 @@ export function RueckmeldungPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-accent" />
+        <div className="nx-loader" />
       </div>
     )
   }
@@ -253,7 +408,7 @@ export function RueckmeldungPage() {
           ←
         </button>
         <div>
-          <h2 className="font-display text-lg font-bold text-fg-1">{t('rueckmeldung.title')}</h2>
+          <h2 className="font-display text-lg font-bold text-fg-1">Rückmeldung</h2>
           <p className="text-xs text-fg-2 font-mono">{order.order_number} · {L.workType(order.work_type)}</p>
         </div>
       </div>
@@ -263,10 +418,10 @@ export function RueckmeldungPage() {
         <div className="rounded-l border border-err/50 bg-err/10 p-4">
           <p className="inline-flex items-center gap-2 font-semibold text-err">
             <AlertTriangle size={16} strokeWidth={1.5} />
-            {t('rueckmeldung.returnedBanner')}
+            Auftrag zurückgegeben — Nichtkonformität
           </p>
           <p className="mt-1 text-sm text-err">{returnedNote}</p>
-          <p className="mt-2 text-xs text-err">{t('rueckmeldung.returnedCorrectHint')}</p>
+          <p className="mt-2 text-xs text-err">Korrekturen vornehmen und die Rückmeldung erneut senden.</p>
         </div>
       )}
 
@@ -274,16 +429,16 @@ export function RueckmeldungPage() {
       <div className="rounded-l border border-line bg-bg-1 p-4">
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div>
-            <p className="text-xs text-fg-2">{t('workOrder.customer')}</p>
+            <p className="text-xs text-fg-2">Kunde</p>
             <p className="font-medium text-fg-1">{order.clients?.name ?? '—'}</p>
           </div>
           <div>
-            <p className="text-xs text-fg-2">{t('workOrder.project')}</p>
+            <p className="text-xs text-fg-2">Projekt</p>
             <p className="font-medium text-fg-1">{order.projects?.code ?? '—'}</p>
           </div>
           {(order.address || order.city) && (
             <div className="col-span-2">
-              <p className="text-xs text-fg-2">{t('workOrder.address')}</p>
+              <p className="text-xs text-fg-2">Adresse</p>
               <p className="font-medium text-fg-1">{[order.address, order.city].filter(Boolean).join(', ')}</p>
             </div>
           )}
@@ -292,20 +447,102 @@ export function RueckmeldungPage() {
 
       {/* Time inputs */}
       <div className="rounded-l border border-line bg-bg-1 p-4">
-        <h3 className="mb-3 font-display text-sm font-semibold text-fg-1">{t('rueckmeldung.deploymentTimes')}</h3>
+        <h3 className="mb-3 font-display text-sm font-semibold text-fg-1">Einsatzzeiten</h3>
         <div className="grid grid-cols-2 gap-3">
-          <TimePickerField label={t('rueckmeldung.start')} value={startTime} onChange={setStartTime} />
-          <TimePickerField label={t('rueckmeldung.end')} value={endTime} onChange={setEndTime} />
+          <TimePickerField label="Beginn" value={startTime} onChange={setStartTime} />
+          <TimePickerField label="Ende" value={endTime} onChange={setEndTime} />
         </div>
       </div>
+
+      {/* Alta multi-item billing editor — prices stay hidden, only the technician
+          declares what was executed; admin sees the prices in CertificationPage */}
+      {order.work_type === 'alta' && (
+        <div className="rounded-l border border-accent/30 bg-bg-1 p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <div>
+              <h3 className="font-display text-sm font-semibold text-fg-1">Geleistete Posten</h3>
+              <p className="text-xs text-fg-2">Was wurde tatsächlich montiert. Eine Zeile je Position aus dem Service-Katalog.</p>
+            </div>
+            <button
+              type="button"
+              onClick={addReportedLine}
+              className="rounded-s border border-accent bg-accent/10 px-3 py-1.5 text-xs font-semibold text-accent hover:bg-accent/20 transition-colors"
+            >
+              + Posten
+            </button>
+          </div>
+
+          {reportedDrafts.length === 0 ? (
+            <p className="rounded-s border border-dashed border-line bg-bg-0 p-3 text-center text-xs text-fg-2">
+              Noch keine Posten. Klick auf <span className="font-semibold text-accent">+ Posten</span>.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {reportedDrafts.map((line) => {
+                const selectedItem = catalog.find((c) => c.id === line.service_item_id)
+                return (
+                  <div
+                    key={line._key}
+                    className="rounded-s border border-line bg-bg-0 p-3 grid grid-cols-1 gap-2 sm:grid-cols-[1fr_90px_auto]"
+                  >
+                    <div>
+                      <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-fg-2">
+                        Leistung
+                      </label>
+                      <select
+                        value={line.service_item_id}
+                        onChange={(e) => setReportedLineField(line._key, 'service_item_id', e.target.value)}
+                        className="w-full rounded-s border border-line bg-bg-1 px-2 py-1.5 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                      >
+                        <option value="">— wählen —</option>
+                        {catalog.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.code} — {c.description_de}
+                          </option>
+                        ))}
+                      </select>
+                      {selectedItem?.description_es && (
+                        <p className="mt-1 text-[11px] italic text-fg-2">ES: {selectedItem.description_es}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-fg-2">
+                        Menge {selectedItem?.unit ? `(${selectedItem.unit})` : ''}
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={line.qty}
+                        onChange={(e) => setReportedLineField(line._key, 'qty', Number(e.target.value))}
+                        className="w-full rounded-s border border-line bg-bg-1 px-2 py-1.5 text-right font-mono text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                      />
+                    </div>
+                    <div className="flex items-end">
+                      <button
+                        type="button"
+                        onClick={() => removeReportedLine(line._key)}
+                        className="rounded-s border border-err/40 px-3 py-1.5 text-xs text-err hover:bg-err/10 transition-colors"
+                        title="Posten entfernen"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Dynamic detail fields */}
       {detailFields.length > 0 && (
         <div className="rounded-l border border-accent/30 bg-bg-1 p-4">
           <h3 className="mb-1 font-display text-sm font-semibold text-fg-1">
-            {t('rueckmeldung.technicalData', { workType: L.workType(order.work_type) })}
+            Technische Daten — {L.workType(order.work_type)}
           </h3>
-          <p className="mb-3 text-xs text-fg-2">{t('rueckmeldung.documentWork')}</p>
+          <p className="mb-3 text-xs text-fg-2">Ausgeführte Arbeit dokumentieren</p>
           <div className="grid grid-cols-1 gap-4">
             {detailFields.map((field) => (
               <div key={field.key} className={field.type === 'checkbox' ? 'flex items-center gap-3' : ''}>
@@ -330,7 +567,7 @@ export function RueckmeldungPage() {
                       onChange={(e) => setDetailField(field.key, e.target.value)}
                       className="w-full rounded-s border border-line bg-bg-0 px-3 py-2.5 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                     >
-                      <option value="">{t('rueckmeldung.selectOption')}</option>
+                      <option value="">— wählen —</option>
                       {field.options?.map((opt) => (
                         <option key={opt} value={opt}>{opt}</option>
                       ))}
@@ -356,9 +593,152 @@ export function RueckmeldungPage() {
         </div>
       )}
 
+      {/* Material consumption */}
+      <div className="rounded-l border border-line bg-bg-1 p-4">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <h3 className="inline-flex items-center gap-2 font-display text-sm font-semibold text-fg-1">
+              <Package size={16} strokeWidth={1.5} />
+              {t('rueckmeldung.materialConsumption.title')}
+            </h3>
+            <p className="mt-1 text-xs text-fg-2">{t('rueckmeldung.materialConsumption.subtitle')}</p>
+          </div>
+          <button
+            type="button"
+            onClick={addConsumptionLine}
+            className="inline-flex items-center gap-1 rounded-s border border-line px-3 py-1.5 text-xs font-semibold text-fg-1 hover:border-accent hover:text-accent transition-colors"
+          >
+            <Plus size={14} strokeWidth={1.5} />
+            {t('rueckmeldung.materialConsumption.actions.add')}
+          </button>
+        </div>
+
+        <div className="mb-3">
+          <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-fg-2">
+            {t('rueckmeldung.materialConsumption.fields.vehicle')}
+          </label>
+          <select
+            value={selectedVehicleId}
+            onChange={(e) => setSelectedVehicleId(e.target.value)}
+            className="w-full rounded-s border border-line bg-bg-0 px-3 py-2.5 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+          >
+            <option value="">{t('rueckmeldung.materialConsumption.placeholders.noVehicle')}</option>
+            {vehicles.map((vehicle) => (
+              <option key={vehicle.id} value={vehicle.id}>
+                {vehicle.name} · Team {vehicle.team}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {stockCorrections.length > 0 && (
+          <div className="mb-3 rounded-s border border-warn/40 bg-warn/10 p-3 text-xs text-warn">
+            {t('rueckmeldung.materialConsumption.correctionRequired', {
+              items: stockCorrections.map((c) => `${c.material_name} (${c.registered} ${c.unit})`).join(', '),
+            })}
+          </div>
+        )}
+
+        {consumptionDrafts.length === 0 ? (
+          <p className="rounded-s border border-dashed border-line bg-bg-0 p-3 text-center text-xs text-fg-2">
+            {t('rueckmeldung.materialConsumption.empty')}
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {consumptionDrafts.map((line) => {
+              const stockRow = vehicleStock.find((row) => row.material_id === line.material_id)
+              const correction = stockCorrections.find((c) => c.material_id === line.material_id)
+              return (
+                <div key={line._key} className="rounded-s border border-line bg-bg-0 p-3">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_92px_auto]">
+                    <div>
+                      <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-fg-2">
+                        {t('rueckmeldung.materialConsumption.fields.material')}
+                      </label>
+                      <select
+                        value={line.material_id}
+                        onChange={(e) => setConsumptionField(line._key, 'material_id', e.target.value)}
+                        className="w-full rounded-s border border-line bg-bg-1 px-2 py-1.5 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                      >
+                        <option value="">{t('rueckmeldung.materialConsumption.placeholders.choose')}</option>
+                        {vehicleStock.map((row) => (
+                          <option key={row.material_id} value={row.material_id}>
+                            {row.material.sku ? `${row.material.sku} — ` : ''}
+                            {row.material.name} · {t('rueckmeldung.materialConsumption.optionStock', {
+                              quantity: row.quantity,
+                              unit: row.material.unit,
+                            })}
+                          </option>
+                        ))}
+                      </select>
+                      {stockRow && (
+                        <p className="mt-1 font-mono text-[11px] text-fg-2">
+                          {t('rueckmeldung.materialConsumption.registered', {
+                            quantity: stockRow.quantity,
+                            unit: stockRow.material.unit,
+                          })}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-fg-2">
+                        {t('rueckmeldung.materialConsumption.fields.quantity')}
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={line.quantity === 0 ? '' : line.quantity}
+                        onChange={(e) => setConsumptionField(
+                          line._key,
+                          'quantity',
+                          e.target.value === '' ? 0 : Number(e.target.value),
+                        )}
+                        placeholder="0"
+                        className="w-full rounded-s border border-line bg-bg-1 px-2 py-1.5 text-right font-mono text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                      />
+                    </div>
+                    <div className="flex items-end">
+                      <button
+                        type="button"
+                        onClick={() => removeConsumptionLine(line._key)}
+                        className="flex h-8 w-8 items-center justify-center rounded-s border border-err/40 text-err hover:bg-err/10 transition-colors"
+                        title={t('rueckmeldung.materialConsumption.actions.remove')}
+                      >
+                        <Trash2 size={14} strokeWidth={1.5} />
+                      </button>
+                    </div>
+                  </div>
+                  {correction && (
+                    <div className="mt-3">
+                      <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-warn">
+                        {t('rueckmeldung.materialConsumption.fields.realStockBefore')} *
+                      </label>
+                      <input
+                        type="number"
+                        min={line.quantity}
+                        step="0.01"
+                        value={line.stock_real_before ?? ''}
+                        onChange={(e) => setConsumptionField(
+                          line._key,
+                          'stock_real_before',
+                          e.target.value === '' ? null : Number(e.target.value),
+                        )}
+                        className="w-full rounded-s border border-warn/60 bg-bg-1 px-2 py-1.5 text-right font-mono text-sm text-fg-1 focus:border-warn focus:outline-none focus:ring-1 focus:ring-warn"
+                        placeholder={t('rueckmeldung.materialConsumption.placeholders.minimum', { quantity: line.quantity })}
+                      />
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
       {/* Photos */}
       <div className="rounded-l border border-line bg-bg-1 p-4">
-        <h3 className="mb-3 font-display text-sm font-semibold text-fg-1">{t('rueckmeldung.photos')}</h3>
+        <h3 className="mb-3 font-display text-sm font-semibold text-fg-1">Fotos</h3>
         <div className="space-y-4">
           {(['before', 'during', 'after'] as PhotoType[]).map((type) => {
             const typePhotos = photosByType(type)
@@ -374,7 +754,7 @@ export function RueckmeldungPage() {
                     onClick={() => fileInputRefs[type].current?.click()}
                     className="rounded-s border border-line px-2.5 py-1 text-xs font-medium text-fg-2 hover:border-accent hover:text-accent transition-colors disabled:opacity-50"
                   >
-                    {uploadingType === type ? t('rueckmeldung.uploading') : t('rueckmeldung.addPhoto')}
+                    {uploadingType === type ? 'Lädt…' : '+ Foto'}
                   </button>
                   <input
                     ref={fileInputRefs[type]}
@@ -399,11 +779,11 @@ export function RueckmeldungPage() {
                           type="button"
                           disabled={deletingPhotoId === photo.id}
                           onClick={() => handlePhotoDelete(photo.id, photo.storage_path)}
-                          className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white hover:bg-err disabled:opacity-50 transition-colors"
+                          className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-bg-0/80 text-fg-1 hover:bg-err disabled:opacity-50 transition-colors"
                           aria-label="Foto löschen"
                         >
                           {deletingPhotoId === photo.id ? (
-                            <span className="h-3 w-3 animate-spin rounded-full border border-white border-t-transparent" />
+                            <span className="nx-loader-sm h-3 w-3" />
                           ) : (
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5">
                               <path d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z" />
@@ -418,7 +798,7 @@ export function RueckmeldungPage() {
                     className="flex h-16 cursor-pointer items-center justify-center rounded-s border-2 border-dashed border-line text-xs text-fg-2 hover:border-accent/50 transition-colors"
                     onClick={() => fileInputRefs[type].current?.click()}
                   >
-                    {t('rueckmeldung.noPhotos')}
+                    Keine Fotos · Tippen um hinzuzufügen
                   </div>
                 )}
               </div>
@@ -430,13 +810,13 @@ export function RueckmeldungPage() {
       {/* Technician notes */}
       <div className="rounded-l border border-line bg-bg-1 p-4">
         <label className="mb-1 block text-xs font-medium text-fg-2">
-          {t('rueckmeldung.notesLabel')}
+          Notizen / Besonderheiten
         </label>
         <textarea
           value={techNotes}
           onChange={(e) => setTechNotes(e.target.value)}
           rows={3}
-          placeholder={t('rueckmeldung.notesPlaceholder')}
+          placeholder="Besonderheiten, Probleme, Hinweise für Admin…"
           className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent resize-none"
         />
       </div>
@@ -449,7 +829,7 @@ export function RueckmeldungPage() {
       )}
       {savedOk && (
         <div className="rounded-s border border-ok/30 bg-ok/10 px-4 py-3 text-sm text-ok">
-          {t('rueckmeldung.savedOk')}
+          Daten gespeichert.
         </div>
       )}
 
@@ -460,19 +840,19 @@ export function RueckmeldungPage() {
           onClick={handleSave}
           className="rounded-l border border-line px-4 py-3 text-sm font-semibold text-fg-1 hover:bg-bg-0 disabled:opacity-50 transition-colors"
         >
-          {isSaving ? t('common.saving') : t('rueckmeldung.saveTemp')}
+          {isSaving ? 'Speichern…' : 'Zwischenspeichern'}
         </button>
         <button
           disabled={isSaving || isSending}
           onClick={handleSend}
           className="rounded-l bg-accent px-4 py-3 text-sm font-semibold text-ink hover:bg-accent disabled:opacity-50 transition-colors"
         >
-          {isSending ? t('common.sending') : order.status === 'returned' ? t('rueckmeldung.sendCorrected') : t('rueckmeldung.send')}
+          {isSending ? 'Wird gesendet…' : order.status === 'returned' ? 'Korrigierte RM senden' : 'Rückmeldung senden'}
         </button>
       </div>
 
       <p className="text-center text-xs text-fg-2">
-        {t('rueckmeldung.sendHint')}
+        "Rückmeldung senden" übermittelt alle Daten an den Admin zur Zertifizierung.
       </p>
     </div>
   )

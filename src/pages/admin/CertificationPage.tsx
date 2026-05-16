@@ -1,13 +1,39 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
-import { FileSpreadsheet, Check, Send, Receipt } from 'lucide-react'
+import {
+  ArrowRight,
+  Check,
+  Clock3,
+  Download,
+  Euro,
+  FileSpreadsheet,
+  Filter,
+  Receipt,
+  Send,
+  ShieldCheck,
+  Workflow,
+} from 'lucide-react'
 import * as XLSX from 'xlsx'
-import { fetchWorkOrders, transitionWorkOrderStatus, fetchProjects, type WorkOrderWithRelations } from '@/services/workOrderService'
+import { buildDatevCsv, downloadDatevCsv } from '@/services/datevExportService'
+import {
+  fetchWorkOrders,
+  bulkWorkOrderAction,
+  generateDataHash,
+  fetchProjects,
+  fetchTechnicians,
+  fetchBillingLines,
+  getCollaboratorType,
+  type WorkOrderWithRelations,
+  type CollaboratorType,
+  type BulkWorkOrderAction,
+  type BulkWorkOrderResult,
+} from '@/services/workOrderService'
+import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
-import type { WorkOrderStatus, TeamColor } from '@/types/enums'
-import { useTranslation } from 'react-i18next'
+import type { WorkOrderStatus, TeamColor, UserRole } from '@/types/enums'
 import { useLabels } from '@/i18n/labels'
 import { TEAM_DOT } from '@/constants/styles'
+import { Alert, Badge, Button, EmptyState, KPI, KPIGrid, Panel } from '@/components/ui/nexus'
 
 interface Project {
   id: string
@@ -24,14 +50,45 @@ const CERT_STATUSES: WorkOrderStatus[] = [
   'invoiced',
 ]
 
-const SECTIONS: { status: WorkOrderStatus; labelKey: string; descKey: string; bulkAction?: string }[] = [
-  { status: 'rueckmeldung_sent', labelKey: 'certificationPage.tabs.rueckmeldung_sent', descKey: 'certificationPage.tabs.rueckmeldung_sent_desc', bulkAction: 'certify' },
-  { status: 'internally_certified', labelKey: 'certificationPage.tabs.internally_certified', descKey: 'certificationPage.tabs.internally_certified_desc', bulkAction: 'send_to_client' },
-  { status: 'sent_to_client', labelKey: 'certificationPage.tabs.sent_to_client', descKey: 'certificationPage.tabs.sent_to_client_desc' },
-  { status: 'client_rejected', labelKey: 'certificationPage.tabs.client_rejected', descKey: 'certificationPage.tabs.client_rejected_desc' },
-  { status: 'client_accepted', labelKey: 'certificationPage.tabs.client_accepted', descKey: 'certificationPage.tabs.client_accepted_desc', bulkAction: 'invoice' },
-  { status: 'invoiced', labelKey: 'certificationPage.tabs.invoiced', descKey: 'certificationPage.tabs.invoiced_desc' },
+const SECTIONS: {
+  status: WorkOrderStatus
+  label: string
+  description: string
+  bulkAction?: string
+}[] = [
+  {
+    status: 'rueckmeldung_sent',
+    label: 'Rückmeldung eingegangen',
+    description: 'Warten auf interne Zertifizierung',
+    bulkAction: 'certify',
+  },
+  {
+    status: 'internally_certified',
+    label: 'Intern zertifiziert',
+    description: 'Bereit zur Weiterleitung an den Kunden',
+    bulkAction: 'send_to_client',
+  },
+  { status: 'sent_to_client', label: 'Beim Kunden', description: 'Warten auf Kundenentscheid' },
+  { status: 'client_rejected', label: 'Abgelehnt', description: 'Zur Überarbeitung zurückgegeben' },
+  {
+    status: 'client_accepted',
+    label: 'Akzeptiert',
+    description: 'Bereit zur Fakturierung',
+    bulkAction: 'invoice',
+  },
+  { status: 'invoiced', label: 'Fakturiert', description: 'Warten auf Zahlungseingang' },
 ]
+
+const SECTION_TONE: Partial<
+  Record<WorkOrderStatus, 'neutral' | 'info' | 'ok' | 'warn' | 'err' | 'accent'>
+> = {
+  rueckmeldung_sent: 'warn',
+  internally_certified: 'ok',
+  sent_to_client: 'info',
+  client_rejected: 'err',
+  client_accepted: 'accent',
+  invoiced: 'neutral',
+}
 
 interface BulkInvoiceModal {
   open: boolean
@@ -39,7 +96,6 @@ interface BulkInvoiceModal {
 }
 
 export function CertificationPage() {
-  const { t } = useTranslation()
   const L = useLabels()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -47,19 +103,31 @@ export function CertificationPage() {
   const [orders, setOrders] = useState<WorkOrderWithRelations[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isBulkWorking, setIsBulkWorking] = useState(false)
+  const [bulkResult, setBulkResult] = useState<BulkWorkOrderResult | null>(null)
 
   // Filters
   const [filterTeam, setFilterTeam] = useState<TeamColor | ''>('')
   const [filterProject, setFilterProject] = useState('')
   const [filterDateFrom, setFilterDateFrom] = useState('')
   const [filterDateTo, setFilterDateTo] = useState('')
+  const [filterCollab, setFilterCollab] = useState<'' | CollaboratorType>('')
   const [projects, setProjects] = useState<Project[]>([])
+
+  // Profiles map (id → role) — drives internal vs external classification
+  // Plus per-order billing-line totals derived from work_order_billing_lines
+  const [profileRoles, setProfileRoles] = useState<Record<string, UserRole>>({})
+  const [orderTotals, setOrderTotals] = useState<
+    Record<string, { client: number; external: number }>
+  >({})
 
   // Selection
   const [selected, setSelected] = useState<Set<string>>(new Set())
 
   // Bulk invoice modal
-  const [bulkInvoiceModal, setBulkInvoiceModal] = useState<BulkInvoiceModal>({ open: false, invoiceNumber: '' })
+  const [bulkInvoiceModal, setBulkInvoiceModal] = useState<BulkInvoiceModal>({
+    open: false,
+    invoiceNumber: '',
+  })
 
   // refreshKey increments to re-trigger the load effect after bulk actions
   const [refreshKey, setRefreshKey] = useState(0)
@@ -77,22 +145,79 @@ export function CertificationPage() {
         date_from: filterDateFrom || undefined,
         date_to: filterDateTo || undefined,
       }
-      const results = await Promise.all(CERT_STATUSES.map((s) => fetchWorkOrders({ ...filters, status: s })))
+      const results = await Promise.all(
+        CERT_STATUSES.map((s) => fetchWorkOrders({ ...filters, status: s })),
+      )
       if (cancelled) return
       const all = results.flatMap((r) => r.data)
       setOrders(all)
       setSelected(new Set())
+
+      // Load billing-line totals per order so we can show client/external amounts
+      // in the row. work_order_billing_lines.subtotal is GENERATED in DB, so
+      // summing `qty * unit_price_snapshot` here mirrors the DB result.
+      const totals: Record<string, { client: number; external: number }> = {}
+      await Promise.all(
+        all.map(async (o) => {
+          const { data: lines } = await fetchBillingLines(o.id)
+          let client = 0
+          let external = 0
+          for (const l of lines) {
+            client += Number(l.qty) * Number(l.unit_price_snapshot)
+            if (l.unit_price_external_snapshot != null) {
+              external += Number(l.qty) * Number(l.unit_price_external_snapshot)
+            }
+          }
+          totals[o.id] = { client, external }
+        }),
+      )
+      if (cancelled) return
+      setOrderTotals(totals)
       setIsLoading(false)
     }
     void load()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [filterTeam, filterProject, filterDateFrom, filterDateTo, refreshKey])
 
   useEffect(() => {
     fetchProjects().then(({ data }) => setProjects(data as Project[]))
+    // Build profile-role map: includes technicians (via fetchTechnicians) plus
+    // contractors (separate query, because fetchTechnicians filters role).
+    void (async () => {
+      const [{ data: techs }, contractorRes] = await Promise.all([
+        fetchTechnicians(),
+        supabase
+          .from('profiles')
+          .select('id, full_name, role')
+          .eq('role', 'contractor')
+          .eq('is_active', true),
+      ])
+      const map: Record<string, UserRole> = {}
+      for (const t of (techs ?? []) as Array<{ id: string }>) map[t.id] = 'technician'
+      for (const c of (contractorRes.data ?? []) as Array<{ id: string; role: UserRole }>) {
+        map[c.id] = c.role
+      }
+      setProfileRoles(map)
+    })()
   }, [])
 
-  const byStatus = (status: WorkOrderStatus) => orders.filter((o) => o.status === status)
+  function orderCollabType(order: WorkOrderWithRelations): CollaboratorType {
+    if (!order.assigned_technician) return 'internal'
+    return getCollaboratorType(profileRoles[order.assigned_technician])
+  }
+
+  const byStatus = (status: WorkOrderStatus) =>
+    orders.filter((o) => {
+      if (o.status !== status) return false
+      if (filterCollab && orderCollabType(o) !== filterCollab) return false
+      return true
+    })
+
+  function fmtMoney(n: number): string {
+    return n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'
+  }
 
   function toggleOne(id: string) {
     setSelected((prev) => {
@@ -114,51 +239,106 @@ export function CertificationPage() {
     })
   }
 
-  async function bulkTransition(ids: string[], toStatus: WorkOrderStatus, notes: string) {
+  async function runBulkAction(args: {
+    action: BulkWorkOrderAction
+    ids: string[]
+    notes: string
+    dataHash?: string
+    billingReference?: string | null
+  }) {
     if (!user) return
+    const workOrders = orders
+      .filter((order) => args.ids.includes(order.id))
+      .map((order) => ({ id: order.id, orderNumber: order.order_number }))
     setIsBulkWorking(true)
-    await Promise.all(ids.map((id) => transitionWorkOrderStatus(id, toStatus, user.id, notes, user.role)))
+    setBulkResult(null)
+    const result = await bulkWorkOrderAction({
+      action: args.action,
+      workOrders,
+      changedBy: user.id,
+      dataHash: args.dataHash,
+      billingReference: args.billingReference ?? null,
+      notes: args.notes,
+    })
+    setBulkResult(result)
     setIsBulkWorking(false)
     setRefreshKey((k) => k + 1)
   }
 
   async function handleBulkCertify() {
-    const ids = orders.filter((o) => o.status === 'rueckmeldung_sent' && selected.has(o.id)).map((o) => o.id)
+    const ids = orders
+      .filter((o) => o.status === 'rueckmeldung_sent' && selected.has(o.id))
+      .map((o) => o.id)
     if (!ids.length) return
-    await bulkTransition(ids, 'internally_certified', 'Bulk intern zertifiziert durch Admin')
+    const dataHash = await generateDataHash({
+      action: 'bulk_internal_certify',
+      ids,
+      certified_by: user?.id,
+      certified_at: new Date().toISOString(),
+    })
+    await runBulkAction({
+      action: 'internal_certify',
+      ids,
+      dataHash,
+      notes: 'Bulk intern zertifiziert durch Admin',
+    })
   }
 
   async function handleBulkSendToClient() {
-    const ids = orders.filter((o) => o.status === 'internally_certified' && selected.has(o.id)).map((o) => o.id)
+    const ids = orders
+      .filter((o) => o.status === 'internally_certified' && selected.has(o.id))
+      .map((o) => o.id)
     if (!ids.length) return
-    await bulkTransition(ids, 'sent_to_client', 'Bulk an Kunden gesendet')
+    await runBulkAction({ action: 'send_to_client', ids, notes: 'Bulk an Kunden gesendet' })
   }
 
   async function handleBulkInvoice() {
     const invoiceNum = bulkInvoiceModal.invoiceNumber.trim()
     if (!invoiceNum) return
-    const ids = orders.filter((o) => o.status === 'client_accepted' && selected.has(o.id)).map((o) => o.id)
+    const ids = orders
+      .filter((o) => o.status === 'client_accepted' && selected.has(o.id))
+      .map((o) => o.id)
     if (!ids.length) return
     setBulkInvoiceModal({ open: false, invoiceNumber: '' })
-    await bulkTransition(ids, 'invoiced', `Rechnung: ${invoiceNum}`)
+    await runBulkAction({
+      action: 'invoice',
+      ids,
+      billingReference: invoiceNum,
+      notes: `Rechnung: ${invoiceNum}`,
+    })
+  }
+
+  /** Builds a DATEV-Buchungsstapel CSV from invoiced orders.
+   *  If selection is non-empty, only selected orders ship; otherwise all
+   *  invoiced orders in the current view are exported. */
+  function handleDatevExport() {
+    const candidatePool = selected.size > 0 ? orders.filter((o) => selected.has(o.id)) : orders
+    const invoicedOrders = candidatePool.filter((o) => o.status === 'invoiced')
+    if (invoicedOrders.length === 0) return
+
+    const inputs = invoicedOrders.map((o) => ({
+      order: o,
+      totalClient: orderTotals[o.id]?.client ?? 0,
+      invoiceDate: o.assigned_date ?? undefined,
+      invoiceNumber: null as string | null,
+    }))
+    const csv = buildDatevCsv(inputs)
+    const date = new Date().toISOString().slice(0, 10)
+    downloadDatevCsv(csv, `lumen-datev-${date}.csv`)
   }
 
   function handleExcelExport() {
-    const selectedOrders = selected.size > 0
-      ? orders.filter((o) => selected.has(o.id))
-      : orders
+    const selectedOrders = selected.size > 0 ? orders.filter((o) => selected.has(o.id)) : orders
 
     const rows = selectedOrders.map((o) => ({
-      'Auftragsnummer': o.order_number,
-      'Typ': L.workType(o.work_type),
-      'Status': L.status(o.status) || o.status,
-      'Kunde': o.clients?.name ?? '',
-      'Projekt': o.projects?.code ?? '',
-      'Team': o.assigned_team ?? '',
-      'Einsatzdatum': o.assigned_date
-        ? new Date(o.assigned_date).toLocaleDateString('de-DE')
-        : '',
-      'Priorität': o.priority,
+      Auftragsnummer: o.order_number,
+      Typ: L.workType(o.work_type),
+      Status: L.status(o.status) || o.status,
+      Kunde: o.clients?.name ?? '',
+      Projekt: o.projects?.code ?? '',
+      Team: o.assigned_team ?? '',
+      Einsatzdatum: o.assigned_date ? new Date(o.assigned_date).toLocaleDateString('de-DE') : '',
+      Priorität: o.priority,
     }))
 
     const ws = XLSX.utils.json_to_sheet(rows)
@@ -168,282 +348,466 @@ export function CertificationPage() {
   }
 
   // Derive bulk action availability
-  const selectedCertifiable = orders.filter((o) => o.status === 'rueckmeldung_sent' && selected.has(o.id)).length
-  const selectedSendable = orders.filter((o) => o.status === 'internally_certified' && selected.has(o.id)).length
-  const selectedInvoiceable = orders.filter((o) => o.status === 'client_accepted' && selected.has(o.id)).length
+  const selectedCertifiable = orders.filter(
+    (o) => o.status === 'rueckmeldung_sent' && selected.has(o.id),
+  ).length
+  const selectedSendable = orders.filter(
+    (o) => o.status === 'internally_certified' && selected.has(o.id),
+  ).length
+  const selectedInvoiceable = orders.filter(
+    (o) => o.status === 'client_accepted' && selected.has(o.id),
+  ).length
   const hasSelection = selected.size > 0
 
   const total = orders.length
+  const activeSection = SECTIONS.find((s) => s.status === activeTab) ?? SECTIONS[0]
+  const activeItems = byStatus(activeTab)
+  const allActiveSelected = activeItems.length > 0 && activeItems.every((o) => selected.has(o.id))
+  const totalClient = orders.reduce((sum, order) => sum + (orderTotals[order.id]?.client ?? 0), 0)
+  const totalExternal = orders.reduce(
+    (sum, order) => sum + (orderTotals[order.id]?.external ?? 0),
+    0,
+  )
+  const selectedInvoiced =
+    selected.size > 0 &&
+    [...selected].some((id) => orders.find((o) => o.id === id)?.status === 'invoiced')
+  const datevDisabled = byStatus('invoiced').length === 0 && !selectedInvoiced
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="nx-page-header">
+      <div className="ph">
         <div>
-          <h2 className="nx-page-title">Zertifizierung</h2>
-          <p className="nx-label mt-2 tabular-nums">
-            {total === 0 ? t('certificationPage.ordersInProcess') : t('certificationPage.ordersCount', { count: total })}
-          </p>
+          <div className="sub">§ LUMEN · CERTIFICATION PIPELINE</div>
+          <h1>
+            Certification <em>Control</em>
+          </h1>
         </div>
-        <button
-          onClick={handleExcelExport}
-          disabled={total === 0}
-          className="flex items-center gap-1.5 rounded-s border border-line px-3 py-1.5 text-xs font-medium text-fg-2 hover:border-accent hover:text-accent disabled:opacity-40 transition-colors"
-        >
-          <FileSpreadsheet size={14} strokeWidth={1.5} />
-          Excel {hasSelection ? `(${selected.size})` : ''}
-        </button>
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-wrap gap-2">
-        <select
-          value={filterTeam}
-          onChange={(e) => setFilterTeam(e.target.value as TeamColor | '')}
-          className="rounded-s border border-line bg-bg-0 px-3 py-1.5 text-sm text-fg-1 focus:border-accent focus:outline-none"
-        >
-          <option value="">{t('workOrder.allTeams')}</option>
-          <option value="rot">{t('teamColor.rot')}</option>
-          <option value="gruen">{t('teamColor.gruen')}</option>
-          <option value="blau">{t('teamColor.blau')}</option>
-          <option value="gelb">{t('teamColor.gelb')}</option>
-        </select>
-
-        <select
-          value={filterProject}
-          onChange={(e) => setFilterProject(e.target.value)}
-          className="rounded-s border border-line bg-bg-0 px-3 py-1.5 text-sm text-fg-1 focus:border-accent focus:outline-none"
-        >
-          <option value="">{t('workOrder.allProjects')}</option>
-          {projects.map((p) => (
-            <option key={p.id} value={p.id}>{p.code} – {p.name}</option>
-          ))}
-        </select>
-
-        <input
-          type="date"
-          value={filterDateFrom}
-          onChange={(e) => setFilterDateFrom(e.target.value)}
-          className="rounded-s border border-line bg-bg-0 px-3 py-1.5 text-sm text-fg-1 focus:border-accent focus:outline-none"
-        />
-        <input
-          type="date"
-          value={filterDateTo}
-          onChange={(e) => setFilterDateTo(e.target.value)}
-          className="rounded-s border border-line bg-bg-0 px-3 py-1.5 text-sm text-fg-1 focus:border-accent focus:outline-none"
-        />
-
-        {(filterTeam || filterProject || filterDateFrom || filterDateTo) && (
-          <button
-            onClick={() => {
-              setFilterTeam('')
-              setFilterProject('')
-              setFilterDateFrom('')
-              setFilterDateTo('')
-            }}
-            className="rounded-s border border-err/30 px-3 py-1.5 text-xs font-medium text-err hover:bg-err/10 transition-colors"
+        <div className="r">
+          <Button
+            disabled={datevDisabled}
+            icon={Download}
+            onClick={handleDatevExport}
+            title="Fakturierte Aufträge als DATEV-Buchungsstapel exportieren"
+            variant="ghost"
           >
-            {t('certificationPage.clearFilters')}
-          </button>
-        )}
+            DATEV
+          </Button>
+          <Button
+            disabled={total === 0}
+            icon={FileSpreadsheet}
+            onClick={handleExcelExport}
+            variant="secondary"
+          >
+            Excel {hasSelection ? `(${selected.size})` : ''}
+          </Button>
+        </div>
       </div>
 
-      {/* Bulk action bar */}
-      {hasSelection && (
-        <div className="flex flex-wrap items-center gap-3 rounded-l border border-accent/30 bg-accent/5 px-4 py-3">
-          <span className="text-sm font-semibold text-accent">{t('certificationPage.selected', { count: selected.size })}</span>
-          <div className="flex flex-wrap gap-2 ml-auto">
-            {selectedCertifiable > 0 && (
-              <button
-                disabled={isBulkWorking}
-                onClick={() => void handleBulkCertify()}
-                className="inline-flex items-center gap-1.5 rounded-s bg-ok px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
-              >
-                {isBulkWorking ? (
-                  '…'
-                ) : (
-                  <>
-                    <Check size={14} strokeWidth={1.5} />
-                    {t('certificationPage.certifyBulk', { count: selectedCertifiable })}
-                  </>
-                )}
-              </button>
-            )}
-            {selectedSendable > 0 && (
-              <button
-                disabled={isBulkWorking}
-                onClick={() => void handleBulkSendToClient()}
-                className="inline-flex items-center gap-1.5 rounded-s bg-accent px-3 py-1.5 text-xs font-semibold text-ink hover:bg-accent disabled:opacity-50 transition-colors"
-              >
-                {isBulkWorking ? (
-                  '…'
-                ) : (
-                  <>
-                    <Send size={14} strokeWidth={1.5} />
-                    {t('certificationPage.sendBulk', { count: selectedSendable })}
-                  </>
-                )}
-              </button>
-            )}
-            {selectedInvoiceable > 0 && (
-              <button
-                disabled={isBulkWorking}
-                onClick={() => setBulkInvoiceModal({ open: true, invoiceNumber: '' })}
-                className="inline-flex items-center gap-1.5 rounded-s bg-err px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
-              >
-                <Receipt size={14} strokeWidth={1.5} />
-                {t('certificationPage.invoiceBulk', { count: selectedInvoiceable })}
-              </button>
-            )}
-            <button
-              onClick={() => setSelected(new Set())}
-              className="rounded-s border border-line px-3 py-1.5 text-xs font-medium text-fg-2 hover:border-accent hover:text-accent transition-colors"
-            >
-              {t('certificationPage.clearSelection')}
-            </button>
-          </div>
-        </div>
-      )}
+      <KPIGrid columns={4}>
+        <KPI
+          delta={total === 0 ? 'No active certification load' : `${total} work orders in scope`}
+          icon={Workflow}
+          label="Pipeline Load"
+          value={total}
+        />
+        <KPI
+          delta="Requires admin approval"
+          icon={ShieldCheck}
+          label="Internal Queue"
+          tone="warn"
+          value={byStatus('rueckmeldung_sent').length}
+        />
+        <KPI
+          delta={`${byStatus('client_accepted').length} ready for billing`}
+          icon={Clock3}
+          label="Client Accepted"
+          tone="accent"
+          value={byStatus('client_accepted').length}
+        />
+        <KPI
+          delta={`External payable ${fmtMoney(totalExternal)}`}
+          icon={Euro}
+          label="Client Volume"
+          value={fmtMoney(totalClient)}
+        />
+      </KPIGrid>
 
-      {/* Status tabs */}
-      <div className="nx-tabs -mb-px overflow-x-auto">
-        {SECTIONS.map(({ status, labelKey }) => {
-          const count = byStatus(status).length
-          return (
-            <button
-              key={status}
-              onClick={() => setActiveTab(status)}
-              className={`nx-tab ${activeTab === status ? 'active' : ''}`}
-            >
-              {t(labelKey)}
-              {count > 0 && (
-                <span className="ml-2 font-mono text-[10px] tabular-nums opacity-70">
-                  {count}
-                </span>
-              )}
-            </button>
-          )
-        })}
-      </div>
-
-      {/* Active section */}
-      {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-accent" />
-        </div>
-      ) : total === 0 ? (
-        <div className="rounded-l border border-line bg-bg-1 px-6 py-12 text-center">
-          <p className="text-fg-2">{t('certificationPage.noOrdersInProcess')}</p>
-        </div>
-      ) : (
-        (() => {
-          const section = SECTIONS.find((s) => s.status === activeTab)!
-          const items = byStatus(activeTab)
-          const allSectionSelected = items.length > 0 && items.every((o) => selected.has(o.id))
-          if (items.length === 0) {
-            return (
-              <div className="rounded-l border border-line bg-bg-1 px-6 py-12 text-center">
-                <p className="nx-label mb-1">{t(section.labelKey)}</p>
-                <p className="text-sm text-fg-2">{t('certificationPage.noOrdersInStatus')}</p>
-              </div>
-            )
-          }
-          return (
-            <div>
-              <div className="mb-3 flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={allSectionSelected}
-                  onChange={() => toggleSection(activeTab)}
-                  className="h-3.5 w-3.5 rounded accent-accent cursor-pointer"
-                />
-                <span className="text-sm text-fg-2">{t(section.descKey)}</span>
-                <span className="ml-auto nx-label tabular-nums">{items.length} items</span>
-              </div>
-              <div className="overflow-hidden rounded-l border border-line bg-bg-1">
-                {items.map((order, i) => (
-                  <div
-                    key={order.id}
-                    className={`flex w-full items-center gap-3 px-4 py-3.5 transition-colors ${
-                      selected.has(order.id) ? 'bg-accent/5' : 'hover:bg-bg-0'
-                    } ${i < items.length - 1 ? 'border-b border-line' : ''}`}
+      <div className="nx-cert-console">
+        <div className="space-y-4">
+          <Panel title="Pipeline" meta="Status queue · click to focus" padding="sm">
+            <div className="nx-cert-pipeline">
+              {SECTIONS.map(({ status, label, description }) => {
+                const count = byStatus(status).length
+                const active = activeTab === status
+                return (
+                  <button
+                    className={['nx-cert-stage', active ? 'nx-cert-stage-active' : '']
+                      .filter(Boolean)
+                      .join(' ')}
+                    key={status}
+                    onClick={() => setActiveTab(status)}
+                    type="button"
                   >
-                    <input
-                      type="checkbox"
-                      checked={selected.has(order.id)}
-                      onChange={() => toggleOne(order.id)}
-                      className="h-3.5 w-3.5 rounded accent-accent cursor-pointer shrink-0"
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                    <button
-                      onClick={() => navigate(`/admin/orders/${order.id}`)}
-                      className="flex flex-1 items-center gap-4 text-left min-w-0"
+                    <span className="nx-cert-stage-top">
+                      <span className="nx-cert-stage-label">{label}</span>
+                      <span className="nx-cert-stage-count">{count}</span>
+                    </span>
+                    <span className="nx-cert-stage-desc">{description}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </Panel>
+
+          <Panel
+            title={
+              <span className="inline-flex items-center gap-2">
+                <Filter size={14} strokeWidth={1.5} />
+                Filter
+              </span>
+            }
+            meta="Team · project · collaborator · date"
+          >
+            <div className="nx-filter-grid">
+              <div className="input">
+                <label>Team</label>
+                <select
+                  value={filterTeam}
+                  onChange={(e) => setFilterTeam(e.target.value as TeamColor | '')}
+                >
+                  <option value="">Alle Teams</option>
+                  <option value="rot">Rot</option>
+                  <option value="gruen">Grün</option>
+                  <option value="blau">Blau</option>
+                  <option value="gelb">Gelb</option>
+                </select>
+              </div>
+
+              <div className="input">
+                <label>Projekt</label>
+                <select value={filterProject} onChange={(e) => setFilterProject(e.target.value)}>
+                  <option value="">Alle Projekte</option>
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.code} - {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="input">
+                <label>Mitarbeiter</label>
+                <select
+                  value={filterCollab}
+                  onChange={(e) => setFilterCollab(e.target.value as '' | CollaboratorType)}
+                >
+                  <option value="">Alle Mitarbeiter</option>
+                  <option value="internal">Intern</option>
+                  <option value="external">Extern</option>
+                </select>
+              </div>
+
+              <div className="input">
+                <label>Von</label>
+                <input
+                  type="date"
+                  value={filterDateFrom}
+                  onChange={(e) => setFilterDateFrom(e.target.value)}
+                />
+              </div>
+
+              <div className="input">
+                <label>Bis</label>
+                <input
+                  type="date"
+                  value={filterDateTo}
+                  onChange={(e) => setFilterDateTo(e.target.value)}
+                />
+              </div>
+
+              {(filterTeam || filterProject || filterDateFrom || filterDateTo || filterCollab) && (
+                <Button
+                  onClick={() => {
+                    setFilterTeam('')
+                    setFilterProject('')
+                    setFilterDateFrom('')
+                    setFilterDateTo('')
+                    setFilterCollab('')
+                  }}
+                  variant="danger"
+                >
+                  Filter löschen
+                </Button>
+              )}
+            </div>
+          </Panel>
+        </div>
+
+        <div className="space-y-4">
+          {hasSelection && (
+            <Alert
+              actions={
+                <>
+                  {selectedCertifiable > 0 && (
+                    <Button
+                      disabled={isBulkWorking}
+                      icon={Check}
+                      loading={isBulkWorking}
+                      onClick={() => void handleBulkCertify()}
+                      size="sm"
+                      variant="secondary"
                     >
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-sm font-semibold text-fg-1">{order.order_number}</span>
-                          <span className="text-xs text-fg-2">{L.workType(order.work_type)}</span>
+                      Intern zertifizieren ({selectedCertifiable})
+                    </Button>
+                  )}
+                  {selectedSendable > 0 && (
+                    <Button
+                      disabled={isBulkWorking}
+                      icon={Send}
+                      loading={isBulkWorking}
+                      onClick={() => void handleBulkSendToClient()}
+                      size="sm"
+                      variant="primary"
+                    >
+                      An Kunden senden ({selectedSendable})
+                    </Button>
+                  )}
+                  {selectedInvoiceable > 0 && (
+                    <Button
+                      disabled={isBulkWorking}
+                      icon={Receipt}
+                      onClick={() => setBulkInvoiceModal({ open: true, invoiceNumber: '' })}
+                      size="sm"
+                      variant="secondary"
+                    >
+                      Fakturieren ({selectedInvoiceable})
+                    </Button>
+                  )}
+                  <Button onClick={() => setSelected(new Set())} size="sm" variant="ghost">
+                    Auswahl aufheben
+                  </Button>
+                </>
+              }
+              title={`${selected.size} ausgewählt`}
+              tone="info"
+            >
+              Bulk actions affect only compatible status lanes.
+            </Alert>
+          )}
+
+          {bulkResult && (
+            <Alert
+              title={`Bulk result: ${bulkResult.succeeded} succeeded, ${bulkResult.failed} failed, ${bulkResult.skipped} skipped`}
+              tone={bulkResult.failed > 0 || bulkResult.skipped > 0 ? 'warn' : 'ok'}
+            >
+              <div className="mt-2 max-h-40 overflow-auto border border-line">
+                {bulkResult.items.map((item) => (
+                  <div
+                    key={item.workOrderId}
+                    className="flex items-start justify-between gap-3 border-b border-line px-3 py-2 last:border-b-0"
+                  >
+                    <div>
+                      <div className="t font-mono text-xs">
+                        {item.orderNumber ?? item.workOrderId}
+                      </div>
+                      {item.reasons.length > 0 && (
+                        <div className="m mt-1 text-xs">
+                          {item.reasons.map((reason) => reason.message).join('; ')}
                         </div>
-                        <p className="text-xs text-fg-2">
-                          {order.clients?.name ?? '—'} · {order.projects?.code ?? '—'}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-3 shrink-0">
-                        {order.assigned_team && (
-                          <div className="flex items-center gap-1.5">
-                            <span className={`h-2 w-2 rounded-full ${TEAM_DOT[order.assigned_team]}`} />
-                            <span className="text-xs capitalize text-fg-2">{order.assigned_team}</span>
-                          </div>
-                        )}
-                        {order.assigned_date && (
-                          <span className="text-xs text-fg-2">
-                            {new Date(order.assigned_date).toLocaleDateString('de-DE')}
-                          </span>
-                        )}
-                        <span className="text-xs text-fg-2">→</span>
-                      </div>
-                    </button>
+                      )}
+                    </div>
+                    <Badge
+                      tone={
+                        item.outcome === 'succeeded'
+                          ? 'ok'
+                          : item.outcome === 'failed'
+                            ? 'err'
+                            : 'warn'
+                      }
+                    >
+                      {item.outcome}
+                    </Badge>
                   </div>
                 ))}
               </div>
-            </div>
-          )
-        })()
-      )}
+            </Alert>
+          )}
 
-      {/* Bulk invoice modal */}
+          {isLoading ? (
+            <Panel>
+              <div className="flex h-56 items-center justify-center">
+                <div className="nx-loader" />
+              </div>
+            </Panel>
+          ) : total === 0 ? (
+            <EmptyState
+              description="Keine Aufträge im Zertifizierungsprozess für die aktuelle Filterkombination."
+              title="Certification queue empty"
+            />
+          ) : (
+            <Panel
+              actions={
+                activeItems.length > 0 ? (
+                  <label className="nx-toggle-wrap">
+                    <input
+                      checked={allActiveSelected}
+                      className="nx-selection-checkbox"
+                      onChange={() => toggleSection(activeTab)}
+                      type="checkbox"
+                    />
+                    <span className="nx-toggle-label">Select lane</span>
+                  </label>
+                ) : null
+              }
+              meta={`${activeItems.length} items · ${fmtMoney(activeItems.reduce((sum, order) => sum + (orderTotals[order.id]?.client ?? 0), 0))}`}
+              padding="sm"
+              title={
+                <span className="inline-flex items-center gap-2">
+                  {activeSection.label}
+                  <Badge tone={SECTION_TONE[activeTab] ?? 'neutral'}>
+                    {L.status(activeTab) || activeTab}
+                  </Badge>
+                </span>
+              }
+            >
+              {activeItems.length === 0 ? (
+                <EmptyState
+                  description="Keine Aufträge in diesem Status. Wechsel die Pipeline-Lane oder passe die Filter an."
+                  title={activeSection.label}
+                />
+              ) : (
+                <div className="nx-cert-rows">
+                  {activeItems.map((order) => {
+                    const collab = orderCollabType(order)
+                    const isExternal = collab === 'external'
+                    const isDirect = order.client_id == null
+                    const totals = orderTotals[order.id] ?? { client: 0, external: 0 }
+                    const margin = isExternal ? totals.client - totals.external : 0
+
+                    return (
+                      <div className="nx-cert-row" key={order.id}>
+                        <input
+                          checked={selected.has(order.id)}
+                          className="nx-selection-checkbox"
+                          onChange={() => toggleOne(order.id)}
+                          type="checkbox"
+                        />
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="nx-cert-row-title">{order.order_number}</span>
+                            <Badge tone="neutral">{L.workType(order.work_type)}</Badge>
+                            {isDirect ? <Badge tone="info">Direkt</Badge> : null}
+                            {isExternal ? <Badge tone="accent">Extern</Badge> : null}
+                          </div>
+                          <div className="nx-cert-row-meta">
+                            <span>
+                              {order.clients?.name ?? (isDirect ? 'direkt' : 'client missing')}
+                            </span>
+                            <span>·</span>
+                            <span>{order.projects?.code ?? 'project missing'}</span>
+                            {order.assigned_team ? (
+                              <>
+                                <span>·</span>
+                                <span className="inline-flex items-center gap-1.5">
+                                  <span
+                                    className={`h-2 w-2 rounded-full ${TEAM_DOT[order.assigned_team]}`}
+                                  />
+                                  {order.assigned_team}
+                                </span>
+                              </>
+                            ) : null}
+                          </div>
+                        </div>
+
+                        <div>
+                          <span className="nx-cert-cell-label">Date</span>
+                          <span className="nx-cert-cell-value">
+                            {order.assigned_date
+                              ? new Date(order.assigned_date).toLocaleDateString('de-DE')
+                              : '—'}
+                          </span>
+                        </div>
+
+                        <div>
+                          <span className="nx-cert-cell-label">Client</span>
+                          <span className="nx-cert-cell-value">
+                            {totals.client > 0 ? fmtMoney(totals.client) : '—'}
+                          </span>
+                        </div>
+
+                        <div>
+                          <span className="nx-cert-cell-label">
+                            {isExternal ? 'Ext / Margin' : 'Internal'}
+                          </span>
+                          <span className="nx-cert-cell-value">
+                            {isExternal && totals.external > 0
+                              ? `${fmtMoney(totals.external)} / ${fmtMoney(margin)}`
+                              : '—'}
+                          </span>
+                        </div>
+
+                        <Button
+                          iconRight={ArrowRight}
+                          onClick={() => navigate(`/admin/orders/${order.id}`)}
+                          size="sm"
+                          variant="ghost"
+                        >
+                          Öffnen
+                        </Button>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </Panel>
+          )}
+        </div>
+      </div>
+
       {bulkInvoiceModal.open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          onClick={(e) => { if (e.target === e.currentTarget) setBulkInvoiceModal({ open: false, invoiceNumber: '' }) }}
+          className="modal-scrim centered"
+          onClick={(e) => {
+            if (e.target === e.currentTarget)
+              setBulkInvoiceModal({ open: false, invoiceNumber: '' })
+          }}
         >
-          <div className="w-full max-w-sm rounded-l border border-line bg-bg-1 p-6">
-            <h3 className="mb-2 font-display text-base font-bold text-fg-1">{t('certificationPage.bulkInvoiceTitle')}</h3>
-            <p className="mb-3 text-sm text-fg-2">
-              {t('certificationPage.bulkInvoiceDesc', { count: selectedInvoiceable })}
-            </p>
-            <input
-              type="text"
-              value={bulkInvoiceModal.invoiceNumber}
-              onChange={(e) => setBulkInvoiceModal((m) => ({ ...m, invoiceNumber: e.target.value }))}
-              placeholder={t('certificationPage.invoicePlaceholder')}
-              autoFocus
-              className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder-fg-4 focus:border-accent focus:outline-none mb-5"
-            />
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setBulkInvoiceModal({ open: false, invoiceNumber: '' })}
-                className="rounded-s border border-line px-4 py-2 text-sm font-medium text-fg-2 hover:border-accent hover:text-accent transition-colors"
-              >
-                {t('common.cancel')}
-              </button>
-              <button
-                onClick={() => void handleBulkInvoice()}
-                disabled={!bulkInvoiceModal.invoiceNumber.trim() || isBulkWorking}
-                className="rounded-s bg-err px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
-              >
-                {isBulkWorking ? '…' : t('workOrder.invoice')}
-              </button>
+          <div className="modal-card compact">
+            <div className="phead">
+              <div>
+                <div className="title">Sammel-Fakturierung</div>
+                <div className="m">{selectedInvoiceable} Aufträge · Pflichtfeld</div>
+              </div>
+            </div>
+            <div className="pbody space-y-5">
+              <div className="input">
+                <label>Rechnungsnummer</label>
+                <input
+                  autoFocus
+                  onChange={(e) =>
+                    setBulkInvoiceModal((m) => ({ ...m, invoiceNumber: e.target.value }))
+                  }
+                  placeholder="z.B. RE-2026-0042"
+                  type="text"
+                  value={bulkInvoiceModal.invoiceNumber}
+                />
+              </div>
+              <div className="flex justify-end gap-3">
+                <Button
+                  onClick={() => setBulkInvoiceModal({ open: false, invoiceNumber: '' })}
+                  variant="ghost"
+                >
+                  Abbrechen
+                </Button>
+                <Button
+                  disabled={!bulkInvoiceModal.invoiceNumber.trim() || isBulkWorking}
+                  loading={isBulkWorking}
+                  onClick={() => void handleBulkInvoice()}
+                  variant="primary"
+                >
+                  Fakturieren
+                </Button>
+              </div>
             </div>
           </div>
         </div>

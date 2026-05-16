@@ -26,12 +26,19 @@ const SI_ALTA_BASIC = '40000000-0000-0000-0000-000000000003'
 const SI_ALTA_NT = '40000000-0000-0000-0000-000000000004'
 const SI_PATCHKABEL = '40000000-0000-0000-0000-000000000005'
 
+const VEHICLE_ROT_COMBO = '41000000-0000-0000-0000-000000000001'
+const MAT_GFP_HUEP_48 = '42000000-0000-0000-0000-000000000001'
+const MAT_GFP_HUEP_1 = '42000000-0000-0000-0000-000000000002'
+const MAT_GFP_PIGTAIL = '42000000-0000-0000-0000-000000000003'
+const MAT_GFP_PATCH_45 = '42000000-0000-0000-0000-000000000004'
+
 const WO_1 = '50000000-0000-0000-0000-000000000001'
 const WO_2 = '50000000-0000-0000-0000-000000000002'
 const WO_3 = '50000000-0000-0000-0000-000000000003'
 const WO_4_DIRECT = '50000000-0000-0000-0000-000000000004'
 const WO_5_PAID = '50000000-0000-0000-0000-000000000005'
 const WO_6_REJECTED = '50000000-0000-0000-0000-000000000006'
+const WO_7_EXTERNAL = '50000000-0000-0000-0000-000000000007'
 
 const NOW = new Date('2026-04-28T08:00:00Z').toISOString()
 const YESTERDAY = new Date('2026-04-27T08:00:00Z').toISOString()
@@ -53,6 +60,9 @@ export const initialFixtures = () => ({
       full_name: 'Demo Admin',
       role: 'admin',
       team: null,
+      pin_login_code: null,
+      pin_set_at: null,
+      last_pin_login_at: null,
       is_active: true,
       created_at: LAST_WEEK,
       updated_at: LAST_WEEK,
@@ -63,6 +73,9 @@ export const initialFixtures = () => ({
       full_name: 'Demo Técnico',
       role: 'technician',
       team: 'rot',
+      pin_login_code: 'tech-demo',
+      pin_set_at: LAST_WEEK,
+      last_pin_login_at: null,
       is_active: true,
       created_at: LAST_WEEK,
       updated_at: LAST_WEEK,
@@ -73,11 +86,26 @@ export const initialFixtures = () => ({
       full_name: 'Demo Contractor',
       role: 'contractor',
       team: null,
+      pin_login_code: 'contractor-demo',
+      pin_set_at: LAST_WEEK,
+      last_pin_login_at: null,
       is_active: true,
       created_at: LAST_WEEK,
       updated_at: LAST_WEEK,
     },
-  ],
+  ] as Array<{
+    id: string
+    email: string | null
+    full_name: string
+    role: string
+    team: string | null
+    pin_login_code: string | null
+    pin_set_at: string | null
+    last_pin_login_at: string | null
+    is_active: boolean
+    created_at: string
+    updated_at: string
+  }>,
 
   clients: [
     { id: CLIENT_INSYTE, name: 'Insyte Deutschland', code: 'INSYTE', is_active: true, created_at: LAST_WEEK },
@@ -99,34 +127,113 @@ export const initialFixtures = () => ({
   service_items: [
     {
       id: SI_SOPLADO_M, code: 'SOP-M', description_de: 'Einblasen Glasfaser je Meter',
-      description_es: 'Soplado por metro', unit: 'm', unit_price: 1.85,
+      description_es: 'Soplado por metro', unit: 'm', unit_price: 1.85, unit_price_external: 1.20,
       operator_id: OP_DGF, client_id: CLIENT_INSYTE, detail_form: 'soplado',
       display_order: 10, active: true, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK,
     },
     {
       id: SI_FUSION_AP, code: 'FUS-AP', description_de: 'Spleißung am AP (pro Schrank)',
-      description_es: 'Fusión AP por armario', unit: 'Stk', unit_price: 95.00,
+      description_es: 'Fusión AP por armario', unit: 'Stk', unit_price: 95.00, unit_price_external: 60.00,
       operator_id: OP_DGF, client_id: CLIENT_INSYTE, detail_form: 'fusion_ap',
       display_order: 20, active: true, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK,
     },
     {
       id: SI_ALTA_BASIC, code: 'ALTA-BASIC', description_de: 'Standard-Hausanschluss',
-      description_es: 'Alta básica', unit: 'Stk', unit_price: 145.00,
+      description_es: 'Alta básica', unit: 'Stk', unit_price: 145.00, unit_price_external: 95.00,
       operator_id: OP_DGF, client_id: CLIENT_INSYTE, detail_form: 'alta',
       display_order: 30, active: true, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK,
     },
     {
       id: SI_ALTA_NT, code: 'ALTA-NT', description_de: 'NT-Installation und Aktivierung',
-      description_es: 'Instalación NT', unit: 'Stk', unit_price: 65.00,
+      description_es: 'Instalación NT', unit: 'Stk', unit_price: 65.00, unit_price_external: 40.00,
       operator_id: OP_DGF, client_id: CLIENT_INSYTE, detail_form: 'nt',
       display_order: 31, active: true, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK,
     },
     {
       id: SI_PATCHKABEL, code: 'PATCH', description_de: 'Patchkabel Anschluss',
-      description_es: 'Patchkabel', unit: 'Stk', unit_price: 38.00,
+      description_es: 'Patchkabel', unit: 'Stk', unit_price: 38.00, unit_price_external: 22.00,
       operator_id: OP_GFPLUS, client_id: CLIENT_VANCOM, detail_form: 'patchkabel',
       display_order: 40, active: true, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK,
     },
+  ],
+
+  materials: [
+    {
+      id: MAT_GFP_HUEP_48,
+      name: 'GF-AP HÜP 4-8 WE GFP',
+      category: 'Activacion',
+      sku: 'GFM000453',
+      catalog_client_id: CLIENT_VANCOM,
+      catalog_source: 'gfp',
+      unit: 'ud',
+      min_stock: 2,
+      notes: 'AP 4-8 Cajas lunas para splitter',
+      is_active: true,
+      created_at: LAST_WEEK,
+      updated_at: LAST_WEEK,
+    },
+    {
+      id: MAT_GFP_HUEP_1,
+      name: 'GF-AP HÜP 1 WE GFP',
+      category: 'Activacion',
+      sku: 'GFM000454',
+      catalog_client_id: CLIENT_VANCOM,
+      catalog_source: 'gfp',
+      unit: 'ud',
+      min_stock: 2,
+      notes: null,
+      is_active: true,
+      created_at: LAST_WEEK,
+      updated_at: LAST_WEEK,
+    },
+    {
+      id: MAT_GFP_PIGTAIL,
+      name: 'Gf-TA mit Pigtail und Spleißablage',
+      category: 'Activacion',
+      sku: 'GFM000535',
+      catalog_client_id: CLIENT_VANCOM,
+      catalog_source: 'westconnect',
+      unit: 'ud',
+      min_stock: 4,
+      notes: 'FTTH-ANSCHLUSSDOSE AP MIT SPLEIßABL. EON',
+      is_active: true,
+      created_at: LAST_WEEK,
+      updated_at: LAST_WEEK,
+    },
+    {
+      id: MAT_GFP_PATCH_45,
+      name: 'PATCHKABEL G657A1 4,5M LCAPC-LCAPC 1,6MM',
+      category: 'Latiguillos',
+      sku: 'GFM000360',
+      catalog_client_id: CLIENT_VANCOM,
+      catalog_source: 'gfp',
+      unit: 'ud',
+      min_stock: 5,
+      notes: null,
+      is_active: true,
+      created_at: LAST_WEEK,
+      updated_at: LAST_WEEK,
+    },
+  ],
+
+  inventory_vehicles: [
+    {
+      id: VEHICLE_ROT_COMBO,
+      name: 'Rot-Opel Combo',
+      team: 'rot',
+      license_plate: null,
+      notes: 'Demo: vehículo principal del equipo Rot',
+      active: true,
+      created_at: LAST_WEEK,
+      updated_at: LAST_WEEK,
+    },
+  ],
+
+  vehicle_material_stock: [
+    { id: '43000000-0000-0000-0000-000000000001', vehicle_id: VEHICLE_ROT_COMBO, material_id: MAT_GFP_HUEP_48, quantity: 8, updated_at: LAST_WEEK },
+    { id: '43000000-0000-0000-0000-000000000002', vehicle_id: VEHICLE_ROT_COMBO, material_id: MAT_GFP_HUEP_1, quantity: 5, updated_at: LAST_WEEK },
+    { id: '43000000-0000-0000-0000-000000000003', vehicle_id: VEHICLE_ROT_COMBO, material_id: MAT_GFP_PIGTAIL, quantity: 12, updated_at: LAST_WEEK },
+    { id: '43000000-0000-0000-0000-000000000004', vehicle_id: VEHICLE_ROT_COMBO, material_id: MAT_GFP_PATCH_45, quantity: 3, updated_at: LAST_WEEK },
   ],
 
   work_orders: [
@@ -196,6 +303,18 @@ export const initialFixtures = () => ({
       service_item_id: SI_SOPLADO_M, created_by: ADMIN_ID,
       created_at: YESTERDAY, updated_at: NOW,
     },
+    // 7 — EXTERNAL collaborator: assigned to contractor, ready for client cert + external cert
+    {
+      id: WO_7_EXTERNAL, order_number: 'LUM-20260425-0007',
+      client_id: CLIENT_INSYTE, project_id: PROJECT_HXT, operator_id: OP_DGF,
+      line: 'NE3', work_type: 'alta', status: 'internally_certified', priority: 'normal',
+      assigned_team: 'gelb', assigned_technician: CONTRACTOR_ID, assigned_date: '2026-04-25',
+      address: 'Lindenstraße 22', postal_code: '37671', city: 'Höxter',
+      internal_notes: 'Demo: orden con colaborador externo (contractor) — billing dual',
+      assigned_detail_snapshot: null,
+      service_item_id: SI_ALTA_BASIC, created_by: ADMIN_ID,
+      created_at: LAST_WEEK, updated_at: NOW,
+    },
   ],
 
   wo_detail_soplado: [
@@ -211,7 +330,12 @@ export const initialFixtures = () => ({
   wo_detail_fusion_dp: [],
 
   wo_detail_alta: [
-    { id: 'd3000000-0000-0000-0000-000000000003', work_order_id: WO_3, access_type: 'Tiefbau', equipment_installed: 'NT-1234, ONT-5678', client_signature: true, created_at: NOW },
+    { id: 'd3000000-0000-0000-0000-000000000003', work_order_id: WO_3, access_type: 'Tiefbau', equipment_installed: 'NT-1234, ONT-5678', client_signature: true, reported_service_items: [], created_at: NOW },
+    { id: 'd3000000-0000-0000-0000-000000000007', work_order_id: WO_7_EXTERNAL, access_type: 'Hausanschluss', equipment_installed: 'NT-9001, ONT-7700, Patchkabel 5m', client_signature: true, reported_service_items: [
+      { service_item_id: SI_ALTA_BASIC, qty: 1, notes: null },
+      { service_item_id: SI_ALTA_NT, qty: 1, notes: null },
+      { service_item_id: SI_PATCHKABEL, qty: 1, notes: null },
+    ], created_at: LAST_WEEK },
   ],
 
   wo_detail_nt: [],
@@ -230,6 +354,9 @@ export const initialFixtures = () => ({
     { id: 'p0000000-0000-0000-0000-000000000051', work_order_id: WO_5_PAID,   storage_path: 'demo/wo5-before.jpg', photo_type: 'before', caption: null, uploaded_by: TECH_ID, created_at: LAST_WEEK },
     { id: 'p0000000-0000-0000-0000-000000000052', work_order_id: WO_5_PAID,   storage_path: 'demo/wo5-during.jpg', photo_type: 'during', caption: null, uploaded_by: TECH_ID, created_at: LAST_WEEK },
     { id: 'p0000000-0000-0000-0000-000000000053', work_order_id: WO_5_PAID,   storage_path: 'demo/wo5-after.jpg',  photo_type: 'after',  caption: null, uploaded_by: TECH_ID, created_at: LAST_WEEK },
+    { id: 'p0000000-0000-0000-0000-000000000071', work_order_id: WO_7_EXTERNAL, storage_path: 'demo/wo7-before.jpg', photo_type: 'before', caption: null, uploaded_by: CONTRACTOR_ID, created_at: LAST_WEEK },
+    { id: 'p0000000-0000-0000-0000-000000000072', work_order_id: WO_7_EXTERNAL, storage_path: 'demo/wo7-during.jpg', photo_type: 'during', caption: null, uploaded_by: CONTRACTOR_ID, created_at: LAST_WEEK },
+    { id: 'p0000000-0000-0000-0000-000000000073', work_order_id: WO_7_EXTERNAL, storage_path: 'demo/wo7-after.jpg',  photo_type: 'after',  caption: null, uploaded_by: CONTRACTOR_ID, created_at: LAST_WEEK },
   ],
 
   work_order_state_history: [
@@ -244,15 +371,146 @@ export const initialFixtures = () => ({
     { id: 'h0000000-0000-0000-0000-000000000044', work_order_id: WO_4_DIRECT, from_status: 'executed',       to_status: 'rueckmeldung_pending', changed_by: TECH_ID,  notes: null, created_at: LAST_WEEK },
     { id: 'h0000000-0000-0000-0000-000000000045', work_order_id: WO_4_DIRECT, from_status: 'rueckmeldung_pending', to_status: 'rueckmeldung_sent', changed_by: TECH_ID, notes: null, created_at: LAST_WEEK },
     { id: 'h0000000-0000-0000-0000-000000000046', work_order_id: WO_4_DIRECT, from_status: 'rueckmeldung_sent',    to_status: 'internally_certified', changed_by: ADMIN_ID, notes: 'Hash: a1b2c3...', created_at: LAST_WEEK },
+    { id: 'h0000000-0000-0000-0000-000000000070', work_order_id: WO_7_EXTERNAL, from_status: null,                    to_status: 'created',              changed_by: ADMIN_ID, notes: 'Auftrag erstellt — Subkontrato', created_at: LAST_WEEK },
+    { id: 'h0000000-0000-0000-0000-000000000071', work_order_id: WO_7_EXTERNAL, from_status: 'created',               to_status: 'assigned',             changed_by: ADMIN_ID, notes: 'Zugewiesen an externen Mitarbeiter', created_at: LAST_WEEK },
+    { id: 'h0000000-0000-0000-0000-000000000072', work_order_id: WO_7_EXTERNAL, from_status: 'assigned',              to_status: 'in_progress',          changed_by: CONTRACTOR_ID, notes: null, created_at: LAST_WEEK },
+    { id: 'h0000000-0000-0000-0000-000000000073', work_order_id: WO_7_EXTERNAL, from_status: 'in_progress',           to_status: 'executed',             changed_by: CONTRACTOR_ID, notes: null, created_at: LAST_WEEK },
+    { id: 'h0000000-0000-0000-0000-000000000074', work_order_id: WO_7_EXTERNAL, from_status: 'executed',              to_status: 'rueckmeldung_pending', changed_by: CONTRACTOR_ID, notes: null, created_at: LAST_WEEK },
+    { id: 'h0000000-0000-0000-0000-000000000075', work_order_id: WO_7_EXTERNAL, from_status: 'rueckmeldung_pending',  to_status: 'rueckmeldung_sent',    changed_by: CONTRACTOR_ID, notes: null, created_at: LAST_WEEK },
+    { id: 'h0000000-0000-0000-0000-000000000076', work_order_id: WO_7_EXTERNAL, from_status: 'rueckmeldung_sent',     to_status: 'internally_certified', changed_by: ADMIN_ID, notes: 'Hash: f7e6d5...', created_at: LAST_WEEK },
   ],
 
   certification_audits: [
     { id: 'a0000000-0000-0000-0000-000000000040', work_order_id: WO_4_DIRECT, cert_type: 'internal', certified_by: ADMIN_ID, certified_at: LAST_WEEK, data_hash: 'a1b2c3d4e5f60718293a4b5c6d7e8f9012345678901234567890abcdef123456', notes: 'Demo cert', created_at: LAST_WEEK },
     { id: 'a0000000-0000-0000-0000-000000000050', work_order_id: WO_5_PAID,   cert_type: 'internal', certified_by: ADMIN_ID, certified_at: LAST_WEEK, data_hash: 'b2c3d4e5f60718293a4b5c6d7e8f9012345678901234567890abcdef1234567a', notes: null, created_at: LAST_WEEK },
     { id: 'a0000000-0000-0000-0000-000000000051', work_order_id: WO_5_PAID,   cert_type: 'client',   certified_by: ADMIN_ID, certified_at: LAST_WEEK, data_hash: 'c3d4e5f60718293a4b5c6d7e8f9012345678901234567890abcdef1234567ab2', notes: 'Vancom akzeptiert', created_at: LAST_WEEK },
+    { id: 'a0000000-0000-0000-0000-000000000070', work_order_id: WO_7_EXTERNAL, cert_type: 'internal', certified_by: ADMIN_ID, certified_at: LAST_WEEK, data_hash: 'f7e6d5c4b3a29180716253647586970a1b2c3d4e5f60a1b2c3d4e5f607182930', notes: 'Demo: cert interna lista, falta cert cliente y cert externo', created_at: LAST_WEEK },
   ],
 
-  work_order_billing_lines: [],
+  work_order_billing_lines: [
+    // Alta multi-item example for WO_7_EXTERNAL
+    { id: 'l0000000-0000-0000-0000-000000000071', work_order_id: WO_7_EXTERNAL, service_item_id: SI_ALTA_BASIC, qty: 1, unit_price_snapshot: 145.00,         unit_price_external_snapshot: 95.00, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK },
+    { id: 'l0000000-0000-0000-0000-000000000072', work_order_id: WO_7_EXTERNAL, service_item_id: SI_ALTA_NT,    qty: 1, unit_price_snapshot: 65.00,          unit_price_external_snapshot: 40.00, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK },
+    { id: 'l0000000-0000-0000-0000-000000000073', work_order_id: WO_7_EXTERNAL, service_item_id: SI_PATCHKABEL, qty: 1, unit_price_snapshot: 38.00,          unit_price_external_snapshot: 22.00, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK },
+  ],
+
+  work_order_material_consumptions: [],
+
+  stock_movements: [
+    {
+      id: '44000000-0000-0000-0000-000000000001',
+      vehicle_id: VEHICLE_ROT_COMBO,
+      material_id: MAT_GFP_HUEP_48,
+      work_order_id: null,
+      movement_type: 'import',
+      quantity_delta: 8,
+      stock_before: 0,
+      stock_after: 8,
+      reason: 'Demo seed GFP',
+      created_by: ADMIN_ID,
+      created_at: LAST_WEEK,
+    },
+  ],
+
+  contractor_documents: [
+    {
+      id: 'cd000000-0000-0000-0000-000000000001',
+      contractor_id: CONTRACTOR_ID,
+      document_type: 'gewerbeanmeldung',
+      status: 'approved',
+      file_name: 'gewerbeanmeldung.pdf',
+      storage_path: `${CONTRACTOR_ID}/gewerbeanmeldung/gewerbeanmeldung.pdf`,
+      mime_type: 'application/pdf',
+      size_bytes: 120000,
+      issued_at: '2026-01-15',
+      expires_at: null,
+      uploaded_by: CONTRACTOR_ID,
+      uploaded_at: LAST_WEEK,
+      reviewed_by: ADMIN_ID,
+      reviewed_at: LAST_WEEK,
+      review_notes: null,
+      created_at: LAST_WEEK,
+      updated_at: LAST_WEEK,
+    },
+    {
+      id: 'cd000000-0000-0000-0000-000000000002',
+      contractor_id: CONTRACTOR_ID,
+      document_type: 'haftpflichtversicherung',
+      status: 'approved',
+      file_name: 'haftpflichtversicherung.pdf',
+      storage_path: `${CONTRACTOR_ID}/haftpflichtversicherung/haftpflichtversicherung.pdf`,
+      mime_type: 'application/pdf',
+      size_bytes: 130000,
+      issued_at: '2026-01-01',
+      expires_at: '2027-01-01',
+      uploaded_by: CONTRACTOR_ID,
+      uploaded_at: LAST_WEEK,
+      reviewed_by: ADMIN_ID,
+      reviewed_at: LAST_WEEK,
+      review_notes: null,
+      created_at: LAST_WEEK,
+      updated_at: LAST_WEEK,
+    },
+    {
+      id: 'cd000000-0000-0000-0000-000000000003',
+      contractor_id: CONTRACTOR_ID,
+      document_type: 'unbedenklichkeit_finanzamt',
+      status: 'approved',
+      file_name: 'finanzamt.pdf',
+      storage_path: `${CONTRACTOR_ID}/unbedenklichkeit_finanzamt/finanzamt.pdf`,
+      mime_type: 'application/pdf',
+      size_bytes: 110000,
+      issued_at: '2026-04-01',
+      expires_at: '2026-05-25',
+      uploaded_by: CONTRACTOR_ID,
+      uploaded_at: LAST_WEEK,
+      reviewed_by: ADMIN_ID,
+      reviewed_at: LAST_WEEK,
+      review_notes: 'Demo: vence pronto',
+      created_at: LAST_WEEK,
+      updated_at: LAST_WEEK,
+    },
+    {
+      id: 'cd000000-0000-0000-0000-000000000004',
+      contractor_id: CONTRACTOR_ID,
+      document_type: 'id_passport',
+      status: 'approved',
+      file_name: 'ausweis.jpg',
+      storage_path: `${CONTRACTOR_ID}/id_passport/ausweis.jpg`,
+      mime_type: 'image/jpeg',
+      size_bytes: 90000,
+      issued_at: '2024-03-10',
+      expires_at: '2030-03-10',
+      uploaded_by: CONTRACTOR_ID,
+      uploaded_at: LAST_WEEK,
+      reviewed_by: ADMIN_ID,
+      reviewed_at: LAST_WEEK,
+      review_notes: null,
+      created_at: LAST_WEEK,
+      updated_at: LAST_WEEK,
+    },
+    {
+      id: 'cd000000-0000-0000-0000-000000000005',
+      contractor_id: CONTRACTOR_ID,
+      document_type: 'subcontractor_agreement',
+      status: 'approved',
+      file_name: 'subcontractor-agreement.pdf',
+      storage_path: `${CONTRACTOR_ID}/subcontractor_agreement/subcontractor-agreement.pdf`,
+      mime_type: 'application/pdf',
+      size_bytes: 160000,
+      issued_at: '2026-01-15',
+      expires_at: null,
+      uploaded_by: ADMIN_ID,
+      uploaded_at: LAST_WEEK,
+      reviewed_by: ADMIN_ID,
+      reviewed_at: LAST_WEEK,
+      review_notes: null,
+      created_at: LAST_WEEK,
+      updated_at: LAST_WEEK,
+    },
+  ],
+
+  pin_trusted_devices: [],
 
   _session: { user: null, access_token: null } as DemoSession,
 })

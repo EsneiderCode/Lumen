@@ -1,11 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
-import { useTranslation } from 'react-i18next'
 import { ROUTES } from '@/config/routes'
 import { authService } from '@/services/authService'
 
 export function ResetPasswordPage() {
-  const { t } = useTranslation()
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -17,12 +15,12 @@ export function ResetPasswordPage() {
     setError(null)
 
     if (password.length < 8) {
-      setError(t('auth.errors.passwordTooShort'))
+      setError('Das Passwort muss mindestens 8 Zeichen lang sein.')
       return
     }
 
     if (password !== confirmPassword) {
-      setError(t('auth.errors.passwordMismatch'))
+      setError('Die Passwörter stimmen nicht überein.')
       return
     }
 
@@ -40,33 +38,45 @@ export function ResetPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center nexus-bg px-4">
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-80 w-125 -translate-x-1/2 rounded-full bg-accent/8 blur-3xl" />
-      </div>
-
-      <div className="relative z-10 w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-l border border-accent/20 bg-bg-1">
-            <span className="font-display text-2xl font-bold text-accent">L</span>
+    <div className="nx-auth-shell">
+      <div className="nx-auth-grid max-w-3xl">
+        <section className="nx-auth-brief" aria-label="NEXUS password reset">
+          <div className="nx-brand-lockup">
+            <div className="nx-brand-mark">
+              <svg width="24" height="24" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                <rect x="6" y="6" width="6" height="28" fill="var(--color-fg-1)" />
+                <rect x="28" y="6" width="6" height="28" fill="var(--color-fg-1)" />
+                <path d="M12 8 L28 32 L28 26 L12 2 Z" fill="var(--color-accent)" />
+              </svg>
+            </div>
+            <div>
+              <div className="nx-brand-name">LUMEN<span className="text-accent">.OS</span></div>
+              <div className="nx-brand-meta">CREDENTIAL RESET</div>
+            </div>
           </div>
-          <h1 className="font-display text-2xl font-bold text-fg-1">{t('auth.newPassword')}</h1>
-          <p className="mt-1 text-sm text-fg-2">{t('auth.newPasswordInstructions')}</p>
-        </div>
+          <div className="nx-command-lines">
+            <span><b>AUTH</b><em>NEW PASSWORD</em></span>
+            <span><b>POLICY</b><em>8 CHAR MINIMUM</em></span>
+            <span><b>STATUS</b><em>SECURE FLOW</em></span>
+          </div>
+        </section>
 
-        <div className="rounded-l border border-line-s bg-bg-1 p-6">
+        <div className="nx-auth-panel">
+          <div className="mb-6">
+            <p className="nx-label">AUTHENTICATION</p>
+            <h1 className="mt-2 font-display text-2xl font-light text-fg-1">Neues Passwort</h1>
+            <p className="mt-2 text-sm text-fg-2">Geben Sie Ihr neues Passwort ein.</p>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="rounded-s border border-err/20 bg-err/10 px-4 py-3 text-sm text-err">
+              <div className="notice notice-err">
                 {error}
               </div>
             )}
-            <div>
-              <label
-                htmlFor="new-password"
-                className="block text-sm font-medium text-fg-3"
-              >
-                {t('auth.newPassword')}
+            <div className="input">
+              <label htmlFor="new-password">
+                Neues Passwort
               </label>
               <input
                 id="new-password"
@@ -76,15 +86,11 @@ export function ResetPasswordPage() {
                 required
                 minLength={8}
                 autoComplete="new-password"
-                className="mt-1 block w-full rounded-s border border-line-s bg-bg-2 px-3 py-2.5 text-sm text-fg-1 placeholder-fg-4 transition-colors focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none"
               />
             </div>
-            <div>
-              <label
-                htmlFor="confirm-password"
-                className="block text-sm font-medium text-fg-3"
-              >
-                {t('auth.confirmPassword')}
+            <div className="input">
+              <label htmlFor="confirm-password">
+                Passwort bestätigen
               </label>
               <input
                 id="confirm-password"
@@ -94,15 +100,14 @@ export function ResetPasswordPage() {
                 required
                 minLength={8}
                 autoComplete="new-password"
-                className="mt-1 block w-full rounded-s border border-line-s bg-bg-2 px-3 py-2.5 text-sm text-fg-1 placeholder-fg-4 transition-colors focus:border-accent focus:ring-1 focus:ring-accent focus:outline-none"
               />
             </div>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full rounded-s bg-accent px-4 py-2.5 text-sm font-semibold text-fg-1 transition-colors hover:bg-accent disabled:opacity-50"
+              className="btn btn-p w-full"
             >
-              {isSubmitting ? t('common.saving') : t('auth.savePassword')}
+              {isSubmitting ? 'Wird gespeichert...' : 'Passwort speichern'}
             </button>
           </form>
         </div>
