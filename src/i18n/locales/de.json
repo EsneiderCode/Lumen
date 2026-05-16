@@ -333,61 +333,77 @@
     "networkError": "Netzwerkfehler. Bitte erneut versuchen.",
     "unexpected": "Etwas ist schiefgelaufen."
   },
-  "catalog": {
+  "serviceItems": {
     "title": "Service-Katalog",
-    "subtitleCount": "{{count}} Artikel — Vertragliche Leistungscodes",
-    "newItem": "+ Neuer Artikel",
-    "empty": "Keine Artikel gefunden",
-    "errorRequired": "Code und Deutsche Beschreibung sind Pflichtfelder.",
-    "modal": {
-      "titleCreate": "Neuer Artikel",
-      "titleEdit": "Artikel bearbeiten",
-      "section": "Service-Katalog"
-    },
-    "sections": {
-      "identification": "Identifikation",
-      "priceOrder": "Preis & Reihenfolge",
-      "assignment": "Zuordnung"
-    },
-    "fields": {
-      "sapCode": "SAP-Code *",
-      "unit": "Einheit",
-      "descDe": "Beschreibung (DE) *",
-      "descEs": "Descripción (ES)",
-      "price": "Preis (€ netto) — leer = Nach Angebot",
-      "priceExternal": "Einkaufspreis Subunternehmer (€) — leer = Nach Angebot",
-      "displayOrder": "Anzeigereihenfolge",
-      "operator": "Betreiber (Operator)",
-      "client": "Kunde (Client)",
-      "detailForm": "Detail-Formular (technische Route)",
-      "notes": "Notizen",
-      "itemActive": "Artikel aktiv"
-    },
-    "filter": {
-      "search": "Suchen (Code, Beschreibung)…",
+    "subtitle": "{{count}} Artikel — Vertragliche Leistungscodes",
+    "newItem": "Neuer Artikel",
+    "search": "Suchen (Code, Beschreibung)…",
+    "filters": {
       "allOperators": "Alle Betreiber",
-      "globalOperator": "— Global (kein Betreiber) —",
+      "globalNoOperator": "— Global (kein Betreiber)",
       "allClients": "Alle Kunden",
       "showInactive": "Inaktive anzeigen"
     },
-    "status": {
+    "table": {
+      "code": "Code",
+      "descriptionDe": "Beschreibung (DE)",
+      "descriptionEs": "Descripción (ES)",
+      "unit": "Einh.",
+      "price": "Preis",
+      "form": "Form",
+      "operator": "Betreiber",
+      "client": "Kunde",
+      "status": "Status",
+      "actions": "Aktionen",
       "active": "Aktiv",
       "inactive": "Inaktiv",
-      "visibleInCatalog": "Sichtbar im Katalog",
-      "hidden": "Versteckt"
+      "global": "Global",
+      "edit": "Bearbeiten",
+      "deactivate": "Deaktivieren",
+      "activate": "Aktivieren",
+      "delete": "Löschen",
+      "empty": "Keine Artikel gefunden"
     },
-    "actions": {
-      "save": "Speichern",
-      "saving": "[SPEICHERN…]",
-      "create": "Erstellen",
-      "cancel": "Abbrechen"
+    "modal": {
+      "category": "Service-Katalog",
+      "createTitle": "Neuer Artikel",
+      "editTitle": "Artikel bearbeiten",
+      "sectionIdentification": "Identifikation",
+      "sectionPrice": "Preis & Reihenfolge",
+      "sectionAssignment": "Zuordnung",
+      "fieldCode": "SAP-Code",
+      "fieldCodePlaceholder": "z.B. DGF_ACT_001",
+      "fieldUnit": "Einheit",
+      "fieldUnitNone": "— keine —",
+      "fieldDescDe": "Beschreibung (DE)",
+      "fieldDescDePlaceholder": "Leistungsbeschreibung auf Deutsch",
+      "fieldDescEs": "Descripción (ES)",
+      "fieldDescEsPlaceholder": "Descripción en español (opcional)",
+      "fieldPrice": "Preis (€ netto) — leer = Nach Angebot",
+      "fieldDisplayOrder": "Anzeigereihenfolge",
+      "fieldOperator": "Betreiber (Operator)",
+      "fieldOperatorGlobal": "— Global / Alle —",
+      "fieldClient": "Kunde (Client)",
+      "fieldClientNone": "— kein —",
+      "fieldDetailForm": "Detail-Formular (technische Route)",
+      "fieldNotes": "Notizen",
+      "fieldNotesPlaceholder": "Interne Hinweise zum Artikel…",
+      "active": "Artikel aktiv",
+      "activeVisible": "Sichtbar im Katalog",
+      "activeHidden": "Versteckt",
+      "errorRequired": "Code und Deutsche Beschreibung sind Pflichtfelder.",
+      "buttonCancel": "Abbrechen",
+      "buttonCreate": "Erstellen",
+      "buttonSave": "Speichern",
+      "buttonSaving": "[SPEICHERN…]"
     },
-    "delete": {
-      "title": "Artikel löschen",
+    "deleteDialog": {
       "warning": "Achtung — Irreversibel",
-      "confirm": "Diese Aktion löscht den Artikel dauerhaft aus dem Katalog und kann nicht rückgängig gemacht werden.",
-      "action": "Endgültig löschen",
-      "deleting": "[LÖSCHEN…]"
+      "title": "Artikel löschen",
+      "body": "Diese Aktion löscht den Artikel dauerhaft aus dem Katalog und kann nicht rückgängig gemacht werden.",
+      "buttonCancel": "Abbrechen",
+      "buttonConfirm": "Endgültig löschen",
+      "buttonDeleting": "[LÖSCHEN…]"
     }
   },
   "sidebar": {

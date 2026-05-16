@@ -333,61 +333,77 @@
     "networkError": "Error de red. Probá de nuevo.",
     "unexpected": "Algo salió mal."
   },
-  "catalog": {
+  "serviceItems": {
     "title": "Catálogo de servicios",
-    "subtitleCount": "{{count}} ítems — Códigos de contrato",
-    "newItem": "+ Nuevo ítem",
-    "empty": "No se encontraron ítems",
-    "errorRequired": "El código y la descripción en alemán son obligatorios.",
-    "modal": {
-      "titleCreate": "Nuevo ítem",
-      "titleEdit": "Editar ítem",
-      "section": "Catálogo de servicios"
-    },
-    "sections": {
-      "identification": "Identificación",
-      "priceOrder": "Precio y orden",
-      "assignment": "Asignación"
-    },
-    "fields": {
-      "sapCode": "Código SAP *",
-      "unit": "Unidad",
-      "descDe": "Descripción (DE) *",
-      "descEs": "Descripción (ES)",
-      "price": "Precio (€ neto) — vacío = A convenir",
-      "priceExternal": "Precio de compra subcontratista (€) — vacío = A convenir",
-      "displayOrder": "Orden de visualización",
-      "operator": "Operador",
-      "client": "Cliente",
-      "detailForm": "Formulario de detalle (ruta técnica)",
-      "notes": "Notas",
-      "itemActive": "Ítem activo"
-    },
-    "filter": {
-      "search": "Buscar (código, descripción)…",
+    "subtitle": "{{count}} ítems — Códigos de contrato",
+    "newItem": "Nuevo ítem",
+    "search": "Buscar (código, descripción)…",
+    "filters": {
       "allOperators": "Todos los operadores",
-      "globalOperator": "— Global (sin operador) —",
+      "globalNoOperator": "— Global (sin operador)",
       "allClients": "Todos los clientes",
       "showInactive": "Mostrar inactivos"
     },
-    "status": {
+    "table": {
+      "code": "Código",
+      "descriptionDe": "Descripción (DE)",
+      "descriptionEs": "Descripción (ES)",
+      "unit": "Unid.",
+      "price": "Precio",
+      "form": "Form",
+      "operator": "Operador",
+      "client": "Cliente",
+      "status": "Estado",
+      "actions": "Acciones",
       "active": "Activo",
       "inactive": "Inactivo",
-      "visibleInCatalog": "Visible en el catálogo",
-      "hidden": "Oculto"
+      "global": "Global",
+      "edit": "Editar",
+      "deactivate": "Desactivar",
+      "activate": "Activar",
+      "delete": "Eliminar",
+      "empty": "No se encontraron ítems"
     },
-    "actions": {
-      "save": "Guardar",
-      "saving": "[GUARDANDO…]",
-      "create": "Crear",
-      "cancel": "Cancelar"
+    "modal": {
+      "category": "Catálogo de servicios",
+      "createTitle": "Nuevo ítem",
+      "editTitle": "Editar ítem",
+      "sectionIdentification": "Identificación",
+      "sectionPrice": "Precio y orden",
+      "sectionAssignment": "Asignación",
+      "fieldCode": "Código SAP",
+      "fieldCodePlaceholder": "ej. DGF_ACT_001",
+      "fieldUnit": "Unidad",
+      "fieldUnitNone": "— ninguna —",
+      "fieldDescDe": "Descripción (DE)",
+      "fieldDescDePlaceholder": "Descripción de la prestación en alemán",
+      "fieldDescEs": "Descripción (ES)",
+      "fieldDescEsPlaceholder": "Descripción en español (opcional)",
+      "fieldPrice": "Precio (€ neto) — vacío = A convenir",
+      "fieldDisplayOrder": "Orden de visualización",
+      "fieldOperator": "Operador",
+      "fieldOperatorGlobal": "— Global / Todos —",
+      "fieldClient": "Cliente",
+      "fieldClientNone": "— ninguno —",
+      "fieldDetailForm": "Formulario de detalle (ruta técnica)",
+      "fieldNotes": "Notas",
+      "fieldNotesPlaceholder": "Notas internas del ítem…",
+      "active": "Ítem activo",
+      "activeVisible": "Visible en el catálogo",
+      "activeHidden": "Oculto",
+      "errorRequired": "El código y la descripción en alemán son obligatorios.",
+      "buttonCancel": "Cancelar",
+      "buttonCreate": "Crear",
+      "buttonSave": "Guardar",
+      "buttonSaving": "[GUARDANDO…]"
     },
-    "delete": {
-      "title": "Eliminar ítem",
+    "deleteDialog": {
       "warning": "Atención — Irreversible",
-      "confirm": "Esta acción elimina el ítem permanentemente del catálogo y no se puede deshacer.",
-      "action": "Eliminar definitivamente",
-      "deleting": "[ELIMINANDO…]"
+      "title": "Eliminar ítem",
+      "body": "Esta acción elimina el ítem permanentemente del catálogo y no se puede deshacer.",
+      "buttonCancel": "Cancelar",
+      "buttonConfirm": "Eliminar definitivamente",
+      "buttonDeleting": "[ELIMINANDO…]"
     }
   },
   "sidebar": {
