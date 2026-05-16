@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { ClipboardList, RefreshCw } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import {
   fetchWorkOrders,
   fetchClients,
@@ -16,6 +17,7 @@ import { STATUS_COLORS, TEAM_DOT, PRIORITY_COLORS } from '@/constants/styles'
 const PAGE_SIZE = 25
 
 export function WorkOrdersPage() {
+  const { t } = useTranslation()
   const L = useLabels()
   const navigate = useNavigate()
   const [orders, setOrders] = useState<WorkOrderWithRelations[]>([])
@@ -72,14 +74,14 @@ export function WorkOrdersPage() {
       {/* Header */}
       <div className="nx-page-header">
         <div>
-          <h2 className="nx-page-title">Aufträge</h2>
+          <h2 className="nx-page-title">{t('workOrder.title')}</h2>
           <p className="nx-label mt-2 tabular-nums">{total} total</p>
         </div>
         <button
           onClick={() => navigate('/admin/orders/new')}
           className="flex items-center gap-2 rounded-s bg-accent px-4 py-2 text-sm font-semibold text-ink hover:bg-accent transition-colors"
         >
-          <span className="text-base leading-none">+</span> Neuer Auftrag
+          <span className="text-base leading-none">+</span> {t('workOrder.newOrder')}
         </button>
       </div>
 
@@ -91,7 +93,7 @@ export function WorkOrdersPage() {
           <div className="relative col-span-2 sm:col-span-1">
             <input
               type="text"
-              placeholder="Suchen…"
+              placeholder={t('workOrder.searchPlaceholder')}
               value={search}
               onChange={(e) => { setPage(0); setSearch(e.target.value) }}
               className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 pr-8 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
@@ -112,7 +114,7 @@ export function WorkOrdersPage() {
             }}
             className="rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           >
-            <option value="">Alle Status</option>
+            <option value="">{t('workOrder.allStatus')}</option>
             {L.statusOptions().map(({ value, label }) => (
               <option key={value} value={value}>{label}</option>
             ))}
@@ -127,11 +129,11 @@ export function WorkOrdersPage() {
             }}
             className="rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           >
-            <option value="">Alle Teams</option>
-            <option value="rot">Rot</option>
-            <option value="gruen">Grün</option>
-            <option value="blau">Blau</option>
-            <option value="gelb">Gelb</option>
+            <option value="">{t('workOrder.allTeams')}</option>
+            <option value="rot">{t('teamColor.rot')}</option>
+            <option value="gruen">{t('teamColor.gruen')}</option>
+            <option value="blau">{t('teamColor.blau')}</option>
+            <option value="gelb">{t('teamColor.gelb')}</option>
           </select>
 
           {/* Work type filter */}
@@ -143,7 +145,7 @@ export function WorkOrdersPage() {
             }}
             className="rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           >
-            <option value="">Alle Typen</option>
+            <option value="">{t('workOrder.allTypes')}</option>
             {L.workTypeOptions().map(({ value, label }) => (
               <option key={value} value={value}>{label}</option>
             ))}
@@ -161,7 +163,7 @@ export function WorkOrdersPage() {
             }}
             className="rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           >
-            <option value="">Alle Kunden</option>
+            <option value="">{t('workOrder.allClients')}</option>
             {clients.map((c) => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
@@ -176,7 +178,7 @@ export function WorkOrdersPage() {
             }}
             className="rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           >
-            <option value="">Alle Projekte</option>
+            <option value="">{t('workOrder.allProjects')}</option>
             {projects.map((p) => (
               <option key={p.id} value={p.id}>{p.code} – {p.name}</option>
             ))}
@@ -191,7 +193,7 @@ export function WorkOrdersPage() {
             }}
             className="rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           >
-            <option value="">Alle Prioritäten</option>
+            <option value="">{t('workOrder.allPriorities')}</option>
             {L.priorityOptions().map(({ value, label }) => (
               <option key={value} value={value}>{label}</option>
             ))}
@@ -226,7 +228,7 @@ export function WorkOrdersPage() {
             onClick={() => { setPage(0); setFilters({}); setSearch('') }}
             className="rounded-s border border-line px-3 py-2 text-sm text-fg-2 hover:border-accent hover:text-accent transition-colors"
           >
-            Zurücksetzen
+            {t('common.reset')}
           </button>
         </div>
       </div>
@@ -237,11 +239,11 @@ export function WorkOrdersPage() {
           <span>{error}</span>
           <button
             onClick={() => { setError(null); setPage(0) }}
-            aria-label="Erneut versuchen"
+            aria-label={t('common.retry')}
             className="flex shrink-0 items-center gap-1.5 rounded-s border border-err/30 px-2.5 py-1 text-xs text-err hover:bg-err/10 transition-colors"
           >
             <RefreshCw size={12} strokeWidth={1.5} aria-hidden="true" />
-            Wiederholen
+            {t('common.retry')}
           </button>
         </div>
       )}
@@ -257,18 +259,18 @@ export function WorkOrdersPage() {
             <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full border border-line bg-bg-0">
               <ClipboardList size={18} strokeWidth={1.5} className="text-fg-3" aria-hidden="true" />
             </div>
-            <p className="text-sm font-medium text-fg-1">Keine Aufträge gefunden</p>
+            <p className="text-sm font-medium text-fg-1">{t('workOrder.noOrdersFound')}</p>
             <p className="mt-1 text-xs text-fg-3">
               {Object.keys(filters).length > 0 || debouncedSearch
-                ? 'Filter anpassen oder zurücksetzen.'
-                : 'Erstellen Sie den ersten Auftrag.'}
+                ? t('workOrder.adjustFilters')
+                : t('workOrder.createFirst')}
             </p>
             {Object.keys(filters).length === 0 && !debouncedSearch && (
               <button
                 onClick={() => navigate('/admin/orders/new')}
                 className="mt-4 rounded-s border border-line px-4 py-2 text-xs text-fg-2 hover:border-accent hover:text-accent transition-colors"
               >
-                + Neuer Auftrag
+                + {t('workOrder.newOrder')}
               </button>
             )}
           </div>
@@ -277,14 +279,14 @@ export function WorkOrdersPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-line bg-bg-2">
-                  <th scope="col" className="nx-label px-4 py-3 text-left">Auftrag #</th>
-                  <th scope="col" className="nx-label px-4 py-3 text-left">Typ</th>
-                  <th scope="col" className="nx-label px-4 py-3 text-left">Kunde / Projekt</th>
-                  <th scope="col" className="nx-label px-4 py-3 text-left hidden sm:table-cell">Team</th>
-                  <th scope="col" className="nx-label px-4 py-3 text-left hidden md:table-cell">Priorität</th>
-                  <th scope="col" className="nx-label px-4 py-3 text-left">Status</th>
-                  <th scope="col" className="nx-label px-4 py-3 text-left hidden lg:table-cell">Datum</th>
-                  <th scope="col" className="px-4 py-3"><span className="sr-only">Aktionen</span></th>
+                  <th scope="col" className="nx-label px-4 py-3 text-left">{t('workOrder.orderNumber')}</th>
+                  <th scope="col" className="nx-label px-4 py-3 text-left">{t('workOrder.workTypeLabel')}</th>
+                  <th scope="col" className="nx-label px-4 py-3 text-left">{t('workOrder.customer')} / {t('workOrder.project')}</th>
+                  <th scope="col" className="nx-label px-4 py-3 text-left hidden sm:table-cell">{t('workOrder.team')}</th>
+                  <th scope="col" className="nx-label px-4 py-3 text-left hidden md:table-cell">{t('workOrder.priority')}</th>
+                  <th scope="col" className="nx-label px-4 py-3 text-left">{t('workOrder.statusLabel')}</th>
+                  <th scope="col" className="nx-label px-4 py-3 text-left hidden lg:table-cell">{t('workOrder.deploymentDate')}</th>
+                  <th scope="col" className="px-4 py-3"><span className="sr-only">{t('common.actions')}</span></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
@@ -346,7 +348,7 @@ export function WorkOrdersPage() {
                               RM
                             </span>
                           ) : (
-                            'Detail'
+                            t('workOrder.detail')
                           )}
                         </button>
                         {(order.status === 'created') && (
@@ -355,7 +357,7 @@ export function WorkOrdersPage() {
                             aria-label={`Auftrag ${order.order_number} zuweisen`}
                             className="rounded px-2.5 py-1.5 text-xs font-medium text-accent hover:bg-accent/10 transition-colors"
                           >
-                            Zuweisen
+                            {t('workOrder.assign')}
                           </button>
                         )}
                         <button
@@ -363,14 +365,14 @@ export function WorkOrdersPage() {
                           aria-label={`Auftrag ${order.order_number} bearbeiten`}
                           className="rounded px-2.5 py-1.5 text-xs font-medium text-fg-2 hover:bg-bg-0 hover:text-fg-1 transition-colors"
                         >
-                          Bearb.
+                          {t('workOrder.editShort')}
                         </button>
                         <button
                           onClick={() => setDeleteId(order.id)}
                           aria-label={`Auftrag ${order.order_number} löschen`}
                           className="rounded px-2.5 py-1.5 text-xs font-medium text-fg-2 hover:bg-err/10 hover:text-err transition-colors"
                         >
-                          Löschen
+                          {t('common.delete')}
                         </button>
                       </div>
                     </td>
@@ -386,7 +388,7 @@ export function WorkOrdersPage() {
       {total > PAGE_SIZE && (
         <div className="mt-4 flex items-center justify-between">
           <span className="font-mono text-xs text-fg-2">
-            {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} von {total}
+            {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} {t('common.of')} {total}
           </span>
           <div className="flex gap-2">
             <button
@@ -394,14 +396,14 @@ export function WorkOrdersPage() {
               onClick={() => setPage((p) => p - 1)}
               className="rounded-s border border-line px-3 py-1.5 text-xs text-fg-1 transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40"
             >
-              ← Zurück
+              {t('common.prevPage')}
             </button>
             <button
               disabled={(page + 1) * PAGE_SIZE >= total}
               onClick={() => setPage((p) => p + 1)}
               className="rounded-s border border-line px-3 py-1.5 text-xs text-fg-1 transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40"
             >
-              Weiter →
+              {t('common.nextPage')}
             </button>
           </div>
         </div>
@@ -417,23 +419,23 @@ export function WorkOrdersPage() {
         >
           <div className="w-full max-w-sm rounded-l border border-line bg-bg-1 p-6">
             <h3 id="delete-order-title" className="mb-2 font-display text-base font-semibold text-fg-1">
-              Auftrag löschen?
+              {t('workOrder.deleteTitle')}
             </h3>
             <p className="mb-5 text-sm text-fg-2">
-              Diese Aktion kann nicht rückgängig gemacht werden.
+              {t('common.irreversible')}
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setDeleteId(null)}
                 className="flex-1 rounded-s border border-line px-4 py-2 text-sm font-medium text-fg-1 hover:bg-bg-0 transition-colors"
               >
-                Abbrechen
+                {t('common.cancel')}
               </button>
               <button
                 onClick={() => handleDelete(deleteId)}
                 className="flex-1 rounded-s bg-err px-4 py-2 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
               >
-                Löschen
+                {t('common.delete')}
               </button>
             </div>
           </div>

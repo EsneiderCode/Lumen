@@ -3,16 +3,18 @@ import { Check, Receipt, ClipboardList } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { fetchContractorWorkOrders, type WorkOrderWithRelations } from '@/services/workOrderService'
 import type { WorkOrderStatus, TeamColor } from '@/types/enums'
+import { useTranslation } from 'react-i18next'
 import { useLabels } from '@/i18n/labels'
 import { STATUS_COLORS, TEAM_DOT } from '@/constants/styles'
 
 // Payment indicator based on status
 function PaymentBadge({ status }: { status: WorkOrderStatus }) {
+  const { t } = useTranslation()
   if (status === 'paid') {
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-ok/20 px-2 py-0.5 text-xs font-semibold text-ok">
         <Check size={12} strokeWidth={1.5} />
-        Bezahlt
+        {t('contractor.paidBadge')}
       </span>
     )
   }
@@ -20,14 +22,14 @@ function PaymentBadge({ status }: { status: WorkOrderStatus }) {
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-err/10 px-2 py-0.5 text-xs font-semibold text-info">
         <Receipt size={12} strokeWidth={1.5} />
-        Fakturiert
+        {t('contractor.invoicedBadge')}
       </span>
     )
   }
   if (status === 'client_accepted') {
     return (
       <span className="inline-flex items-center gap-1 rounded-full bg-warn/15 px-2 py-0.5 text-xs font-medium text-warn">
-        Abrechnung ausstehend
+        {t('contractor.billingPending')}
       </span>
     )
   }
@@ -40,6 +42,7 @@ const ACTIVE_STATUSES: WorkOrderStatus[] = [
 ]
 
 export function ContractorOrdersPage() {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const [orders, setOrders] = useState<WorkOrderWithRelations[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -93,8 +96,8 @@ export function ContractorOrdersPage() {
     <div>
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h2 className="font-display text-xl font-bold text-fg-1">Meine Aufträge</h2>
-          <p className="text-sm text-fg-2">{orders.length} Aufträge</p>
+          <h2 className="font-display text-xl font-bold text-fg-1">{t('contractor.orders')}</h2>
+          <p className="text-sm text-fg-2">{orders.length} {t('contractor.orders').toLowerCase()}</p>
         </div>
       </div>
 
@@ -103,7 +106,7 @@ export function ContractorOrdersPage() {
         <div className="mb-4">
           <input
             type="text"
-            placeholder="Auftrag suchen…"
+            placeholder={t('contractor.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full rounded-s border border-line bg-bg-1 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
@@ -114,15 +117,15 @@ export function ContractorOrdersPage() {
       {orders.length === 0 ? (
         <div className="rounded-l border border-line bg-bg-1 py-16 text-center">
           <ClipboardList size={28} strokeWidth={1.5} className="mx-auto text-fg-3" />
-          <p className="mt-2 text-sm font-medium text-fg-1">Keine Aufträge</p>
-          <p className="text-xs text-fg-2">Ihnen wurden noch keine Aufträge zugewiesen.</p>
+          <p className="mt-2 text-sm font-medium text-fg-1">{t('contractor.noOrders')}</p>
+          <p className="text-xs text-fg-2">{t('contractor.noOrdersDesc')}</p>
         </div>
       ) : (
         <div className="space-y-5">
           {activeOrders.length > 0 && (
             <section>
               <p className="mb-2 nx-label">
-                Aktiv ({activeOrders.length})
+                {t('contractor.active')} ({activeOrders.length})
               </p>
               <div className="space-y-2">
                 {activeOrders.map((order) => (
@@ -135,7 +138,7 @@ export function ContractorOrdersPage() {
           {closedOrders.length > 0 && (
             <section>
               <p className="mb-2 nx-label">
-                Abgeschlossen ({closedOrders.length})
+                {t('contractor.closed')} ({closedOrders.length})
               </p>
               <div className="space-y-2">
                 {closedOrders.map((order) => (

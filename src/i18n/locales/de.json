@@ -32,7 +32,14 @@
     "retry": "Wiederholen",
     "error": "Fehler",
     "success": "Erfolg",
-    "warning": "Warnung"
+    "warning": "Warnung",
+    "reset": "Zurücksetzen",
+    "of": "von",
+    "prevPage": "← Zurück",
+    "nextPage": "Weiter →",
+    "irreversible": "Diese Aktion kann nicht rückgängig gemacht werden.",
+    "active": "Aktiv",
+    "closed": "Abgeschlossen"
   },
   "auth": {
     "signIn": "Anmelden",
@@ -48,11 +55,18 @@
     "resetPasswordInstructions": "Geben Sie Ihre E-Mail-Adresse ein, um einen Link zum Zurücksetzen zu erhalten.",
     "sendResetLink": "Link senden",
     "backToSignIn": "Zurück zur Anmeldung",
+    "forgotPasswordSent": "Falls ein Konto mit dieser E-Mail existiert, erhalten Sie in Kürze einen Link zum Zurücksetzen.",
+    "newPassword": "Neues Passwort",
+    "newPasswordInstructions": "Geben Sie Ihr neues Passwort ein.",
+    "confirmPassword": "Passwort bestätigen",
+    "savePassword": "Passwort speichern",
     "errors": {
       "invalidCredentials": "E-Mail oder Passwort ist falsch.",
       "emailNotConfirmed": "E-Mail-Adresse wurde nicht bestätigt.",
       "tooManyAttempts": "Zu viele Versuche. Bitte später erneut versuchen.",
-      "unknown": "Anmeldung fehlgeschlagen. Bitte erneut versuchen."
+      "unknown": "Anmeldung fehlgeschlagen. Bitte erneut versuchen.",
+      "passwordTooShort": "Das Passwort muss mindestens 8 Zeichen lang sein.",
+      "passwordMismatch": "Die Passwörter stimmen nicht überein."
     }
   },
   "nav": {
@@ -169,13 +183,68 @@
     "markPaid": "Als bezahlt markieren",
     "rejectReason": "Ablehnungsgrund",
     "invoiceNumber": "Rechnungsnummer",
-    "acceptOptionalComment": "Kommentar (optional)"
+    "acceptOptionalComment": "Kommentar (optional)",
+    "newOrder": "Neuer Auftrag",
+    "newTitle": "Neuer Auftrag",
+    "editTitle": "Auftrag bearbeiten",
+    "searchPlaceholder": "Suchen…",
+    "allStatus": "Alle Status",
+    "allTeams": "Alle Teams",
+    "allTypes": "Alle Typen",
+    "allClients": "Alle Kunden",
+    "allProjects": "Alle Projekte",
+    "allPriorities": "Alle Prioritäten",
+    "noOrdersFound": "Keine Aufträge gefunden",
+    "adjustFilters": "Filter anpassen oder zurücksetzen.",
+    "createFirst": "Erstellen Sie den ersten Auftrag.",
+    "deleteTitle": "Auftrag löschen?",
+    "assign": "Zuweisen",
+    "editShort": "Bearb.",
+    "detail": "Detail",
+    "generalData": "Allgemeine Daten",
+    "selectClient": "— Kunde wählen —",
+    "selectProject": "— Projekt wählen —",
+    "selectOperator": "— Betreiber wählen —",
+    "selectService": "— Leistung aus Katalog wählen —",
+    "serviceCatalogLabel": "Leistung (Katalog)",
+    "workTypeDerivedLabel": "Arbeitstyp (abgeleitet aus Katalog)",
+    "detailsSubtitle": "Arbeitstyp-spezifische Felder",
+    "line": "Linie",
+    "streetNumber": "Straße / Hausnummer",
+    "supportingDocs": "Unterstützende Dokumente",
+    "supportingDocsDesc": "Bei linearen Arbeiten (Soplado / Fusion) sind Plan und Spleißprotokolle anstelle einer Adresse relevant.",
+    "createAction": "Auftrag erstellen",
+    "saveChanges": "Änderungen speichern",
+    "workTypeLabel": "Typ",
+    "statusLabel": "Status"
   },
   "rueckmeldung": {
     "pending": "Rückmeldung ausstehend",
     "sent": "Rückmeldung gesendet",
     "submitReport": "Rückmeldung abgeben",
-    "technicianData": "Vom Techniker eingetragene Daten"
+    "technicianData": "Vom Techniker eingetragene Daten",
+    "title": "Rückmeldung",
+    "deploymentTimes": "Einsatzzeiten",
+    "start": "Beginn",
+    "end": "Ende",
+    "technicalData": "Technische Daten — {{workType}}",
+    "documentWork": "Ausgeführte Arbeit dokumentieren",
+    "photos": "Fotos",
+    "noPhotos": "Keine Fotos · Tippen um hinzuzufügen",
+    "addPhoto": "+ Foto",
+    "uploading": "Lädt…",
+    "notesLabel": "Notizen / Besonderheiten",
+    "notesPlaceholder": "Besonderheiten, Probleme, Hinweise für Admin…",
+    "savedOk": "Daten gespeichert.",
+    "saveTemp": "Zwischenspeichern",
+    "send": "Rückmeldung senden",
+    "sendCorrected": "Korrigierte RM senden",
+    "sendHint": "\"Rückmeldung senden\" übermittelt alle Daten an den Admin zur Zertifizierung.",
+    "returnedBanner": "Auftrag zurückgegeben — Nichtkonformität",
+    "returnedCorrectHint": "Korrekturen vornehmen und die Rückmeldung erneut senden.",
+    "selectOption": "— wählen —",
+    "photoUploadError": "Foto-Upload fehlgeschlagen: {{error}}",
+    "photoDeleteError": "Foto löschen fehlgeschlagen: {{error}}"
   },
   "certification": {
     "internal": "Interne Zertifizierung",
@@ -211,7 +280,20 @@
   "contractor": {
     "documentStatus": "Dokumentenstatus",
     "pending": "Ausstehend",
-    "settled": "Abgerechnet"
+    "settled": "Abgerechnet",
+    "welcome": "Willkommen, {{name}}",
+    "subcontractor": "Subunternehmer",
+    "activeOrders": "Aktive Aufträge",
+    "viewAllOrders": "Alle Aufträge anzeigen →",
+    "orders": "Aufträge",
+    "noOrders": "Keine Aufträge",
+    "noOrdersDesc": "Ihnen wurden noch keine Aufträge zugewiesen.",
+    "active": "Aktiv",
+    "closed": "Abgeschlossen",
+    "searchPlaceholder": "Auftrag suchen…",
+    "billingPending": "Abrechnung ausstehend",
+    "paidBadge": "Bezahlt",
+    "invoicedBadge": "Fakturiert"
   },
   "language": {
     "label": "Sprache",
@@ -220,7 +302,9 @@
     "change": "Sprache ändern"
   },
   "offline": {
-    "banner": "Keine Verbindung — Änderungen werden lokal gespeichert"
+    "banner": "Keine Verbindung — Änderungen werden lokal gespeichert",
+    "title": "Sie sind offline",
+    "message": "Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut."
   },
   "errors": {
     "boundary": "Ein unerwarteter Fehler ist aufgetreten.",
@@ -335,5 +419,61 @@
     "viewAll": "Alle anzeigen →",
     "noOrders": "Keine aktiven Aufträge",
     "noOrdersDesc": "Dir sind aktuell keine Aufträge zugewiesen."
+  },
+  "tech": {
+    "myOrders": "Meine Aufträge",
+    "ordersAssigned": "{{total}} Aufträge zugewiesen",
+    "searchPlaceholder": "Auftrag suchen…",
+    "returnedSection": "Zurückgegeben — Korrektur erforderlich",
+    "activeSection": "Aktiv",
+    "closedSection": "Abgeschlossen / Gesendet",
+    "orderDetails": "Auftragsdetails",
+    "technicalSpecs": "Technische Vorgaben — {{workType}}",
+    "history": "Verlauf",
+    "startWork": "In Bearbeitung setzen",
+    "completeWork": "Ausführung abgeschlossen",
+    "fillRueckmeldung": "Rückmeldung ausfüllen",
+    "correctRueckmeldung": "Rückmeldung korrigieren",
+    "updatingStatus": "Wird aktualisiert…",
+    "rueckmeldungSentInfo": "Rückmeldung wurde gesendet. Der Admin prüft die Daten.",
+    "returnedBanner": "Auftrag zurückgegeben — Nichtkonformität"
+  },
+  "assign": {
+    "title": "Auftrag zuweisen",
+    "assignment": "Zuweisung",
+    "internalEmployee": "Interner Mitarbeiter (optional)",
+    "selectEmployee": "— Mitarbeiter wählen —",
+    "noEmployees": "Keine Mitarbeiter für dieses Team gefunden.",
+    "action": "Zuweisen & Status → Assigned",
+    "assigning": "Zuweisen…"
+  },
+  "certificationPage": {
+    "ordersInProcess": "Keine Aufträge · im Prozess",
+    "ordersCount": "{{count}} Aufträge · im Prozess",
+    "clearFilters": "× Filter löschen",
+    "selected": "{{count}} ausgewählt",
+    "certifyBulk": "Intern zertifizieren ({{count}})",
+    "sendBulk": "An Kunden senden ({{count}})",
+    "invoiceBulk": "Fakturieren ({{count}})",
+    "clearSelection": "Auswahl aufheben",
+    "noOrdersInStatus": "Keine Aufträge in diesem Status.",
+    "noOrdersInProcess": "Keine Aufträge im Zertifizierungsprozess.",
+    "bulkInvoiceTitle": "Sammel-Fakturierung",
+    "bulkInvoiceDesc": "Rechnungsnummer für {{count}} Aufträge (Pflichtfeld).",
+    "invoicePlaceholder": "z.B. RE-2026-0042",
+    "tabs": {
+      "rueckmeldung_sent": "Rückmeldung eingegangen",
+      "rueckmeldung_sent_desc": "Warten auf interne Zertifizierung",
+      "internally_certified": "Intern zertifiziert",
+      "internally_certified_desc": "Bereit zur Weiterleitung an den Kunden",
+      "sent_to_client": "Beim Kunden",
+      "sent_to_client_desc": "Warten auf Kundenentscheid",
+      "client_rejected": "Abgelehnt",
+      "client_rejected_desc": "Zur Überarbeitung zurückgegeben",
+      "client_accepted": "Akzeptiert",
+      "client_accepted_desc": "Bereit zur Fakturierung",
+      "invoiced": "Fakturiert",
+      "invoiced_desc": "Warten auf Zahlungseingang"
+    }
   }
 }

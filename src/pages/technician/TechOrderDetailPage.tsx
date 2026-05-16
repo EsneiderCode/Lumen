@@ -11,6 +11,7 @@ import {
   type WorkOrderWithRelations,
 } from '@/services/workOrderService'
 import type { WorkOrderStatus } from '@/types/enums'
+import { useTranslation } from 'react-i18next'
 import { useLabels } from '@/i18n/labels'
 import { STATUS_COLORS, TEAM_DOT } from '@/constants/styles'
 
@@ -24,6 +25,7 @@ interface StateHistoryEntry {
 }
 
 export function TechOrderDetailPage() {
+  const { t } = useTranslation()
   const L = useLabels()
   const { id } = useParams()
   const navigate = useNavigate()
@@ -127,11 +129,11 @@ export function TechOrderDetailPage() {
           className="w-full rounded-s bg-err px-4 py-3.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
         >
           {isTransitioning ? (
-            'Wird aktualisiert…'
+            t('tech.updatingStatus')
           ) : (
             <span className="inline-flex items-center justify-center gap-2">
               <Play size={14} strokeWidth={1.5} />
-              In Bearbeitung setzen
+              {t('tech.startWork')}
             </span>
           )}
         </button>
@@ -144,11 +146,11 @@ export function TechOrderDetailPage() {
           className="w-full rounded-s bg-warn px-4 py-3.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
         >
           {isTransitioning ? (
-            'Wird aktualisiert…'
+            t('tech.updatingStatus')
           ) : (
             <span className="inline-flex items-center justify-center gap-2">
               <Check size={14} strokeWidth={1.5} />
-              Ausführung abgeschlossen
+              {t('tech.completeWork')}
             </span>
           )}
         </button>
@@ -160,13 +162,13 @@ export function TechOrderDetailPage() {
           className="inline-flex w-full items-center justify-center gap-2 rounded-s bg-accent px-4 py-3.5 text-sm font-semibold text-ink hover:bg-accent transition-colors"
         >
           <PencilLine size={14} strokeWidth={1.5} />
-          Rückmeldung ausfüllen
+          {t('tech.fillRueckmeldung')}
         </button>
       )}
 
       {order.status === 'rueckmeldung_sent' && (
         <div className="rounded-l border border-ok/30 bg-ok/10 px-4 py-3 text-sm text-ok">
-          Rückmeldung wurde gesendet. Der Admin prüft die Daten.
+          {t('tech.rueckmeldungSentInfo')}
         </div>
       )}
 
@@ -178,7 +180,7 @@ export function TechOrderDetailPage() {
               <>
                 <p className="inline-flex items-center gap-2 font-semibold text-err">
                   <AlertTriangle size={16} strokeWidth={1.5} />
-                  Auftrag zurückgegeben — Nichtkonformität
+                  {t('tech.returnedBanner')}
                 </p>
                 {returnEntry?.notes && (
                   <p className="mt-1 text-sm text-err">{returnEntry.notes}</p>
@@ -191,7 +193,7 @@ export function TechOrderDetailPage() {
             className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-s bg-err px-4 py-3 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
           >
             <PencilLine size={14} strokeWidth={1.5} />
-            Rückmeldung korrigieren
+            {t('tech.correctRueckmeldung')}
           </button>
         </div>
       )}
@@ -204,22 +206,22 @@ export function TechOrderDetailPage() {
 
       {/* Order info */}
       <div className="rounded-l border border-line bg-bg-1 p-4">
-        <h3 className="mb-3 font-display text-sm font-semibold text-fg-1">Auftragsdetails</h3>
+        <h3 className="mb-3 font-display text-sm font-semibold text-fg-1">{t('tech.orderDetails')}</h3>
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div>
-            <p className="text-xs text-fg-2">Kunde</p>
+            <p className="text-xs text-fg-2">{t('workOrder.customer')}</p>
             <p className="font-medium text-fg-1">{order.clients?.name ?? '—'}</p>
           </div>
           <div>
-            <p className="text-xs text-fg-2">Projekt</p>
+            <p className="text-xs text-fg-2">{t('workOrder.project')}</p>
             <p className="font-medium text-fg-1">{order.projects?.code ?? '—'}</p>
           </div>
           <div>
-            <p className="text-xs text-fg-2">Betreiber</p>
+            <p className="text-xs text-fg-2">{t('workOrder.operator')}</p>
             <p className="font-medium text-fg-1">{order.operators?.name ?? '—'}</p>
           </div>
           <div>
-            <p className="text-xs text-fg-2">Team</p>
+            <p className="text-xs text-fg-2">{t('workOrder.team')}</p>
             <div className="flex items-center gap-1.5">
               {order.assigned_team && (
                 <span className={`h-2 w-2 rounded-full ${TEAM_DOT[order.assigned_team]}`} />
@@ -231,19 +233,19 @@ export function TechOrderDetailPage() {
           </div>
           {order.assigned_date && (
             <div>
-              <p className="text-xs text-fg-2">Einsatzdatum</p>
+              <p className="text-xs text-fg-2">{t('workOrder.deploymentDate')}</p>
               <p className="font-medium text-fg-1">
                 {new Date(order.assigned_date).toLocaleDateString('de-DE')}
               </p>
             </div>
           )}
           <div>
-            <p className="text-xs text-fg-2">Priorität</p>
+            <p className="text-xs text-fg-2">{t('workOrder.priority')}</p>
             <p className="font-medium text-fg-1 capitalize">{order.priority}</p>
           </div>
           {(order.address || order.city) && (
             <div className="col-span-2">
-              <p className="text-xs text-fg-2">Adresse</p>
+              <p className="text-xs text-fg-2">{t('workOrder.address')}</p>
               <p className="font-medium text-fg-1">
                 {[order.address, order.postal_code, order.city].filter(Boolean).join(', ')}
               </p>
@@ -251,7 +253,7 @@ export function TechOrderDetailPage() {
           )}
           {order.internal_notes && (
             <div className="col-span-2">
-              <p className="text-xs text-fg-2">Notizen</p>
+              <p className="text-xs text-fg-2">{t('common.notes')}</p>
               <p className="font-medium text-fg-1">{order.internal_notes}</p>
             </div>
           )}
@@ -262,7 +264,7 @@ export function TechOrderDetailPage() {
       {hasDetail && (
         <div className="rounded-l border border-line bg-bg-1 p-4">
           <h3 className="mb-3 font-display text-sm font-semibold text-fg-1">
-            Technische Vorgaben — {L.workType(order.work_type)}
+            {t('tech.technicalSpecs', { workType: L.workType(order.work_type) })}
           </h3>
           <div className="grid grid-cols-2 gap-3 text-sm">
             {Object.entries(detail).map(([key, value]) => {
@@ -272,7 +274,7 @@ export function TechOrderDetailPage() {
                 <div key={key}>
                   <p className="text-xs capitalize text-fg-2">{label}</p>
                   <p className="font-medium text-fg-1">
-                    {typeof value === 'boolean' ? (value ? 'Ja' : 'Nein') : String(value)}
+                    {typeof value === 'boolean' ? (value ? t('common.yes') : t('common.no')) : String(value)}
                   </p>
                 </div>
               )
@@ -284,7 +286,7 @@ export function TechOrderDetailPage() {
       {/* State history */}
       {history.length > 0 && (
         <div className="rounded-l border border-line bg-bg-1 p-4">
-          <h3 className="mb-3 font-display text-sm font-semibold text-fg-1">Verlauf</h3>
+          <h3 className="mb-3 font-display text-sm font-semibold text-fg-1">{t('tech.history')}</h3>
           <ol className="space-y-2">
             {history.map((entry, i) => (
               <li key={entry.id} className="flex items-start gap-3">

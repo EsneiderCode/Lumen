@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/hooks/useAuth'
 import { fetchContractorWorkOrders } from '@/services/workOrderService'
 import type { WorkOrderStatus } from '@/types/enums'
@@ -11,6 +12,7 @@ const ACTIVE_STATUSES: WorkOrderStatus[] = [
 const DONE_STATUSES: WorkOrderStatus[] = ['paid', 'invoiced', 'client_accepted']
 
 export function ContractorDashboard() {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const navigate = useNavigate()
   const [activeCount, setActiveCount] = useState<number | null>(null)
@@ -38,12 +40,12 @@ export function ContractorDashboard() {
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 className="font-display text-lg font-bold text-fg-1">
-              Willkommen, {user?.fullName}
+              {t('contractor.welcome', { name: user?.fullName })}
             </h2>
             <p className="mt-0.5 text-sm text-fg-2">{today}</p>
           </div>
           <span className="rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-xs font-semibold text-accent">
-            Subunternehmer
+            {t('contractor.subcontractor')}
           </span>
         </div>
       </div>
@@ -58,7 +60,7 @@ export function ContractorDashboard() {
           <p className="font-display text-2xl font-bold text-fg-1">
             {activeCount === null ? '—' : activeCount}
           </p>
-          <p className="mt-0.5 text-xs text-fg-2">Aktive Aufträge</p>
+          <p className="mt-0.5 text-xs text-fg-2">{t('contractor.activeOrders')}</p>
         </button>
         <button
           onClick={() => navigate(ROUTES.CONTRACTOR.ORDERS)}
@@ -68,13 +70,13 @@ export function ContractorDashboard() {
           <p className="font-display text-2xl font-bold text-fg-1">
             {doneCount === null ? '—' : doneCount}
           </p>
-          <p className="mt-0.5 text-xs text-fg-2">Abgerechnet</p>
+          <p className="mt-0.5 text-xs text-fg-2">{t('contractor.settled')}</p>
         </button>
       </div>
 
       {/* Document status */}
       <div className="mb-4 rounded-l border border-line bg-bg-1 p-5">
-        <h3 className="mb-3 font-display text-sm font-semibold text-fg-1">Dokumentenstatus</h3>
+        <h3 className="mb-3 font-display text-sm font-semibold text-fg-1">{t('contractor.documentStatus')}</h3>
         <div className="space-y-2">
           {[
             'Gewerbeanmeldung',
@@ -87,7 +89,7 @@ export function ContractorDashboard() {
               className="flex items-center justify-between rounded-s border border-line bg-bg-0 px-3 py-2"
             >
               <span className="text-sm text-fg-1">{doc}</span>
-              <span className="text-xs text-fg-2">Ausstehend</span>
+              <span className="text-xs text-fg-2">{t('contractor.pending')}</span>
             </div>
           ))}
         </div>
@@ -98,7 +100,7 @@ export function ContractorDashboard() {
         onClick={() => navigate(ROUTES.CONTRACTOR.ORDERS)}
         className="w-full rounded-l border border-accent/30 bg-accent/5 p-4 text-center transition-colors hover:bg-accent/10"
       >
-        <p className="text-sm font-semibold text-accent">Alle Aufträge anzeigen →</p>
+        <p className="text-sm font-semibold text-accent">{t('contractor.viewAllOrders')}</p>
       </button>
     </div>
   )

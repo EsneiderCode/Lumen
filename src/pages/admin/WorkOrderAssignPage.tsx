@@ -7,10 +7,12 @@ import {
   assignWorkOrder,
 } from '@/services/workOrderService'
 import type { TeamColor, WorkType } from '@/types/enums'
+import { useTranslation } from 'react-i18next'
 import { useLabels } from '@/i18n/labels'
 import { TEAMS } from '@/constants/styles'
 
 export function WorkOrderAssignPage() {
+  const { t } = useTranslation()
   const L = useLabels()
   const { id } = useParams()
   const navigate = useNavigate()
@@ -94,7 +96,7 @@ export function WorkOrderAssignPage() {
           ←
         </button>
         <div>
-          <h2 className="font-display text-xl font-bold text-fg-1">Auftrag zuweisen</h2>
+          <h2 className="font-display text-xl font-bold text-fg-1">{t('assign.title')}</h2>
           {order && (
             <p className="text-sm text-fg-2 font-mono">{order.order_number}</p>
           )}
@@ -106,19 +108,19 @@ export function WorkOrderAssignPage() {
         <div className="mb-5 rounded-l border border-line bg-bg-1 p-4">
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div>
-              <p className="text-xs text-fg-2">Kunde</p>
+              <p className="text-xs text-fg-2">{t('workOrder.customer')}</p>
               <p className="font-medium text-fg-1">{order.clients?.name ?? '—'}</p>
             </div>
             <div>
-              <p className="text-xs text-fg-2">Projekt</p>
+              <p className="text-xs text-fg-2">{t('workOrder.project')}</p>
               <p className="font-medium text-fg-1">{order.projects?.code ?? '—'}</p>
             </div>
             <div>
-              <p className="text-xs text-fg-2">Arbeitstyp</p>
+              <p className="text-xs text-fg-2">{t('workOrder.workTypeLabel')}</p>
               <p className="font-medium text-fg-1">{L.workType(order.work_type as WorkType) || order.work_type}</p>
             </div>
             <div>
-              <p className="text-xs text-fg-2">Adresse</p>
+              <p className="text-xs text-fg-2">{t('workOrder.address')}</p>
               <p className="font-medium text-fg-1">
                 {[order.address, order.city].filter(Boolean).join(', ') || '—'}
               </p>
@@ -129,7 +131,7 @@ export function WorkOrderAssignPage() {
 
       <form onSubmit={handleAssign}>
         <div className="rounded-l border border-line bg-bg-1 p-5 space-y-5">
-          <h3 className="font-display text-sm font-semibold text-fg-1">Zuweisung</h3>
+          <h3 className="font-display text-sm font-semibold text-fg-1">{t('assign.assignment')}</h3>
 
           {/* Team selection */}
           <div>
@@ -158,7 +160,7 @@ export function WorkOrderAssignPage() {
           {/* Technician */}
           <div>
             <label className="mb-1 block text-xs font-medium text-fg-2">
-              Interner Mitarbeiter (optional)
+              {t('assign.internalEmployee')}
             </label>
             <select
               value={selectedTechnician}
@@ -166,14 +168,14 @@ export function WorkOrderAssignPage() {
               disabled={!selectedTeam}
               className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
             >
-              <option value="">— Mitarbeiter wählen —</option>
+              <option value="">{t('assign.selectEmployee')}</option>
               {filteredTechnicians.map((t) => (
                 <option key={t.id} value={t.id}>{t.full_name}</option>
               ))}
             </select>
             {selectedTeam && filteredTechnicians.length === 0 && (
               <p className="mt-1 text-xs text-fg-2">
-                Keine Mitarbeiter für dieses Team gefunden.
+                {t('assign.noEmployees')}
               </p>
             )}
           </div>
@@ -181,7 +183,7 @@ export function WorkOrderAssignPage() {
           {/* Assigned date */}
           <div>
             <label className="mb-1 block text-xs font-medium text-fg-2">
-              Einsatzdatum
+              {t('workOrder.deploymentDate')}
             </label>
             <input
               type="date"
@@ -206,14 +208,14 @@ export function WorkOrderAssignPage() {
             onClick={() => navigate('/admin/orders')}
             className="flex-1 rounded-s border border-line px-4 py-2.5 text-sm font-medium text-fg-1 hover:bg-bg-0 transition-colors"
           >
-            Abbrechen
+            {t('common.cancel')}
           </button>
           <button
             type="submit"
             disabled={!selectedTeam || isSaving}
             className="flex-1 rounded-s bg-accent px-4 py-2.5 text-sm font-semibold text-ink hover:bg-accent disabled:opacity-50 transition-colors"
           >
-            {isSaving ? 'Zuweisen…' : 'Zuweisen & Status → Assigned'}
+            {isSaving ? t('assign.assigning') : t('assign.action')}
           </button>
         </div>
       </form>

@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { ROUTES } from '@/config/routes'
 import { authService } from '@/services/authService'
 
 export function ResetPasswordPage() {
+  const { t } = useTranslation()
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -15,12 +17,12 @@ export function ResetPasswordPage() {
     setError(null)
 
     if (password.length < 8) {
-      setError('Das Passwort muss mindestens 8 Zeichen lang sein.')
+      setError(t('auth.errors.passwordTooShort'))
       return
     }
 
     if (password !== confirmPassword) {
-      setError('Die Passwörter stimmen nicht überein.')
+      setError(t('auth.errors.passwordMismatch'))
       return
     }
 
@@ -48,8 +50,8 @@ export function ResetPasswordPage() {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-l border border-accent/20 bg-bg-1">
             <span className="font-display text-2xl font-bold text-accent">L</span>
           </div>
-          <h1 className="font-display text-2xl font-bold text-fg-1">Neues Passwort</h1>
-          <p className="mt-1 text-sm text-fg-2">Geben Sie Ihr neues Passwort ein.</p>
+          <h1 className="font-display text-2xl font-bold text-fg-1">{t('auth.newPassword')}</h1>
+          <p className="mt-1 text-sm text-fg-2">{t('auth.newPasswordInstructions')}</p>
         </div>
 
         <div className="rounded-l border border-line-s bg-bg-1 p-6">
@@ -64,7 +66,7 @@ export function ResetPasswordPage() {
                 htmlFor="new-password"
                 className="block text-sm font-medium text-fg-3"
               >
-                Neues Passwort
+                {t('auth.newPassword')}
               </label>
               <input
                 id="new-password"
@@ -82,7 +84,7 @@ export function ResetPasswordPage() {
                 htmlFor="confirm-password"
                 className="block text-sm font-medium text-fg-3"
               >
-                Passwort bestätigen
+                {t('auth.confirmPassword')}
               </label>
               <input
                 id="confirm-password"
@@ -100,7 +102,7 @@ export function ResetPasswordPage() {
               disabled={isSubmitting}
               className="w-full rounded-s bg-accent px-4 py-2.5 text-sm font-semibold text-fg-1 transition-colors hover:bg-accent disabled:opacity-50"
             >
-              {isSubmitting ? 'Wird gespeichert...' : 'Passwort speichern'}
+              {isSubmitting ? t('common.saving') : t('auth.savePassword')}
             </button>
           </form>
         </div>

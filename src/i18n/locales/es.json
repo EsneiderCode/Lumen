@@ -32,7 +32,14 @@
     "retry": "Reintentar",
     "error": "Error",
     "success": "Éxito",
-    "warning": "Advertencia"
+    "warning": "Advertencia",
+    "reset": "Restablecer",
+    "of": "de",
+    "prevPage": "← Anterior",
+    "nextPage": "Siguiente →",
+    "irreversible": "Esta acción no se puede deshacer.",
+    "active": "Activo",
+    "closed": "Cerrado"
   },
   "auth": {
     "signIn": "Iniciar sesión",
@@ -48,11 +55,18 @@
     "resetPasswordInstructions": "Ingresá tu correo electrónico y te enviaremos un enlace para restablecer la contraseña.",
     "sendResetLink": "Enviar enlace",
     "backToSignIn": "Volver al inicio de sesión",
+    "forgotPasswordSent": "Si existe una cuenta con ese correo, recibirás un enlace para restablecer la contraseña.",
+    "newPassword": "Nueva contraseña",
+    "newPasswordInstructions": "Ingresá tu nueva contraseña.",
+    "confirmPassword": "Confirmar contraseña",
+    "savePassword": "Guardar contraseña",
     "errors": {
       "invalidCredentials": "Correo o contraseña incorrectos.",
       "emailNotConfirmed": "El correo no fue confirmado.",
       "tooManyAttempts": "Demasiados intentos. Probá más tarde.",
-      "unknown": "No se pudo iniciar sesión. Probá de nuevo."
+      "unknown": "No se pudo iniciar sesión. Probá de nuevo.",
+      "passwordTooShort": "La contraseña debe tener al menos 8 caracteres.",
+      "passwordMismatch": "Las contraseñas no coinciden."
     }
   },
   "nav": {
@@ -169,13 +183,68 @@
     "markPaid": "Marcar como pagada",
     "rejectReason": "Motivo del rechazo",
     "invoiceNumber": "Número de factura",
-    "acceptOptionalComment": "Comentario (opcional)"
+    "acceptOptionalComment": "Comentario (opcional)",
+    "newOrder": "Nueva orden",
+    "newTitle": "Nueva orden",
+    "editTitle": "Editar orden",
+    "searchPlaceholder": "Buscar…",
+    "allStatus": "Todos los estados",
+    "allTeams": "Todos los equipos",
+    "allTypes": "Todos los tipos",
+    "allClients": "Todos los clientes",
+    "allProjects": "Todos los proyectos",
+    "allPriorities": "Todas las prioridades",
+    "noOrdersFound": "No se encontraron órdenes",
+    "adjustFilters": "Ajustá o restablecé los filtros.",
+    "createFirst": "Crea la primera orden.",
+    "deleteTitle": "¿Eliminar orden?",
+    "assign": "Asignar",
+    "editShort": "Editar",
+    "detail": "Detalle",
+    "generalData": "Datos generales",
+    "selectClient": "— Seleccionar cliente —",
+    "selectProject": "— Seleccionar proyecto —",
+    "selectOperator": "— Seleccionar operador —",
+    "selectService": "— Seleccionar servicio del catálogo —",
+    "serviceCatalogLabel": "Servicio (Catálogo)",
+    "workTypeDerivedLabel": "Tipo de trabajo (del catálogo)",
+    "detailsSubtitle": "Campos específicos del tipo de trabajo",
+    "line": "Línea",
+    "streetNumber": "Calle / Número",
+    "supportingDocs": "Documentos de apoyo",
+    "supportingDocsDesc": "En trabajos lineales (Soplado / Fusión), el plano y los protocolos de empalme reemplazan a la dirección.",
+    "createAction": "Crear orden",
+    "saveChanges": "Guardar cambios",
+    "workTypeLabel": "Tipo",
+    "statusLabel": "Estado"
   },
   "rueckmeldung": {
     "pending": "Rückmeldung pendiente",
     "sent": "Rückmeldung enviada",
     "submitReport": "Enviar Rückmeldung",
-    "technicianData": "Datos cargados por el técnico"
+    "technicianData": "Datos cargados por el técnico",
+    "title": "Rückmeldung",
+    "deploymentTimes": "Horarios de trabajo",
+    "start": "Inicio",
+    "end": "Fin",
+    "technicalData": "Datos técnicos — {{workType}}",
+    "documentWork": "Documentar el trabajo realizado",
+    "photos": "Fotos",
+    "noPhotos": "Sin fotos · Tocá para agregar",
+    "addPhoto": "+ Foto",
+    "uploading": "Subiendo…",
+    "notesLabel": "Notas / Observaciones",
+    "notesPlaceholder": "Observaciones, problemas, notas para el admin…",
+    "savedOk": "Datos guardados.",
+    "saveTemp": "Guardar borrador",
+    "send": "Enviar Rückmeldung",
+    "sendCorrected": "Enviar RM corregida",
+    "sendHint": "\"Enviar Rückmeldung\" envía todos los datos al admin para certificación.",
+    "returnedBanner": "Orden devuelta — No conformidad",
+    "returnedCorrectHint": "Realizá las correcciones y enviá la Rückmeldung nuevamente.",
+    "selectOption": "— seleccionar —",
+    "photoUploadError": "Error al subir foto: {{error}}",
+    "photoDeleteError": "Error al eliminar foto: {{error}}"
   },
   "certification": {
     "internal": "Certificación interna",
@@ -211,7 +280,20 @@
   "contractor": {
     "documentStatus": "Estado de documentos",
     "pending": "Pendiente",
-    "settled": "Liquidado"
+    "settled": "Liquidado",
+    "welcome": "Bienvenido, {{name}}",
+    "subcontractor": "Subcontratista",
+    "activeOrders": "Órdenes activas",
+    "viewAllOrders": "Ver todas las órdenes →",
+    "orders": "Órdenes",
+    "noOrders": "Sin órdenes",
+    "noOrdersDesc": "No tenés órdenes asignadas aún.",
+    "active": "Activas",
+    "closed": "Cerradas",
+    "searchPlaceholder": "Buscar orden…",
+    "billingPending": "Liquidación pendiente",
+    "paidBadge": "Pagada",
+    "invoicedBadge": "Facturada"
   },
   "language": {
     "label": "Idioma",
@@ -220,7 +302,9 @@
     "change": "Cambiar idioma"
   },
   "offline": {
-    "banner": "Sin conexión — los cambios se guardan en el dispositivo"
+    "banner": "Sin conexión — los cambios se guardan en el dispositivo",
+    "title": "Sin conexión",
+    "message": "Verificá tu conexión a internet y volvé a intentarlo."
   },
   "errors": {
     "boundary": "Ocurrió un error inesperado.",
@@ -335,5 +419,61 @@
     "viewAll": "Ver todas →",
     "noOrders": "Sin órdenes activas",
     "noOrdersDesc": "No tenés órdenes asignadas en este momento."
+  },
+  "tech": {
+    "myOrders": "Mis órdenes",
+    "ordersAssigned": "{{total}} órdenes asignadas",
+    "searchPlaceholder": "Buscar orden…",
+    "returnedSection": "Devueltas — Requieren corrección",
+    "activeSection": "Activas",
+    "closedSection": "Completadas / Enviadas",
+    "orderDetails": "Detalles de la orden",
+    "technicalSpecs": "Especificaciones técnicas — {{workType}}",
+    "history": "Historial",
+    "startWork": "Iniciar trabajo",
+    "completeWork": "Ejecución completada",
+    "fillRueckmeldung": "Completar Rückmeldung",
+    "correctRueckmeldung": "Corregir Rückmeldung",
+    "updatingStatus": "Actualizando…",
+    "rueckmeldungSentInfo": "Rückmeldung enviada. El admin revisará los datos.",
+    "returnedBanner": "Orden devuelta — No conformidad"
+  },
+  "assign": {
+    "title": "Asignar orden",
+    "assignment": "Asignación",
+    "internalEmployee": "Empleado interno (opcional)",
+    "selectEmployee": "— Seleccionar empleado —",
+    "noEmployees": "No hay empleados para este equipo.",
+    "action": "Asignar y cambiar estado → Asignada",
+    "assigning": "Asignando…"
+  },
+  "certificationPage": {
+    "ordersInProcess": "Sin órdenes en proceso",
+    "ordersCount": "{{count}} órdenes en proceso",
+    "clearFilters": "× Limpiar filtros",
+    "selected": "{{count}} seleccionadas",
+    "certifyBulk": "Certificar internamente ({{count}})",
+    "sendBulk": "Enviar al cliente ({{count}})",
+    "invoiceBulk": "Facturar ({{count}})",
+    "clearSelection": "Quitar selección",
+    "noOrdersInStatus": "Sin órdenes en este estado.",
+    "noOrdersInProcess": "Sin órdenes en proceso de certificación.",
+    "bulkInvoiceTitle": "Facturación masiva",
+    "bulkInvoiceDesc": "Número de factura para {{count}} órdenes (obligatorio).",
+    "invoicePlaceholder": "ej. RE-2026-0042",
+    "tabs": {
+      "rueckmeldung_sent": "Rückmeldung recibida",
+      "rueckmeldung_sent_desc": "Pendiente de certificación interna",
+      "internally_certified": "Cert. interna",
+      "internally_certified_desc": "Listo para enviar al cliente",
+      "sent_to_client": "En el cliente",
+      "sent_to_client_desc": "Esperando decisión del cliente",
+      "client_rejected": "Rechazada",
+      "client_rejected_desc": "Devuelta para revisión",
+      "client_accepted": "Aceptada",
+      "client_accepted_desc": "Lista para facturar",
+      "invoiced": "Facturada",
+      "invoiced_desc": "Esperando pago"
+    }
   }
 }

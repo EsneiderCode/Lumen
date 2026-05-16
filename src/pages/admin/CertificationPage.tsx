@@ -5,6 +5,7 @@ import * as XLSX from 'xlsx'
 import { fetchWorkOrders, transitionWorkOrderStatus, fetchProjects, type WorkOrderWithRelations } from '@/services/workOrderService'
 import { useAuth } from '@/hooks/useAuth'
 import type { WorkOrderStatus, TeamColor } from '@/types/enums'
+import { useTranslation } from 'react-i18next'
 import { useLabels } from '@/i18n/labels'
 import { TEAM_DOT } from '@/constants/styles'
 
@@ -23,13 +24,13 @@ const CERT_STATUSES: WorkOrderStatus[] = [
   'invoiced',
 ]
 
-const SECTIONS: { status: WorkOrderStatus; label: string; description: string; bulkAction?: string }[] = [
-  { status: 'rueckmeldung_sent', label: 'Rückmeldung eingegangen', description: 'Warten auf interne Zertifizierung', bulkAction: 'certify' },
-  { status: 'internally_certified', label: 'Intern zertifiziert', description: 'Bereit zur Weiterleitung an den Kunden', bulkAction: 'send_to_client' },
-  { status: 'sent_to_client', label: 'Beim Kunden', description: 'Warten auf Kundenentscheid' },
-  { status: 'client_rejected', label: 'Abgelehnt', description: 'Zur Überarbeitung zurückgegeben' },
-  { status: 'client_accepted', label: 'Akzeptiert', description: 'Bereit zur Fakturierung', bulkAction: 'invoice' },
-  { status: 'invoiced', label: 'Fakturiert', description: 'Warten auf Zahlungseingang' },
+const SECTIONS: { status: WorkOrderStatus; labelKey: string; descKey: string; bulkAction?: string }[] = [
+  { status: 'rueckmeldung_sent', labelKey: 'certificationPage.tabs.rueckmeldung_sent', descKey: 'certificationPage.tabs.rueckmeldung_sent_desc', bulkAction: 'certify' },
+  { status: 'internally_certified', labelKey: 'certificationPage.tabs.internally_certified', descKey: 'certificationPage.tabs.internally_certified_desc', bulkAction: 'send_to_client' },
+  { status: 'sent_to_client', labelKey: 'certificationPage.tabs.sent_to_client', descKey: 'certificationPage.tabs.sent_to_client_desc' },
+  { status: 'client_rejected', labelKey: 'certificationPage.tabs.client_rejected', descKey: 'certificationPage.tabs.client_rejected_desc' },
+  { status: 'client_accepted', labelKey: 'certificationPage.tabs.client_accepted', descKey: 'certificationPage.tabs.client_accepted_desc', bulkAction: 'invoice' },
+  { status: 'invoiced', labelKey: 'certificationPage.tabs.invoiced', descKey: 'certificationPage.tabs.invoiced_desc' },
 ]
 
 interface BulkInvoiceModal {
@@ -38,6 +39,7 @@ interface BulkInvoiceModal {
 }
 
 export function CertificationPage() {
+  const { t } = useTranslation()
   const L = useLabels()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -180,7 +182,7 @@ export function CertificationPage() {
         <div>
           <h2 className="nx-page-title">Zertifizierung</h2>
           <p className="nx-label mt-2 tabular-nums">
-            {total === 0 ? 'Keine Aufträge · im Prozess' : `${total} Aufträge · im Prozess`}
+            {total === 0 ? t('certificationPage.ordersInProcess') : t('certificationPage.ordersCount', { count: total })}
           </p>
         </div>
         <button
@@ -200,11 +202,11 @@ export function CertificationPage() {
           onChange={(e) => setFilterTeam(e.target.value as TeamColor | '')}
           className="rounded-s border border-line bg-bg-0 px-3 py-1.5 text-sm text-fg-1 focus:border-accent focus:outline-none"
         >
-          <option value="">Alle Teams</option>
-          <option value="rot">Rot</option>
-          <option value="gruen">Grün</option>
-          <option value="blau">Blau</option>
-          <option value="gelb">Gelb</option>
+          <option value="">{t('workOrder.allTeams')}</option>
+          <option value="rot">{t('teamColor.rot')}</option>
+          <option value="gruen">{t('teamColor.gruen')}</option>
+          <option value="blau">{t('teamColor.blau')}</option>
+          <option value="gelb">{t('teamColor.gelb')}</option>
         </select>
 
         <select
@@ -212,7 +214,7 @@ export function CertificationPage() {
           onChange={(e) => setFilterProject(e.target.value)}
           className="rounded-s border border-line bg-bg-0 px-3 py-1.5 text-sm text-fg-1 focus:border-accent focus:outline-none"
         >
-          <option value="">Alle Projekte</option>
+          <option value="">{t('workOrder.allProjects')}</option>
           {projects.map((p) => (
             <option key={p.id} value={p.id}>{p.code} – {p.name}</option>
           ))}
@@ -241,7 +243,7 @@ export function CertificationPage() {
             }}
             className="rounded-s border border-err/30 px-3 py-1.5 text-xs font-medium text-err hover:bg-err/10 transition-colors"
           >
-            × Filter löschen
+            {t('certificationPage.clearFilters')}
           </button>
         )}
       </div>
@@ -249,7 +251,7 @@ export function CertificationPage() {
       {/* Bulk action bar */}
       {hasSelection && (
         <div className="flex flex-wrap items-center gap-3 rounded-l border border-accent/30 bg-accent/5 px-4 py-3">
-          <span className="text-sm font-semibold text-accent">{selected.size} ausgewählt</span>
+          <span className="text-sm font-semibold text-accent">{t('certificationPage.selected', { count: selected.size })}</span>
           <div className="flex flex-wrap gap-2 ml-auto">
             {selectedCertifiable > 0 && (
               <button
@@ -262,7 +264,7 @@ export function CertificationPage() {
                 ) : (
                   <>
                     <Check size={14} strokeWidth={1.5} />
-                    Intern zertifizieren ({selectedCertifiable})
+                    {t('certificationPage.certifyBulk', { count: selectedCertifiable })}
                   </>
                 )}
               </button>
@@ -278,7 +280,7 @@ export function CertificationPage() {
                 ) : (
                   <>
                     <Send size={14} strokeWidth={1.5} />
-                    An Kunden senden ({selectedSendable})
+                    {t('certificationPage.sendBulk', { count: selectedSendable })}
                   </>
                 )}
               </button>
@@ -290,14 +292,14 @@ export function CertificationPage() {
                 className="inline-flex items-center gap-1.5 rounded-s bg-err px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
               >
                 <Receipt size={14} strokeWidth={1.5} />
-                Fakturieren ({selectedInvoiceable})
+                {t('certificationPage.invoiceBulk', { count: selectedInvoiceable })}
               </button>
             )}
             <button
               onClick={() => setSelected(new Set())}
               className="rounded-s border border-line px-3 py-1.5 text-xs font-medium text-fg-2 hover:border-accent hover:text-accent transition-colors"
             >
-              Auswahl aufheben
+              {t('certificationPage.clearSelection')}
             </button>
           </div>
         </div>
@@ -305,7 +307,7 @@ export function CertificationPage() {
 
       {/* Status tabs */}
       <div className="nx-tabs -mb-px overflow-x-auto">
-        {SECTIONS.map(({ status, label }) => {
+        {SECTIONS.map(({ status, labelKey }) => {
           const count = byStatus(status).length
           return (
             <button
@@ -313,7 +315,7 @@ export function CertificationPage() {
               onClick={() => setActiveTab(status)}
               className={`nx-tab ${activeTab === status ? 'active' : ''}`}
             >
-              {label}
+              {t(labelKey)}
               {count > 0 && (
                 <span className="ml-2 font-mono text-[10px] tabular-nums opacity-70">
                   {count}
@@ -331,7 +333,7 @@ export function CertificationPage() {
         </div>
       ) : total === 0 ? (
         <div className="rounded-l border border-line bg-bg-1 px-6 py-12 text-center">
-          <p className="text-fg-2">Keine Aufträge im Zertifizierungsprozess.</p>
+          <p className="text-fg-2">{t('certificationPage.noOrdersInProcess')}</p>
         </div>
       ) : (
         (() => {
@@ -341,8 +343,8 @@ export function CertificationPage() {
           if (items.length === 0) {
             return (
               <div className="rounded-l border border-line bg-bg-1 px-6 py-12 text-center">
-                <p className="nx-label mb-1">{section.label}</p>
-                <p className="text-sm text-fg-2">Keine Aufträge in diesem Status.</p>
+                <p className="nx-label mb-1">{t(section.labelKey)}</p>
+                <p className="text-sm text-fg-2">{t('certificationPage.noOrdersInStatus')}</p>
               </div>
             )
           }
@@ -355,7 +357,7 @@ export function CertificationPage() {
                   onChange={() => toggleSection(activeTab)}
                   className="h-3.5 w-3.5 rounded accent-accent cursor-pointer"
                 />
-                <span className="text-sm text-fg-2">{section.description}</span>
+                <span className="text-sm text-fg-2">{t(section.descKey)}</span>
                 <span className="ml-auto nx-label tabular-nums">{items.length} items</span>
               </div>
               <div className="overflow-hidden rounded-l border border-line bg-bg-1">
@@ -416,15 +418,15 @@ export function CertificationPage() {
           onClick={(e) => { if (e.target === e.currentTarget) setBulkInvoiceModal({ open: false, invoiceNumber: '' }) }}
         >
           <div className="w-full max-w-sm rounded-l border border-line bg-bg-1 p-6">
-            <h3 className="mb-2 font-display text-base font-bold text-fg-1">Sammel-Fakturierung</h3>
+            <h3 className="mb-2 font-display text-base font-bold text-fg-1">{t('certificationPage.bulkInvoiceTitle')}</h3>
             <p className="mb-3 text-sm text-fg-2">
-              Rechnungsnummer für {selectedInvoiceable} Aufträge (Pflichtfeld).
+              {t('certificationPage.bulkInvoiceDesc', { count: selectedInvoiceable })}
             </p>
             <input
               type="text"
               value={bulkInvoiceModal.invoiceNumber}
               onChange={(e) => setBulkInvoiceModal((m) => ({ ...m, invoiceNumber: e.target.value }))}
-              placeholder="z.B. RE-2026-0042"
+              placeholder={t('certificationPage.invoicePlaceholder')}
               autoFocus
               className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder-fg-4 focus:border-accent focus:outline-none mb-5"
             />
@@ -433,14 +435,14 @@ export function CertificationPage() {
                 onClick={() => setBulkInvoiceModal({ open: false, invoiceNumber: '' })}
                 className="rounded-s border border-line px-4 py-2 text-sm font-medium text-fg-2 hover:border-accent hover:text-accent transition-colors"
               >
-                Abbrechen
+                {t('common.cancel')}
               </button>
               <button
                 onClick={() => void handleBulkInvoice()}
                 disabled={!bulkInvoiceModal.invoiceNumber.trim() || isBulkWorking}
                 className="rounded-s bg-err px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 transition-opacity"
               >
-                {isBulkWorking ? '…' : 'Fakturieren'}
+                {isBulkWorking ? '…' : t('workOrder.invoice')}
               </button>
             </div>
           </div>

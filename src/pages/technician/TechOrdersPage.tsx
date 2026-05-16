@@ -4,12 +4,14 @@ import { ClipboardList, AlertTriangle } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { fetchMyWorkOrders, type WorkOrderWithRelations } from '@/services/workOrderService'
 import type { TeamColor } from '@/types/enums'
+import { useTranslation } from 'react-i18next'
 import { useLabels } from '@/i18n/labels'
 import { STATUS_COLORS, TEAM_DOT, PRIORITY_COLORS } from '@/constants/styles'
 
 const PAGE_SIZE = 20
 
 export function TechOrdersPage() {
+  const { t } = useTranslation()
   const L = useLabels()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -125,8 +127,8 @@ export function TechOrdersPage() {
     <div>
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h2 className="font-display text-xl font-bold text-fg-1">Meine Aufträge</h2>
-          <p className="text-sm text-fg-2">{total} Aufträge zugewiesen</p>
+          <h2 className="font-display text-xl font-bold text-fg-1">{t('tech.myOrders')}</h2>
+          <p className="text-sm text-fg-2">{t('tech.ordersAssigned', { total })}</p>
         </div>
       </div>
 
@@ -134,7 +136,7 @@ export function TechOrdersPage() {
         <div className="mb-4">
           <input
             type="text"
-            placeholder="Auftrag suchen…"
+            placeholder={t('tech.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full rounded-s border border-line bg-bg-1 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
@@ -145,7 +147,7 @@ export function TechOrdersPage() {
       {orders.length === 0 ? (
         <div className="rounded-l border border-line bg-bg-1 py-16 text-center">
           <ClipboardList size={28} strokeWidth={1.5} className="mx-auto text-fg-3" />
-          <p className="mt-2 text-sm text-fg-2">Keine aktiven Aufträge</p>
+          <p className="mt-2 text-sm text-fg-2">{t('techDashboard.noOrders')}</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -153,7 +155,7 @@ export function TechOrdersPage() {
             <div>
               <p className="nx-label mb-2 inline-flex items-center gap-2 text-err">
                 <AlertTriangle size={14} strokeWidth={1.5} />
-                Zurückgegeben — Korrektur erforderlich ({returnedOrders.length})
+                {t('tech.returnedSection')} ({returnedOrders.length})
               </p>
               <div className="space-y-2">
                 {returnedOrders.map((o) => <OrderCard key={o.id} order={o} />)}
@@ -163,7 +165,7 @@ export function TechOrdersPage() {
           {activeOrders.length > 0 && (
             <div>
               <p className="mb-2 nx-label">
-                Aktiv ({activeOrders.length})
+                {t('tech.activeSection')} ({activeOrders.length})
               </p>
               <div className="space-y-2">
                 {activeOrders.map((o) => <OrderCard key={o.id} order={o} />)}
@@ -173,7 +175,7 @@ export function TechOrdersPage() {
           {otherOrders.length > 0 && (
             <div>
               <p className="mb-2 nx-label">
-                Abgeschlossen / Gesendet ({otherOrders.length})
+                {t('tech.closedSection')} ({otherOrders.length})
               </p>
               <div className="space-y-2">
                 {otherOrders.map((o) => <OrderCard key={o.id} order={o} />)}
@@ -183,7 +185,7 @@ export function TechOrdersPage() {
           {total > PAGE_SIZE && (
             <div className="flex items-center justify-between pt-2">
               <span className="font-mono text-xs text-fg-2">
-                {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} von {total}
+                {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} {t('common.of')} {total}
               </span>
               <div className="flex gap-2">
                 <button
@@ -191,14 +193,14 @@ export function TechOrdersPage() {
                   onClick={() => setPage((p) => p - 1)}
                   className="rounded-s border border-line px-3 py-1.5 text-xs text-fg-1 transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  ← Zurück
+                  {t('common.prevPage')}
                 </button>
                 <button
                   disabled={(page + 1) * PAGE_SIZE >= total}
                   onClick={() => setPage((p) => p + 1)}
                   className="rounded-s border border-line px-3 py-1.5 text-xs text-fg-1 transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  Weiter →
+                  {t('common.nextPage')}
                 </button>
               </div>
             </div>

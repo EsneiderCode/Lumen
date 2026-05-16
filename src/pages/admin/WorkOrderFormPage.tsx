@@ -14,6 +14,7 @@ import {
   saveAssignedDetailSnapshot,
 } from '@/services/workOrderService'
 import type { WorkType } from '@/types/enums'
+import { useTranslation } from 'react-i18next'
 import { useLabels } from '@/i18n/labels'
 import { DETAIL_FIELDS } from '@/constants/detail-fields'
 import { fetchServiceItems } from '@/services/serviceItemService'
@@ -99,6 +100,7 @@ const EMPTY_FORM: FormValues = {
 }
 
 export function WorkOrderFormPage() {
+  const { t } = useTranslation()
   const L = useLabels()
   const { id } = useParams()
   const navigate = useNavigate()
@@ -194,11 +196,11 @@ export function WorkOrderFormPage() {
 
   function validate(): boolean {
     const e: Partial<Record<keyof FormValues, string>> = {}
-    if (!form.client_id) e.client_id = 'Pflichtfeld'
-    if (!form.project_id) e.project_id = 'Pflichtfeld'
-    if (!form.operator_id) e.operator_id = 'Pflichtfeld'
-    if (!form.service_item_id) e.service_item_id = 'Pflichtfeld'
-    if (!form.work_type) e.work_type = 'Pflichtfeld'
+    if (!form.client_id) e.client_id = t('common.required')
+    if (!form.project_id) e.project_id = t('common.required')
+    if (!form.operator_id) e.operator_id = t('common.required')
+    if (!form.service_item_id) e.service_item_id = t('common.required')
+    if (!form.work_type) e.work_type = t('common.required')
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -303,7 +305,7 @@ export function WorkOrderFormPage() {
         </button>
         <div>
           <h2 className="font-display text-xl font-bold text-fg-1">
-            {isEdit ? 'Auftrag bearbeiten' : 'Neuer Auftrag'}
+            {isEdit ? t('workOrder.editTitle') : t('workOrder.newTitle')}
           </h2>
           {isEdit && <p className="text-sm text-fg-2">ID: {id}</p>}
         </div>
@@ -312,20 +314,20 @@ export function WorkOrderFormPage() {
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Core info card */}
         <div className="rounded-l border border-line bg-bg-1 p-5">
-          <h3 className="mb-4 font-display text-sm font-semibold text-fg-1">Allgemeine Daten</h3>
+          <h3 className="mb-4 font-display text-sm font-semibold text-fg-1">{t('workOrder.generalData')}</h3>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 
             {/* Client */}
             <div>
               <label className="mb-1 block text-xs font-medium text-fg-2">
-                Kunde <span className="text-err">*</span>
+                {t('workOrder.customer')} <span className="text-err">*</span>
               </label>
               <select
                 value={form.client_id}
                 onChange={(e) => setField('client_id', e.target.value)}
                 className={`w-full rounded-s border px-3 py-2 text-sm text-fg-1 focus:outline-none focus:ring-1 focus:ring-accent ${errors.client_id ? 'border-err bg-err/5' : 'border-line bg-bg-0'}`}
               >
-                <option value="">— Kunde wählen —</option>
+                <option value="">{t('workOrder.selectClient')}</option>
                 {clients.map((c) => (
                   <option key={c.id} value={c.id}>{c.name} ({c.code})</option>
                 ))}
@@ -336,14 +338,14 @@ export function WorkOrderFormPage() {
             {/* Project */}
             <div>
               <label className="mb-1 block text-xs font-medium text-fg-2">
-                Projekt <span className="text-err">*</span>
+                {t('workOrder.project')} <span className="text-err">*</span>
               </label>
               <select
                 value={form.project_id}
                 onChange={(e) => setField('project_id', e.target.value)}
                 className={`w-full rounded-s border px-3 py-2 text-sm text-fg-1 focus:outline-none focus:ring-1 focus:ring-accent ${errors.project_id ? 'border-err bg-err/5' : 'border-line bg-bg-0'}`}
               >
-                <option value="">— Projekt wählen —</option>
+                <option value="">{t('workOrder.selectProject')}</option>
                 {filteredProjects.map((p) => (
                   <option key={p.id} value={p.id}>{p.code} – {p.name}</option>
                 ))}
@@ -354,14 +356,14 @@ export function WorkOrderFormPage() {
             {/* Operator */}
             <div>
               <label className="mb-1 block text-xs font-medium text-fg-2">
-                Betreiber <span className="text-err">*</span>
+                {t('workOrder.operator')} <span className="text-err">*</span>
               </label>
               <select
                 value={form.operator_id}
                 onChange={(e) => setField('operator_id', e.target.value)}
                 className={`w-full rounded-s border px-3 py-2 text-sm text-fg-1 focus:outline-none focus:ring-1 focus:ring-accent ${errors.operator_id ? 'border-err bg-err/5' : 'border-line bg-bg-0'}`}
               >
-                <option value="">— Betreiber wählen —</option>
+                <option value="">{t('workOrder.selectOperator')}</option>
                 {operators.map((o) => (
                   <option key={o.id} value={o.id}>{o.name} ({o.code})</option>
                 ))}
@@ -371,7 +373,7 @@ export function WorkOrderFormPage() {
 
             {/* Line */}
             <div>
-              <label className="mb-1 block text-xs font-medium text-fg-2">Linie</label>
+              <label className="mb-1 block text-xs font-medium text-fg-2">{t('workOrder.line')}</label>
               <select
                 value={form.line}
                 onChange={(e) => setField('line', e.target.value)}
@@ -388,7 +390,7 @@ export function WorkOrderFormPage() {
                 wo_detail_* shape). */}
             <div className="sm:col-span-2">
               <label className="mb-1 block text-xs font-medium text-fg-2">
-                Leistung (Katalog) <span className="text-err">*</span>
+                {t('workOrder.serviceCatalogLabel')} <span className="text-err">*</span>
               </label>
               <select
                 value={form.service_item_id}
@@ -408,7 +410,7 @@ export function WorkOrderFormPage() {
                 }}
                 className={`w-full rounded-s border px-3 py-2 text-sm text-fg-1 focus:outline-none focus:ring-1 focus:ring-accent ${errors.service_item_id ? 'border-err bg-err/5' : 'border-line bg-bg-0'}`}
               >
-                <option value="">— Leistung aus Katalog wählen —</option>
+                <option value="">{t('workOrder.selectService')}</option>
                 {serviceItems.map((si) => (
                   <option key={si.id} value={si.id}>
                     {si.code} — {si.description_de}
@@ -442,7 +444,7 @@ export function WorkOrderFormPage() {
                 which detail form the catalog item routes to. */}
             <div className="sm:col-span-2">
               <label className="mb-1 block text-xs font-medium text-fg-2">
-                Arbeitstyp (abgeleitet aus Katalog)
+                {t('workOrder.workTypeDerivedLabel')}
               </label>
               <input
                 type="text"
@@ -454,15 +456,15 @@ export function WorkOrderFormPage() {
 
             {/* Priority */}
             <div>
-              <label className="mb-1 block text-xs font-medium text-fg-2">Priorität</label>
+              <label className="mb-1 block text-xs font-medium text-fg-2">{t('workOrder.priority')}</label>
               <select
                 value={form.priority}
                 onChange={(e) => setField('priority', e.target.value as 'normal' | 'alta' | 'urgente')}
                 className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:outline-none focus:ring-1 focus:ring-accent"
               >
-                <option value="normal">Normal</option>
-                <option value="alta">Hoch</option>
-                <option value="urgente">Dringend</option>
+                {L.priorityOptions().map(({ value, label }) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -475,10 +477,10 @@ export function WorkOrderFormPage() {
             customer addresses. */}
         {selectedDetailForm && !isInfra && (
           <div className="rounded-l border border-line bg-bg-1 p-5">
-            <h3 className="mb-4 font-display text-sm font-semibold text-fg-1">Adresse</h3>
+            <h3 className="mb-4 font-display text-sm font-semibold text-fg-1">{t('workOrder.address')}</h3>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="sm:col-span-3">
-                <label className="mb-1 block text-xs font-medium text-fg-2">Straße / Hausnummer</label>
+                <label className="mb-1 block text-xs font-medium text-fg-2">{t('workOrder.streetNumber')}</label>
                 <input
                   type="text"
                   value={form.address}
@@ -488,7 +490,7 @@ export function WorkOrderFormPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-fg-2">PLZ</label>
+                <label className="mb-1 block text-xs font-medium text-fg-2">{t('workOrder.postalCode')}</label>
                 <input
                   type="text"
                   value={form.postal_code}
@@ -498,7 +500,7 @@ export function WorkOrderFormPage() {
                 />
               </div>
               <div className="sm:col-span-2">
-                <label className="mb-1 block text-xs font-medium text-fg-2">Stadt</label>
+                <label className="mb-1 block text-xs font-medium text-fg-2">{t('workOrder.city')}</label>
                 <input
                   type="text"
                   value={form.city}
@@ -519,10 +521,9 @@ export function WorkOrderFormPage() {
         {isInfra && (
           <div className="rounded-l border border-accent/30 bg-bg-1 p-5 space-y-5">
             <div>
-              <h3 className="font-display text-sm font-semibold text-fg-1">Unterstützende Dokumente</h3>
+              <h3 className="font-display text-sm font-semibold text-fg-1">{t('workOrder.supportingDocs')}</h3>
               <p className="mt-0.5 text-xs text-fg-2">
-                Bei linearen Arbeiten (Soplado / Fusion) sind Plan und Spleißprotokolle
-                anstelle einer Adresse relevant.
+                {t('workOrder.supportingDocsDesc')}
               </p>
             </div>
             <div className={`grid grid-cols-1 gap-5 ${documentTypes.length > 1 ? 'md:grid-cols-2' : ''}`}>
@@ -562,7 +563,7 @@ export function WorkOrderFormPage() {
             <h3 className="mb-1 font-display text-sm font-semibold text-fg-1">
               Details: {L.workType(form.work_type as WorkType)}
             </h3>
-            <p className="mb-4 text-xs text-fg-2">Arbeitstyp-spezifische Felder</p>
+            <p className="mb-4 text-xs text-fg-2">{t('workOrder.detailsSubtitle')}</p>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {detailFields.map((field) => (
                 <div key={field.key} className={field.type === 'checkbox' ? 'flex items-center gap-2 sm:col-span-2' : ''}>
@@ -587,7 +588,7 @@ export function WorkOrderFormPage() {
                         onChange={(e) => setDetailField(field.key, e.target.value)}
                         className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                       >
-                        <option value="">— wählen —</option>
+                        <option value="">{t('rueckmeldung.selectOption')}</option>
                         {field.options?.map((opt) => (
                           <option key={opt} value={opt}>{opt}</option>
                         ))}
@@ -615,12 +616,12 @@ export function WorkOrderFormPage() {
 
         {/* Notes */}
         <div className="rounded-l border border-line bg-bg-1 p-5">
-          <label className="mb-1 block text-xs font-medium text-fg-2">Interne Notizen</label>
+          <label className="mb-1 block text-xs font-medium text-fg-2">{t('workOrder.internalNotes')}</label>
           <textarea
             value={form.internal_notes}
             onChange={(e) => setField('internal_notes', e.target.value)}
             rows={3}
-            placeholder="Interne Hinweise für das Team…"
+            placeholder={t('workOrder.internalNotes') + '…'}
             className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent resize-none"
           />
         </div>
@@ -639,14 +640,14 @@ export function WorkOrderFormPage() {
             onClick={() => navigate('/admin/orders')}
             className="flex-1 rounded-s border border-line px-4 py-2.5 text-sm font-medium text-fg-1 hover:bg-bg-0 transition-colors"
           >
-            Abbrechen
+            {t('common.cancel')}
           </button>
           <button
             type="submit"
             disabled={isSaving}
             className="flex-1 rounded-s bg-accent px-4 py-2.5 text-sm font-semibold text-ink hover:bg-accent disabled:opacity-50 transition-colors"
           >
-            {isSaving ? 'Speichern…' : isEdit ? 'Änderungen speichern' : 'Auftrag erstellen'}
+            {isSaving ? t('common.saving') : isEdit ? t('workOrder.saveChanges') : t('workOrder.createAction')}
           </button>
         </div>
       </form>

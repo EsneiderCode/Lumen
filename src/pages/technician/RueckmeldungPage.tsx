@@ -37,6 +37,7 @@ import {
   getPhotoSignedUrls,
   type WorkOrderWithRelations,
 } from '@/services/workOrderService'
+import { useTranslation } from 'react-i18next'
 import { useLabels } from '@/i18n/labels'
 import { DETAIL_FIELDS } from '@/constants/detail-fields'
 
@@ -50,6 +51,7 @@ interface Photo {
 }
 
 export function RueckmeldungPage() {
+  const { t } = useTranslation()
   const L = useLabels()
   const { id } = useParams()
   const navigate = useNavigate()
@@ -123,7 +125,7 @@ export function RueckmeldungPage() {
     for (const file of Array.from(files)) {
       const { data, error } = await uploadWorkOrderPhoto(id, photoType, file, user.id)
       if (error) {
-        setError(`Foto-Upload fehlgeschlagen: ${error}`)
+        setError(t('rueckmeldung.photoUploadError', { error }))
         break
       }
       if (data) {
@@ -142,7 +144,7 @@ export function RueckmeldungPage() {
     setError(null)
     const { error } = await deleteWorkOrderPhoto(photoId, storagePath)
     if (error) {
-      setError(`Foto löschen fehlgeschlagen: ${error}`)
+      setError(t('rueckmeldung.photoDeleteError', { error }))
     } else {
       setPhotos((prev) => {
         const updated = prev.filter((p) => p.id !== photoId)
@@ -251,7 +253,7 @@ export function RueckmeldungPage() {
           ←
         </button>
         <div>
-          <h2 className="font-display text-lg font-bold text-fg-1">Rückmeldung</h2>
+          <h2 className="font-display text-lg font-bold text-fg-1">{t('rueckmeldung.title')}</h2>
           <p className="text-xs text-fg-2 font-mono">{order.order_number} · {L.workType(order.work_type)}</p>
         </div>
       </div>
@@ -261,10 +263,10 @@ export function RueckmeldungPage() {
         <div className="rounded-l border border-err/50 bg-err/10 p-4">
           <p className="inline-flex items-center gap-2 font-semibold text-err">
             <AlertTriangle size={16} strokeWidth={1.5} />
-            Auftrag zurückgegeben — Nichtkonformität
+            {t('rueckmeldung.returnedBanner')}
           </p>
           <p className="mt-1 text-sm text-err">{returnedNote}</p>
-          <p className="mt-2 text-xs text-err">Korrekturen vornehmen und die Rückmeldung erneut senden.</p>
+          <p className="mt-2 text-xs text-err">{t('rueckmeldung.returnedCorrectHint')}</p>
         </div>
       )}
 
@@ -272,16 +274,16 @@ export function RueckmeldungPage() {
       <div className="rounded-l border border-line bg-bg-1 p-4">
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div>
-            <p className="text-xs text-fg-2">Kunde</p>
+            <p className="text-xs text-fg-2">{t('workOrder.customer')}</p>
             <p className="font-medium text-fg-1">{order.clients?.name ?? '—'}</p>
           </div>
           <div>
-            <p className="text-xs text-fg-2">Projekt</p>
+            <p className="text-xs text-fg-2">{t('workOrder.project')}</p>
             <p className="font-medium text-fg-1">{order.projects?.code ?? '—'}</p>
           </div>
           {(order.address || order.city) && (
             <div className="col-span-2">
-              <p className="text-xs text-fg-2">Adresse</p>
+              <p className="text-xs text-fg-2">{t('workOrder.address')}</p>
               <p className="font-medium text-fg-1">{[order.address, order.city].filter(Boolean).join(', ')}</p>
             </div>
           )}
@@ -290,10 +292,10 @@ export function RueckmeldungPage() {
 
       {/* Time inputs */}
       <div className="rounded-l border border-line bg-bg-1 p-4">
-        <h3 className="mb-3 font-display text-sm font-semibold text-fg-1">Einsatzzeiten</h3>
+        <h3 className="mb-3 font-display text-sm font-semibold text-fg-1">{t('rueckmeldung.deploymentTimes')}</h3>
         <div className="grid grid-cols-2 gap-3">
-          <TimePickerField label="Beginn" value={startTime} onChange={setStartTime} />
-          <TimePickerField label="Ende" value={endTime} onChange={setEndTime} />
+          <TimePickerField label={t('rueckmeldung.start')} value={startTime} onChange={setStartTime} />
+          <TimePickerField label={t('rueckmeldung.end')} value={endTime} onChange={setEndTime} />
         </div>
       </div>
 
@@ -301,9 +303,9 @@ export function RueckmeldungPage() {
       {detailFields.length > 0 && (
         <div className="rounded-l border border-accent/30 bg-bg-1 p-4">
           <h3 className="mb-1 font-display text-sm font-semibold text-fg-1">
-            Technische Daten — {L.workType(order.work_type)}
+            {t('rueckmeldung.technicalData', { workType: L.workType(order.work_type) })}
           </h3>
-          <p className="mb-3 text-xs text-fg-2">Ausgeführte Arbeit dokumentieren</p>
+          <p className="mb-3 text-xs text-fg-2">{t('rueckmeldung.documentWork')}</p>
           <div className="grid grid-cols-1 gap-4">
             {detailFields.map((field) => (
               <div key={field.key} className={field.type === 'checkbox' ? 'flex items-center gap-3' : ''}>
@@ -328,7 +330,7 @@ export function RueckmeldungPage() {
                       onChange={(e) => setDetailField(field.key, e.target.value)}
                       className="w-full rounded-s border border-line bg-bg-0 px-3 py-2.5 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                     >
-                      <option value="">— wählen —</option>
+                      <option value="">{t('rueckmeldung.selectOption')}</option>
                       {field.options?.map((opt) => (
                         <option key={opt} value={opt}>{opt}</option>
                       ))}
@@ -356,7 +358,7 @@ export function RueckmeldungPage() {
 
       {/* Photos */}
       <div className="rounded-l border border-line bg-bg-1 p-4">
-        <h3 className="mb-3 font-display text-sm font-semibold text-fg-1">Fotos</h3>
+        <h3 className="mb-3 font-display text-sm font-semibold text-fg-1">{t('rueckmeldung.photos')}</h3>
         <div className="space-y-4">
           {(['before', 'during', 'after'] as PhotoType[]).map((type) => {
             const typePhotos = photosByType(type)
@@ -372,7 +374,7 @@ export function RueckmeldungPage() {
                     onClick={() => fileInputRefs[type].current?.click()}
                     className="rounded-s border border-line px-2.5 py-1 text-xs font-medium text-fg-2 hover:border-accent hover:text-accent transition-colors disabled:opacity-50"
                   >
-                    {uploadingType === type ? 'Lädt…' : '+ Foto'}
+                    {uploadingType === type ? t('rueckmeldung.uploading') : t('rueckmeldung.addPhoto')}
                   </button>
                   <input
                     ref={fileInputRefs[type]}
@@ -416,7 +418,7 @@ export function RueckmeldungPage() {
                     className="flex h-16 cursor-pointer items-center justify-center rounded-s border-2 border-dashed border-line text-xs text-fg-2 hover:border-accent/50 transition-colors"
                     onClick={() => fileInputRefs[type].current?.click()}
                   >
-                    Keine Fotos · Tippen um hinzuzufügen
+                    {t('rueckmeldung.noPhotos')}
                   </div>
                 )}
               </div>
@@ -428,13 +430,13 @@ export function RueckmeldungPage() {
       {/* Technician notes */}
       <div className="rounded-l border border-line bg-bg-1 p-4">
         <label className="mb-1 block text-xs font-medium text-fg-2">
-          Notizen / Besonderheiten
+          {t('rueckmeldung.notesLabel')}
         </label>
         <textarea
           value={techNotes}
           onChange={(e) => setTechNotes(e.target.value)}
           rows={3}
-          placeholder="Besonderheiten, Probleme, Hinweise für Admin…"
+          placeholder={t('rueckmeldung.notesPlaceholder')}
           className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent resize-none"
         />
       </div>
@@ -447,7 +449,7 @@ export function RueckmeldungPage() {
       )}
       {savedOk && (
         <div className="rounded-s border border-ok/30 bg-ok/10 px-4 py-3 text-sm text-ok">
-          Daten gespeichert.
+          {t('rueckmeldung.savedOk')}
         </div>
       )}
 
@@ -458,19 +460,19 @@ export function RueckmeldungPage() {
           onClick={handleSave}
           className="rounded-l border border-line px-4 py-3 text-sm font-semibold text-fg-1 hover:bg-bg-0 disabled:opacity-50 transition-colors"
         >
-          {isSaving ? 'Speichern…' : 'Zwischenspeichern'}
+          {isSaving ? t('common.saving') : t('rueckmeldung.saveTemp')}
         </button>
         <button
           disabled={isSaving || isSending}
           onClick={handleSend}
           className="rounded-l bg-accent px-4 py-3 text-sm font-semibold text-ink hover:bg-accent disabled:opacity-50 transition-colors"
         >
-          {isSending ? 'Wird gesendet…' : order.status === 'returned' ? 'Korrigierte RM senden' : 'Rückmeldung senden'}
+          {isSending ? t('common.sending') : order.status === 'returned' ? t('rueckmeldung.sendCorrected') : t('rueckmeldung.send')}
         </button>
       </div>
 
       <p className="text-center text-xs text-fg-2">
-        "Rückmeldung senden" übermittelt alle Daten an den Admin zur Zertifizierung.
+        {t('rueckmeldung.sendHint')}
       </p>
     </div>
   )

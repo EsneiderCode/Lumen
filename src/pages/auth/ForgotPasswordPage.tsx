@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/hooks/useAuth'
 import { ROUTES } from '@/config/routes'
 
 export function ForgotPasswordPage() {
+  const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [sent, setSent] = useState(false)
@@ -38,10 +40,10 @@ export function ForgotPasswordPage() {
             <span className="font-display text-2xl font-bold text-accent">L</span>
           </div>
           <h1 className="font-display text-2xl font-bold text-fg-1">
-            Passwort zurücksetzen
+            {t('auth.resetPassword')}
           </h1>
           <p className="mt-1 text-sm text-fg-2">
-            Geben Sie Ihre E-Mail-Adresse ein, um einen Link zum Zurücksetzen zu erhalten.
+            {t('auth.resetPasswordInstructions')}
           </p>
         </div>
 
@@ -64,14 +66,13 @@ export function ForgotPasswordPage() {
                 </svg>
               </div>
               <p className="text-sm text-fg-2">
-                Falls ein Konto mit dieser E-Mail existiert, erhalten Sie in Kürze einen Link zum
-                Zurücksetzen.
+                {t('auth.forgotPasswordSent')}
               </p>
               <Link
                 to={ROUTES.LOGIN}
                 className="inline-block text-sm font-medium text-accent hover:text-accent"
               >
-                Zurück zur Anmeldung
+                {t('auth.backToSignIn')}
               </Link>
             </div>
           ) : (
@@ -86,7 +87,7 @@ export function ForgotPasswordPage() {
                   htmlFor="reset-email"
                   className="block text-sm font-medium text-fg-3"
                 >
-                  E-Mail
+                  {t('auth.email')}
                 </label>
                 <input
                   id="reset-email"
@@ -104,13 +105,13 @@ export function ForgotPasswordPage() {
                 disabled={isSubmitting}
                 className="w-full rounded-s bg-accent px-4 py-2.5 text-sm font-semibold text-fg-1 transition-colors hover:bg-accent disabled:opacity-50"
               >
-                {isSubmitting ? 'Wird gesendet...' : 'Link senden'}
+                {isSubmitting ? t('common.sending') : t('auth.sendResetLink')}
               </button>
               <Link
                 to={ROUTES.LOGIN}
                 className="block text-center text-xs text-fg-2 transition-colors hover:text-accent"
               >
-                Zurück zur Anmeldung
+                {t('auth.backToSignIn')}
               </Link>
             </form>
           )}
