@@ -23,6 +23,7 @@ const CertificationPage  = lazy(() => import('@/pages/admin/CertificationPage').
 const ServiceItemsPage   = lazy(() => import('@/pages/admin/ServiceItemsPage').then(m => ({ default: m.ServiceItemsPage })))
 const UsersPage          = lazy(() => import('@/pages/admin/UsersPage').then(m => ({ default: m.UsersPage })))
 const MaterialsPage      = lazy(() => import('@/pages/admin/MaterialsPage').then(m => ({ default: m.MaterialsPage })))
+const SettingsPage       = lazy(() => import('@/pages/admin/SettingsPage').then(m => ({ default: m.SettingsPage })))
 
 // Technician chunk (field technicians on slow connections — keep lean)
 const TechDashboard      = lazy(() => import('@/pages/technician/TechDashboard').then(m => ({ default: m.TechDashboard })))
@@ -59,6 +60,7 @@ function App() {
                 <Route path={ROUTES.ADMIN.SERVICE_ITEMS} element={<ServiceItemsPage />} />
                 <Route path={ROUTES.ADMIN.PERSONNEL} element={<UsersPage />} />
                 <Route path={ROUTES.ADMIN.MATERIALS} element={<MaterialsPage />} />
+                <Route path={ROUTES.ADMIN.SETTINGS} element={<SettingsPage />} />
               </Route>
             </Route>
 

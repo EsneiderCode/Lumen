@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Outlet } from 'react-router'
+import { Outlet, useLocation } from 'react-router'
 import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
@@ -7,6 +7,7 @@ import { OfflineBanner } from '@/components/ui/OfflineBanner'
 
 export function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const location = useLocation()
 
   return (
     <div className="nx-app-shell flex h-screen flex-col">
@@ -17,7 +18,7 @@ export function AdminLayout() {
           <Topbar onOpenSidebar={() => setSidebarOpen(true)} />
           <main className="nx-main flex-1 overflow-auto px-4 py-5 md:px-7 md:py-6">
             <div className="nx-main-inner page-fade-in">
-              <ErrorBoundary>
+              <ErrorBoundary key={location.pathname}>
                 <Outlet />
               </ErrorBoundary>
             </div>
