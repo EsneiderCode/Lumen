@@ -53,6 +53,14 @@
       "emailNotConfirmed": "El correo no fue confirmado.",
       "tooManyAttempts": "Demasiados intentos. Probá más tarde.",
       "unknown": "No se pudo iniciar sesión. Probá de nuevo."
+    },
+    "pin": {
+      "tabLabel": "PIN",
+      "emailTab": "Admin",
+      "selectTeamLabel": "Equipo",
+      "pinLabel": "PIN",
+      "selectTeam": "Seleccioná un equipo antes de continuar.",
+      "enter6Digits": "Ingresá los 6 dígitos del PIN."
     }
   },
   "nav": {

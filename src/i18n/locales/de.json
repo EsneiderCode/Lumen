@@ -53,6 +53,14 @@
       "emailNotConfirmed": "E-Mail-Adresse wurde nicht bestätigt.",
       "tooManyAttempts": "Zu viele Versuche. Bitte später erneut versuchen.",
       "unknown": "Anmeldung fehlgeschlagen. Bitte erneut versuchen."
+    },
+    "pin": {
+      "tabLabel": "PIN",
+      "emailTab": "Admin",
+      "selectTeamLabel": "Team",
+      "pinLabel": "PIN",
+      "selectTeam": "Bitte zuerst ein Team auswählen.",
+      "enter6Digits": "Bitte alle 6 PIN-Ziffern eingeben."
     }
   },
   "nav": {
