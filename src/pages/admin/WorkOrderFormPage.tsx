@@ -200,7 +200,10 @@ export function WorkOrderFormPage() {
     if (!form.project_id) e.project_id = t('common.required')
     if (!form.operator_id) e.operator_id = t('common.required')
     if (!form.service_item_id) e.service_item_id = t('common.required')
-    if (!form.work_type) e.work_type = t('common.required')
+    // work_type is derived from the selected service item — if it's missing
+    // after a selection, the catalog item has no mapped work type (data issue),
+    // so we surface the error on service_item_id where the user can act on it.
+    if (form.service_item_id && !form.work_type) e.service_item_id = t('workOrder.noWorkType')
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -212,7 +215,10 @@ export function WorkOrderFormPage() {
       setSaveError(t('errors.sessionExpired'))
       return
     }
-    if (!form.work_type) return
+    if (!form.work_type) {
+      setSaveError(t('workOrder.noWorkType'))
+      return
+    }
 
     setIsSaving(true)
     setSaveError(null)

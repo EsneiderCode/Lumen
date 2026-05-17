@@ -185,6 +185,7 @@
     "notesPlaceholder": "Notas internas para el equipo…",
     "saveChanges": "Guardar cambios",
     "createOrder": "Crear orden",
+    "noWorkType": "Este ítem del catálogo no tiene un tipo de trabajo asignado. Seleccioná otro ítem.",
     "allStatuses": "Todos los estados",
     "allTeams": "Todos los equipos",
     "allTypes": "Todos los tipos",
