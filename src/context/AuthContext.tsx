@@ -29,12 +29,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!mounted) return
 
       if (event === 'SIGNED_OUT') {
-        console.warn('[Auth] SIGNED_OUT fired — session expired or token refresh failed')
         setUser(null)
         return
       }
 
-      if (event === 'TOKEN_REFRESHED' && session) {
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
         const profile = await authService.getCurrentUser()
         if (mounted && profile) setUser(profile)
       }

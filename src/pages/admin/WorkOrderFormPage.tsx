@@ -143,7 +143,9 @@ export function WorkOrderFormPage() {
   useEffect(() => {
     const operatorId = form.operator_id || undefined
     const opts = { includePrices: true as const, operatorId: operatorId ?? undefined }
-    fetchServiceItems(opts).then(({ data }) => setServiceItems(data))
+    // Only show items that have a detail_form — supplemental items (detail_form=null)
+    // cannot be used as the primary work type because work_orders.work_type is NOT NULL.
+    fetchServiceItems(opts).then(({ data }) => setServiceItems(data.filter((si) => si.detail_form != null)))
   }, [form.operator_id])
 
   // Load existing order for edit
@@ -222,6 +224,7 @@ export function WorkOrderFormPage() {
 
     setIsSaving(true)
     setSaveError(null)
+    try {
 
     const payload = {
       // Direct order = client_id IS NULL (per migration 005). DB FK is nullable.
@@ -285,6 +288,10 @@ export function WorkOrderFormPage() {
     }
 
     navigate('/admin/orders')
+    } catch (err) {
+      setSaveError(String(err))
+      setIsSaving(false)
+    }
   }
 
   if (isLoading) {
