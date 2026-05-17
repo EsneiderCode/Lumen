@@ -42,13 +42,18 @@ export function WorkOrdersPage() {
     let cancelled = false
     async function load() {
       setIsLoading(true)
-      const activeFilters: WorkOrderFilters = { ...filters }
-      if (debouncedSearch.trim()) activeFilters.search = debouncedSearch.trim()
-      const { data, total, error } = await fetchWorkOrders(activeFilters, page, PAGE_SIZE)
-      if (cancelled) return
-      if (error) setError(error)
-      else { setOrders(data); setTotal(total) }
-      setIsLoading(false)
+      try {
+        const activeFilters: WorkOrderFilters = { ...filters }
+        if (debouncedSearch.trim()) activeFilters.search = debouncedSearch.trim()
+        const { data, total, error } = await fetchWorkOrders(activeFilters, page, PAGE_SIZE)
+        if (cancelled) return
+        if (error) setError(error)
+        else { setOrders(data); setTotal(total) }
+      } catch {
+        if (!cancelled) setError('Verbindungsfehler. Bitte erneut versuchen.')
+      } finally {
+        if (!cancelled) setIsLoading(false)
+      }
     }
     void load()
     return () => { cancelled = true }

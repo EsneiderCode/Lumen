@@ -55,15 +55,20 @@ export function ContractorOrdersPage() {
     let cancelled = false
     async function load() {
       setIsLoading(true)
-      const { data, error } = await fetchContractorWorkOrders(userId)
-      if (cancelled) return
-      if (error) setError(error)
-      else setOrders(data)
-      setIsLoading(false)
+      try {
+        const { data, error } = await fetchContractorWorkOrders(userId)
+        if (cancelled) return
+        if (error) setError(error)
+        else setOrders(data)
+      } catch {
+        if (!cancelled) setError('Verbindungsfehler. Bitte erneut versuchen.')
+      } finally {
+        if (!cancelled) setIsLoading(false)
+      }
     }
     void load()
     return () => { cancelled = true }
-  }, [user])
+  }, [user?.id])
 
   const filtered = search.trim()
     ? orders.filter((o) =>

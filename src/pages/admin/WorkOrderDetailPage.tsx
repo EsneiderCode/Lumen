@@ -225,56 +225,60 @@ export function WorkOrderDetailPage() {
         { data: histData },
         { data: auditData },
       ]) => {
-        if (orderErr || !orderData) {
-          setError(orderErr ?? 'Auftrag nicht gefunden')
-          setIsLoading(false)
-          return
-        }
-        setOrder(orderData)
-        const loadedPhotos = (photoData ?? []) as Photo[]
-        setPhotos(loadedPhotos)
-        getPhotoSignedUrls(loadedPhotos.map((p) => p.storage_path)).then(setPhotoUrls)
-        setHistory((histData ?? []) as unknown as StateEntry[])
-        setCertAudits(auditData)
-
-        // Resolve collaborator type from the assignee's profile role
-        setCollabType('internal')
-        setExternalDocCompliance(null)
-        if (orderData.assigned_technician) {
-          const { data: prof } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', orderData.assigned_technician)
-            .single()
-          const role = (prof as { role?: UserRole } | null)?.role
-          const resolvedCollabType = getCollaboratorType(role)
-          setCollabType(resolvedCollabType)
-          if (resolvedCollabType === 'external') {
-            const { data: compliance } = await fetchContractorDocumentCompliance(
-              orderData.assigned_technician,
-            )
-            setExternalDocCompliance({
-              isCompliant: compliance.isCompliant,
-              missingTypes: compliance.missingTypes,
-            })
+        try {
+          if (orderErr || !orderData) {
+            setError(orderErr ?? 'Auftrag nicht gefunden')
+            return
           }
-        }
+          setOrder(orderData)
+          const loadedPhotos = (photoData ?? []) as Photo[]
+          setPhotos(loadedPhotos)
+          getPhotoSignedUrls(loadedPhotos.map((p) => p.storage_path)).then(setPhotoUrls)
+          setHistory((histData ?? []) as unknown as StateEntry[])
+          setCertAudits(auditData)
 
-        const table = workTypeToDetailTable(orderData.work_type)
-        const { data: detailData } = await fetchWorkOrderDetail(table, id)
-        if (detailData) {
-          const {
-            id: _i,
-            work_order_id: _w,
-            created_at: _c,
-            ...rest
-          } = detailData as Record<string, unknown>
-          void _i
-          void _w
-          void _c
-          setDetail(rest)
+          // Resolve collaborator type from the assignee's profile role
+          setCollabType('internal')
+          setExternalDocCompliance(null)
+          if (orderData.assigned_technician) {
+            const { data: prof } = await supabase
+              .from('profiles')
+              .select('role')
+              .eq('id', orderData.assigned_technician)
+              .single()
+            const role = (prof as { role?: UserRole } | null)?.role
+            const resolvedCollabType = getCollaboratorType(role)
+            setCollabType(resolvedCollabType)
+            if (resolvedCollabType === 'external') {
+              const { data: compliance } = await fetchContractorDocumentCompliance(
+                orderData.assigned_technician,
+              )
+              setExternalDocCompliance({
+                isCompliant: compliance.isCompliant,
+                missingTypes: compliance.missingTypes,
+              })
+            }
+          }
+
+          const table = workTypeToDetailTable(orderData.work_type)
+          const { data: detailData } = await fetchWorkOrderDetail(table, id)
+          if (detailData) {
+            const {
+              id: _i,
+              work_order_id: _w,
+              created_at: _c,
+              ...rest
+            } = detailData as Record<string, unknown>
+            void _i
+            void _w
+            void _c
+            setDetail(rest)
+          }
+        } catch {
+          setError('Verbindungsfehler. Bitte Seite neu laden.')
+        } finally {
+          setIsLoading(false)
         }
-        setIsLoading(false)
       },
     )
   }, [id])

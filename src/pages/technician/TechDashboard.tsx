@@ -49,7 +49,7 @@ export function TechDashboard() {
     }
     void load()
     return () => { cancelled = true }
-  }, [user])
+  }, [user?.id, user?.team])
 
   const todayCount = orders.filter(
     (o) => o.assigned_date?.slice(0, 10) === todayIso,

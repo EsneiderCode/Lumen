@@ -29,7 +29,7 @@ export function ContractorDashboard() {
       setActiveCount(data.filter((o) => ACTIVE_STATUSES.includes(o.status as WorkOrderStatus)).length)
       setDoneCount(data.filter((o) => DONE_STATUSES.includes(o.status as WorkOrderStatus)).length)
     })
-  }, [user])
+  }, [user?.id])
 
   return (
     <div>

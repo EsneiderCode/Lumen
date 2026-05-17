@@ -29,15 +29,20 @@ export function TechOrdersPage() {
     let cancelled = false
     async function load() {
       setIsLoading(true)
-      const { data, total, error } = await fetchMyWorkOrders(userId, team, page, PAGE_SIZE)
-      if (cancelled) return
-      if (error) setError(error)
-      else { setOrders(data); setTotal(total) }
-      setIsLoading(false)
+      try {
+        const { data, total, error } = await fetchMyWorkOrders(userId, team, page, PAGE_SIZE)
+        if (cancelled) return
+        if (error) setError(error)
+        else { setOrders(data); setTotal(total) }
+      } catch {
+        if (!cancelled) setError('Verbindungsfehler. Bitte erneut versuchen.')
+      } finally {
+        if (!cancelled) setIsLoading(false)
+      }
     }
     void load()
     return () => { cancelled = true }
-  }, [user, page])
+  }, [user?.id, user?.team, page])
 
   const filtered = search.trim()
     ? orders.filter(
