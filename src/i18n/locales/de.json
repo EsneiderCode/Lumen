@@ -747,5 +747,58 @@
     "viewAll": "Alle anzeigen →",
     "noOrders": "Keine aktiven Aufträge",
     "noOrdersDesc": "Dir sind aktuell keine Aufträge zugewiesen."
+  },
+  "tech": {
+    "updatingStatus": "Status wird aktualisiert…",
+    "startWork": "Arbeit beginnen",
+    "completeWork": "Ausführung abschließen",
+    "fillRueckmeldung": "Rückmeldung ausfüllen",
+    "rueckmeldungSentInfo": "Rückmeldung wurde eingereicht und wartet auf Überprüfung.",
+    "returnedBanner": "Rückmeldung zurückgegeben",
+    "correctRueckmeldung": "Rückmeldung korrigieren",
+    "orderDetails": "Auftragsdetails",
+    "technicalSpecs": "Technische Daten · {{workType}}",
+    "history": "Verlauf"
+  },
+  "settings": {
+    "subtitle": "Systemkonfiguration",
+    "telegram": {
+      "subtitle": "Konfiguriere Telegram-Gruppen für automatische Systembenachrichtigungen.",
+      "groups": {
+        "title": "Telegram-Gruppen",
+        "empty": "Keine Gruppen konfiguriert.",
+        "add": "Gruppe hinzufügen",
+        "edit": "Gruppe bearbeiten",
+        "confirmDelete": "Diese Gruppe löschen? Die zugehörigen Ereigniszuordnungen gehen verloren.",
+        "chatId": "Chat ID",
+        "chatIdPlaceholder": "-1001234567890",
+        "name": "Beschreibender Name",
+        "namePlaceholder": "Technisches Team Rot",
+        "purpose": "Zweck",
+        "status": "Status",
+        "active": "Aktiv",
+        "inactive": "Inaktiv",
+        "validate": "Prüfen",
+        "validating": "Wird geprüft…",
+        "validOk": "Zugriff bestätigt: {{title}}",
+        "validFail": "Der Bot hat keinen Zugriff auf diese Gruppe.",
+        "purposes": {
+          "tareas": "Aufgaben",
+          "alertas": "Warnungen",
+          "notificaciones": "Benachrichtigungen"
+        }
+      },
+      "mappings": {
+        "title": "Ereigniszuordnungen",
+        "subtitle": "Weise jedem Systemereignis eine oder mehrere Gruppen zu.",
+        "eventLabel": "Ereignis",
+        "noGroups": "Füge mindestens eine Gruppe hinzu, um Zuordnungen zu konfigurieren.",
+        "events": {
+          "order_returned_for_correction": "Auftrag zur Korrektur zurückgegeben",
+          "task_assigned": "Aufgabe zugewiesen",
+          "order_status_changed": "Statusänderung / Neuzuweisung / Bearbeitung"
+        }
+      }
+    }
   }
 }

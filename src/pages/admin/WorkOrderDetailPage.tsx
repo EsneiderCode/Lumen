@@ -42,7 +42,10 @@ import { useTranslation } from 'react-i18next'
 import { useLabels } from '@/i18n/labels'
 import { STATUS_COLORS, TEAM_DOT } from '@/constants/styles'
 import { DocumentUploader } from '@/components/ui/DocumentUploader'
-import { notifyOrderReturnedForCorrection } from '@/services/notificationService'
+import {
+  notifyOrderReturnedForCorrection,
+  notifyOrderStatusChanged,
+} from '@/services/notificationService'
 import { fetchServiceItems } from '@/services/serviceItemService'
 import { InvoicePreviewModal } from '@/components/admin/InvoicePreviewModal'
 import { fetchContractorDocumentCompliance } from '@/services/contractorDocumentService'
@@ -302,6 +305,13 @@ export function WorkOrderDetailPage() {
       setOrder((prev) => (prev ? { ...prev, status: updated!.status } : prev))
       await refreshLifecycleEvidence(id)
       setModal({ type: null, inputValue: '', categoryValue: '' })
+      // Skip 'returned' — notifyOrderReturnedForCorrection is called at the call site
+      if (toStatus !== 'returned')
+        void notifyOrderStatusChanged(
+          order.order_number,
+          L.status(toStatus),
+          user.email ?? undefined,
+        )
     }
     setIsTransitioning(false)
   }

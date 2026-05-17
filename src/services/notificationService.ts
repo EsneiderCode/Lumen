@@ -1,6 +1,8 @@
 /**
  * Notification service — Telegram integration via Supabase Edge Function.
- * Bot credentials stay server-side in TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID.
+ * Bot credentials stay server-side in TELEGRAM_BOT_TOKEN.
+ * Target groups are resolved from the `telegram_groups` / `event_group_mappings`
+ * tables configured in the admin dashboard.
  * All functions are fire-and-forget: failures are logged but never thrown.
  */
 
@@ -18,8 +20,8 @@ async function sendTelegram(payload: Record<string, string>): Promise<void> {
 }
 
 /**
- * Notifies the technician channel that an OS has been returned for correction.
- * Called after a successful `returned` status transition.
+ * Notifies configured groups that an order has been returned for correction.
+ * Triggered after a successful `returned` status transition.
  */
 export async function notifyOrderReturnedForCorrection(
   orderNumber: string,
@@ -31,5 +33,41 @@ export async function notifyOrderReturnedForCorrection(
     orderNumber,
     reason,
     ...(adminName ? { adminName } : {}),
+  })
+}
+
+/**
+ * Notifies configured groups that a work order has been assigned to someone.
+ * Triggered after a successful assignment action.
+ */
+export async function notifyTaskAssigned(
+  orderNumber: string,
+  assignedTo: string,
+  adminName?: string,
+): Promise<void> {
+  await sendTelegram({
+    type: 'task_assigned',
+    orderNumber,
+    assignedTo,
+    ...(adminName ? { adminName } : {}),
+  })
+}
+
+/**
+ * Notifies configured groups of a status change, reassignment, or modification
+ * on a work order (covers: reasignación, cambio de estado, edición, eliminación).
+ */
+export async function notifyOrderStatusChanged(
+  orderNumber: string,
+  newStatus: string,
+  adminName?: string,
+  reason?: string,
+): Promise<void> {
+  await sendTelegram({
+    type: 'order_status_changed',
+    orderNumber,
+    newStatus,
+    ...(adminName ? { adminName } : {}),
+    ...(reason ? { reason } : {}),
   })
 }

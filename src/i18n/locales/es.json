@@ -747,5 +747,58 @@
     "viewAll": "Ver todas →",
     "noOrders": "Sin órdenes activas",
     "noOrdersDesc": "No tenés órdenes asignadas en este momento."
+  },
+  "tech": {
+    "updatingStatus": "Actualizando estado…",
+    "startWork": "Iniciar trabajo",
+    "completeWork": "Completar ejecución",
+    "fillRueckmeldung": "Completar Rückmeldung",
+    "rueckmeldungSentInfo": "La Rückmeldung fue enviada y está pendiente de revisión.",
+    "returnedBanner": "Rückmeldung devuelta",
+    "correctRueckmeldung": "Corregir Rückmeldung",
+    "orderDetails": "Detalles del pedido",
+    "technicalSpecs": "Datos técnicos · {{workType}}",
+    "history": "Historial"
+  },
+  "settings": {
+    "subtitle": "Configuración del sistema",
+    "telegram": {
+      "subtitle": "Configurá los grupos de Telegram para las notificaciones automáticas del sistema.",
+      "groups": {
+        "title": "Grupos de Telegram",
+        "empty": "No hay grupos configurados.",
+        "add": "Agregar grupo",
+        "edit": "Editar grupo",
+        "confirmDelete": "¿Eliminar este grupo? Se perderán los mapeos de eventos asociados.",
+        "chatId": "Chat ID",
+        "chatIdPlaceholder": "-1001234567890",
+        "name": "Nombre descriptivo",
+        "namePlaceholder": "Equipo Técnico Rot",
+        "purpose": "Propósito",
+        "status": "Estado",
+        "active": "Activo",
+        "inactive": "Inactivo",
+        "validate": "Validar",
+        "validating": "Validando…",
+        "validOk": "Acceso confirmado: {{title}}",
+        "validFail": "El bot no tiene acceso a este grupo.",
+        "purposes": {
+          "tareas": "Tareas",
+          "alertas": "Alertas",
+          "notificaciones": "Notificaciones"
+        }
+      },
+      "mappings": {
+        "title": "Mapeo de eventos",
+        "subtitle": "Asigná cada evento del sistema a uno o varios grupos.",
+        "eventLabel": "Evento",
+        "noGroups": "Agregá al menos un grupo para configurar los mapeos.",
+        "events": {
+          "order_returned_for_correction": "Orden devuelta para corrección",
+          "task_assigned": "Tarea asignada",
+          "order_status_changed": "Cambio de estado / reasignación / modificación"
+        }
+      }
+    }
   }
 }

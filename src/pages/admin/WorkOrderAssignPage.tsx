@@ -7,6 +7,7 @@ import {
   fetchTechnicians,
   assignWorkOrder,
 } from '@/services/workOrderService'
+import { notifyTaskAssigned } from '@/services/notificationService'
 import type { TeamColor, WorkType } from '@/types/enums'
 import { useLabels } from '@/i18n/labels'
 import { TEAMS } from '@/constants/styles'
@@ -73,6 +74,10 @@ export function WorkOrderAssignPage() {
       setError(error)
       setIsSaving(false)
     } else {
+      const assigneeName =
+        technicians.find((t) => t.id === selectedTechnician)?.full_name ?? selectedTechnician
+      if (order)
+        void notifyTaskAssigned(order.order_number, assigneeName, user.email ?? undefined)
       navigate('/admin/orders')
     }
   }

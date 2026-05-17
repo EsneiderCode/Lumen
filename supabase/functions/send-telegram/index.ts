@@ -1,8 +1,10 @@
-import { CORS_HEADERS, env, json, selectOne } from '../_shared/http.ts'
+import { CORS_HEADERS, env, json, supabaseFetch } from '../_shared/http.ts'
 
 declare const Deno: {
   serve(handler: (req: Request) => Response | Promise<Response>): void
 }
+
+// ── Types ────────────────────────────────────────────────────────────────────
 
 interface AuthUserResponse {
   id?: string
@@ -13,42 +15,74 @@ type ProfileRow = Record<string, unknown> & {
   is_active: boolean
 }
 
+type TelegramEventType =
+  | 'order_returned_for_correction'
+  | 'task_assigned'
+  | 'order_status_changed'
+
 interface TelegramBody {
-  type?: string
+  /** Special action — not a notification send */
+  action?: 'validate_chat'
+  /** Used with action=validate_chat */
+  chatId?: string
+  /** Notification event type */
+  type?: TelegramEventType
   orderNumber?: string
   reason?: string
   adminName?: string
+  /** task_assigned: person assigned */
+  assignedTo?: string
+  /** order_status_changed: human-readable new status */
+  newStatus?: string
 }
 
-const FIELD_LIMITS = {
+interface GroupRow {
+  chat_id: string
+}
+
+interface MappingRow {
+  telegram_group_id: string
+}
+
+// ── Field limits (prevent oversized Telegram messages) ────────────────────────
+
+const MAX = {
   orderNumber: 120,
-  reason: 3_000,
-  adminName: 120,
+  reason:      3_000,
+  adminName:   120,
+  assignedTo:  120,
+  newStatus:   120,
+  chatId:      64,
 } as const
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function readBody(value: unknown): TelegramBody {
   if (!value || typeof value !== 'object') return {}
-  const body = value as Record<string, unknown>
+  const b = value as Record<string, unknown>
   return {
-    type: typeof body.type === 'string' ? body.type : undefined,
-    orderNumber: typeof body.orderNumber === 'string' ? body.orderNumber : undefined,
-    reason: typeof body.reason === 'string' ? body.reason : undefined,
-    adminName: typeof body.adminName === 'string' ? body.adminName : undefined,
+    action:      typeof b.action      === 'string' ? (b.action as TelegramBody['action']) : undefined,
+    chatId:      typeof b.chatId      === 'string' ? b.chatId      : undefined,
+    type:        typeof b.type        === 'string' ? (b.type as TelegramEventType) : undefined,
+    orderNumber: typeof b.orderNumber === 'string' ? b.orderNumber : undefined,
+    reason:      typeof b.reason      === 'string' ? b.reason      : undefined,
+    adminName:   typeof b.adminName   === 'string' ? b.adminName   : undefined,
+    assignedTo:  typeof b.assignedTo  === 'string' ? b.assignedTo  : undefined,
+    newStatus:   typeof b.newStatus   === 'string' ? b.newStatus   : undefined,
   }
 }
 
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
+function esc(v: string): string {
+  return v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
-function trimField(value: string | undefined, maxLength: number): string | undefined {
-  const trimmed = value?.trim()
-  if (!trimmed) return undefined
-  return trimmed.length > maxLength ? `${trimmed.slice(0, maxLength - 1)}…` : trimmed
+function trim(v: string | undefined, max: number): string | undefined {
+  const t = v?.trim()
+  if (!t) return undefined
+  return t.length > max ? `${t.slice(0, max - 1)}…` : t
 }
+
+// ── Auth guard ────────────────────────────────────────────────────────────────
 
 async function requireAdmin(
   req: Request,
@@ -59,74 +93,173 @@ async function requireAdmin(
   if (!auth) return json(401, { error: 'Missing authorization' })
 
   const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
-    headers: {
-      apikey: serviceRoleKey,
-      authorization: auth,
-    },
+    headers: { apikey: serviceRoleKey, authorization: auth },
   })
   if (!userRes.ok) return json(401, { error: 'Invalid authorization' })
 
   const authUser = (await userRes.json()) as AuthUserResponse
   if (!authUser.id) return json(401, { error: 'Invalid authorization' })
 
-  const profile = await selectOne<ProfileRow>(
+  const profiles = await supabaseFetch<ProfileRow[]>(
     supabaseUrl,
     serviceRoleKey,
-    'profiles',
-    `select=role,is_active&id=eq.${encodeURIComponent(authUser.id)}`,
+    `profiles?select=role,is_active&id=eq.${encodeURIComponent(authUser.id)}&limit=1`,
+    { method: 'GET' },
   )
+  const profile = profiles[0] ?? null
   if (!profile || profile.role !== 'admin' || !profile.is_active) {
     return json(403, { error: 'Admin access required' })
   }
   return null
 }
 
-function buildMessage(body: TelegramBody): string | null {
-  if (body.type !== 'order_returned_for_correction') return null
-  const orderNumber = trimField(body.orderNumber, FIELD_LIMITS.orderNumber)
-  const reason = trimField(body.reason, FIELD_LIMITS.reason)
-  if (!orderNumber || !reason) return null
+// ── Message builders ──────────────────────────────────────────────────────────
 
-  const adminName = trimField(body.adminName, FIELD_LIMITS.adminName)
-  const who = adminName ? ` por <b>${escapeHtml(adminName)}</b>` : ''
-  return (
-    `⚠️ <b>Orden devuelta para corrección</b>\n\n` +
-    `🔖 OS: <b>${escapeHtml(orderNumber)}</b>\n` +
-    `👤 Devuelta${who}\n\n` +
-    `📋 <b>Motivo:</b>\n${escapeHtml(reason)}`
-  )
+function buildMessage(body: TelegramBody): string | null {
+  const orderNumber = trim(body.orderNumber, MAX.orderNumber)
+  const adminName   = trim(body.adminName,   MAX.adminName)
+  const who         = adminName ? ` por <b>${esc(adminName)}</b>` : ''
+
+  switch (body.type) {
+    case 'order_returned_for_correction': {
+      const reason = trim(body.reason, MAX.reason)
+      if (!orderNumber || !reason) return null
+      return (
+        `⚠️ <b>Orden devuelta para corrección</b>\n\n` +
+        `🔖 OS: <b>${esc(orderNumber)}</b>\n` +
+        `👤 Devuelta${who}\n\n` +
+        `📋 <b>Motivo:</b>\n${esc(reason)}`
+      )
+    }
+
+    case 'task_assigned': {
+      const assignedTo = trim(body.assignedTo, MAX.assignedTo)
+      if (!orderNumber || !assignedTo) return null
+      return (
+        `📋 <b>Tarea asignada</b>\n\n` +
+        `🔖 OS: <b>${esc(orderNumber)}</b>\n` +
+        `👷 Asignada a: <b>${esc(assignedTo)}</b>\n` +
+        `👤 Asignada${who}`
+      )
+    }
+
+    case 'order_status_changed': {
+      const newStatus = trim(body.newStatus, MAX.newStatus)
+      if (!orderNumber || !newStatus) return null
+      const reason    = trim(body.reason, MAX.reason)
+      const reasonLine = reason ? `\n\n📋 <b>Detalle:</b>\n${esc(reason)}` : ''
+      return (
+        `🔄 <b>Cambio en orden</b>\n\n` +
+        `🔖 OS: <b>${esc(orderNumber)}</b>\n` +
+        `📌 Estado: <b>${esc(newStatus)}</b>\n` +
+        `👤 Actualizado${who}` +
+        reasonLine
+      )
+    }
+
+    default:
+      return null
+  }
 }
+
+// ── Chat validation ───────────────────────────────────────────────────────────
+
+async function handleValidateChat(body: TelegramBody, botToken: string): Promise<Response> {
+  const chatId = trim(body.chatId, MAX.chatId)
+  if (!chatId) return json(400, { error: 'chatId is required' })
+
+  const res = await fetch(
+    `https://api.telegram.org/bot${botToken}/getChat?chat_id=${encodeURIComponent(chatId)}`,
+  )
+  const data = await res.json() as { ok: boolean; result?: { title?: string; first_name?: string } }
+
+  if (!data.ok) return json(200, { ok: false })
+
+  const title = data.result?.title ?? data.result?.first_name ?? chatId
+  return json(200, { ok: true, title })
+}
+
+// ── Group lookup ──────────────────────────────────────────────────────────────
+
+async function resolveGroups(
+  eventType: TelegramEventType,
+  supabaseUrl: string,
+  serviceRoleKey: string,
+): Promise<string[]> {
+  const mappings = await supabaseFetch<MappingRow[]>(
+    supabaseUrl,
+    serviceRoleKey,
+    `event_group_mappings?select=telegram_group_id&event_type=eq.${encodeURIComponent(eventType)}&is_active=eq.true`,
+    { method: 'GET' },
+  )
+  if (!mappings.length) return []
+
+  const ids = mappings.map((m) => m.telegram_group_id).join(',')
+  const groups = await supabaseFetch<GroupRow[]>(
+    supabaseUrl,
+    serviceRoleKey,
+    `telegram_groups?select=chat_id&id=in.(${ids})&is_active=eq.true`,
+    { method: 'GET' },
+  )
+  return groups.map((g) => g.chat_id)
+}
+
+// ── Main handler ──────────────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS_HEADERS })
   if (req.method !== 'POST') return json(405, { error: 'Method not allowed' })
 
   try {
-    const supabaseUrl = env('SUPABASE_URL')
+    const supabaseUrl    = env('SUPABASE_URL')
     const serviceRoleKey = env('SUPABASE_SERVICE_ROLE_KEY')
+    const botToken       = env('TELEGRAM_BOT_TOKEN')
+
     const adminError = await requireAdmin(req, supabaseUrl, serviceRoleKey)
     if (adminError) return adminError
 
-    const text = buildMessage(readBody(await req.json().catch(() => null)))
-    if (!text) return json(400, { error: 'Invalid notification payload' })
+    const body = readBody(await req.json().catch(() => null))
 
-    const botToken = env('TELEGRAM_BOT_TOKEN')
-    const chatId = env('TELEGRAM_CHAT_ID')
-    const telegramRes = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' }),
-    })
-
-    if (!telegramRes.ok) {
-      const details = await telegramRes.text()
-      console.error('[send-telegram] telegram failed', details)
-      return json(502, { error: 'Telegram delivery failed' })
+    // ── validate_chat action ─────────────────────────────────────────────────
+    if (body.action === 'validate_chat') {
+      return await handleValidateChat(body, botToken)
     }
 
-    return json(200, { ok: true })
+    // ── notification send ────────────────────────────────────────────────────
+    if (!body.type) return json(400, { error: 'Missing type' })
+
+    const text = buildMessage(body)
+    if (!text) return json(400, { error: 'Invalid notification payload' })
+
+    const chatIds = await resolveGroups(body.type, supabaseUrl, serviceRoleKey)
+    if (!chatIds.length) {
+      console.warn('[send-telegram] no active groups for event:', body.type)
+      return json(200, { ok: true, sent: 0 })
+    }
+
+    const results = await Promise.allSettled(
+      chatIds.map((chatId) =>
+        fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' }),
+        }).then(async (r) => {
+          if (!r.ok) throw new Error(await r.text())
+        }),
+      ),
+    )
+
+    const failures = results.filter((r) => r.status === 'rejected')
+    if (failures.length) {
+      failures.forEach((f) =>
+        console.error('[send-telegram] delivery failed', (f as PromiseRejectedResult).reason),
+      )
+    }
+
+    const sent = results.length - failures.length
+    return json(200, { ok: true, sent, failed: failures.length })
   } catch (error) {
-    console.error('[send-telegram] failed', error)
+    console.error('[send-telegram] unexpected error', error)
     return json(500, { error: error instanceof Error ? error.message : 'Unknown error' })
   }
 })
