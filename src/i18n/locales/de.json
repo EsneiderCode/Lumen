@@ -186,6 +186,7 @@
     "saveChanges": "Änderungen speichern",
     "createOrder": "Auftrag erstellen",
     "noWorkType": "Dieses Katalogelement hat keinen zugeordneten Auftragstyp. Bitte ein anderes Element wählen.",
+    "fixErrors": "Bitte alle Pflichtfelder ausfüllen (rot markiert).",
     "allStatuses": "Alle Status",
     "allTeams": "Alle Teams",
     "allTypes": "Alle Typen",

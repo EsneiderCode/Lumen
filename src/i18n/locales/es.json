@@ -186,6 +186,7 @@
     "saveChanges": "Guardar cambios",
     "createOrder": "Crear orden",
     "noWorkType": "Este ítem del catálogo no tiene un tipo de trabajo asignado. Seleccioná otro ítem.",
+    "fixErrors": "Completá todos los campos obligatorios (marcados en rojo).",
     "allStatuses": "Todos los estados",
     "allTeams": "Todos los equipos",
     "allTypes": "Todos los tipos",
