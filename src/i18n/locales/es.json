@@ -552,7 +552,8 @@
     "minLength": "Mínimo {{n}} caracteres",
     "invalidEmail": "Correo electrónico inválido",
     "networkError": "Error de red. Probá de nuevo.",
-    "unexpected": "Algo salió mal."
+    "unexpected": "Algo salió mal.",
+    "sessionExpired": "Sesión expirada. Por favor, iniciá sesión nuevamente."
   },
   "catalog": {
     "title": "Catálogo de servicios",

@@ -552,7 +552,8 @@
     "minLength": "Mindestens {{n}} Zeichen",
     "invalidEmail": "Ungültige E-Mail-Adresse",
     "networkError": "Netzwerkfehler. Bitte erneut versuchen.",
-    "unexpected": "Etwas ist schiefgelaufen."
+    "unexpected": "Etwas ist schiefgelaufen.",
+    "sessionExpired": "Sitzung abgelaufen. Bitte neu anmelden."
   },
   "catalog": {
     "title": "Service-Katalog",

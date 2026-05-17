@@ -207,7 +207,11 @@ export function WorkOrderFormPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!validate() || !user) return
+    if (!validate()) return
+    if (!user) {
+      setSaveError(t('errors.sessionExpired'))
+      return
+    }
     if (!form.work_type) return
 
     setIsSaving(true)
