@@ -83,6 +83,7 @@ function iconForMime(mime: string | null): LucideIcon {
 export function DocumentUploader(props: DocumentUploaderProps) {
   const { documentType, label, hint, readOnly = false } = props
   const isStaged = 'stagedFiles' in props && props.stagedFiles !== undefined
+  const workOrderId = !isStaged ? (props as ImmediateProps).workOrderId : undefined
   const inputRef = useRef<HTMLInputElement>(null)
 
   // Immediate-mode state (server-backed)
@@ -94,9 +95,7 @@ export function DocumentUploader(props: DocumentUploaderProps) {
 
   // Load existing docs only in immediate mode
   useEffect(() => {
-    if (isStaged || readOnly) return
-    const workOrderId = (props as ImmediateProps).workOrderId
-    if (!workOrderId) return
+    if (isStaged || readOnly || !workOrderId) return
     let cancelled = false
     fetchWorkOrderDocuments(workOrderId).then(({ data }) => {
       if (cancelled) return
@@ -107,7 +106,7 @@ export function DocumentUploader(props: DocumentUploaderProps) {
       })
     })
     return () => { cancelled = true }
-  }, [isStaged, readOnly, documentType, props])
+  }, [isStaged, readOnly, documentType, workOrderId])
 
   const allowedMimes = allowedMimesFor(documentType)
   const allowedExtensions = allowedExtensionsFor(documentType)

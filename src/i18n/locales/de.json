@@ -202,6 +202,7 @@
     "colClientProject": "Kunde / Projekt",
     "colStatus": "Status",
     "actionAssign": "Zuweisen",
+    "actionReassign": "Neu zuweisen",
     "actionEdit": "Bearb.",
     "deleteTitle": "Auftrag löschen?",
     "deleteWarning": "Diese Aktion kann nicht rückgängig gemacht werden.",

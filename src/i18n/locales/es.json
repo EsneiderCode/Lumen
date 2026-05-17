@@ -202,6 +202,7 @@
     "colClientProject": "Cliente / Proyecto",
     "colStatus": "Estado",
     "actionAssign": "Asignar",
+    "actionReassign": "Reasignar",
     "actionEdit": "Editar",
     "deleteTitle": "¿Eliminar orden?",
     "deleteWarning": "Esta acción no se puede deshacer.",

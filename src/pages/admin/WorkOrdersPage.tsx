@@ -352,13 +352,13 @@ export function WorkOrdersPage() {
                             t('common.details')
                           )}
                         </button>
-                        {(order.status === 'created') && (
+                        {(order.status === 'created' || order.status === 'assigned') && (
                           <button
                             onClick={() => navigate(`/admin/orders/${order.id}/assign`)}
                             aria-label={`${t('workOrder.actionAssign')} ${order.order_number}`}
                             className="rounded px-2.5 py-1.5 text-xs font-medium text-accent hover:bg-accent/10 transition-colors"
                           >
-                            {t('workOrder.actionAssign')}
+                            {order.status === 'assigned' ? t('workOrder.actionReassign') : t('workOrder.actionAssign')}
                           </button>
                         )}
                         <button

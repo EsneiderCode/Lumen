@@ -602,6 +602,14 @@ export function WorkOrderDetailPage() {
               PDF
             </button>
           )}
+          {(order.status === 'created' || order.status === 'assigned') && (
+            <button
+              onClick={() => navigate(`/admin/orders/${id}/assign`)}
+              className="rounded-s border border-accent/50 px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent/10 transition-colors"
+            >
+              {order.status === 'assigned' ? t('workOrder.actionReassign') : t('workOrder.actionAssign')}
+            </button>
+          )}
           <button
             onClick={() => navigate(`/admin/orders/${id}/edit`)}
             className="rounded-s border border-line px-3 py-1.5 text-xs font-medium text-fg-2 hover:border-accent hover:text-accent transition-colors"

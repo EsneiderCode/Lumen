@@ -291,7 +291,11 @@ export function WorkOrderFormPage() {
       }
     }
 
-    navigate('/admin/orders')
+    if (isEdit) {
+      navigate('/admin/orders')
+    } else {
+      navigate(`/admin/orders/${orderId}/assign`)
+    }
     } catch (err) {
       setSaveError(String(err))
       setIsSaving(false)
