@@ -609,50 +609,33 @@ describe('single-order lifecycle RPC adapters', () => {
   })
 })
 
-describe('assignWorkOrder — contractor compliance', () => {
-  it('blocks contractor assignment with all missing document reasons before RPC/update', async () => {
-    setupSupabaseForAssignment({ profileRole: 'contractor', contractorDocuments: [] })
+describe('assignWorkOrder — team-based assignment', () => {
+  it('assigns a work order to a team and clears the individual technician', async () => {
+    setupSupabaseForAssignment({ profileRole: 'technician' })
 
-    const result = await assignWorkOrder('wo-1', 'rot', 'contractor-1', '2026-05-15', 'admin-1')
-
-    expect(result.data).toBeNull()
-    expect(result.error).toMatch(/Gewerbeanmeldung fehlt/)
-    expect(result.error).toMatch(/Subunternehmervertrag fehlt/)
-    expect(result.reasons).toHaveLength(6)
-    expect(result.reasons?.map((reason) => reason.code)).toEqual(
-      Array(6).fill('contractor_documents_missing'),
-    )
-    expect(mockSupabase.rpc).not.toHaveBeenCalled()
-  })
-
-  it('uses checked assignment RPC for compliant contractor assignment', async () => {
-    const validDocs = [
-      'gewerbeanmeldung',
-      'haftpflichtversicherung',
-      'unbedenklichkeit_finanzamt',
-      'unbedenklichkeit_sozialkasse',
-      'id_passport',
-      'subcontractor_agreement',
-    ].map((document_type) => ({
-      id: `doc-${document_type}`,
-      contractor_id: 'contractor-1',
-      document_type,
-      status: 'approved',
-      expires_at: null,
-      uploaded_at: '2026-01-01T00:00:00Z',
-    }))
-    setupSupabaseForAssignment({ profileRole: 'contractor', contractorDocuments: validDocs })
-
-    const result = await assignWorkOrder('wo-1', 'rot', 'contractor-1', '2026-05-15', 'admin-1')
+    const result = await assignWorkOrder('wo-1', 'rot', '2026-05-15', 'admin-1')
 
     expect(result.error).toBeNull()
-    expect(mockSupabase.rpc).toHaveBeenCalledWith('assign_work_order_checked', {
-      p_work_order_id: 'wo-1',
-      p_team: 'rot',
-      p_assignee_id: 'contractor-1',
-      p_assigned_date: '2026-05-15',
-      p_changed_by: 'admin-1',
-      p_notes: null,
-    })
+    expect(result.data).toEqual({ id: 'wo-1', status: 'assigned' })
+  })
+
+  it('returns an error when Supabase update fails', async () => {
+    mockSupabase.from = vi.fn(() => ({
+      select: () => ({
+        eq: () => ({ single: () => Promise.resolve({ data: { status: 'created' }, error: null }) }),
+      }),
+      update: () => ({
+        eq: () => ({
+          select: () => ({
+            single: () => Promise.resolve({ data: null, error: { message: 'DB error' } }),
+          }),
+        }),
+      }),
+    }))
+
+    const result = await assignWorkOrder('wo-1', 'gruen', '2026-05-15', 'admin-1')
+
+    expect(result.data).toBeNull()
+    expect(result.error).toBe('DB error')
   })
 })

@@ -528,7 +528,7 @@ export async function fetchMyWorkOrders(
     .range(from, to)
 
   if (!team) return { data: [], total: 0, error: null }
-  query = query.eq('assigned_team', team)
+  query = query.eq('assigned_team', team as TeamColor)
 
   const { data, error, count } = await query
   return {
@@ -816,7 +816,7 @@ export async function fetchStateHistory(workOrderId: string) {
 
 // ── Contractor (LUM-019) ──────────────────────────────────────
 
-export async function fetchContractorWorkOrders(userId: string, team: TeamColor | null) {
+export async function fetchContractorWorkOrders(_userId: string, team: string | null) {
   if (!team) return { data: [] as WorkOrderWithRelations[], error: null }
   const { data, error } = await supabase
     .from('work_orders')
@@ -828,7 +828,7 @@ export async function fetchContractorWorkOrders(userId: string, team: TeamColor 
       operators ( name, code )
     `,
     )
-    .eq('assigned_team', team)
+    .eq('assigned_team', team as TeamColor)
     .order('assigned_date', { ascending: false, nullsFirst: false })
   return {
     data: (data ?? []) as unknown as WorkOrderWithRelations[],
