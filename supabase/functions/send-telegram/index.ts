@@ -32,6 +32,8 @@ interface TelegramBody {
   adminName?: string
   /** task_assigned: person assigned */
   assignedTo?: string
+  /** task_assigned: direct link to the order */
+  orderUrl?: string
   /** order_status_changed: human-readable new status */
   newStatus?: string
 }
@@ -51,6 +53,7 @@ const MAX = {
   reason:      3_000,
   adminName:   120,
   assignedTo:  120,
+  orderUrl:    512,
   newStatus:   120,
   chatId:      64,
 } as const
@@ -68,6 +71,7 @@ function readBody(value: unknown): TelegramBody {
     reason:      typeof b.reason      === 'string' ? b.reason      : undefined,
     adminName:   typeof b.adminName   === 'string' ? b.adminName   : undefined,
     assignedTo:  typeof b.assignedTo  === 'string' ? b.assignedTo  : undefined,
+    orderUrl:    typeof b.orderUrl    === 'string' ? b.orderUrl    : undefined,
     newStatus:   typeof b.newStatus   === 'string' ? b.newStatus   : undefined,
   }
 }
@@ -134,12 +138,14 @@ function buildMessage(body: TelegramBody): string | null {
 
     case 'task_assigned': {
       const assignedTo = trim(body.assignedTo, MAX.assignedTo)
+      const orderUrl   = trim(body.orderUrl,   MAX.orderUrl)
       if (!orderNumber || !assignedTo) return null
+      const linkLine = orderUrl ? `\n\n🔗 <a href="${orderUrl}">Ver orden</a>` : ''
       return (
         `📋 <b>Tarea asignada</b>\n\n` +
         `🔖 OS: <b>${esc(orderNumber)}</b>\n` +
-        `👷 Asignada a: <b>${esc(assignedTo)}</b>\n` +
-        `👤 Asignada${who}`
+        `👷 Asignada a: <b>${esc(assignedTo)}</b>` +
+        linkLine
       )
     }
 

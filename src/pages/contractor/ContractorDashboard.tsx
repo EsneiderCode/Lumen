@@ -25,7 +25,7 @@ export function ContractorDashboard() {
 
   useEffect(() => {
     if (!user) return
-    fetchContractorWorkOrders(user.id).then(({ data }) => {
+    fetchContractorWorkOrders(user.id, user.team ?? null).then(({ data }) => {
       setActiveCount(data.filter((o) => ACTIVE_STATUSES.includes(o.status as WorkOrderStatus)).length)
       setDoneCount(data.filter((o) => DONE_STATUSES.includes(o.status as WorkOrderStatus)).length)
     })

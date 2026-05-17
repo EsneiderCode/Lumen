@@ -1,14 +1,9 @@
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/types/database.types'
 import type { WorkOrderStatus, WorkType, TeamColor, UserRole } from '@/types/enums'
+import { fetchContractorDocumentCompliance } from '@/services/contractorDocumentService'
 import {
-  fetchContractorDocumentCompliance,
-  fetchContractorDocuments,
-} from '@/services/contractorDocumentService'
-import {
-  buildContractorDocumentFailureReasons,
   isDirectWorkOrder,
-  reasonsToMessage,
   toFailureResult,
   toSuccessResult,
   type WorkOrderActionReason,
@@ -403,7 +398,6 @@ export async function deleteWorkOrder(id: string) {
 export async function assignWorkOrder(
   id: string,
   team: TeamColor | null,
-  technicianId: string | null,
   assignedDate: string | null,
   changedBy: string,
 ): Promise<{
@@ -411,48 +405,6 @@ export async function assignWorkOrder(
   error: string | null
   reasons?: WorkOrderActionReason[]
 }> {
-  if (technicianId) {
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', technicianId)
-      .single()
-
-    if (profileError) return { data: null, error: profileError.message }
-
-    if (getCollaboratorType(profile?.role as UserRole | null) === 'external') {
-      const { data: documents, error: documentError } = await fetchContractorDocuments(technicianId)
-      if (documentError) return { data: null, error: documentError }
-
-      const reasons = buildContractorDocumentFailureReasons(
-        documents,
-        assignedDate ?? new Date().toISOString().slice(0, 10),
-      )
-      if (reasons.length > 0) {
-        return { data: null, error: reasonsToMessage(reasons), reasons }
-      }
-
-      const { data, error } = await (
-        supabase as unknown as {
-          rpc: (
-            fn: string,
-            args: Record<string, unknown>,
-          ) => Promise<{ data: WorkOrderRow | null; error: { message: string } | null }>
-        }
-      ).rpc('assign_work_order_checked', {
-        p_work_order_id: id,
-        p_team: team,
-        p_assignee_id: technicianId,
-        p_assigned_date: assignedDate,
-        p_changed_by: changedBy,
-        p_notes: null,
-      })
-
-      return { data, error: error?.message ?? null }
-    }
-  }
-
-  // Fetch current status first
   const { data: current } = await supabase
     .from('work_orders')
     .select('status')
@@ -465,7 +417,7 @@ export async function assignWorkOrder(
     .from('work_orders')
     .update({
       assigned_team: team,
-      assigned_technician: technicianId,
+      assigned_technician: null,
       assigned_date: assignedDate,
       status: 'assigned',
       updated_at: new Date().toISOString(),
@@ -481,7 +433,7 @@ export async function assignWorkOrder(
     from_status: fromStatus,
     to_status: 'assigned',
     changed_by: changedBy,
-    notes: technicianId ? 'Zugewiesen an Mitarbeiter' : `Zugewiesen an Team ${team ?? '-'}`,
+    notes: `Zugewiesen an Team ${team ?? '-'}`,
   })
 
   return { data, error: null }
@@ -552,7 +504,7 @@ export async function fetchWorkOrderDetail(table: DetailTable, workOrderId: stri
 // ── Technician / Sprint 4 ──────────────────────────────────────
 
 export async function fetchMyWorkOrders(
-  userId: string,
+  _userId: string,
   team: string | null,
   page = 0,
   pageSize = 20,
@@ -575,11 +527,8 @@ export async function fetchMyWorkOrders(
     .order('assigned_date', { ascending: true, nullsFirst: false })
     .range(from, to)
 
-  if (team) {
-    query = query.or(`assigned_technician.eq.${userId},assigned_team.eq.${team}`)
-  } else {
-    query = query.eq('assigned_technician', userId)
-  }
+  if (!team) return { data: [], total: 0, error: null }
+  query = query.eq('assigned_team', team)
 
   const { data, error, count } = await query
   return {
@@ -867,7 +816,8 @@ export async function fetchStateHistory(workOrderId: string) {
 
 // ── Contractor (LUM-019) ──────────────────────────────────────
 
-export async function fetchContractorWorkOrders(userId: string) {
+export async function fetchContractorWorkOrders(userId: string, team: TeamColor | null) {
+  if (!team) return { data: [] as WorkOrderWithRelations[], error: null }
   const { data, error } = await supabase
     .from('work_orders')
     .select(
@@ -878,7 +828,7 @@ export async function fetchContractorWorkOrders(userId: string) {
       operators ( name, code )
     `,
     )
-    .eq('assigned_technician', userId)
+    .eq('assigned_team', team)
     .order('assigned_date', { ascending: false, nullsFirst: false })
   return {
     data: (data ?? []) as unknown as WorkOrderWithRelations[],

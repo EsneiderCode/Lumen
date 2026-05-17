@@ -2,11 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/hooks/useAuth'
-import {
-  fetchWorkOrder,
-  fetchTechnicians,
-  assignWorkOrder,
-} from '@/services/workOrderService'
+import { fetchWorkOrder, assignWorkOrder } from '@/services/workOrderService'
 import { notifyTaskAssigned } from '@/services/notificationService'
 import type { TeamColor, WorkType } from '@/types/enums'
 import { useLabels } from '@/i18n/labels'
@@ -27,11 +23,7 @@ export function WorkOrderAssignPage() {
     clients: { name: string } | null
     projects: { code: string } | null
   } | null>(null)
-  const [technicians, setTechnicians] = useState<
-    { id: string; full_name: string; team: string | null; role?: string }[]
-  >([])
   const [selectedTeam, setSelectedTeam] = useState<TeamColor | ''>('')
-  const [selectedTechnician, setSelectedTechnician] = useState<string>('')
   const [assignedDate, setAssignedDate] = useState<string>(
     new Date().toISOString().split('T')[0],
   )
@@ -41,31 +33,22 @@ export function WorkOrderAssignPage() {
 
   useEffect(() => {
     if (!id) return
-    Promise.all([fetchWorkOrder(id), fetchTechnicians()]).then(
-      ([{ data: orderData }, { data: techData }]) => {
-        setOrder(orderData as typeof order)
-        setTechnicians(techData)
-        setIsLoading(false)
-      },
-    )
+    fetchWorkOrder(id).then(({ data: orderData }) => {
+      setOrder(orderData as typeof order)
+      setIsLoading(false)
+    })
   }, [id])
-
-  // Filter technicians by selected team
-  const filteredTechnicians = selectedTeam
-    ? technicians.filter((t) => t.team === selectedTeam)
-    : technicians
 
   async function handleAssign(e: React.FormEvent) {
     e.preventDefault()
-    if (!id || !user || !selectedTechnician) return
+    if (!id || !user || !selectedTeam) return
 
     setIsSaving(true)
     setError(null)
 
     const { error } = await assignWorkOrder(
       id,
-      selectedTeam || null,
-      selectedTechnician || null,
+      selectedTeam,
       assignedDate || null,
       user.id,
     )
@@ -74,10 +57,14 @@ export function WorkOrderAssignPage() {
       setError(error)
       setIsSaving(false)
     } else {
-      const assigneeName =
-        technicians.find((t) => t.id === selectedTechnician)?.full_name ?? selectedTechnician
-      if (order)
-        void notifyTaskAssigned(order.order_number, assigneeName, user.email ?? undefined)
+      if (order) {
+        const teamLabel = TEAMS.find((t) => t.value === selectedTeam)?.label ?? selectedTeam
+        void notifyTaskAssigned(
+          order.order_number,
+          teamLabel,
+          `${window.location.origin}/admin/orders/${id}`,
+        )
+      }
       navigate('/admin/orders')
     }
   }
@@ -141,14 +128,14 @@ export function WorkOrderAssignPage() {
           {/* Team selection */}
           <div>
             <label className="mb-2 block text-xs font-medium text-fg-2">
-              {t('workOrder.team')}
+              {t('workOrder.team')} <span className="text-err">*</span>
             </label>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {TEAMS.map((team) => (
                 <button
                   key={team.value}
                   type="button"
-                  onClick={() => { setSelectedTeam(team.value); setSelectedTechnician('') }}
+                  onClick={() => setSelectedTeam(team.value)}
                   className={`flex items-center gap-2 rounded-s border px-3 py-2.5 text-sm font-medium transition-all ${
                     selectedTeam === team.value
                       ? 'border-accent bg-accent/10 text-accent'
@@ -160,30 +147,6 @@ export function WorkOrderAssignPage() {
                 </button>
               ))}
             </div>
-          </div>
-
-          {/* Technician */}
-          <div>
-            <label className="mb-1 block text-xs font-medium text-fg-2">
-              {t('assignment.assignee')} <span className="text-err">*</span>
-            </label>
-            <select
-              value={selectedTechnician}
-              onChange={(e) => setSelectedTechnician(e.target.value)}
-              className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
-            >
-              <option value="">{t('assignment.chooseProfile')}</option>
-              {filteredTechnicians.map((profile) => (
-                <option key={profile.id} value={profile.id}>
-                  {profile.full_name}{profile.role === 'contractor' ? ` · ${t('nav.contractor')}` : ''}
-                </option>
-              ))}
-            </select>
-            {selectedTeam && filteredTechnicians.length === 0 && (
-              <p className="mt-1 text-xs text-fg-2">
-                {t('assignment.noAssigneesForTeam')}
-              </p>
-            )}
           </div>
 
           {/* Assigned date */}
@@ -218,7 +181,7 @@ export function WorkOrderAssignPage() {
           </button>
           <button
             type="submit"
-            disabled={!selectedTechnician || isSaving}
+            disabled={!selectedTeam || isSaving}
             className="flex-1 rounded-s bg-accent px-4 py-2.5 text-sm font-semibold text-ink hover:bg-accent disabled:opacity-50 transition-colors"
           >
             {isSaving ? t('assignment.assigning') : t('assignment.assignSubmit')}

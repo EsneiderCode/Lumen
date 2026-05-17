@@ -56,7 +56,7 @@ export function ContractorOrdersPage() {
     async function load() {
       setIsLoading(true)
       try {
-        const { data, error } = await fetchContractorWorkOrders(userId)
+        const { data, error } = await fetchContractorWorkOrders(userId, user?.team ?? null)
         if (cancelled) return
         if (error) setError(error)
         else setOrders(data)

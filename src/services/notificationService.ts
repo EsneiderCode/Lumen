@@ -43,12 +43,14 @@ export async function notifyOrderReturnedForCorrection(
 export async function notifyTaskAssigned(
   orderNumber: string,
   assignedTo: string,
+  orderUrl: string,
   adminName?: string,
 ): Promise<void> {
   await sendTelegram({
     type: 'task_assigned',
     orderNumber,
     assignedTo,
+    orderUrl,
     ...(adminName ? { adminName } : {}),
   })
 }
