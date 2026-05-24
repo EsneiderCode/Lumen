@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = env('SUPABASE_URL')
     const serviceRoleKey = env('SUPABASE_SERVICE_ROLE_KEY')
-    const jwtSecret = env('SUPABASE_JWT_SECRET')
+    const jwtSecret = env('EDGE_JWT_SECRET')
 
     const body = readBody(await req.json().catch(() => null))
     const loginCode = body.loginCode?.trim().toLowerCase()
