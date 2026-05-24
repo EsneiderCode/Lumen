@@ -19,6 +19,9 @@ dev-dist
 .env.production
 .env.*.local
 
+# Supabase CLI
+supabase/.temp/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

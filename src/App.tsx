@@ -21,6 +21,8 @@ const WorkOrderAssignPage = lazy(() => import('@/pages/admin/WorkOrderAssignPage
 const WorkOrderDetailPage = lazy(() => import('@/pages/admin/WorkOrderDetailPage').then(m => ({ default: m.WorkOrderDetailPage })))
 const CertificationPage  = lazy(() => import('@/pages/admin/CertificationPage').then(m => ({ default: m.CertificationPage })))
 const ServiceItemsPage   = lazy(() => import('@/pages/admin/ServiceItemsPage').then(m => ({ default: m.ServiceItemsPage })))
+const ProjectsPage       = lazy(() => import('@/pages/admin/ProjectsPage').then(m => ({ default: m.ProjectsPage })))
+const ProjectDetailPage  = lazy(() => import('@/pages/admin/ProjectDetailPage').then(m => ({ default: m.ProjectDetailPage })))
 const UsersPage          = lazy(() => import('@/pages/admin/UsersPage').then(m => ({ default: m.UsersPage })))
 const MaterialsPage      = lazy(() => import('@/pages/admin/MaterialsPage').then(m => ({ default: m.MaterialsPage })))
 const SettingsPage       = lazy(() => import('@/pages/admin/SettingsPage').then(m => ({ default: m.SettingsPage })))
@@ -58,6 +60,8 @@ function App() {
                 <Route path={ROUTES.ADMIN.ORDERS_DETAIL} element={<WorkOrderDetailPage />} />
                 <Route path={ROUTES.ADMIN.CERTIFICATION} element={<CertificationPage />} />
                 <Route path={ROUTES.ADMIN.SERVICE_ITEMS} element={<ServiceItemsPage />} />
+                <Route path={ROUTES.ADMIN.PROJECTS} element={<ProjectsPage />} />
+                <Route path={ROUTES.ADMIN.PROJECTS_DETAIL} element={<ProjectDetailPage />} />
                 <Route path={ROUTES.ADMIN.PERSONNEL} element={<UsersPage />} />
                 <Route path={ROUTES.ADMIN.MATERIALS} element={<MaterialsPage />} />
                 <Route path={ROUTES.ADMIN.SETTINGS} element={<SettingsPage />} />

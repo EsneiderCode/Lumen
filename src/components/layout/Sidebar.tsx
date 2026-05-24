@@ -5,6 +5,7 @@ import {
   ClipboardList,
   CheckCircle2,
   FileText,
+  FolderKanban,
   Users,
   Package,
   Settings,
@@ -36,6 +37,7 @@ const NAV_SECTIONS: NavSection[] = [
     labelKey: 'nav.catalog',
     items: [
       { labelKey: 'nav.serviceCatalog', path: ROUTES.ADMIN.SERVICE_ITEMS, icon: FileText },
+      { labelKey: 'nav.projects',       path: ROUTES.ADMIN.PROJECTS,      icon: FolderKanban },
     ],
   },
   {
