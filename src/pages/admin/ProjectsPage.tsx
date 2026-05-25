@@ -9,6 +9,7 @@ import {
 } from '@/services/projectService'
 import { fetchClients } from '@/services/workOrderService'
 import { ProjectFormModal, type ProjectClientRef } from '@/components/admin/ProjectFormModal'
+import { T } from '@/components/T'
 
 type ClientRef = ProjectClientRef
 
@@ -71,8 +72,10 @@ export function ProjectsPage() {
     <div className="p-6 space-y-5">
       <div className="phead">
         <div>
-          <h1 className="title">Projekte</h1>
-          <p className="m mt-1">{projects.length} {includeInactive ? 'gesamt' : 'aktiv'}</p>
+          <h1 className="title"><T de="Projekte" /></h1>
+          <p className="m mt-1">
+            {projects.length} {includeInactive ? <T de="Gesamt">gesamt</T> : <T de="Aktiv">aktiv</T>}
+          </p>
         </div>
         <button
           type="button"
@@ -80,7 +83,7 @@ export function ProjectsPage() {
           onClick={() => setCreating(true)}
         >
           <Plus size={15} strokeWidth={1.5} />
-          Neues Projekt
+          <T de="Neu">Neues</T> <T de="Projekt" />
         </button>
       </div>
 
@@ -109,7 +112,7 @@ export function ProjectsPage() {
             checked={includeInactive}
             onChange={(e) => setIncludeInactive(e.target.checked)}
           />
-          Inaktive anzeigen
+          <T de="Inaktiv">Inaktive</T> anzeigen
         </label>
       </div>
 
@@ -123,9 +126,9 @@ export function ProjectsPage() {
             <thead>
               <tr>
                 <th>Code</th>
-                <th>Name</th>
-                <th>Kunde</th>
-                <th>Status</th>
+                <th><T de="Name" /></th>
+                <th><T de="Kunde" /></th>
+                <th><T de="Status" /></th>
                 <th className="text-right">Aktionen</th>
               </tr>
             </thead>
@@ -153,7 +156,7 @@ export function ProjectsPage() {
                           p.is_active ? 'bg-ok' : 'bg-fg-3'
                         }`}
                       />
-                      {p.is_active ? 'Aktiv' : 'Inaktiv'}
+                      {p.is_active ? <T de="Aktiv" /> : <T de="Inaktiv" />}
                     </span>
                   </td>
                   <td>
@@ -163,6 +166,7 @@ export function ProjectsPage() {
                         onClick={() => setEditing(p)}
                         className="btn btn-g btn-sm icon-only"
                         aria-label="Bearbeiten"
+                        title="Bearbeiten"
                       >
                         <Pencil size={14} strokeWidth={1.5} />
                       </button>
@@ -172,6 +176,7 @@ export function ProjectsPage() {
                           onClick={() => handleDeactivate(p)}
                           className="btn btn-g btn-sm icon-only"
                           aria-label="Deaktivieren"
+                          title="Deaktivieren"
                         >
                           <Trash2 size={14} strokeWidth={1.5} />
                         </button>
@@ -181,6 +186,7 @@ export function ProjectsPage() {
                           onClick={() => handleReactivate(p)}
                           className="btn btn-g btn-sm icon-only"
                           aria-label="Reaktivieren"
+                          title="Reaktivieren"
                         >
                           <Play size={14} strokeWidth={1.5} />
                         </button>

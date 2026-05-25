@@ -6,6 +6,7 @@ import {
   type Project,
   type ProjectInput,
 } from '@/services/projectService'
+import { T } from '@/components/T'
 
 const EMPTY_FORM: ProjectInput = { code: '', name: '', client_id: null }
 
@@ -61,7 +62,13 @@ export function ProjectFormModal({ project, clients, onClose, onSaved }: Props) 
       <div className="modal-card">
         <div className="phead">
           <div>
-            <h3 className="title">{isEdit ? 'Projekt bearbeiten' : 'Neues Projekt'}</h3>
+            <h3 className="title">
+              {isEdit ? (
+                <><T de="Projekt" /> <T de="Bearbeiten">bearbeiten</T></>
+              ) : (
+                <><T de="Neu">Neues</T> <T de="Projekt" /></>
+              )}
+            </h3>
             <p className="m mt-1">Stammdaten</p>
           </div>
           <button
@@ -98,7 +105,7 @@ export function ProjectFormModal({ project, clients, onClose, onSaved }: Props) 
               />
             </div>
             <div className="input col-span-1">
-              <label>Kunde</label>
+              <label><T de="Kunde" /></label>
               <select
                 value={form.client_id ?? ''}
                 onChange={(e) => set('client_id', e.target.value || null)}
@@ -114,7 +121,7 @@ export function ProjectFormModal({ project, clients, onClose, onSaved }: Props) 
           </div>
 
           <div className="input">
-            <label>Name *</label>
+            <label><T de="Name" /> *</label>
             <input
               value={form.name}
               onChange={(e) => set('name', e.target.value)}
@@ -131,11 +138,11 @@ export function ProjectFormModal({ project, clients, onClose, onSaved }: Props) 
               className="btn btn-g btn-sm"
               disabled={saving}
             >
-              Abbrechen
+              <T de="Abbrechen" />
             </button>
             <button type="submit" className="btn btn-p btn-sm" disabled={saving}>
               <Save size={14} strokeWidth={1.5} />
-              {saving ? 'Speichern…' : 'Speichern'}
+              {saving ? <><T de="Speichern" />…</> : <T de="Speichern" />}
             </button>
           </div>
         </form>

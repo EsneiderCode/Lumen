@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router'
 import { AuthProvider } from '@/context/AuthContext'
+import { LernmodusBodyClass } from '@/components/LernmodusBodyClass'
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute'
 import { AdminLayout } from '@/components/layout/AdminLayout'
 import { TechnicianLayout } from '@/components/layout/TechnicianLayout'
@@ -42,6 +43,7 @@ const ContractorDocumentsPage = lazy(() => import('@/pages/contractor/Contractor
 function App() {
   return (
     <AuthProvider>
+      <LernmodusBodyClass />
       <BrowserRouter>
         <Suspense fallback={<LoadingSpinner />}>
           <Routes>

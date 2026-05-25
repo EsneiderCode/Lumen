@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { ArrowLeft, Pencil, Play, Trash2 } from 'lucide-react'
 import {
@@ -13,6 +13,7 @@ import {
 } from '@/services/projectService'
 import { fetchClients } from '@/services/workOrderService'
 import { ProjectFormModal, type ProjectClientRef } from '@/components/admin/ProjectFormModal'
+import { T } from '@/components/T'
 
 const STATUS_LABEL: Record<string, string> = {
   created: 'Erstellt',
@@ -112,30 +113,34 @@ export function ProjectDetailPage() {
           className="text-xs text-fg-3 hover:text-fg-1 transition-colors inline-flex items-center gap-1"
         >
           <ArrowLeft size={12} strokeWidth={1.5} />
-          Alle Projekte
+          Alle <T de="Projekte" />
         </button>
         <div className="phead mt-2">
           <div>
             <h1 className="title font-mono">{project.code}</h1>
             <p className="m mt-1">{project.name}</p>
             <p className="m mt-0.5 text-xs">
-              {project.clients ? `${project.clients.code} — ${project.clients.name}` : 'Direkt / kein Kunde'}
+              {project.clients ? (
+                <>{project.clients.code} — {project.clients.name}</>
+              ) : (
+                <>Direkt / kein <T de="Kunde" /></>
+              )}
             </p>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={() => setEditing(true)} className="btn btn-g btn-sm">
               <Pencil size={14} strokeWidth={1.5} />
-              Bearbeiten
+              <T de="Bearbeiten" />
             </button>
             {project.is_active ? (
               <button onClick={handleDeactivate} className="btn btn-g btn-sm">
                 <Trash2 size={14} strokeWidth={1.5} />
-                Deaktivieren
+                <T de="Deaktivieren" />
               </button>
             ) : (
               <button onClick={handleReactivate} className="btn btn-p btn-sm">
                 <Play size={14} strokeWidth={1.5} />
-                Reaktivieren
+                <T de="Reaktivieren" />
               </button>
             )}
           </div>
@@ -143,15 +148,15 @@ export function ProjectDetailPage() {
       </div>
 
       <div className="grid grid-cols-4 gap-3">
-        <MetricCard label="Gesamt" value={metrics?.total ?? 0} />
-        <MetricCard label="Aktiv" value={metrics?.active ?? 0} tone="accent" />
-        <MetricCard label="Abgeschlossen" value={metrics?.completed ?? 0} tone="ok" />
-        <MetricCard label="Storniert" value={metrics?.cancelled ?? 0} tone="muted" />
+        <MetricCard label={<T de="Gesamt" />} value={metrics?.total ?? 0} />
+        <MetricCard label={<T de="Aktiv" />} value={metrics?.active ?? 0} tone="accent" />
+        <MetricCard label={<T de="Abgeschlossen" />} value={metrics?.completed ?? 0} tone="ok" />
+        <MetricCard label={<T de="Storniert" />} value={metrics?.cancelled ?? 0} tone="muted" />
       </div>
 
       <section>
         <h2 className="text-xs font-medium uppercase tracking-wider text-fg-3 mb-3">
-          Aufträge ({workOrders.length})
+          <T de="Aufträge" /> ({workOrders.length})
         </h2>
         {workOrders.length === 0 ? (
           <p className="m">Noch keine Aufträge in diesem Projekt.</p>
@@ -217,7 +222,7 @@ export function ProjectDetailPage() {
 }
 
 interface MetricCardProps {
-  label: string
+  label: ReactNode
   value: number
   tone?: 'accent' | 'ok' | 'muted'
 }

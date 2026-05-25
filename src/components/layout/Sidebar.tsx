@@ -12,6 +12,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { ROUTES } from '@/config/routes'
+import { LernmodusToggle } from '@/components/LernmodusToggle'
 
 interface NavItem {
   labelKey: string
@@ -115,6 +116,10 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             </div>
           ))}
         </nav>
+
+        <div className="px-2 pb-2">
+          <LernmodusToggle />
+        </div>
 
         <div className="nx-sb-foot">
           <span className="nx-label">Tenant</span>
