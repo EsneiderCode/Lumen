@@ -51,8 +51,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { user: result.user, error: result.error }
   }, [])
 
-  const signInWithPin = useCallback(async (team: import('@/types/enums').TeamColor, pin: string) => {
-    const result = await authService.signInWithPin(team, pin)
+  const signInWithLoginCode = useCallback(async (loginCode: string, pin: string) => {
+    const result = await authService.signInWithLoginCode(loginCode, pin)
     if (result.user) setUser(result.user)
     return { user: result.user, error: result.error }
   }, [])
@@ -66,8 +66,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return authService.resetPassword(email)
   }, [])
 
-  const updatePin = useCallback(async (newPin: string) => {
-    return authService.updatePin(newPin)
+  const updatePin = useCallback(async (currentPin: string, newPin: string) => {
+    return authService.updatePin(currentPin, newPin)
   }, [])
 
   const value = useMemo(
@@ -76,12 +76,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       role: user?.role ?? null,
       isLoading,
       signInWithEmail,
-      signInWithPin,
+      signInWithLoginCode,
       signOut,
       resetPassword,
       updatePin,
     }),
-    [user, isLoading, signInWithEmail, signInWithPin, signOut, resetPassword, updatePin],
+    [user, isLoading, signInWithEmail, signInWithLoginCode, signOut, resetPassword, updatePin],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
