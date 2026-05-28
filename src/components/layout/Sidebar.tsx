@@ -5,12 +5,14 @@ import {
   ClipboardList,
   CheckCircle2,
   FileText,
+  FolderKanban,
   Users,
   Package,
   Settings,
   type LucideIcon,
 } from 'lucide-react'
 import { ROUTES } from '@/config/routes'
+import { LernmodusToggle } from '@/components/LernmodusToggle'
 
 interface NavItem {
   labelKey: string
@@ -36,6 +38,7 @@ const NAV_SECTIONS: NavSection[] = [
     labelKey: 'nav.catalog',
     items: [
       { labelKey: 'nav.serviceCatalog', path: ROUTES.ADMIN.SERVICE_ITEMS, icon: FileText },
+      { labelKey: 'nav.projects',       path: ROUTES.ADMIN.PROJECTS,      icon: FolderKanban },
     ],
   },
   {
@@ -113,6 +116,10 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             </div>
           ))}
         </nav>
+
+        <div className="px-2 pb-2">
+          <LernmodusToggle />
+        </div>
 
         <div className="nx-sb-foot">
           <span className="nx-label">Tenant</span>

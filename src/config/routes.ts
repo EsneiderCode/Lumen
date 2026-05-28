@@ -12,6 +12,8 @@ export const ROUTES = {
     ORDERS_DETAIL: '/admin/orders/:id',
     CERTIFICATION: '/admin/certification',
     SERVICE_ITEMS: '/admin/service-items',
+    PROJECTS: '/admin/projects',
+    PROJECTS_DETAIL: '/admin/projects/:id',
     PERSONNEL: '/admin/personnel',
     MATERIALS: '/admin/materials',
     SETTINGS: '/admin/settings',

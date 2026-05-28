@@ -373,6 +373,7 @@
     "documents": "Dokumente",
     "certification": "Zertifizierung",
     "serviceCatalog": "Service-Katalog",
+    "projects": "Projekte",
     "personnel": "Personal",
     "materials": "Material",
     "settings": "Einstellungen",
@@ -752,6 +753,7 @@
       "orders": "Aufträge",
       "certification": "Zertifizierung",
       "serviceCatalog": "Service-Katalog",
+      "projects": "Projekte",
       "personnel": "Personal",
       "materials": "Material",
       "settings": "Einstellungen"
