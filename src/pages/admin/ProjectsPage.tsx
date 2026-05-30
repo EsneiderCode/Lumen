@@ -38,6 +38,11 @@ export function ProjectsPage() {
   }, [includeInactive])
 
   useEffect(() => {
+    // Data fetch on mount / when includeInactive changes. load() sets a loading
+    // flag before awaiting the DB — a legitimate effect (syncing with an external
+    // system), not the cascading render set-state-in-effect targets. Long-term
+    // fix: move these loaders to a data-fetching library (React Query/SWR).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load()
   }, [load])
 
