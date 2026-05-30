@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx'
+// xlsx (SheetJS) is lazy-loaded on demand inside parseMaterialWorkbook to keep it out of the initial bundle
 import { supabase } from '@/lib/supabase'
 import type { TeamColor } from '@/types/enums'
 import type {
@@ -37,6 +37,7 @@ export async function parseMaterialWorkbook(file: File): Promise<{
   error: string | null
 }> {
   try {
+    const XLSX = await import('xlsx')
     const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' })
     const allRows = workbook.SheetNames.flatMap((sheetName) => {
       const sheet = workbook.Sheets[sheetName]

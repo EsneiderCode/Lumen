@@ -13,7 +13,7 @@ import {
   ShieldCheck,
   Workflow,
 } from 'lucide-react'
-import * as XLSX from 'xlsx'
+// xlsx (SheetJS) is lazy-loaded on demand inside handleExcelExport to keep it out of the initial bundle
 import { buildDatevCsv, downloadDatevCsv } from '@/services/datevExportService'
 import {
   fetchWorkOrders,
@@ -327,7 +327,7 @@ export function CertificationPage() {
     downloadDatevCsv(csv, `lumen-datev-${date}.csv`)
   }
 
-  function handleExcelExport() {
+  async function handleExcelExport() {
     const selectedOrders = selected.size > 0 ? orders.filter((o) => selected.has(o.id)) : orders
 
     const rows = selectedOrders.map((o) => ({
@@ -341,6 +341,7 @@ export function CertificationPage() {
       Priorität: o.priority,
     }))
 
+    const XLSX = await import('xlsx')
     const ws = XLSX.utils.json_to_sheet(rows)
     const wb = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(wb, ws, 'Zertifizierung')
