@@ -47,11 +47,17 @@ Deno.serve(async (req) => {
       return json(400, { error: 'Login code, PIN and device id are required' })
     }
 
+    // Reject login codes containing LIKE wildcards or unexpected characters.
+    // Returns the same generic 401 as an invalid login to avoid leaking existence.
+    if (!/^[a-z0-9._-]+$/.test(loginCode)) {
+      return json(401, { error: 'Invalid PIN credentials' })
+    }
+
     const profile = await selectOne<ProfileRow>(
       supabaseUrl,
       serviceRoleKey,
       'profiles',
-      `select=id,email,full_name,role,team,is_active,pin_hash,pin_login_code&pin_login_code=ilike.${encodeURIComponent(loginCode)}`,
+      `select=id,email,full_name,role,team,is_active,pin_hash,pin_login_code&pin_login_code=eq.${encodeURIComponent(loginCode)}`,
     )
 
     if (!profile || !profile.is_active || !['technician', 'contractor'].includes(profile.role)) {
