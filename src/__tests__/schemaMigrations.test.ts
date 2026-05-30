@@ -39,6 +39,18 @@ describe('database migrations cover billing workflow schema', () => {
     expect(migrationSql).toContain('unit_price_external_snapshot')
   })
 
+  // Regression guard: 005 created work_order_billing_lines WITHOUT
+  // unit_price_external_snapshot, and 009 re-declared it via CREATE TABLE IF NOT
+  // EXISTS — a no-op on the already-existing table, so the column was never
+  // added even though it appears in the concatenated SQL above. The app writes
+  // it on every external-collaborator billing save, so an explicit ALTER ... ADD
+  // COLUMN must exist for the live schema to be correct.
+  it('actually adds the external price snapshot column to billing lines via ALTER', () => {
+    expect(migrationSql).toMatch(
+      /alter\s+table\s+(public\.)?work_order_billing_lines[\s\S]*add\s+column\s+if\s+not\s+exists\s+unit_price_external_snapshot/,
+    )
+  })
+
   it('allows external certification audit rows', () => {
     expect(migrationSql).toMatch(/cert_type[\s\S]*internal[\s\S]*client[\s\S]*external/)
   })
