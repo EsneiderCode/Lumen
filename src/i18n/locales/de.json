@@ -60,7 +60,14 @@
       "selectTeamLabel": "Team",
       "pinLabel": "PIN",
       "selectTeam": "Bitte zuerst ein Team auswählen.",
-      "enter6Digits": "Bitte alle 6 PIN-Ziffern eingeben."
+      "enter6Digits": "Bitte alle 6 PIN-Ziffern eingeben.",
+      "settingsTitle": "PIN ändern",
+      "enterCurrent": "Aktuelle PIN eingeben",
+      "enterNew": "Neue PIN eingeben",
+      "reenterNew": "Neue PIN bestätigen",
+      "savePIN": "PIN speichern",
+      "mismatch": "Die PINs stimmen nicht überein.",
+      "changeSuccess": "PIN erfolgreich geändert."
     }
   },
   "status": {
@@ -403,6 +410,7 @@
     "schedule": "Kalender",
     "documents": "Dokumente",
     "certifications": "Zertifizierungen",
+    "projects": "Projekte",
     "overview": "Übersicht",
     "dashboard": "Dashboard"
   },
