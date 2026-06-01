@@ -236,7 +236,8 @@ export function WorkOrderFormPage() {
       project_id: form.project_id,
       operator_id: form.operator_id,
       line: form.line,
-      work_type: form.work_type,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      work_type: form.work_type as any, // 'pop' added to DB enum in migration 020
       service_item_id: form.service_item_id || null,
       priority: form.priority,
       address: form.address || null,

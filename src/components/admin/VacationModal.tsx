@@ -8,7 +8,7 @@ import {
   type Employee,
   type VacationRequest,
 } from '@/services/employeeService'
-import { useAuth } from '@/context/AuthContext'
+import { useAuth } from '@/hooks/useAuth'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 

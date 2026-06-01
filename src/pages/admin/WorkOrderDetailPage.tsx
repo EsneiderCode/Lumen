@@ -1069,7 +1069,7 @@ export function WorkOrderDetailPage() {
             {/* Field rows — iterate over the union of keys */}
             {Array.from(new Set([...Object.keys(snapshot!), ...Object.keys(detail)])).map((key) => {
               const label = L.detailField(key)
-              const assignedVal = snapshot![key]
+              const assignedVal = (snapshot as Record<string, unknown>)[key]
               const reportedVal = detail[key]
               const isDiff = String(assignedVal ?? '') !== String(reportedVal ?? '')
               const fmt = (v: unknown) => {

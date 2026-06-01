@@ -6,6 +6,10 @@ import type {
 
 const BUCKET = 'work-order-documents'
 
+// work_order_documents table is added in migration 020 — cast until types are regenerated
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const db = supabase as any
+
 /** Sanitize a filename for safe storage-path use. */
 function sanitize(name: string): string {
   return name.replace(/[^\w.-]/g, '_').slice(0, 120)
@@ -33,7 +37,7 @@ export async function uploadWorkOrderDocument(
     return { data: null, error: uploadError.message }
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('work_order_documents')
     .insert({
       work_order_id: workOrderId,
@@ -60,7 +64,7 @@ export async function uploadWorkOrderDocument(
 export async function fetchWorkOrderDocuments(
   workOrderId: string,
 ): Promise<{ data: WorkOrderDocument[]; error: string | null }> {
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from('work_order_documents')
     .select('*')
     .eq('work_order_id', workOrderId)
@@ -75,7 +79,7 @@ export async function deleteWorkOrderDocument(
   documentId: string,
   storagePath: string,
 ): Promise<{ error: string | null }> {
-  const { error: dbError } = await supabase
+  const { error: dbError } = await db
     .from('work_order_documents')
     .delete()
     .eq('id', documentId)

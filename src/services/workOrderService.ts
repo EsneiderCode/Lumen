@@ -309,7 +309,8 @@ export async function fetchWorkOrders(filters: WorkOrderFilters = {}, page = 0, 
 
   if (filters.status) query = query.eq('status', filters.status)
   if (filters.team) query = query.eq('assigned_team', filters.team)
-  if (filters.work_type) query = query.eq('work_type', filters.work_type)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if (filters.work_type) query = query.eq('work_type', filters.work_type as any)
   if (filters.project_id) query = query.eq('project_id', filters.project_id)
   if (filters.client_id) query = query.eq('client_id', filters.client_id)
   if (filters.search) {
