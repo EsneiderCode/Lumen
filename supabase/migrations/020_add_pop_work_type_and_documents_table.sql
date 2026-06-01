@@ -68,7 +68,7 @@ CREATE POLICY "tech_read_work_order_documents"
       SELECT 1 FROM public.work_orders wo
       WHERE wo.id = work_order_id
         AND (
-          wo.assigned_to = auth.uid()
+          wo.assigned_technician = auth.uid()
           OR wo.assigned_team IN (
             SELECT team FROM public.profiles WHERE id = auth.uid()
           )
