@@ -25,6 +25,7 @@ const ServiceItemsPage   = lazy(() => import('@/pages/admin/ServiceItemsPage').t
 const ProjectsPage       = lazy(() => import('@/pages/admin/ProjectsPage').then(m => ({ default: m.ProjectsPage })))
 const ProjectDetailPage  = lazy(() => import('@/pages/admin/ProjectDetailPage').then(m => ({ default: m.ProjectDetailPage })))
 const UsersPage          = lazy(() => import('@/pages/admin/UsersPage').then(m => ({ default: m.UsersPage })))
+const PersonnelPage      = lazy(() => import('@/pages/admin/PersonnelPage').then(m => ({ default: m.PersonnelPage })))
 const MaterialsPage      = lazy(() => import('@/pages/admin/MaterialsPage').then(m => ({ default: m.MaterialsPage })))
 const SettingsPage       = lazy(() => import('@/pages/admin/SettingsPage').then(m => ({ default: m.SettingsPage })))
 
@@ -65,6 +66,7 @@ function App() {
                 <Route path={ROUTES.ADMIN.PROJECTS} element={<ProjectsPage />} />
                 <Route path={ROUTES.ADMIN.PROJECTS_DETAIL} element={<ProjectDetailPage />} />
                 <Route path={ROUTES.ADMIN.PERSONNEL} element={<UsersPage />} />
+                <Route path={ROUTES.ADMIN.EMPLOYEES} element={<PersonnelPage />} />
                 <Route path={ROUTES.ADMIN.MATERIALS} element={<MaterialsPage />} />
                 <Route path={ROUTES.ADMIN.SETTINGS} element={<SettingsPage />} />
               </Route>

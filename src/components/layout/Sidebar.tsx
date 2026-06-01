@@ -7,6 +7,7 @@ import {
   FileText,
   FolderKanban,
   Users,
+  UserRound,
   Package,
   Settings,
   type LucideIcon,
@@ -46,6 +47,7 @@ const NAV_SECTIONS: NavSection[] = [
     labelKey: 'nav.organization',
     items: [
       { labelKey: 'nav.personnel', path: ROUTES.ADMIN.PERSONNEL, icon: Users },
+      { labelKey: 'nav.employees', path: ROUTES.ADMIN.EMPLOYEES, icon: UserRound },
       { labelKey: 'nav.materials', path: ROUTES.ADMIN.MATERIALS, icon: Package },
       { labelKey: 'nav.settings',  path: ROUTES.ADMIN.SETTINGS,  icon: Settings },
     ],
