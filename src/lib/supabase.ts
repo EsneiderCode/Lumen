@@ -7,6 +7,15 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 const isDemoMode = import.meta.env.VITE_DEMO === 'true'
 
+// Safety guard: demo mode must never run in a production build.
+// If this throws at startup, set VITE_DEMO=false (or remove it) in your production env.
+if (import.meta.env.PROD && isDemoMode) {
+  throw new Error(
+    '[Lumen] Demo mode (VITE_DEMO=true) must not run in a production build. ' +
+    'Remove or set VITE_DEMO=false in your production environment variables.',
+  )
+}
+
 function buildClient(): SupabaseClient<Database> {
   if (isDemoMode) {
     console.info(

@@ -36,7 +36,7 @@ import {
   type CollaboratorType,
   type WorkOrderWithRelations,
 } from '@/services/workOrderService'
-import { generateCertificatePdf } from '@/services/pdfService'
+// pdfService (jsPDF) is lazy-loaded on demand inside handlePdfDownload to keep it out of the initial bundle
 import type { WorkOrderStatus, UserRole } from '@/types/enums'
 import { useTranslation } from 'react-i18next'
 import { useLabels } from '@/i18n/labels'
@@ -467,6 +467,7 @@ export function WorkOrderDetailPage() {
     if (!order) return
     const paths = photos.map((p) => p.storage_path)
     const urls = paths.length > 0 ? await getPhotoSignedUrls(paths) : {}
+    const { generateCertificatePdf } = await import('@/services/pdfService')
     generateCertificatePdf(order, detail, photos, history, (path) => urls[path] ?? '')
   }
 

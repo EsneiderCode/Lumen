@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { ROUTES } from '@/config/routes'
 import { LernmodusToggle } from '@/components/LernmodusToggle'
+import { G } from '@/i18n/glossarize'
 
 interface NavItem {
   labelKey: string
@@ -95,7 +96,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         <nav className="flex-1 overflow-auto px-2 py-2">
           {NAV_SECTIONS.map((section) => (
             <div key={section.labelKey}>
-              <div className="nx-sb-section">{t(section.labelKey)}</div>
+              <div className="nx-sb-section"><G>{t(section.labelKey)}</G></div>
               {section.items.map((item) => {
                 const Icon = item.icon
                 return (
@@ -109,7 +110,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                     }
                   >
                     <Icon size={14} strokeWidth={1.5} className="opacity-70" />
-                    {t(item.labelKey)}
+                    <G>{t(item.labelKey)}</G>
                   </NavLink>
                 )
               })}

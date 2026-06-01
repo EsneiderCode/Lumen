@@ -8,6 +8,12 @@ import { initialFixtures, type DemoStore } from './fixtures'
 
 const STORE_KEY = 'lumen-demo-store-v1'
 
+// `window` can exist while `window.localStorage` does not (e.g. jsdom without a
+// localStorage file under newer Node). Guard on both, like pinSession.hasStorage.
+function hasStorage(): boolean {
+  return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined'
+}
+
 function hydrateStore(rawStore: Partial<DemoStore>): DemoStore {
   const fresh = initialFixtures()
   const hydrated = { ...fresh } as Record<string, unknown>
@@ -19,7 +25,7 @@ function hydrateStore(rawStore: Partial<DemoStore>): DemoStore {
 }
 
 export function getStore(): DemoStore {
-  if (typeof window === 'undefined') return initialFixtures()
+  if (!hasStorage()) return initialFixtures()
   const raw = window.localStorage.getItem(STORE_KEY)
   if (raw) {
     try {
@@ -39,12 +45,12 @@ export function getStore(): DemoStore {
 }
 
 export function saveStore(s: DemoStore): void {
-  if (typeof window === 'undefined') return
+  if (!hasStorage()) return
   window.localStorage.setItem(STORE_KEY, JSON.stringify(s))
 }
 
 export function resetStore(): DemoStore {
-  if (typeof window === 'undefined') return initialFixtures()
+  if (!hasStorage()) return initialFixtures()
   window.localStorage.removeItem(STORE_KEY)
   return getStore()
 }
