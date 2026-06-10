@@ -136,12 +136,14 @@ export const authService = {
     }
   },
 
-  async getCurrentUser(): Promise<AuthUser | null> {
+  async getCurrentUser(userId?: string): Promise<AuthUser | null> {
     const pinToken = getPinAccessToken()
     if (pinToken) {
       const stored = getStoredPinSession()
       if (stored) return stored.user
     }
+
+    if (userId) return fetchProfile(userId)
 
     const {
       data: { session },

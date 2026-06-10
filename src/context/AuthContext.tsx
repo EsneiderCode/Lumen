@@ -12,17 +12,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true
 
-    async function initAuth() {
-      try {
-        const profile = await authService.getCurrentUser()
-        if (mounted) setUser(profile)
-      } finally {
-        if (mounted) setIsLoading(false)
-      }
-    }
-
-    initAuth()
-
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -30,12 +19,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (event === 'SIGNED_OUT') {
         setUser(null)
+        setIsLoading(false)
         return
       }
 
-      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
-        const profile = await authService.getCurrentUser()
-        if (mounted && profile) setUser(profile)
+      if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        // Pass session.user.id when available to avoid calling getSession() inside the callback,
+        // which would race with the lock already held by onAuthStateChange.
+        const profile = await authService.getCurrentUser(session?.user?.id)
+        if (mounted) {
+          setUser(profile)
+          setIsLoading(false)
+        }
       }
     })
 
