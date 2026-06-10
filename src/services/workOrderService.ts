@@ -261,11 +261,26 @@ export async function fetchClients() {
   return { data: data ?? [], error: error?.message ?? null }
 }
 
+export interface ProjectLookup {
+  id: string
+  name: string
+  code: string
+  client_id: string | null
+  default_operator_id: string | null
+  default_line: 'NE3' | 'NE4' | null
+}
+
 export async function fetchProjects(clientId?: string) {
-  let query = supabase.from('projects').select('id, name, code, client_id').eq('is_active', true)
+  let query = supabase
+    .from('projects')
+    .select('id, name, code, client_id, default_operator_id, default_line' as string)
+    .eq('is_active', true)
   if (clientId) query = query.eq('client_id', clientId)
   const { data, error } = await query.order('code')
-  return { data: data ?? [], error: error?.message ?? null }
+  return {
+    data: (data ?? []) as unknown as ProjectLookup[],
+    error: error?.message ?? null,
+  }
 }
 
 export async function fetchOperators() {

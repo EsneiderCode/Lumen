@@ -116,9 +116,18 @@ export const initialFixtures = () => ({
   ],
 
   projects: [
-    { id: PROJECT_HXT, code: 'HXT', name: 'Höxter Nord',  client_id: CLIENT_INSYTE, is_active: true, created_at: LAST_WEEK },
-    { id: PROJECT_RSD, code: 'RSD', name: 'Roßdorf 1',    client_id: CLIENT_INSYTE, is_active: true, created_at: LAST_WEEK },
-    { id: PROJECT_WCB, code: 'WCB', name: 'Westconnect',  client_id: CLIENT_VANCOM, is_active: true, created_at: LAST_WEEK },
+    {
+      id: PROJECT_HXT, code: 'HXT', name: 'Höxter Nord', client_id: CLIENT_INSYTE,
+      default_operator_id: OP_DGF, default_line: 'NE3', is_active: true, created_at: LAST_WEEK,
+    },
+    {
+      id: PROJECT_RSD, code: 'RSD', name: 'Roßdorf 1', client_id: CLIENT_INSYTE,
+      default_operator_id: OP_DGF, default_line: 'NE3', is_active: true, created_at: LAST_WEEK,
+    },
+    {
+      id: PROJECT_WCB, code: 'WCB', name: 'Westconnect', client_id: CLIENT_VANCOM,
+      default_operator_id: OP_GFPLUS, default_line: 'NE4', is_active: true, created_at: LAST_WEEK,
+    },
   ],
 
   operators: [

@@ -177,4 +177,13 @@ describe('database migrations cover billing workflow schema', () => {
     expect(migration022Sql).toContain("'WESTC'")
     expect(migration022Sql).not.toContain('WESTCONNECT')
   })
+
+  it('adds project defaults for order-form derivation', () => {
+    expect(migrationSql).toContain('migration 023')
+    expect(migrationSql).toContain('depends on: 022_service_item_categories.sql')
+    expect(migrationSql).toMatch(
+      /alter\s+table\s+(public\.)?projects[\s\S]*add\s+column\s+if\s+not\s+exists\s+default_operator_id/,
+    )
+    expect(migrationSql).toContain('default_line')
+  })
 })

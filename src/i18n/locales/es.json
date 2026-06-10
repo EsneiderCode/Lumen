@@ -218,7 +218,8 @@
     "prevPage": "← Anterior",
     "nextPage": "Siguiente →",
     "dateFrom": "Fecha de ejecución desde",
-    "dateTo": "Fecha de ejecución hasta"
+    "dateTo": "Fecha de ejecución hasta",
+    "derivedData": "Derivado del proyecto (ajustar si hace falta)"
   },
   "rueckmeldung": {
     "pending": "Rückmeldung pendiente",

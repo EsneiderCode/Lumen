@@ -7,15 +7,17 @@ import {
   reactivateProject,
   type Project,
 } from '@/services/projectService'
-import { fetchClients } from '@/services/workOrderService'
+import { fetchClients, fetchOperators } from '@/services/workOrderService'
 import { ProjectFormModal, type ProjectClientRef } from '@/components/admin/ProjectFormModal'
 import { T } from '@/components/T'
 
 type ClientRef = ProjectClientRef
+interface OperatorRef { id: string; code: string; name: string }
 
 export function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([])
   const [clients, setClients] = useState<ClientRef[]>([])
+  const [operators, setOperators] = useState<OperatorRef[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [includeInactive, setIncludeInactive] = useState(false)
@@ -27,13 +29,15 @@ export function ProjectsPage() {
   const load = useCallback(async () => {
     setLoading(true)
     setError(null)
-    const [projectsRes, clientsRes] = await Promise.all([
+    const [projectsRes, clientsRes, operatorsRes] = await Promise.all([
       listProjects({ includeInactive }),
       fetchClients(),
+      fetchOperators(),
     ])
     if (projectsRes.error) setError(projectsRes.error)
     setProjects(projectsRes.data)
     setClients(clientsRes.data as ClientRef[])
+    setOperators(operatorsRes.data as OperatorRef[])
     setLoading(false)
   }, [includeInactive])
 
@@ -209,6 +213,7 @@ export function ProjectsPage() {
         <ProjectFormModal
           project={editing}
           clients={clients}
+          operators={operators}
           onClose={() => {
             setCreating(false)
             setEditing(null)

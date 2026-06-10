@@ -12,6 +12,7 @@ import {
   fetchWorkOrderDetail,
   workTypeToDetailTable,
   saveAssignedDetailSnapshot,
+  type ProjectLookup,
 } from '@/services/workOrderService'
 import type { WorkType } from '@/types/enums'
 import { useLabels } from '@/i18n/labels'
@@ -22,6 +23,7 @@ import type { ServiceItemWithRelations } from '@/types/service-items'
 import { DocumentUploader } from '@/components/ui/DocumentUploader'
 import { uploadWorkOrderDocument } from '@/services/workOrderDocumentService'
 import type { DocumentType } from '@/types/work-order-documents'
+import { deriveOrderDefaultsFromProject } from '@/lib/orderFormDefaults'
 
 // Catalog detail_form values for infrastructure work (trenches, splice
 // boxes, POP central sites) rather than street-address-based customer
@@ -112,7 +114,7 @@ export function WorkOrderFormPage() {
   const [form, setForm] = useState<FormValues>(EMPTY_FORM)
   const [detail, setDetail] = useState<Record<string, unknown>>({})
   const [clients, setClients] = useState<{ id: string; name: string; code: string }[]>([])
-  const [projects, setProjects] = useState<{ id: string; name: string; code: string; client_id: string | null }[]>([])
+  const [projects, setProjects] = useState<ProjectLookup[]>([])
   const [operators, setOperators] = useState<{ id: string; name: string; code: string }[]>([])
   const [serviceItems, setServiceItems] = useState<ServiceItemWithRelations[]>([])
   const [isLoading, setIsLoading] = useState(isEdit)
@@ -179,15 +181,15 @@ export function WorkOrderFormPage() {
     })
   }, [id, isEdit])
 
-  // Filtered projects by selected client
-  const filteredProjects = form.client_id
-    ? projects.filter((p) => p.client_id === form.client_id)
-    : projects
-
   function setField<K extends keyof FormValues>(key: K, value: FormValues[K]) {
-    setForm((f) => ({ ...f, [key]: value }))
     setErrors((e) => ({ ...e, [key]: undefined }))
-    if (key === 'client_id') setForm((f) => ({ ...f, client_id: value as string, project_id: '' }))
+    if (key === 'project_id') {
+      const project = projects.find((p) => p.id === value)
+      const defaults = deriveOrderDefaultsFromProject(project)
+      setForm((f) => ({ ...f, project_id: value as string, ...defaults }))
+      return
+    }
+    setForm((f) => ({ ...f, [key]: value }))
   }
 
   function setDetailField(key: string, value: unknown) {
@@ -317,6 +319,11 @@ export function WorkOrderFormPage() {
   const selectedDetailForm = selectedServiceItem?.detail_form ?? null
   const isInfra = selectedDetailForm ? INFRA_DETAIL_FORMS.has(selectedDetailForm) : false
   const documentTypes = selectedDetailForm ? DOCUMENT_TYPES_BY_DETAIL_FORM[selectedDetailForm] ?? [] : []
+  const selectedClient = clients.find((client) => client.id === form.client_id)
+  const selectedOperator = operators.find((operator) => operator.id === form.operator_id)
+  const derivedSummary = [selectedClient?.code, selectedOperator?.code, form.line]
+    .filter(Boolean)
+    .join(' · ')
 
   const detailFields = form.work_type ? DETAIL_FIELDS[form.work_type] ?? [] : []
 
@@ -360,27 +367,6 @@ export function WorkOrderFormPage() {
           </label>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-
-            {/* Client (hidden when direct order) */}
-            {!form.is_direct_order && (
-              <div>
-                <label className="mb-1 block text-xs font-medium text-fg-2">
-                  {t('workOrder.customer')} <span className="text-err">*</span>
-                </label>
-                <select
-                  value={form.client_id}
-                  onChange={(e) => setField('client_id', e.target.value)}
-                  className={`w-full rounded-s border px-3 py-2 text-sm text-fg-1 focus:outline-none focus:ring-1 focus:ring-accent ${errors.client_id ? 'border-err bg-err/5' : 'border-line bg-bg-0'}`}
-                >
-                  <option value="">{t('workOrder.chooseClient')}</option>
-                  {clients.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name} ({c.code})</option>
-                  ))}
-                </select>
-                {errors.client_id && <p className="mt-1 text-xs text-err">{errors.client_id}</p>}
-              </div>
-            )}
-
             {/* Project */}
             <div>
               <label className="mb-1 block text-xs font-medium text-fg-2">
@@ -392,43 +378,71 @@ export function WorkOrderFormPage() {
                 className={`w-full rounded-s border px-3 py-2 text-sm text-fg-1 focus:outline-none focus:ring-1 focus:ring-accent ${errors.project_id ? 'border-err bg-err/5' : 'border-line bg-bg-0'}`}
               >
                 <option value="">{t('workOrder.chooseProject')}</option>
-                {filteredProjects.map((p) => (
+                {projects.map((p) => (
                   <option key={p.id} value={p.id}>{p.code} – {p.name}</option>
                 ))}
               </select>
               {errors.project_id && <p className="mt-1 text-xs text-err">{errors.project_id}</p>}
             </div>
 
-            {/* Operator */}
-            <div>
-              <label className="mb-1 block text-xs font-medium text-fg-2">
-                {t('workOrder.operator')} <span className="text-err">*</span>
-              </label>
-              <select
-                value={form.operator_id}
-                onChange={(e) => setField('operator_id', e.target.value)}
-                className={`w-full rounded-s border px-3 py-2 text-sm text-fg-1 focus:outline-none focus:ring-1 focus:ring-accent ${errors.operator_id ? 'border-err bg-err/5' : 'border-line bg-bg-0'}`}
-              >
-                <option value="">{t('workOrder.chooseOperator')}</option>
-                {operators.map((o) => (
-                  <option key={o.id} value={o.id}>{o.name} ({o.code})</option>
-                ))}
-              </select>
-              {errors.operator_id && <p className="mt-1 text-xs text-err">{errors.operator_id}</p>}
-            </div>
+            <details className="rounded-s border border-line bg-bg-0 p-3 sm:col-span-2" open={!form.project_id}>
+              <summary className="cursor-pointer text-xs font-medium text-fg-2">
+                {t('workOrder.derivedData')}
+                {derivedSummary && <span className="ml-2 font-mono text-fg-3">{derivedSummary}</span>}
+              </summary>
+              <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {/* Client (hidden when direct order) */}
+                {!form.is_direct_order && (
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-fg-2">
+                      {t('workOrder.customer')} <span className="text-err">*</span>
+                    </label>
+                    <select
+                      value={form.client_id}
+                      onChange={(e) => setField('client_id', e.target.value)}
+                      className={`w-full rounded-s border px-3 py-2 text-sm text-fg-1 focus:outline-none focus:ring-1 focus:ring-accent ${errors.client_id ? 'border-err bg-err/5' : 'border-line bg-bg-0'}`}
+                    >
+                      <option value="">{t('workOrder.chooseClient')}</option>
+                      {clients.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name} ({c.code})</option>
+                      ))}
+                    </select>
+                    {errors.client_id && <p className="mt-1 text-xs text-err">{errors.client_id}</p>}
+                  </div>
+                )}
 
-            {/* Line */}
-            <div>
-              <label className="mb-1 block text-xs font-medium text-fg-2">{t('workOrder.line')}</label>
-              <select
-                value={form.line}
-                onChange={(e) => setField('line', e.target.value)}
-                className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:outline-none focus:ring-1 focus:ring-accent"
-              >
-                <option value="NE3">NE3</option>
-                <option value="NE4">NE4</option>
-              </select>
-            </div>
+                {/* Operator */}
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-fg-2">
+                    {t('workOrder.operator')} <span className="text-err">*</span>
+                  </label>
+                  <select
+                    value={form.operator_id}
+                    onChange={(e) => setField('operator_id', e.target.value)}
+                    className={`w-full rounded-s border px-3 py-2 text-sm text-fg-1 focus:outline-none focus:ring-1 focus:ring-accent ${errors.operator_id ? 'border-err bg-err/5' : 'border-line bg-bg-0'}`}
+                  >
+                    <option value="">{t('workOrder.chooseOperator')}</option>
+                    {operators.map((o) => (
+                      <option key={o.id} value={o.id}>{o.name} ({o.code})</option>
+                    ))}
+                  </select>
+                  {errors.operator_id && <p className="mt-1 text-xs text-err">{errors.operator_id}</p>}
+                </div>
+
+                {/* Line */}
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-fg-2">{t('workOrder.line')}</label>
+                  <select
+                    value={form.line}
+                    onChange={(e) => setField('line', e.target.value)}
+                    className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:outline-none focus:ring-1 focus:ring-accent"
+                  >
+                    <option value="NE3">NE3</option>
+                    <option value="NE4">NE4</option>
+                  </select>
+                </div>
+              </div>
+            </details>
 
             {/* Service item — canonical catalog selector.
                 Driven by the operator's rate-card; selecting an item sets

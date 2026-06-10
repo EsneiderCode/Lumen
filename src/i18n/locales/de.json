@@ -218,7 +218,8 @@
     "prevPage": "← Zurück",
     "nextPage": "Weiter →",
     "dateFrom": "Einsatzdatum von",
-    "dateTo": "Einsatzdatum bis"
+    "dateTo": "Einsatzdatum bis",
+    "derivedData": "Abgeleitet vom Projekt (bei Bedarf anpassen)"
   },
   "rueckmeldung": {
     "pending": "Rückmeldung ausstehend",
