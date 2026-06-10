@@ -55,10 +55,6 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  if (user) {
-    return <Navigate to={ROLE_ROUTES[user.role]} replace />
-  }
-
   const switchMode = (next: LoginMode) => {
     setMode(next)
     setError(null)
@@ -68,18 +64,6 @@ export function LoginPage() {
     setMembers([])
     setPassword('')
   }
-
-  // ── Keyboard input for PIN ─────────────────────────────────────────────────
-  useEffect(() => {
-    if (mode !== 'pin' || pinStep !== 'enter' || loadingTeam) return
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (/^\d$/.test(e.key)) handleNumpad(e.key)
-      else if (e.key === 'Backspace') handleNumpad('⌫')
-      else if (e.key === 'Enter' && pin.length === 6) void handlePinSubmit()
-    }
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [mode, pinStep, pin, loadingTeam])
 
   // ── Numpad handler ─────────────────────────────────────────────────────────
   const handleNumpad = (key: string) => {
@@ -110,6 +94,18 @@ export function LoginPage() {
     setMembers(result.members)
     setPinStep('pick')
   }
+
+  // ── Keyboard input for PIN ─────────────────────────────────────────────────
+  useEffect(() => {
+    if (mode !== 'pin' || pinStep !== 'enter' || loadingTeam) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (/^\d$/.test(e.key)) handleNumpad(e.key)
+      else if (e.key === 'Backspace') handleNumpad('⌫')
+      else if (e.key === 'Enter' && pin.length === 6) void handlePinSubmit()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [mode, pinStep, pin, loadingTeam])
 
   // ── Step 2: pick member and sign in ───────────────────────────────────────
   const handleMemberSelect = async (profileId: string) => {
@@ -146,6 +142,10 @@ export function LoginPage() {
     } else if (result.user) {
       navigate(ROLE_ROUTES[result.user.role])
     }
+  }
+
+  if (user) {
+    return <Navigate to={ROLE_ROUTES[user.role]} replace />
   }
 
   return (
