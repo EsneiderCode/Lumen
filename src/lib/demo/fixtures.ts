@@ -25,6 +25,9 @@ const SI_FUSION_AP = '40000000-0000-0000-0000-000000000002'
 const SI_ALTA_BASIC = '40000000-0000-0000-0000-000000000003'
 const SI_ALTA_NT = '40000000-0000-0000-0000-000000000004'
 const SI_PATCHKABEL = '40000000-0000-0000-0000-000000000005'
+const SI_NAS_PAKET_1 = '40000000-0000-0000-0000-000000000006'
+const SI_WESTC_130 = '40000000-0000-0000-0000-000000000007'
+const SI_VANCOM_160 = '40000000-0000-0000-0000-000000000008'
 
 const VEHICLE_ROT_COMBO = '41000000-0000-0000-0000-000000000001'
 const MAT_GFP_HUEP_48 = '42000000-0000-0000-0000-000000000001'
@@ -128,32 +131,58 @@ export const initialFixtures = () => ({
     {
       id: SI_SOPLADO_M, code: 'SOP-M', description_de: 'Einblasen Glasfaser je Meter',
       description_es: 'Soplado por metro', unit: 'm', unit_price: 1.85, unit_price_external: 1.20,
+      category: 'NE3 > Infraestructura',
       operator_id: OP_DGF, client_id: CLIENT_INSYTE, detail_form: 'soplado',
       display_order: 10, active: true, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK,
     },
     {
       id: SI_FUSION_AP, code: 'FUS-AP', description_de: 'Spleißung am AP (pro Schrank)',
       description_es: 'Fusión AP por armario', unit: 'Stk', unit_price: 95.00, unit_price_external: 60.00,
+      category: 'NE3 > Infraestructura',
       operator_id: OP_DGF, client_id: CLIENT_INSYTE, detail_form: 'fusion_ap',
       display_order: 20, active: true, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK,
     },
     {
       id: SI_ALTA_BASIC, code: 'ALTA-BASIC', description_de: 'Standard-Hausanschluss',
       description_es: 'Alta básica', unit: 'Stk', unit_price: 145.00, unit_price_external: 95.00,
+      category: 'NE4 > Altas cliente Deutsche Glasfaser / UGG',
       operator_id: OP_DGF, client_id: CLIENT_INSYTE, detail_form: 'alta',
       display_order: 30, active: true, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK,
     },
     {
       id: SI_ALTA_NT, code: 'ALTA-NT', description_de: 'NT-Installation und Aktivierung',
       description_es: 'Instalación NT', unit: 'Stk', unit_price: 65.00, unit_price_external: 40.00,
+      category: 'NE4 > Altas cliente Deutsche Glasfaser / UGG',
       operator_id: OP_DGF, client_id: CLIENT_INSYTE, detail_form: 'nt',
       display_order: 31, active: true, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK,
     },
     {
       id: SI_PATCHKABEL, code: 'PATCH', description_de: 'Patchkabel Anschluss',
       description_es: 'Patchkabel', unit: 'Stk', unit_price: 38.00, unit_price_external: 22.00,
+      category: 'NE4 > ONT / Aktivierung',
       operator_id: OP_GFPLUS, client_id: CLIENT_VANCOM, detail_form: 'patchkabel',
       display_order: 40, active: true, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK,
+    },
+    {
+      id: SI_NAS_PAKET_1, code: 'NAS Paket 1', description_de: 'ACT_001 + HBG + GB + Termin + OTDR',
+      description_es: null, unit: 'Psch.', unit_price: 589.80, unit_price_external: 400.00,
+      category: 'NE4 > Hausanschluss / NAS / acometida cliente',
+      operator_id: OP_DGF, client_id: null, detail_form: 'alta',
+      display_order: 215, active: true, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK,
+    },
+    {
+      id: SI_WESTC_130, code: 'WESTC_MDU_130', description_de: 'Mehraufwand Raumhöhe über 2,65 m',
+      description_es: null, unit: 'Stück', unit_price: 21.00, unit_price_external: 15.00,
+      category: 'NE4 > Suplementos / Mehraufwand',
+      operator_id: null, client_id: null, detail_form: null,
+      display_order: 500, active: true, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK,
+    },
+    {
+      id: SI_VANCOM_160, code: 'Vancom 160', description_de: 'Denkmalschutz',
+      description_es: null, unit: 'Stk', unit_price: null, unit_price_external: null,
+      category: 'NE4 > Suplementos / Mehraufwand',
+      operator_id: null, client_id: CLIENT_VANCOM, detail_form: null,
+      display_order: 540, active: true, notes: 'Precio según oferta', created_at: LAST_WEEK, updated_at: LAST_WEEK,
     },
   ],
 

@@ -183,6 +183,7 @@
     "line": "Linie",
     "serviceItem": "Leistung (Katalog)",
     "chooseServiceItem": "— Leistung aus Katalog wählen —",
+    "uncategorized": "Ohne Kategorie",
     "workTypeDerived": "Arbeitstyp (abgeleitet aus Katalog)",
     "streetAddress": "Straße / Hausnummer",
     "supportingDocs": "Unterstützende Dokumente",
@@ -686,6 +687,12 @@
       "allClients": "Alle Kunden",
       "showInactive": "Inaktive anzeigen"
     },
+    "filter": {
+      "allCategories": "Alle Kategorien"
+    },
+    "form": {
+      "category": "Kategorie"
+    },
     "table": {
       "code": "Code",
       "descriptionDe": "Beschreibung (DE)",
@@ -705,7 +712,8 @@
       "activate": "Aktivieren",
       "deactivate": "Deaktivieren",
       "delete": "Löschen",
-      "empty": "Keine Artikel gefunden"
+      "empty": "Keine Artikel gefunden",
+      "category": "Kategorie"
     },
     "modal": {
       "category": "Service-Katalog",

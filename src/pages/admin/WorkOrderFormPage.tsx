@@ -17,7 +17,7 @@ import type { WorkType } from '@/types/enums'
 import { useLabels } from '@/i18n/labels'
 import { useTranslation } from 'react-i18next'
 import { DETAIL_FIELDS } from '@/constants/detail-fields'
-import { fetchServiceItems } from '@/services/serviceItemService'
+import { fetchServiceItems, groupServiceItemsByCategory } from '@/services/serviceItemService'
 import type { ServiceItemWithRelations } from '@/types/service-items'
 import { DocumentUploader } from '@/components/ui/DocumentUploader'
 import { uploadWorkOrderDocument } from '@/services/workOrderDocumentService'
@@ -457,10 +457,12 @@ export function WorkOrderFormPage() {
                 className={`w-full rounded-s border px-3 py-2 text-sm text-fg-1 focus:outline-none focus:ring-1 focus:ring-accent ${errors.service_item_id ? 'border-err bg-err/5' : 'border-line bg-bg-0'}`}
               >
                 <option value="">{t('workOrder.chooseServiceItem')}</option>
-                {serviceItems.map((si) => (
-                  <option key={si.id} value={si.id}>
-                    {si.code} — {si.description_de}
-                  </option>
+                {groupServiceItemsByCategory(serviceItems).map((group) => (
+                  <optgroup key={group.category ?? '__none__'} label={group.category ?? t('workOrder.uncategorized')}>
+                    {group.items.map((si) => (
+                      <option key={si.id} value={si.id}>{si.code} — {si.description_de}</option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
               {form.service_item_id && (() => {

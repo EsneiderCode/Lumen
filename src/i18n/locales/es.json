@@ -183,6 +183,7 @@
     "line": "Línea",
     "serviceItem": "Servicio (Catálogo)",
     "chooseServiceItem": "— elegir servicio del catálogo —",
+    "uncategorized": "Sin categoría",
     "workTypeDerived": "Tipo de trabajo (derivado del catálogo)",
     "streetAddress": "Calle / Número",
     "supportingDocs": "Documentos de respaldo",
@@ -705,7 +706,14 @@
       "activate": "Activar",
       "deactivate": "Desactivar",
       "delete": "Eliminar",
-      "empty": "No se encontraron ítems"
+      "empty": "No se encontraron ítems",
+      "category": "Categoría"
+    },
+    "filter": {
+      "allCategories": "Todas las categorías"
+    },
+    "form": {
+      "category": "Categoría"
     },
     "modal": {
       "category": "Catálogo de servicios",

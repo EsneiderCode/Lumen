@@ -19,6 +19,10 @@ const supabaseConfig = readFileSync(
   join(process.cwd(), 'supabase', 'config.toml'),
   'utf8',
 ).toLowerCase()
+const migration022Sql = readFileSync(
+  join(migrationsDir, '022_service_item_categories.sql'),
+  'utf8',
+)
 
 describe('database migrations cover billing workflow schema', () => {
   it('allows direct orders without a client', () => {
@@ -157,5 +161,20 @@ describe('database migrations cover billing workflow schema', () => {
     expect(migrationSql).toContain('client_accepted')
     expect(migrationSql).toContain("cert_type = 'client'")
     expect(migrationSql).toContain("cert_type = 'internal'")
+  })
+
+  it('adds category grouping to service catalog and seeds the NE4 rate card', () => {
+    expect(migrationSql).toContain('migration 022')
+    expect(migrationSql).toContain('depends on: 021_team_pins.sql')
+    expect(migrationSql).toMatch(
+      /alter\s+table\s+(public\.)?service_items\s+add\s+column\s+if\s+not\s+exists\s+category\s+text/,
+    )
+    expect(migrationSql).toContain('ne4 > ont / aktivierung')
+    expect(migrationSql).toContain('ne4 > hausanschluss / nas / acometida cliente')
+    expect(migrationSql).toContain('ne4 > altas cliente deutsche glasfaser / ugg')
+    expect(migrationSql).toContain('ne4 > replanteo / citas / activaciones posteriores')
+    expect(migrationSql).toContain('ne4 > suplementos / mehraufwand')
+    expect(migration022Sql).toContain("'WESTC'")
+    expect(migration022Sql).not.toContain('WESTCONNECT')
   })
 })
