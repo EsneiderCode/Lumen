@@ -622,6 +622,30 @@ export type Database = {
           },
         ]
       }
+      team_pins: {
+        Row: {
+          created_at: string
+          id: string
+          pin_hash: string
+          team_color: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pin_hash: string
+          team_color: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pin_hash?: string
+          team_color?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       telegram_groups: {
         Row: {
           chat_id: string
@@ -1080,6 +1104,57 @@ export type Database = {
           },
           {
             foreignKeyName: "work_order_billing_lines_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      work_order_documents: {
+        Row: {
+          document_type: Database["public"]["Enums"]["document_type"]
+          file_name: string
+          id: string
+          mime_type: string | null
+          size_bytes: number | null
+          storage_path: string
+          uploaded_at: string
+          uploaded_by: string
+          work_order_id: string
+        }
+        Insert: {
+          document_type: Database["public"]["Enums"]["document_type"]
+          file_name: string
+          id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          storage_path: string
+          uploaded_at?: string
+          uploaded_by: string
+          work_order_id: string
+        }
+        Update: {
+          document_type?: Database["public"]["Enums"]["document_type"]
+          file_name?: string
+          id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          storage_path?: string
+          uploaded_at?: string
+          uploaded_by?: string
+          work_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_order_documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_order_documents_work_order_id_fkey"
             columns: ["work_order_id"]
             isOneToOne: false
             referencedRelation: "work_orders"
@@ -1670,6 +1745,7 @@ export type Database = {
       }
     }
     Enums: {
+      document_type: "plano" | "cartas_empalme" | "diagrama_routing" | "other"
       priority_level: "normal" | "alta" | "urgente"
       team_color: "rot" | "gruen" | "blau" | "gelb"
       telegram_event_type:
@@ -1700,6 +1776,7 @@ export type Database = {
         | "alta"
         | "nt_installation"
         | "patchkabel"
+        | "pop"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1827,6 +1904,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      document_type: ["plano", "cartas_empalme", "diagrama_routing", "other"],
       priority_level: ["normal", "alta", "urgente"],
       team_color: ["rot", "gruen", "blau", "gelb"],
       telegram_event_type: [
@@ -1859,6 +1937,7 @@ export const Constants = {
         "alta",
         "nt_installation",
         "patchkabel",
+        "pop",
       ],
     },
   },

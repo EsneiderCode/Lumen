@@ -1,5 +1,5 @@
 import { CORS_HEADERS, env, json, selectOne, supabaseFetch } from '../_shared/http.ts'
-import { hashPin, normalizeLoginCode } from '../_shared/pin.ts'
+import { normalizeLoginCode } from '../_shared/pin.ts'
 
 type UserRole = 'admin' | 'technician' | 'contractor'
 type TeamColor = 'rot' | 'gruen' | 'blau' | 'gelb'
@@ -30,8 +30,6 @@ interface UserPayload {
   role?: UserRole
   team?: TeamColor | null
   isActive?: boolean
-  pin?: string | null
-  loginCode?: string | null
 }
 
 function readPayload(value: unknown): UserPayload {
@@ -44,8 +42,6 @@ function readPayload(value: unknown): UserPayload {
     role: ['admin', 'technician', 'contractor'].includes(String(raw.role)) ? raw.role as UserRole : undefined,
     team: ['rot', 'gruen', 'blau', 'gelb'].includes(String(raw.team)) ? raw.team as TeamColor : raw.team === null ? null : undefined,
     isActive: typeof raw.isActive === 'boolean' ? raw.isActive : undefined,
-    pin: typeof raw.pin === 'string' ? raw.pin : raw.pin === null ? null : undefined,
-    loginCode: typeof raw.loginCode === 'string' ? raw.loginCode : raw.loginCode === null ? null : undefined,
   }
 }
 
@@ -92,7 +88,7 @@ async function createAuthUser(
   serviceRoleKey: string,
   payload: Required<Pick<UserPayload, 'fullName' | 'role'>> & Pick<UserPayload, 'email'> & { loginCode: string },
 ): Promise<string> {
-  const email = payload.email?.trim() || syntheticEmail(payload.loginCode)
+  const email = payload.email?.trim() || syntheticEmail(payload.loginCode)  // loginCode used only for synthetic email
   const res = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
     method: 'POST',
     headers: {
@@ -146,8 +142,8 @@ Deno.serve(async (req) => {
       if (!payload.fullName?.trim() || !payload.role) {
         return json(400, { error: 'Full name and role are required' })
       }
-      const loginCode = normalizeLoginCode(payload.loginCode || payload.fullName)
-      if (!loginCode) return json(400, { error: 'Login code is required' })
+      const loginCode = normalizeLoginCode(payload.fullName)
+      if (!loginCode) return json(400, { error: 'Full name is required to generate login code' })
 
       const id = await createAuthUser(supabaseUrl, serviceRoleKey, {
         fullName: payload.fullName.trim(),
@@ -165,10 +161,6 @@ Deno.serve(async (req) => {
         is_active: payload.isActive ?? true,
         pin_login_code: ['technician', 'contractor'].includes(payload.role) ? loginCode : null,
         updated_at: new Date().toISOString(),
-      }
-      if (payload.pin) {
-        profileUpdate.pin_hash = await hashPin(payload.pin)
-        profileUpdate.pin_set_at = new Date().toISOString()
       }
 
       await supabaseFetch<ProfileRow[]>(
@@ -193,13 +185,6 @@ Deno.serve(async (req) => {
       if (payload.role !== undefined) patch.role = payload.role
       if (payload.team !== undefined) patch.team = payload.team
       if (payload.isActive !== undefined) patch.is_active = payload.isActive
-      if (payload.loginCode !== undefined) {
-        patch.pin_login_code = payload.loginCode ? normalizeLoginCode(payload.loginCode) : null
-      }
-      if (payload.pin) {
-        patch.pin_hash = await hashPin(payload.pin)
-        patch.pin_set_at = new Date().toISOString()
-      }
 
       await supabaseFetch<void>(
         supabaseUrl,

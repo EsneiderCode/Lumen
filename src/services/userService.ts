@@ -22,8 +22,6 @@ export interface OperationalUserPayload {
   role?: UserRole
   team?: TeamColor | null
   isActive?: boolean
-  loginCode?: string | null
-  pin?: string | null
 }
 
 function errorMessage(error: unknown): string | null {

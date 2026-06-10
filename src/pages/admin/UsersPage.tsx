@@ -17,8 +17,6 @@ const EMPTY_FORM = {
   email: '',
   role: 'technician' as UserRole,
   team: '' as TeamColor | '',
-  loginCode: '',
-  pin: '',
   isActive: true,
 }
 
@@ -31,8 +29,6 @@ function toForm(user: OperationalUser): UserForm {
     email: user.email ?? '',
     role: user.role,
     team: user.team ?? '',
-    loginCode: user.pin_login_code ?? '',
-    pin: '',
     isActive: user.is_active,
   }
 }
@@ -44,8 +40,6 @@ function cleanPayload(form: UserForm): OperationalUserPayload {
     email: form.email.trim() || null,
     role: form.role,
     team: form.team || null,
-    loginCode: form.role === 'admin' ? null : form.loginCode.trim(),
-    pin: form.pin.trim() || null,
     isActive: form.isActive,
   }
 }
@@ -212,32 +206,6 @@ export function UsersPage() {
               <option value="blau">{t('teamColor.blau')}</option>
               <option value="gelb">{t('teamColor.gelb')}</option>
             </select>
-          </label>
-
-          <label className="block">
-            <span className="mb-1 block text-xs font-medium text-fg-3">{t('users.pinLoginCode')}</span>
-            <input
-              value={form.loginCode}
-              onChange={(e) => updateForm('loginCode', e.target.value)}
-              disabled={form.role === 'admin'}
-              className="w-full rounded-s border border-line-s bg-bg-2 px-3 py-2 font-mono text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-40"
-              placeholder="team-rot-01"
-            />
-          </label>
-
-          <label className="block">
-            <span className="mb-1 block text-xs font-medium text-fg-3">{t('users.newPin')}</span>
-            <input
-              type="password"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              minLength={4}
-              maxLength={8}
-              value={form.pin}
-              onChange={(e) => updateForm('pin', e.target.value.replace(/\D/g, '').slice(0, 8))}
-              className="w-full rounded-s border border-line-s bg-bg-2 px-3 py-2 font-mono text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-              placeholder={t('users.pinPlaceholder')}
-            />
           </label>
 
           <label className="flex items-center gap-3 pt-6">
