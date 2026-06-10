@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CheckSquare, Pencil, Plus, Send, Square, Trash2 } from 'lucide-react'
+import { CheckSquare, KeyRound, Pencil, Plus, Send, Square, Trash2 } from 'lucide-react'
+import {
+  fetchTeamPinStatuses,
+  setTeamPin,
+  type TeamColor,
+  type TeamPinStatus,
+} from '@/services/teamPinService'
 import {
   createGroup,
   deleteGroup,
@@ -19,6 +25,13 @@ import {
 } from '@/services/telegramGroupService'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
+
+const TEAM_CONFIGS: { color: TeamColor; label: string; dot: string }[] = [
+  { color: 'rot',   label: 'Equipo Rot',  dot: 'bg-team-rot' },
+  { color: 'gruen', label: 'Equipo Grün', dot: 'bg-team-gruen' },
+  { color: 'blau',  label: 'Equipo Blau', dot: 'bg-team-blau' },
+  { color: 'gelb',  label: 'Equipo Gelb', dot: 'bg-team-gelb' },
+]
 
 const EMPTY_FORM: GroupPayload = {
   chat_id: '',
@@ -54,6 +67,14 @@ export function SettingsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [togglingKey, setTogglingKey] = useState<string | null>(null)
 
+  // ── Team PIN state ─────────────────────────────────────────────────────────
+  const [teamPins, setTeamPins] = useState<TeamPinStatus[]>([])
+  const [editingTeam, setEditingTeam] = useState<TeamColor | null>(null)
+  const [newPin, setNewPin] = useState('')
+  const [confirmPin, setConfirmPin] = useState('')
+  const [pinSaving, setPinSaving] = useState(false)
+  const [pinError, setPinError] = useState<string | null>(null)
+
   // ── Load ───────────────────────────────────────────────────────────────────
 
   const load = useCallback(async () => {
@@ -70,7 +91,13 @@ export function SettingsPage() {
     }
   }, [t])
 
+  const loadTeamPins = useCallback(async () => {
+    const { data } = await fetchTeamPinStatuses()
+    setTeamPins(data)
+  }, [])
+
   useEffect(() => { void load() }, [load])
+  useEffect(() => { void loadTeamPins() }, [loadTeamPins])
 
   // ── Form helpers ───────────────────────────────────────────────────────────
 
@@ -189,6 +216,44 @@ export function SettingsPage() {
     } finally {
       setTogglingKey(null)
     }
+  }
+
+  // ── Team PIN handlers ──────────────────────────────────────────────────────
+
+  function openPinEdit(color: TeamColor) {
+    setEditingTeam(color)
+    setNewPin('')
+    setConfirmPin('')
+    setPinError(null)
+  }
+
+  function closePinEdit() {
+    setEditingTeam(null)
+    setNewPin('')
+    setConfirmPin('')
+    setPinError(null)
+  }
+
+  async function handleSavePin() {
+    if (!/^\d{6}$/.test(newPin)) {
+      setPinError('PIN muss genau 6 Ziffern haben.')
+      return
+    }
+    if (newPin !== confirmPin) {
+      setPinError('PINs stimmen nicht überein.')
+      setConfirmPin('')
+      return
+    }
+    setPinSaving(true)
+    setPinError(null)
+    const { error } = await setTeamPin(editingTeam!, newPin)
+    setPinSaving(false)
+    if (error) {
+      setPinError(error)
+      return
+    }
+    closePinEdit()
+    void loadTeamPins()
   }
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -486,6 +551,115 @@ export function SettingsPage() {
             </table>
           </div>
         )}
+      </div>
+      {/* ════════════════════════════════════════════════════════════════════
+          Section 3 — Team PINs
+      ═══════════════════════════════════════════════════════════════════════ */}
+      <div className="rounded-gf-card border border-gf-border bg-gf-card">
+        <div className="border-b border-gf-border px-5 py-4">
+          <div className="flex items-center gap-2">
+            <KeyRound size={14} strokeWidth={1.5} className="text-gf-text-muted" />
+            <h3 className="text-sm font-medium text-gf-text">Team-PINs</h3>
+          </div>
+          <p className="mt-0.5 text-xs text-gf-text-muted">
+            6-stellige PIN pro Equipo. Techniker und Subcontratas nutzen sie beim Einloggen.
+          </p>
+        </div>
+
+        {TEAM_CONFIGS.map(({ color, label, dot }) => {
+          const status = teamPins.find((t) => t.team_color === color)
+          const isEditing = editingTeam === color
+
+          return (
+            <div key={color} className="border-b border-gf-border last:border-0">
+              {/* Row */}
+              <div className="flex items-center justify-between px-5 py-3">
+                <div className="flex items-center gap-3">
+                  <span className={`h-2.5 w-2.5 rounded-full ${dot}`} />
+                  <span className="font-sans text-sm text-gf-text">{label}</span>
+                  {status?.has_pin ? (
+                    <span className="rounded-full border border-gf-success/40 bg-gf-success/10 px-2 py-0.5 font-mono text-xs text-gf-success">
+                      PIN gesetzt
+                    </span>
+                  ) : (
+                    <span className="rounded-full border border-gf-border px-2 py-0.5 font-mono text-xs text-gf-text-muted">
+                      Kein PIN
+                    </span>
+                  )}
+                  {status?.updated_at && (
+                    <span className="font-mono text-xs text-gf-text-placeholder">
+                      {new Date(status.updated_at).toLocaleDateString('de-DE')}
+                    </span>
+                  )}
+                </div>
+                {!isEditing && (
+                  <button
+                    onClick={() => openPinEdit(color)}
+                    className="flex items-center gap-1.5 rounded-gf-btn border border-gf-border px-3 py-1.5 text-xs text-gf-text-muted transition-colors hover:border-gf-primary hover:text-gf-primary"
+                  >
+                    <Pencil size={12} strokeWidth={1.5} />
+                    {status?.has_pin ? 'Ändern' : 'Setzen'}
+                  </button>
+                )}
+              </div>
+
+              {/* Inline PIN form */}
+              {isEditing && (
+                <div className="border-t border-gf-border bg-gf-base-light px-5 py-4">
+                  {pinError && (
+                    <p className="mb-3 text-xs text-gf-danger">{pinError}</p>
+                  )}
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1.5 block font-mono text-xs text-gf-text-muted">NEUE PIN (6 Ziffern)</label>
+                      <div className="relative">
+                        <input
+                          type="password"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          maxLength={6}
+                          value={newPin}
+                          onChange={(e) => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-center font-mono text-base tracking-[0.4em] text-gf-text focus:border-gf-primary focus:outline-none"
+                          placeholder="••••••"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="mb-1.5 block font-mono text-xs text-gf-text-muted">BESTÄTIGEN</label>
+                      <input
+                        type="password"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={6}
+                        value={confirmPin}
+                        onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-center font-mono text-base tracking-[0.4em] text-gf-text focus:border-gf-primary focus:outline-none"
+                        placeholder="••••••"
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      onClick={handleSavePin}
+                      disabled={pinSaving || newPin.length !== 6 || confirmPin.length !== 6}
+                      className="rounded-gf-btn bg-gf-primary px-4 py-1.5 text-xs font-medium text-gf-base transition-opacity hover:opacity-80 disabled:opacity-40"
+                    >
+                      {pinSaving ? 'Speichern…' : 'Speichern'}
+                    </button>
+                    <button
+                      onClick={closePinEdit}
+                      disabled={pinSaving}
+                      className="rounded-gf-btn border border-gf-border px-4 py-1.5 text-xs text-gf-text-muted transition-colors hover:text-gf-text"
+                    >
+                      Abbrechen
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        })}
       </div>
     </div>
   )
