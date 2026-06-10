@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Navigate, useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { Eye, EyeOff, Delete, ChevronLeft } from 'lucide-react'
@@ -68,6 +68,18 @@ export function LoginPage() {
     setMembers([])
     setPassword('')
   }
+
+  // ── Keyboard input for PIN ─────────────────────────────────────────────────
+  useEffect(() => {
+    if (mode !== 'pin' || pinStep !== 'enter' || loadingTeam) return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (/^\d$/.test(e.key)) handleNumpad(e.key)
+      else if (e.key === 'Backspace') handleNumpad('⌫')
+      else if (e.key === 'Enter' && pin.length === 6) void handlePinSubmit()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [mode, pinStep, pin, loadingTeam])
 
   // ── Numpad handler ─────────────────────────────────────────────────────────
   const handleNumpad = (key: string) => {
