@@ -9,3 +9,9 @@ verify_jwt = true
 
 [functions.update-pin]
 verify_jwt = true
+
+[functions.team-pin-login]
+verify_jwt = false
+
+[functions.set-team-pin]
+verify_jwt = true
