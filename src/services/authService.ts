@@ -1,5 +1,5 @@
 import { supabase, isDemoSupabase } from '@/lib/supabase'
-import type { AuthUser } from '@/context/authTypes'
+import type { AuthUser, TeamMember } from '@/context/authTypes'
 import type { Database } from '@/types/database.types'
 import { DEMO_PASSWORD, DEMO_TECH_PIN } from '@/lib/demo/fixtures'
 import {
@@ -13,7 +13,7 @@ import {
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row']
 
-const PIN_LOGIN_ENDPOINT = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/pin-login`
+const TEAM_PIN_LOGIN_ENDPOINT = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/team-pin-login`
 const UPDATE_PIN_ENDPOINT = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-pin`
 
 export interface SignInResult {
@@ -21,7 +21,12 @@ export interface SignInResult {
   error: string | null
 }
 
-interface PinLoginResponse {
+interface TeamPinLookupResponse {
+  team: string
+  members: TeamMember[]
+}
+
+interface TeamPinLoginResponse {
   accessToken: string
   expiresAt: number
   user: {
@@ -30,7 +35,6 @@ interface PinLoginResponse {
     fullName: string
     role: AuthUser['role']
     team: AuthUser['team']
-    loginCode: string | null
   }
 }
 
@@ -71,25 +75,63 @@ export const authService = {
     return { user: profile, error: null }
   },
 
-  async signInWithLoginCode(loginCode: string, pin: string): Promise<SignInResult> {
-    const trimmedCode = loginCode.trim().toLowerCase()
+  async getTeamByPin(pin: string): Promise<{ team: string | null; members: TeamMember[]; error: string | null }> {
     const trimmedPin = pin.trim()
-
-    if (!trimmedCode || !/^\d{4,8}$/.test(trimmedPin)) {
-      return { user: null, error: 'Login-Code und PIN sind erforderlich.' }
+    if (!/^\d{6}$/.test(trimmedPin)) {
+      return { team: null, members: [], error: 'Eine 6-stellige PIN ist erforderlich.' }
     }
 
     if (isDemoSupabase) {
       if (trimmedPin !== DEMO_TECH_PIN) {
-        return { user: null, error: 'Login-Code oder PIN ungültig.' }
+        return { team: null, members: [], error: 'Ungültige PIN.' }
+      }
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, role, team')
+        .in('role', ['technician', 'contractor'])
+        .eq('is_active', true)
+      const all = profiles ?? []
+      const team = all[0]?.team ?? 'rot'
+      const members: TeamMember[] = all
+        .filter((p) => p.team === team)
+        .map((p) => ({ id: p.id, fullName: p.full_name, role: p.role as TeamMember['role'] }))
+      return { team, members, error: null }
+    }
+
+    const deviceId = getPinDeviceId()
+    try {
+      const response = await fetch(TEAM_PIN_LOGIN_ENDPOINT, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ pin: trimmedPin, deviceId }),
+      })
+      if (!response.ok) {
+        return { team: null, members: [], error: 'Ungültige PIN.' }
+      }
+      const payload = (await response.json()) as TeamPinLookupResponse
+      return { team: payload.team, members: payload.members, error: null }
+    } catch {
+      return { team: null, members: [], error: 'Keine Verbindung. Bitte erneut versuchen.' }
+    }
+  },
+
+  async signInWithTeamPin(pin: string, profileId: string): Promise<SignInResult> {
+    const trimmedPin = pin.trim()
+    if (!/^\d{6}$/.test(trimmedPin) || !profileId) {
+      return { user: null, error: 'PIN und Mitarbeiterauswahl sind erforderlich.' }
+    }
+
+    if (isDemoSupabase) {
+      if (trimmedPin !== DEMO_TECH_PIN) {
+        return { user: null, error: 'Ungültige PIN.' }
       }
       const { data: profile } = await supabase
         .from('profiles')
         .select('*')
-        .eq('pin_login_code', trimmedCode)
+        .eq('id', profileId)
         .single()
       if (!profile?.email) {
-        return { user: null, error: 'Login-Code oder PIN ungültig.' }
+        return { user: null, error: 'Mitarbeiter nicht gefunden.' }
       }
       const result = await supabase.auth.signInWithPassword({
         email: profile.email,
@@ -102,33 +144,27 @@ export const authService = {
     }
 
     const deviceId = getPinDeviceId()
-
     try {
-      const response = await fetch(PIN_LOGIN_ENDPOINT, {
+      const response = await fetch(TEAM_PIN_LOGIN_ENDPOINT, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ loginCode: trimmedCode, pin: trimmedPin, deviceId }),
+        body: JSON.stringify({ pin: trimmedPin, profileId, deviceId }),
       })
-
       if (!response.ok) {
-        return { user: null, error: 'Login-Code oder PIN ungültig.' }
+        return { user: null, error: 'Ungültige PIN oder Mitarbeiterauswahl.' }
       }
-
-      const payload = (await response.json()) as PinLoginResponse
-      const authUser: AuthUser & { loginCode?: string | null } = {
+      const payload = (await response.json()) as TeamPinLoginResponse
+      const authUser: AuthUser = {
         id: payload.user.id,
         email: payload.user.email,
         fullName: payload.user.fullName,
         role: payload.user.role,
         team: payload.user.team,
-        loginCode: payload.user.loginCode,
       }
-
       await storePinSession(payload.accessToken, payload.expiresAt, authUser, trimmedPin)
       return { user: authUser, error: null }
     } catch {
-      // Network failure → try offline validation against the locally cached hash
-      const offlineUser = await getOfflinePinUser(trimmedCode, trimmedPin)
+      const offlineUser = await getOfflinePinUser(trimmedPin, profileId)
       if (offlineUser) {
         return { user: offlineUser, error: null }
       }

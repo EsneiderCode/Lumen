@@ -7,7 +7,7 @@ const LOCAL_PIN_ITERATIONS = 120_000
 interface StoredPinSession {
   accessToken: string
   expiresAt: number
-  user: AuthUser & { loginCode?: string | null }
+  user: AuthUser
   deviceId: string
   localPinHash: string
 }
@@ -99,7 +99,7 @@ export function getPinAccessToken(): string | null {
 export async function storePinSession(
   accessToken: string,
   expiresAt: number,
-  user: AuthUser & { loginCode?: string | null },
+  user: AuthUser,
   pin: string,
 ): Promise<void> {
   if (!hasStorage()) return
@@ -114,10 +114,10 @@ export async function storePinSession(
   } satisfies StoredPinSession))
 }
 
-export async function getOfflinePinUser(loginCode: string, pin: string): Promise<AuthUser | null> {
+export async function getOfflinePinUser(pin: string, profileId: string): Promise<AuthUser | null> {
   const session = getStoredPinSession()
   if (!session) return null
-  if ((session.user.loginCode ?? '').toLowerCase() !== loginCode.trim().toLowerCase()) return null
+  if (session.user.id !== profileId) return null
   const ok = await verifyLocalPin(pin, session.localPinHash)
   return ok ? session.user : null
 }
