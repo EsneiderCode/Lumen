@@ -467,7 +467,7 @@ export function MaterialsPage() {
                 </div>
                 <label className={iconBtnCls}>
                   {t('materials.actions.file')}
-                  <input type="file" accept=".xlsx,.xls" className="hidden" onChange={(e) => void handleFile(e.target.files?.[0] ?? null)} />
+                  <input type="file" accept=".xlsx" className="hidden" onChange={(e) => void handleFile(e.target.files?.[0] ?? null)} />
                 </label>
               </div>
               {previewRows.length > 0 && (

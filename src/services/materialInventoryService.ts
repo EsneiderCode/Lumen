@@ -1,4 +1,4 @@
-// xlsx (SheetJS) is lazy-loaded on demand inside parseMaterialWorkbook to keep it out of the initial bundle
+import ExcelJS from 'exceljs'
 import { supabase } from '@/lib/supabase'
 import type { TeamColor } from '@/types/enums'
 import type {
@@ -32,17 +32,43 @@ function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error ?? 'Unknown error')
 }
 
+function normalizeExcelValue(value: unknown): unknown {
+  if (value == null) return ''
+  if (value instanceof Date || typeof value !== 'object') return value
+
+  const richValue = value as {
+    result?: unknown
+    text?: string
+    richText?: Array<{ text?: string }>
+  }
+  if (richValue.result != null) return normalizeExcelValue(richValue.result)
+  if (typeof richValue.text === 'string') return richValue.text
+  if (Array.isArray(richValue.richText)) {
+    return richValue.richText.map((part) => part.text ?? '').join('')
+  }
+  return String(value)
+}
+
+function worksheetToRows(worksheet: ExcelJS.Worksheet): unknown[][] {
+  const rows: unknown[][] = []
+  worksheet.eachRow({ includeEmpty: false }, (row) => {
+    const values: unknown[] = []
+    row.eachCell({ includeEmpty: true }, (cell, columnNumber) => {
+      values[columnNumber - 1] = normalizeExcelValue(cell.value)
+    })
+    if (values.some((value) => String(value ?? '').trim() !== '')) rows.push(values)
+  })
+  return rows
+}
+
 export async function parseMaterialWorkbook(file: File): Promise<{
   data: MaterialImportPreviewRow[]
   error: string | null
 }> {
   try {
-    const XLSX = await import('xlsx')
-    const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array' })
-    const allRows = workbook.SheetNames.flatMap((sheetName) => {
-      const sheet = workbook.Sheets[sheetName]
-      return XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1, blankrows: false })
-    })
+    const workbook = new ExcelJS.Workbook()
+    await workbook.xlsx.load(await file.arrayBuffer())
+    const allRows = workbook.worksheets.flatMap(worksheetToRows)
 
     const gfp = parseGfpRows(allRows)
     if (gfp.length > 0) return { data: gfp, error: null }
