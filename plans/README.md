@@ -17,7 +17,7 @@ with person-level assignment, and NE4-bridge hardening.
 | 002  | Order form: derive client/operator/line from project | P1 | M | 001 (same file) | DONE (committed on `feat/order-form-project-derivation`; preflight restored by 005) |
 | 005  | Fix LoginPage conditional hook (restores repo-wide preflight) | P1 | S | — | DONE (preflight restored; demo admin login smoke passed) |
 | 003  | Personnel teams + person-level assignment | P2 | L | 002 committed; 005 recommended first (refreshed 2026-06-11, see plan's Preconditions) | DONE (commit `f92ca0a`; preflight green; demo smoke passed) |
-| 004  | NE4 bridge: provenance, metadata, sync log | P2 | M | — (migration `025` confirmed free; preconditions refreshed 2026-06-11) | TODO |
+| 004  | NE4 bridge: provenance, metadata, sync log | P2 | M | — (migration `025` confirmed free; preconditions refreshed 2026-06-11) | DONE (LUMEN `0682e53` on `feat/ne4-bridge-provenance` + ne4 `369cfe1` on `feat/lumen-sync-observability`; preflight green; demo visual check pending; deploy order: LUMEN migration → redeploy lumen-bridge → ne4 migration) |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJECTED (with one-line rationale)
 
