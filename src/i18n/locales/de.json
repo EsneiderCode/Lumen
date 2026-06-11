@@ -329,6 +329,9 @@
     "title": "Auftrag zuweisen",
     "section": "Zuweisung",
     "workType": "Arbeitstyp",
+    "technicianOptional": "Techniker (optional)",
+    "externalSuffix": "Extern",
+    "documentCheck": "Dokumente werden geprüft...",
     "assignee": "Techniker / Contractor",
     "chooseProfile": "— Profil wählen —",
     "noAssigneesForTeam": "Keine Profile für dieses Team gefunden.",
@@ -759,6 +762,14 @@
       "buttonConfirm": "Endgültig löschen",
       "buttonDeleting": "[LÖSCHEN…]"
     }
+  },
+  "personnel": {
+    "tabs": {
+      "internal": "Interne",
+      "external": "Externe"
+    },
+    "manageInUsers": "In Benutzerverwaltung verwalten",
+    "appUser": "App-Benutzer"
   },
   "sidebar": {
     "sections": {

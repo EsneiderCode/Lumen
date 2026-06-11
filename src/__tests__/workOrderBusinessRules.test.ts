@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildContractorDocumentFailureReasons,
+  buildPersonAssignmentFailureReasons,
   isDirectWorkOrder,
   toFailureResult,
   type WorkOrderActionReason,
 } from '@/services/workOrderBusinessRules'
-import type { ContractorDocument } from '@/types/contractor-documents'
+import type { ContractorDocument, ContractorDocumentType } from '@/types/contractor-documents'
+import { REQUIRED_CONTRACTOR_DOCUMENT_TYPES } from '@/types/contractor-documents'
 
 const baseDoc = (overrides: Partial<ContractorDocument>): ContractorDocument => ({
   id: `doc-${overrides.document_type ?? 'unknown'}`,
@@ -92,6 +94,56 @@ describe('buildContractorDocumentFailureReasons', () => {
       ]),
     )
     expect(reasons).toHaveLength(3)
+  })
+})
+
+
+const validContractorDocs = (): ContractorDocument[] =>
+  REQUIRED_CONTRACTOR_DOCUMENT_TYPES.map((documentType: ContractorDocumentType) =>
+    baseDoc({ document_type: documentType, status: 'approved', expires_at: '2030-01-01' }),
+  )
+
+describe('buildPersonAssignmentFailureReasons', () => {
+  it('allows internal technicians regardless of contractor documents', () => {
+    expect(
+      buildPersonAssignmentFailureReasons(
+        { id: 'tech-1', role: 'technician' },
+        [],
+        '2026-05-15',
+      ),
+    ).toEqual([])
+  })
+
+  it('allows contractors when every required document is approved and valid', () => {
+    expect(
+      buildPersonAssignmentFailureReasons(
+        { id: 'contractor-1', role: 'contractor' },
+        validContractorDocs(),
+        '2026-05-15',
+      ),
+    ).toEqual([])
+  })
+
+  it('blocks contractors with missing or expired documents', () => {
+    const reasons = buildPersonAssignmentFailureReasons(
+      { id: 'contractor-1', role: 'contractor' },
+      [
+        baseDoc({ document_type: 'gewerbeanmeldung', status: 'approved' }),
+        baseDoc({
+          document_type: 'haftpflichtversicherung',
+          status: 'approved',
+          expires_at: '2026-05-14',
+        }),
+      ],
+      '2026-05-15',
+    )
+
+    expect(reasons).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ code: 'contractor_documents_expired' }),
+        expect.objectContaining({ code: 'contractor_documents_missing' }),
+      ]),
+    )
   })
 })
 

@@ -23,6 +23,10 @@ const migration022Sql = readFileSync(
   join(migrationsDir, '022_service_item_categories.sql'),
   'utf8',
 )
+const migration024Sql = readFileSync(
+  join(migrationsDir, '024_employee_teams.sql'),
+  'utf8',
+).toLowerCase()
 
 describe('database migrations cover billing workflow schema', () => {
   it('allows direct orders without a client', () => {
@@ -185,5 +189,17 @@ describe('database migrations cover billing workflow schema', () => {
       /alter\s+table\s+(public\.)?projects[\s\S]*add\s+column\s+if\s+not\s+exists\s+default_operator_id/,
     )
     expect(migrationSql).toContain('default_line')
+  })
+
+  it('adds employee teams and app-profile links', () => {
+    expect(migrationSql).toContain('migration 024')
+    expect(migration024Sql).toContain('depends on: 023_project_defaults.sql')
+    expect(migration024Sql).toMatch(
+      /alter\s+table\s+(public\.)?employees[\s\S]*add\s+column\s+if\s+not\s+exists\s+team\s+(public\.)?team_color/,
+    )
+    expect(migration024Sql).toMatch(
+      /add\s+column\s+if\s+not\s+exists\s+profile_id\s+uuid\s+references\s+public\.profiles\(id\)/,
+    )
+    expect(migration024Sql).toContain('idx_employees_team')
   })
 })

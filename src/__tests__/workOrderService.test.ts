@@ -621,6 +621,53 @@ describe('assignWorkOrder — team-based assignment', () => {
     expect(result.data).toEqual({ id: 'wo-1', status: 'assigned' })
   })
 
+
+  it('writes null assigned_technician when no person is selected', async () => {
+    const updateSpy = vi.fn(() => ({
+      eq: () => ({
+        select: () => ({
+          single: () => Promise.resolve({ data: { id: 'wo-1', status: 'assigned' }, error: null }),
+        }),
+      }),
+    }))
+    mockSupabase.from = vi.fn((table: string) => ({
+      select: () => ({
+        eq: () => ({ single: () => Promise.resolve({ data: { status: 'created' }, error: null }) }),
+      }),
+      update: table === 'work_orders' ? updateSpy : vi.fn(),
+      insert: () => Promise.resolve({ data: null, error: null }),
+    }))
+
+    await assignWorkOrder('wo-1', 'rot', '2026-05-15', 'admin-1')
+
+    expect(updateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ assigned_technician: null }),
+    )
+  })
+
+  it('writes the selected technician id when a person is selected', async () => {
+    const updateSpy = vi.fn(() => ({
+      eq: () => ({
+        select: () => ({
+          single: () => Promise.resolve({ data: { id: 'wo-1', status: 'assigned' }, error: null }),
+        }),
+      }),
+    }))
+    mockSupabase.from = vi.fn((table: string) => ({
+      select: () => ({
+        eq: () => ({ single: () => Promise.resolve({ data: { status: 'created' }, error: null }) }),
+      }),
+      update: table === 'work_orders' ? updateSpy : vi.fn(),
+      insert: () => Promise.resolve({ data: null, error: null }),
+    }))
+
+    await assignWorkOrder('wo-1', 'rot', '2026-05-15', 'admin-1', 'tech-1')
+
+    expect(updateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ assigned_technician: 'tech-1' }),
+    )
+  })
+
   it('returns an error when Supabase update fails', async () => {
     mockSupabase.from = vi.fn(() => ({
       select: () => ({

@@ -43,6 +43,9 @@ const WO_5_PAID = '50000000-0000-0000-0000-000000000005'
 const WO_6_REJECTED = '50000000-0000-0000-0000-000000000006'
 const WO_7_EXTERNAL = '50000000-0000-0000-0000-000000000007'
 
+const EMPLOYEE_TECH = '60000000-0000-0000-0000-000000000001'
+const EMPLOYEE_OFFICE = '60000000-0000-0000-0000-000000000002'
+
 const NOW = new Date('2026-04-28T08:00:00Z').toISOString()
 const YESTERDAY = new Date('2026-04-27T08:00:00Z').toISOString()
 const LAST_WEEK = new Date('2026-04-21T08:00:00Z').toISOString()
@@ -88,7 +91,7 @@ export const initialFixtures = () => ({
       email: 'contractor@demo.lumen',
       full_name: 'Demo Contractor',
       role: 'contractor',
-      team: null,
+      team: 'blau',
       pin_login_code: 'contractor-demo',
       pin_set_at: LAST_WEEK,
       last_pin_login_at: null,
@@ -109,6 +112,49 @@ export const initialFixtures = () => ({
     created_at: string
     updated_at: string
   }>,
+
+  employees: [
+    {
+      id: EMPLOYEE_TECH,
+      full_name: 'Demo Técnico',
+      email: 'tech@demo.lumen',
+      phone: '+49 170 0000002',
+      sv_nummer: '12 345678 T 002',
+      steuer_id: '12 345 678 902',
+      steuerklasse: 'I',
+      iban: 'DE89370400440532013002',
+      gross_salary: 3200,
+      start_date: '2026-01-01',
+      end_date: null,
+      notes: 'Demo: field technician linked to app profile',
+      team: 'rot',
+      profile_id: TECH_ID,
+      is_active: true,
+      created_at: LAST_WEEK,
+      updated_at: LAST_WEEK,
+    },
+    {
+      id: EMPLOYEE_OFFICE,
+      full_name: 'Mara Backoffice',
+      email: 'office@demo.lumen',
+      phone: '+49 170 0000004',
+      sv_nummer: '12 345678 O 004',
+      steuer_id: '12 345 678 904',
+      steuerklasse: 'IV',
+      iban: 'DE89370400440532013004',
+      gross_salary: 2850,
+      start_date: '2026-02-01',
+      end_date: null,
+      notes: 'Demo: office staff without field team',
+      team: null,
+      profile_id: null,
+      is_active: true,
+      created_at: LAST_WEEK,
+      updated_at: LAST_WEEK,
+    },
+  ],
+
+  vacation_requests: [],
 
   clients: [
     { id: CLIENT_INSYTE, name: 'Insyte Deutschland', code: 'INSYTE', is_active: true, created_at: LAST_WEEK },
