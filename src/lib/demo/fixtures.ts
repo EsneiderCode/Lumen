@@ -42,6 +42,7 @@ const WO_4_DIRECT = '50000000-0000-0000-0000-000000000004'
 const WO_5_PAID = '50000000-0000-0000-0000-000000000005'
 const WO_6_REJECTED = '50000000-0000-0000-0000-000000000006'
 const WO_7_EXTERNAL = '50000000-0000-0000-0000-000000000007'
+const WO_8_NE4 = '50000000-0000-0000-0000-000000000008'
 
 const EMPLOYEE_TECH = '60000000-0000-0000-0000-000000000001'
 const EMPLOYEE_OFFICE = '60000000-0000-0000-0000-000000000002'
@@ -399,6 +400,33 @@ export const initialFixtures = () => ({
       service_item_id: SI_ALTA_BASIC, created_by: ADMIN_ID,
       created_at: LAST_WEEK, updated_at: NOW,
     },
+    // 8 — NE4 bridge: synced from NE4 Work Manager, awaiting internal certification
+    {
+      id: WO_8_NE4, order_number: 'NE4-demo-0001',
+      client_id: CLIENT_INSYTE, project_id: PROJECT_WCB, operator_id: OP_GFPLUS,
+      line: 'NE4', work_type: 'alta', status: 'rueckmeldung_sent', priority: 'normal',
+      assigned_team: null, assigned_technician: null, assigned_date: '2026-04-21',
+      address: 'Westfalenstraße 7', postal_code: '44141', city: 'Dortmund',
+      internal_notes: 'Synced from NE4 Work Manager\nNE4 report: a1b2c3d4-0000-0000-0000-000000000001\nNE4 cita: c5d6e7f8-0000-0000-0000-000000000002\nHA: HA-2024-5501\nWE: 4\nWorkflow: ALTA_STANDARD\nInstallation type: Tiefbau\nWork zones: Zone-A, Zone-B\nScore: 5',
+      source: 'ne4',
+      external_metadata: {
+        system: 'ne4-work-manager',
+        report_id: 'a1b2c3d4-0000-0000-0000-000000000001',
+        cita_id: 'c5d6e7f8-0000-0000-0000-000000000002',
+        ha: 'HA-2024-5501',
+        we_count: 4,
+        workflow_code: 'ALTA_STANDARD',
+        installation_type: 'Tiefbau',
+        work_zones: ['Zone-A', 'Zone-B'],
+        score: 5,
+        submitted_at: LAST_WEEK,
+        contact_name: 'Hans Müller',
+        contact_phone: '+49 231 555 0101',
+      },
+      assigned_detail_snapshot: null,
+      service_item_id: SI_ALTA_BASIC, created_by: ADMIN_ID,
+      created_at: LAST_WEEK, updated_at: LAST_WEEK,
+    },
   ],
 
   wo_detail_soplado: [
@@ -462,6 +490,7 @@ export const initialFixtures = () => ({
     { id: 'h0000000-0000-0000-0000-000000000074', work_order_id: WO_7_EXTERNAL, from_status: 'executed',              to_status: 'rueckmeldung_pending', changed_by: CONTRACTOR_ID, notes: null, created_at: LAST_WEEK },
     { id: 'h0000000-0000-0000-0000-000000000075', work_order_id: WO_7_EXTERNAL, from_status: 'rueckmeldung_pending',  to_status: 'rueckmeldung_sent',    changed_by: CONTRACTOR_ID, notes: null, created_at: LAST_WEEK },
     { id: 'h0000000-0000-0000-0000-000000000076', work_order_id: WO_7_EXTERNAL, from_status: 'rueckmeldung_sent',     to_status: 'internally_certified', changed_by: ADMIN_ID, notes: 'Hash: f7e6d5...', created_at: LAST_WEEK },
+    { id: 'h0000000-0000-0000-0000-000000000080', work_order_id: WO_8_NE4, from_status: null,               to_status: 'rueckmeldung_sent', changed_by: ADMIN_ID, notes: 'Auto-synced from NE4 Work Manager', created_at: LAST_WEEK },
   ],
 
   certification_audits: [

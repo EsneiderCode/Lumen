@@ -27,6 +27,10 @@ const migration024Sql = readFileSync(
   join(migrationsDir, '024_employee_teams.sql'),
   'utf8',
 ).toLowerCase()
+const migration025Sql = readFileSync(
+  join(migrationsDir, '025_work_order_source.sql'),
+  'utf8',
+)
 
 describe('database migrations cover billing workflow schema', () => {
   it('allows direct orders without a client', () => {
@@ -201,5 +205,13 @@ describe('database migrations cover billing workflow schema', () => {
       /add\s+column\s+if\s+not\s+exists\s+profile_id\s+uuid\s+references\s+public\.profiles\(id\)/,
     )
     expect(migration024Sql).toContain('idx_employees_team')
+  })
+
+  it('adds NE4 bridge provenance columns to work_orders', () => {
+    expect(migration025Sql).toContain('Depends on: 024_employee_teams.sql')
+    expect(migration025Sql).toMatch(
+      /source TEXT NOT NULL DEFAULT 'lumen'/,
+    )
+    expect(migration025Sql).toContain('external_metadata JSONB')
   })
 })

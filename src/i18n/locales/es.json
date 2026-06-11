@@ -219,7 +219,10 @@
     "nextPage": "Siguiente →",
     "dateFrom": "Fecha de ejecución desde",
     "dateTo": "Fecha de ejecución hasta",
-    "derivedData": "Derivado del proyecto (ajustar si hace falta)"
+    "derivedData": "Derivado del proyecto (ajustar si hace falta)",
+    "ne4Panel": {
+      "title": "Datos de campo NE4"
+    }
   },
   "rueckmeldung": {
     "pending": "Rückmeldung pendiente",

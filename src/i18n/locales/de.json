@@ -219,7 +219,10 @@
     "nextPage": "Weiter →",
     "dateFrom": "Einsatzdatum von",
     "dateTo": "Einsatzdatum bis",
-    "derivedData": "Abgeleitet vom Projekt (bei Bedarf anpassen)"
+    "derivedData": "Abgeleitet vom Projekt (bei Bedarf anpassen)",
+    "ne4Panel": {
+      "title": "NE4 Außendienst-Daten"
+    }
   },
   "rueckmeldung": {
     "pending": "Rückmeldung ausstehend",
