@@ -19,7 +19,46 @@
 - **Risk**: MED (cross-repo deploy-order dependency — read "Sequencing" below)
 - **Depends on**: none in code; LUMEN migration numbering follows Plan 003 (expected `025`)
 - **Category**: direction / tech-debt
-- **Planned at**: LUMEN commit `759eb55`, 2026-06-10 (record the ne4 HEAD with `git -C /Users/jarl/Dev/ne4-work-manager rev-parse --short HEAD` before starting and note it in your report)
+- **Planned at**: LUMEN commit `759eb55`, 2026-06-10 (record the ne4 HEAD with `git -C /Users/jarl/Dev/ne4-work-manager rev-parse --short HEAD` before starting and note it in your report) — **refreshed 2026-06-11** at LUMEN HEAD `f92ca0a`, ne4 HEAD `651f1e4`
+
+## Preconditions (refreshed 2026-06-11 — read before the drift check)
+
+All items below were re-verified on 2026-06-11 with plans 001/002/003/005
+landed on the LUMEN side:
+
+1. **Run the drift check against `f92ca0a`, not `759eb55`.** The diff vs
+   `759eb55` is expected drift from plans 001-003: `src/lib/demo/fixtures.ts`
+   (+92 lines — project defaults + employee fixtures) and new migrations
+   `022_service_item_categories.sql`, `023_project_defaults.sql`,
+   `024_employee_teams.sql`. `WorkOrderDetailPage.tsx` is untouched — the
+   internal-notes block is still at line 1045. The ne4 bridge payload excerpt
+   (lines ~224-241) was re-verified verbatim.
+2. **Branch `feat/ne4-bridge-provenance` from `f92ca0a`** (tip of
+   `feat/personnel-teams-person-assignment`) so the fixtures file and the
+   migration sequence you see match this plan's excerpts.
+3. **Migration numbers confirmed free**: LUMEN `025` is free locally AND on
+   `upstream/develop` (its latest migration is `021_team_pins.sql`; 022-024
+   exist only on local pending-PR branches — the sequence holds as long as
+   those PRs merge in order). ne4 `022` is free (latest numbered file is
+   `021_westconnect_internal_client_type.sql`; ignore the three
+   `20260503*`-timestamped variants).
+4. **ne4 working tree is DIRTY with unrelated uncommitted work** (Vancom
+   parser effort): `AGENTS.md`, `CLAUDE.md`, `package.json`,
+   `package-lock.json`, `scripts/smoke-vancom-parser.ts`,
+   `src/features/import/VancomImportPage.tsx`,
+   `src/features/import/parseVancomExcel.ts`,
+   `src/features/reports/ReportForm.tsx`. None overlap this plan's scope.
+   Do NOT touch, stage, stash, or commit them; commit ONLY the two files in
+   this plan's ne4 scope and expect `git status` to keep showing those eight.
+5. **Step 3's trigger STOP-check is pre-cleared**:
+   `020_lumen_bridge_webhook.sql` defines
+   `after insert or update of work_status, synced_at` — the no-op
+   `work_status = work_status` retry mechanism is valid. Still re-read the
+   file when you copy the function body.
+6. **deno IS installed** (`/opt/homebrew/bin/deno`) — `deno check` is
+   mandatory for this run, not skippable.
+7. **STOP condition pre-cleared**: no `source` / `external_metadata`-like
+   column exists in any LUMEN migration up to `024`.
 
 ## Why this matters
 
