@@ -43,6 +43,7 @@ export async function fetchServiceItems(
         unit: row.unit,
         unit_price: null,
         unit_price_external: null,
+        category: row.category,
         operator_id: row.operator_id,
         client_id: row.client_id,
         detail_form: row.detail_form,
@@ -90,7 +91,7 @@ export async function fetchServiceItem(
 ): Promise<{ data: ServiceItem | null; error: string | null }> {
   const itemColumns = options.includePrices
     ? '*'
-    : 'id, code, description_de, description_es, unit, operator_id, client_id, detail_form, display_order, active, notes, created_at, updated_at'
+    : 'id, code, description_de, description_es, unit, category, operator_id, client_id, detail_form, display_order, active, notes, created_at, updated_at'
 
   const { data, error } = await supabase
     .from(options.includePrices ? 'service_items' : 'service_items_public' as 'service_items')
@@ -169,4 +170,40 @@ export async function deleteServiceItem(
     .delete()
     .eq('id', id)
   return { error: error?.message ?? null }
+}
+
+export interface ServiceItemGroup<T extends ServiceItem> {
+  category: string | null
+  items: T[]
+}
+
+/**
+ * Group service items by their `category` field, preserving the existing
+ * order within each group (items arrive pre-sorted by display_order, code).
+ * Groups are ordered by first occurrence. The uncategorized group (null
+ * category) is always last.
+ */
+export function groupServiceItemsByCategory<T extends ServiceItem>(
+  items: T[],
+): ServiceItemGroup<T>[] {
+  const map = new Map<string, ServiceItemGroup<T>>()
+  let nullGroup: ServiceItemGroup<T> | null = null
+
+  for (const item of items) {
+    if (item.category === null) {
+      nullGroup ??= { category: null, items: [] }
+      nullGroup.items.push(item)
+      continue
+    }
+    let group = map.get(item.category)
+    if (!group) {
+      group = { category: item.category, items: [] }
+      map.set(item.category, group)
+    }
+    group.items.push(item)
+  }
+
+  const groups = Array.from(map.values())
+  if (nullGroup) groups.push(nullGroup)
+  return groups
 }

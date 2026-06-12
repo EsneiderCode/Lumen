@@ -183,6 +183,7 @@
     "line": "Línea",
     "serviceItem": "Servicio (Catálogo)",
     "chooseServiceItem": "— elegir servicio del catálogo —",
+    "uncategorized": "Sin categoría",
     "workTypeDerived": "Tipo de trabajo (derivado del catálogo)",
     "streetAddress": "Calle / Número",
     "supportingDocs": "Documentos de respaldo",
@@ -217,7 +218,11 @@
     "prevPage": "← Anterior",
     "nextPage": "Siguiente →",
     "dateFrom": "Fecha de ejecución desde",
-    "dateTo": "Fecha de ejecución hasta"
+    "dateTo": "Fecha de ejecución hasta",
+    "derivedData": "Derivado del proyecto (ajustar si hace falta)",
+    "ne4Panel": {
+      "title": "Datos de campo NE4"
+    }
   },
   "rueckmeldung": {
     "pending": "Rückmeldung pendiente",
@@ -327,6 +332,9 @@
     "title": "Asignar orden",
     "section": "Asignación",
     "workType": "Tipo de trabajo",
+    "technicianOptional": "Técnico (opcional)",
+    "externalSuffix": "Externo",
+    "documentCheck": "Revisando documentación...",
     "assignee": "Técnico / subcontratista",
     "chooseProfile": "— elegir perfil —",
     "noAssigneesForTeam": "No hay perfiles para este equipo.",
@@ -705,7 +713,14 @@
       "activate": "Activar",
       "deactivate": "Desactivar",
       "delete": "Eliminar",
-      "empty": "No se encontraron ítems"
+      "empty": "No se encontraron ítems",
+      "category": "Categoría"
+    },
+    "filter": {
+      "allCategories": "Todas las categorías"
+    },
+    "form": {
+      "category": "Categoría"
     },
     "modal": {
       "category": "Catálogo de servicios",
@@ -750,6 +765,14 @@
       "buttonConfirm": "Eliminar definitivamente",
       "buttonDeleting": "[ELIMINANDO…]"
     }
+  },
+  "personnel": {
+    "tabs": {
+      "internal": "Internos",
+      "external": "Externos"
+    },
+    "manageInUsers": "Gestionar en Usuarios",
+    "appUser": "Usuario de la app"
   },
   "sidebar": {
     "sections": {

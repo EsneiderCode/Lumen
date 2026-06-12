@@ -14,6 +14,7 @@ export interface ServiceItem {
   unit: string | null
   unit_price: number | null
   unit_price_external: number | null
+  category: string | null
   operator_id: string | null
   client_id: string | null
   /** Which wo_detail_* table this item routes to; maps to legacy WorkType. */

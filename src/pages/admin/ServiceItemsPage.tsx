@@ -26,7 +26,7 @@ const DETAIL_FORM_OPTIONS = [
   { value: 'pop',       label: 'POP' },
 ]
 
-const UNIT_OPTIONS = ['UDS', 'ML', 'M', 'M³', 'Stk', 'Termin', 'Units', 'WE', 'NT', 'LE']
+const UNIT_OPTIONS = ['UDS', 'ML', 'M', 'M³', 'Stk', 'Termin', 'Units', 'WE', 'NT', 'LE', 'Stück', 'Meter', 'Psch.', 'UD', 'GLB', 'h', 'Stk/WE']
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -39,6 +39,7 @@ const EMPTY_FORM: ServiceItemPayload = {
   unit: null,
   unit_price: null,
   unit_price_external: null,
+  category: null,
   operator_id: null,
   client_id: null,
   detail_form: null,
@@ -60,11 +61,12 @@ interface ModalProps {
   item: ServiceItemWithRelations | null   // null = create mode
   operators: RefRow[]
   clients: RefRow[]
+  categories: string[]
   onClose: () => void
   onSaved: () => void
 }
 
-function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalProps) {
+function ServiceItemModal({ item, operators, clients, categories, onClose, onSaved }: ModalProps) {
   const { t } = useTranslation()
   const isEdit = item !== null
   const [form, setForm] = useState<ServiceItemPayload>(
@@ -76,6 +78,7 @@ function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalP
           unit:          item.unit,
           unit_price:    item.unit_price,
           unit_price_external: item.unit_price_external,
+          category:      item.category,
           operator_id:   item.operator_id,
           client_id:     item.client_id,
           detail_form:   item.detail_form,
@@ -224,6 +227,20 @@ function ServiceItemModal({ item, operators, clients, onClose, onSaved }: ModalP
                   onChange={(e) => set('display_order', Number(e.target.value))}
                 />
               </div>
+            </div>
+            <div className="input">
+              <label>{t('serviceItems.form.category')}</label>
+              <input
+                list="category-suggestions"
+                value={form.category ?? ''}
+                onChange={(e) => set('category', e.target.value || null)}
+                placeholder={t('serviceItems.form.category')}
+              />
+              <datalist id="category-suggestions">
+                {categories.map((cat) => (
+                  <option key={cat} value={cat} />
+                ))}
+              </datalist>
             </div>
           </div>
 
@@ -397,6 +414,7 @@ export function ServiceItemsPage() {
   const [includeInactive, setIncludeInactive] = useState(false)
   const [operatorFilter, setOperatorFilter] = useState<string>('')
   const [clientFilter, setClientFilter] = useState<string>('')
+  const [categoryFilter, setCategoryFilter] = useState<string>('')
   const [search, setSearch] = useState('')
 
   // Modal state
@@ -424,12 +442,15 @@ export function ServiceItemsPage() {
     void load(false)
   }, [load])
 
-  // Filter operators/clients from loaded items for dropdown
+  // Filter operators/clients/categories from loaded items for dropdowns
   const visibleOperators = Array.from(
     new Map(items.filter((i) => i.operators).map((i) => [i.operators!.id, i.operators!])).values(),
   )
   const visibleClients = Array.from(
     new Map(items.filter((i) => i.clients).map((i) => [i.clients!.id, i.clients!])).values(),
+  )
+  const visibleCategories = Array.from(
+    new Set(items.map((i) => i.category).filter((c): c is string => c !== null)),
   )
 
   const q = search.trim().toLowerCase()
@@ -437,6 +458,7 @@ export function ServiceItemsPage() {
     if (operatorFilter === '__null__' && i.operator_id !== null) return false
     if (operatorFilter && operatorFilter !== '__null__' && i.operator_id !== operatorFilter) return false
     if (clientFilter && i.client_id !== clientFilter) return false
+    if (categoryFilter && i.category !== categoryFilter) return false
     if (!q) return true
     return (
       i.code.toLowerCase().includes(q) ||
@@ -519,6 +541,15 @@ export function ServiceItemsPage() {
                 ))}
               </select>
             </div>
+            <div className="input">
+              <label>{t('serviceItems.table.category')}</label>
+              <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
+                <option value="">{t('serviceItems.filter.allCategories')}</option>
+                {visibleCategories.map((cat) => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
             <label className="toggle-row service-toggle">
               <input
                 type="checkbox"
@@ -557,6 +588,7 @@ export function ServiceItemsPage() {
                   <th className="hidden md:table-cell">{t('serviceItems.table.form')}</th>
                   <th className="hidden md:table-cell">{t('serviceItems.table.operator')}</th>
                   <th className="hidden sm:table-cell">{t('serviceItems.table.client')}</th>
+                  <th className="hidden lg:table-cell">{t('serviceItems.table.category')}</th>
                   <th>{t('serviceItems.table.status')}</th>
                   <th className="num">{t('serviceItems.table.actions')}</th>
                 </tr>
@@ -594,6 +626,9 @@ export function ServiceItemsPage() {
                     </td>
                     <td className="mono hidden sm:table-cell">
                       {item.clients?.code ?? <span>—</span>}
+                    </td>
+                    <td className="hidden lg:table-cell text-fg-3 text-xs">
+                      {item.category ?? '—'}
                     </td>
                     <td>
                       {item.active
@@ -643,6 +678,7 @@ export function ServiceItemsPage() {
           item={modalItem === 'new' ? null : modalItem}
           operators={operators}
           clients={clients}
+          categories={visibleCategories}
           onClose={() => setModalItem(null)}
           onSaved={() => { setModalItem(null); load() }}
         />

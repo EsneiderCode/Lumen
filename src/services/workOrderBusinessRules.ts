@@ -114,6 +114,22 @@ export function buildContractorDocumentFailureReasons(
   })
 }
 
+
+export interface AssignablePerson {
+  id: string
+  role: string
+}
+
+export function buildPersonAssignmentFailureReasons(
+  person: AssignablePerson,
+  documents: ContractorDocument[],
+  assignmentDate: string | null,
+): WorkOrderActionReason[] {
+  if (person.role !== 'contractor') return []
+  const effectiveAssignmentDate = assignmentDate ?? new Date().toISOString().slice(0, 10)
+  return buildContractorDocumentFailureReasons(documents, effectiveAssignmentDate)
+}
+
 export function reasonsToMessage(reasons: WorkOrderActionReason[]): string {
   return reasons.map((reason) => reason.message).join('; ')
 }

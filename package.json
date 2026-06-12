@@ -24,6 +24,7 @@
     "@fontsource/jetbrains-mono": "^5.2.8",
     "@supabase/supabase-js": "^2.100.0",
     "@tailwindcss/vite": "^4.2.2",
+    "exceljs": "^4.4.0",
     "i18next": "^26.0.5",
     "i18next-browser-languagedetector": "^8.2.1",
     "jspdf": "^4.2.1",
@@ -32,8 +33,7 @@
     "react-dom": "^19.2.4",
     "react-i18next": "^17.0.4",
     "react-router": "^7.13.2",
-    "tailwindcss": "^4.2.2",
-    "xlsx": "^0.18.5"
+    "tailwindcss": "^4.2.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

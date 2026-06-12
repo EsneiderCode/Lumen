@@ -13,7 +13,7 @@ import {
   ShieldCheck,
   Workflow,
 } from 'lucide-react'
-// xlsx (SheetJS) is lazy-loaded on demand inside handleExcelExport to keep it out of the initial bundle
+import ExcelJS from 'exceljs'
 import { buildDatevCsv, downloadDatevCsv } from '@/services/datevExportService'
 import {
   fetchWorkOrders,
@@ -93,6 +93,19 @@ const SECTION_TONE: Partial<
 interface BulkInvoiceModal {
   open: boolean
   invoiceNumber: string
+}
+
+async function downloadWorkbook(workbook: ExcelJS.Workbook, fileName: string) {
+  const buffer = await workbook.xlsx.writeBuffer()
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = fileName
+  link.click()
+  URL.revokeObjectURL(url)
 }
 
 export function CertificationPage() {
@@ -329,8 +342,18 @@ export function CertificationPage() {
 
   async function handleExcelExport() {
     const selectedOrders = selected.size > 0 ? orders.filter((o) => selected.has(o.id)) : orders
+    const headers = [
+      'Auftragsnummer',
+      'Typ',
+      'Status',
+      'Kunde',
+      'Projekt',
+      'Team',
+      'Einsatzdatum',
+      'Priorität',
+    ]
 
-    const rows = selectedOrders.map((o) => ({
+    const rows = selectedOrders.map((o): Record<string, string | number> => ({
       Auftragsnummer: o.order_number,
       Typ: L.workType(o.work_type),
       Status: L.status(o.status) || o.status,
@@ -341,11 +364,17 @@ export function CertificationPage() {
       Priorität: o.priority,
     }))
 
-    const XLSX = await import('xlsx')
-    const ws = XLSX.utils.json_to_sheet(rows)
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, 'Zertifizierung')
-    XLSX.writeFile(wb, `LUMEN_Zertifizierung_${new Date().toISOString().slice(0, 10)}.xlsx`)
+    const workbook = new ExcelJS.Workbook()
+    const worksheet = workbook.addWorksheet('Zertifizierung')
+    worksheet.addRow(headers)
+    worksheet.addRows(rows.map((row) => headers.map((header) => row[header] ?? '')))
+    worksheet.columns = headers.map((header) => ({ width: Math.max(header.length + 2, 14) }))
+    worksheet.views = [{ state: 'frozen', ySplit: 1 }]
+
+    await downloadWorkbook(
+      workbook,
+      `LUMEN_Zertifizierung_${new Date().toISOString().slice(0, 10)}.xlsx`,
+    )
   }
 
   // Derive bulk action availability

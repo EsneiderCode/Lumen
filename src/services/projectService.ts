@@ -11,6 +11,8 @@ export interface Project {
   code: string
   name: string
   client_id: string | null
+  default_operator_id: string | null
+  default_line: 'NE3' | 'NE4' | null
   is_active: boolean
   created_at: string
   clients: ProjectClientRef | null
@@ -20,6 +22,8 @@ export interface ProjectInput {
   code: string
   name: string
   client_id: string | null
+  default_operator_id?: string | null
+  default_line?: 'NE3' | 'NE4' | null
 }
 
 export interface ProjectMetrics {
@@ -75,6 +79,8 @@ function normalizeInput(input: ProjectInput): ProjectInput {
     code: input.code.trim().toUpperCase(),
     name: input.name.trim(),
     client_id: input.client_id || null,
+    default_operator_id: input.default_operator_id || null,
+    default_line: input.default_line || null,
   }
 }
 
@@ -85,7 +91,7 @@ export async function createProject(input: ProjectInput): Promise<{ data: Projec
   }
   const { data, error } = await supabase
     .from('projects')
-    .insert(payload)
+    .insert(payload as never)
     .select('*, clients(id, code, name)')
     .single()
   return { data: (data as Project | null) ?? null, error: error?.message ?? null }
@@ -101,7 +107,7 @@ export async function updateProject(
   }
   const { data, error } = await supabase
     .from('projects')
-    .update(payload)
+    .update(payload as never)
     .eq('id', id)
     .select('*, clients(id, code, name)')
     .single()

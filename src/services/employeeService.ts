@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase'
+import type { TeamColor } from '@/types/enums'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -15,6 +16,8 @@ export interface Employee {
   start_date: string
   end_date: string | null
   notes: string | null
+  team: TeamColor | null
+  profile_id: string | null
   is_active: boolean
   created_at: string
   updated_at: string
@@ -32,6 +35,8 @@ export interface EmployeePayload {
   start_date: string
   end_date?: string | null
   notes?: string | null
+  team?: TeamColor | null
+  profile_id?: string | null
   is_active?: boolean
 }
 
@@ -91,7 +96,7 @@ export async function fetchEmployee(id: string): ServiceResult<Employee | null> 
 export async function createEmployee(payload: EmployeePayload): ServiceResult<Employee> {
   const { data, error } = await supabase
     .from('employees')
-    .insert(payload)
+    .insert(payload as never)
     .select()
     .single()
 
@@ -104,7 +109,7 @@ export async function updateEmployee(
 ): ServiceResult<Employee> {
   const { data, error } = await supabase
     .from('employees')
-    .update(payload)
+    .update(payload as never)
     .eq('id', id)
     .select()
     .single()
@@ -146,7 +151,7 @@ export async function createVacationRequest(
 ): ServiceResult<VacationRequest> {
   const { data, error } = await supabase
     .from('vacation_requests')
-    .insert(payload)
+    .insert(payload as never)
     .select()
     .single()
 

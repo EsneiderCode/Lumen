@@ -12,8 +12,8 @@ LUMEN is a central operational platform for HMR Nexus Engineering GmbH, designed
 - **Backend/Database**: Supabase (Auth + PostgreSQL + Realtime + Storage)  
 - **Deployment**: Vercel
 - **Notifications**: OpenClaw / Telegram webhook
-- **PDF Generation**: jsPDF + react-pdf
-- **Excel Exports**: SheetJS (xlsx)
+- **PDF Generation**: jsPDF
+- **Excel Exports**: ExcelJS
 - **Photo Storage**: Supabase Storage
 - **Authentication**: PIN-based for technicians, email/password for admin
 
@@ -35,8 +35,12 @@ The system is built around 7 core modules:
 - `npm run dev:demo` — start dev server in demo mode (no credentials, fixtures from `src/lib/demo/fixtures.ts`)
 - `npm run build` — production build
 - `npm test` — run vitest suite
-- `npm run typecheck` — `tsc --noEmit`
+- `npm run test:watch` — run vitest in watch mode
+- `npm run test:coverage` — run vitest with coverage report
+- `npm run typecheck` — `tsc -b` (project references mode)
 - `npm run lint` / `npm run format`
+- `npm run preflight` — run typecheck, lint, and test
+- `npm run pre-pr` — run preflight and build
 - `npm run feature:start <branch>` — create a feature branch from `upstream/develop` with full pre-flight (see `scripts/start-feature.sh`)
 - `npm run feature:check` — pre-PR validation (see `scripts/check-pr-ready.sh`)
 
@@ -136,112 +140,111 @@ Client Accepted → Invoiced → Paid
 - Auto-alerts for documents expiring <30 days
 - **Auto-block** for expired/missing documentation
 
-## Development Phases
+## Design System — NEXUS Brand System (Normative)
 
-**Phase 1 - MVP Core (3 weeks)**
-- Authentication system (admin, technician PIN, external contractor)
-- Complete CRUD for service orders
-- Full state workflow
-- Basic field reporting with photos
-- Basic dashboard
+All new UI MUST follow the NEXUS Brand System. All tokens live in `src/index.css @theme`.
 
-**Phase 2 - Certification (2 weeks)**  
-- Internal certification workflow
-- Client certification process
-- PDF certificate generation
-- Client delivery tracking
+### Color Tokens
 
-**Phase 3 - Personnel (2 weeks)**
-- Employee management (payroll, vacations)
-- External contractor management with document validation
-- Expiration alerts
-
-**Phase 4 - Material & Alerts (1 week)**
-- Inventory control by team
-- Telegram alert system
-
-**Phase 5 - Reporting & Polish (1 week)**
-- Complete executive dashboard
-- Excel exports
-- PDF payroll statements
-- PWA offline capabilities
-
-## Design System — Nothing Design System (Normative)
-
-> Source: [nothing-design-skill](https://github.com/dominikmartn/nothing-design-skill)
-> Philosophy: **"Subtract, don't add. Every element must earn its pixel."**
-
-All new UI MUST follow this system. All tokens live in `src/index.css @theme`.
-
-### Fonts
-| Token | Family | Use |
-|---|---|---|
-| `font-sans` | Space Grotesk 300/400/500/700 | Body, UI text, labels, inputs |
-| `font-display` | Doto 400/700 | Display, hero headings, page titles |
-| `font-mono` | Space Mono 400/700 | Data labels, numeric values, small caps |
-
-### Color Tokens (`gf-*` prefix)
+**Surface Scale (dark-first)**
 | Token | Value | Use |
 |---|---|---|
-| `gf-base` | #000000 | Absolute black |
-| `gf-surface` | #111111 | Page / app background |
-| `gf-base-light` | #1A1A1A | Sidebars, raised panels |
-| `gf-card` | #1A1A1A | Card / modal background |
-| `gf-border` | #333333 | Visible border |
-| `gf-text` | #E8E8E8 | Primary text |
-| `gf-text-muted` | #999999 | Secondary / supporting |
-| `gf-text-inverse` | #FFFFFF | Display / max contrast |
-| `gf-text-label` | #999999 | Metadata, nav labels |
-| `gf-text-placeholder` | #666666 | Disabled / placeholder |
-| `gf-primary` | #5B9BF6 | Interactive (buttons, links, focus) |
-| `gf-accent` | #D71921 | **Interrupt signal only** — urgent/critical UI |
-| `gf-accent-light` | rgba(215,25,33,0.15) | Red subtle backgrounds |
-| `gf-success` | #4A9E5C | Positive / confirmed status |
-| `gf-danger` | #D71921 | Error / destructive actions |
-| `gf-warning` | #D4A843 | Caution |
+| `--color-bg-0` | #07080A | Page / app background |
+| `--color-bg-1` | #0E1014 | Cards, modals, sidebars, panels |
+| `--color-bg-2` | #161920 | Hover, raised secondary |
+| `--color-bg-3` | #1D2029 | Highlighted / pressed |
+| `--color-bg-4` | #262A34 | Selected / strong contrast surface |
 
-### Border Radius (Nothing: sharp or pill, max 16px on cards)
+**Foreground Scale**
 | Token | Value | Use |
 |---|---|---|
-| `rounded-full` | 9999px | Badges, status pills, team dots |
-| `rounded-gf-btn` | 0px | Buttons, inputs — sharp mechanical style |
-| `rounded-gf-card` | 12px | Cards, panels, alerts, modals |
-| `rounded-gf-card-lg` | 16px | Large cards (system maximum) |
+| `--color-fg-1` | #F5F3EE | Primary text |
+| `--color-fg-2` | #B9BAB4 | Secondary |
+| `--color-fg-3` | #7B7D7A | Tertiary, labels, metadata |
+| `--color-fg-4` | #4A4C50 | Disabled, placeholder |
 
-**No `rounded-lg`, `rounded-xl`, `rounded-2xl`. Never exceed 16px on cards.**
+**Lines / Borders**
+| Token | Value |
+|---|---|
+| `--color-line` | #222630 |
+| `--color-line-s` | #2E3440 (emphasized border) |
 
-### Shadows
-Nothing system: **NO shadows.** Use `border border-gf-border` instead.
-`shadow-gf-sm`, `shadow-gf-md`, `shadow-gf-modal` resolve to `none`.
+**Semantic Colors**
+| Token | Value | Use |
+|---|---|---|
+| `--color-accent` | #FF4D2E | Interactive, focus, interrupt signal |
+| `--color-ok` | #4ADE80 | Success / positive status |
+| `--color-warn` | #FFB020 | Caution / warning |
+| `--color-info` | #6BA6FF | Informational |
 
-### Background
-- All layout pages use `.nexus-bg` — flat `background-color: var(--color-gf-surface)` (no gradients)
-- **No gradients anywhere** — anti-pattern in Nothing system
+**Print Metaphor**
+| Token | Value |
+|---|---|
+| `--color-paper` | #F5F3EE |
+| `--color-ink` | #0A0B0D |
 
-### Transitions
+**Team Colors**
+| Token | Value |
+|---|---|
+| `--color-team-rot` | #ef4444 |
+| `--color-team-gruen` | #22c55e |
+| `--color-team-blau` | #6BA6FF |
+| `--color-team-gelb` | #eab308 |
+
+### Typography
+
+| Family | Weights | Use |
+|---|---|---|
+| Space Grotesk | 300/400/500/700 | Display, hero, page titles (h1–h3) |
+| Inter | 400/500/600 | Body, UI, labels, inputs |
+| JetBrains Mono | 400/500 | Data, numbers, micro-labels |
+
+### Border Radius
+
+| Token | Value | Use |
+|---|---|---|
+| `--radius-s` | 4px | Small UI elements |
+| `--radius-m` | 6px | Buttons, inputs, badges |
+| `--radius-l` | 10px | Cards, panels, modals |
+
+### Transition Standards
+
 - Micro interactions: `150–250ms cubic-bezier(0.25, 0.1, 0.25, 1)`
-- Page fades: `150ms` — use `.page-fade-in` on `<Outlet>` wrappers
+- Page entry: use `.page-fade-in` (150ms)
 - Interactive cards: `.card-lift` → `translateY(-1px)` at 200ms
 
 ### Hard Rules — Never Violate
-- No hardcoded hex values in components — always `var(--color-gf-*)` or Tailwind `gf-*` utilities
-- No generic Tailwind colors (`bg-gray-50`, `text-gray-900`, `bg-blue-500`)
+
+- No hardcoded hex values in components — always use CSS custom properties
+- No generic Tailwind colors
 - No gradients
-- No `box-shadow` (except `shadow-gf-*` tokens which resolve to `none`)
+- No `box-shadow`
 - No blur or backdrop-filter effects
-- No skeleton loaders (use `[LOADING]` text or hardware-style spinner)
+- No skeleton loaders (use `[LOADING]` text)
 - No toast notifications
-- No filled icons (use outline/stroke icons only — 1.5px monoline, 24×24px)
+- No filled icons (outline/stroke only — 1.5px monoline, 24×24px)
 - No parallax
-- No border-radius > 16px on cards
 - No zebra striping in tables
 - Max 2 font families per screen
 - Max 3 font sizes per screen
-- Red (`gf-accent`) ONLY for urgent/critical interrupt signals — not for branding
 
-### Spacing
-Tailwind 4px base scale only: `p-1`(4px), `p-2`(8px), `p-3`(12px), `p-4`(16px), etc.
-No arbitrary values like `p-[18px]`.
+## Environment Setup
+
+- `npm run dev` requires `.env.development` — copy `.env.example` and fill in
+  `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
+- Demo mode uses `.env.demo` (`VITE_DEMO=true`) — no credentials needed.
+  Detection lives in `src/lib/supabase.ts`.
+
+## Testing
+
+- Tests are centralized in `src/__tests__/*.test.ts` (Vitest), focused on
+  services and business logic — not component rendering.
+
+## i18n
+
+- UI strings go through i18next — never hardcode user-facing text.
+- Translations live in `src/i18n/locales/` (`de.json`, `es.json`); shared
+  label maps in `src/i18n/labels.ts`.
 
 ---
 

@@ -8,9 +8,21 @@ import {
 } from '@/services/projectService'
 import { T } from '@/components/T'
 
-const EMPTY_FORM: ProjectInput = { code: '', name: '', client_id: null }
+const EMPTY_FORM: ProjectInput = {
+  code: '',
+  name: '',
+  client_id: null,
+  default_operator_id: null,
+  default_line: null,
+}
 
 export interface ProjectClientRef {
+  id: string
+  code: string
+  name: string
+}
+
+export interface ProjectOperatorRef {
   id: string
   code: string
   name: string
@@ -19,15 +31,22 @@ export interface ProjectClientRef {
 interface Props {
   project: Project | null
   clients: ProjectClientRef[]
+  operators?: ProjectOperatorRef[]
   onClose: () => void
   onSaved: (saved: Project) => void
 }
 
-export function ProjectFormModal({ project, clients, onClose, onSaved }: Props) {
+export function ProjectFormModal({ project, clients, operators = [], onClose, onSaved }: Props) {
   const isEdit = !!project
   const [form, setForm] = useState<ProjectInput>(
     project
-      ? { code: project.code, name: project.name, client_id: project.client_id }
+      ? {
+          code: project.code,
+          name: project.name,
+          client_id: project.client_id,
+          default_operator_id: project.default_operator_id,
+          default_line: project.default_line,
+        }
       : EMPTY_FORM,
   )
   const [saving, setSaving] = useState(false)
@@ -130,6 +149,36 @@ export function ProjectFormModal({ project, clients, onClose, onSaved }: Props) 
               maxLength={120}
             />
           </div>
+
+          {operators.length > 0 && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="input">
+                <label><T de="Standard-Operator" /></label>
+                <select
+                  value={form.default_operator_id ?? ''}
+                  onChange={(e) => set('default_operator_id', e.target.value || null)}
+                >
+                  <option value="">— kein Standard —</option>
+                  {operators.map((operator) => (
+                    <option key={operator.id} value={operator.id}>
+                      {operator.code} — {operator.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="input">
+                <label><T de="Standard-Linie" /></label>
+                <select
+                  value={form.default_line ?? ''}
+                  onChange={(e) => set('default_line', (e.target.value || null) as ProjectInput['default_line'])}
+                >
+                  <option value="">— kein Standard —</option>
+                  <option value="NE3">NE3</option>
+                  <option value="NE4">NE4</option>
+                </select>
+              </div>
+            </div>
+          )}
 
           <div className="flex justify-end gap-2 pt-2">
             <button
