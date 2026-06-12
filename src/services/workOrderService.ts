@@ -261,11 +261,26 @@ export async function fetchClients() {
   return { data: data ?? [], error: error?.message ?? null }
 }
 
+export interface ProjectLookup {
+  id: string
+  name: string
+  code: string
+  client_id: string | null
+  default_operator_id: string | null
+  default_line: 'NE3' | 'NE4' | null
+}
+
 export async function fetchProjects(clientId?: string) {
-  let query = supabase.from('projects').select('id, name, code, client_id').eq('is_active', true)
+  let query = supabase
+    .from('projects')
+    .select('id, name, code, client_id, default_operator_id, default_line' as string)
+    .eq('is_active', true)
   if (clientId) query = query.eq('client_id', clientId)
   const { data, error } = await query.order('code')
-  return { data: data ?? [], error: error?.message ?? null }
+  return {
+    data: (data ?? []) as unknown as ProjectLookup[],
+    error: error?.message ?? null,
+  }
 }
 
 export async function fetchOperators() {
@@ -277,6 +292,13 @@ export async function fetchOperators() {
   return { data: data ?? [], error: error?.message ?? null }
 }
 
+export interface TechnicianProfile {
+  id: string
+  full_name: string
+  team: TeamColor | null
+  role: 'technician' | 'contractor'
+}
+
 export async function fetchTechnicians() {
   const { data, error } = await supabase
     .from('profiles')
@@ -284,7 +306,7 @@ export async function fetchTechnicians() {
     .in('role', ['technician', 'contractor'])
     .eq('is_active', true)
     .order('full_name')
-  return { data: data ?? [], error: error?.message ?? null }
+  return { data: (data ?? []) as unknown as TechnicianProfile[], error: error?.message ?? null }
 }
 
 // ── Work Orders CRUD ─────────────────────────────────────────
@@ -401,6 +423,7 @@ export async function assignWorkOrder(
   team: TeamColor | null,
   assignedDate: string | null,
   changedBy: string,
+  technicianId: string | null = null,
 ): Promise<{
   data: WorkOrderRow | null
   error: string | null
@@ -418,7 +441,7 @@ export async function assignWorkOrder(
     .from('work_orders')
     .update({
       assigned_team: team,
-      assigned_technician: null,
+      assigned_technician: technicianId,
       assigned_date: assignedDate,
       status: 'assigned',
       updated_at: new Date().toISOString(),
@@ -434,7 +457,7 @@ export async function assignWorkOrder(
     from_status: fromStatus,
     to_status: 'assigned',
     changed_by: changedBy,
-    notes: `Zugewiesen an Team ${team ?? '-'}`,
+    notes: `Zugewiesen an Team ${team ?? '-'}${technicianId ? ' · Techniker zugewiesen' : ''}`,
   })
 
   return { data, error: null }

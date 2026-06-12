@@ -183,6 +183,7 @@
     "line": "Linie",
     "serviceItem": "Leistung (Katalog)",
     "chooseServiceItem": "— Leistung aus Katalog wählen —",
+    "uncategorized": "Ohne Kategorie",
     "workTypeDerived": "Arbeitstyp (abgeleitet aus Katalog)",
     "streetAddress": "Straße / Hausnummer",
     "supportingDocs": "Unterstützende Dokumente",
@@ -217,7 +218,11 @@
     "prevPage": "← Zurück",
     "nextPage": "Weiter →",
     "dateFrom": "Einsatzdatum von",
-    "dateTo": "Einsatzdatum bis"
+    "dateTo": "Einsatzdatum bis",
+    "derivedData": "Abgeleitet vom Projekt (bei Bedarf anpassen)",
+    "ne4Panel": {
+      "title": "NE4 Außendienst-Daten"
+    }
   },
   "rueckmeldung": {
     "pending": "Rückmeldung ausstehend",
@@ -327,6 +332,9 @@
     "title": "Auftrag zuweisen",
     "section": "Zuweisung",
     "workType": "Arbeitstyp",
+    "technicianOptional": "Techniker (optional)",
+    "externalSuffix": "Extern",
+    "documentCheck": "Dokumente werden geprüft...",
     "assignee": "Techniker / Contractor",
     "chooseProfile": "— Profil wählen —",
     "noAssigneesForTeam": "Keine Profile für dieses Team gefunden.",
@@ -686,6 +694,12 @@
       "allClients": "Alle Kunden",
       "showInactive": "Inaktive anzeigen"
     },
+    "filter": {
+      "allCategories": "Alle Kategorien"
+    },
+    "form": {
+      "category": "Kategorie"
+    },
     "table": {
       "code": "Code",
       "descriptionDe": "Beschreibung (DE)",
@@ -705,7 +719,8 @@
       "activate": "Aktivieren",
       "deactivate": "Deaktivieren",
       "delete": "Löschen",
-      "empty": "Keine Artikel gefunden"
+      "empty": "Keine Artikel gefunden",
+      "category": "Kategorie"
     },
     "modal": {
       "category": "Service-Katalog",
@@ -750,6 +765,14 @@
       "buttonConfirm": "Endgültig löschen",
       "buttonDeleting": "[LÖSCHEN…]"
     }
+  },
+  "personnel": {
+    "tabs": {
+      "internal": "Interne",
+      "external": "Externe"
+    },
+    "manageInUsers": "In Benutzerverwaltung verwalten",
+    "appUser": "App-Benutzer"
   },
   "sidebar": {
     "sections": {

@@ -1051,6 +1051,26 @@ export function WorkOrderDetailPage() {
         </div>
       </div>
 
+      {/* NE4 bridge provenance panel — rendered only for bridged orders */}
+      {(() => {
+        const ext = order as { source?: string; external_metadata?: Record<string, unknown> | null }
+        if (ext.source !== 'ne4' || !ext.external_metadata) return null
+        const meta = ext.external_metadata
+        return (
+          <div className="rounded-l border border-info/40 bg-bg-1 p-5">
+            <h3 className="mb-3 font-display text-sm font-semibold text-fg-1">{t('workOrder.ne4Panel.title')}</h3>
+            <dl className="grid grid-cols-2 gap-2 text-sm">
+              {Object.entries(meta).filter(([, v]) => v != null && v !== '').map(([k, v]) => (
+                <div key={k}>
+                  <dt className="text-xs text-fg-3 font-mono">{k}</dt>
+                  <dd className="text-fg-1">{Array.isArray(v) ? v.join(', ') : String(v)}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        )
+      })()}
+
       {/* LUM-023: Side-by-side comparison — Beauftragt vs. Gemeldet */}
       {showComparison ? (
         <div className="rounded-l border border-line bg-bg-1 p-5">

@@ -19,6 +19,18 @@ const supabaseConfig = readFileSync(
   join(process.cwd(), 'supabase', 'config.toml'),
   'utf8',
 ).toLowerCase()
+const migration022Sql = readFileSync(
+  join(migrationsDir, '022_service_item_categories.sql'),
+  'utf8',
+)
+const migration024Sql = readFileSync(
+  join(migrationsDir, '024_employee_teams.sql'),
+  'utf8',
+).toLowerCase()
+const migration025Sql = readFileSync(
+  join(migrationsDir, '025_work_order_source.sql'),
+  'utf8',
+)
 
 describe('database migrations cover billing workflow schema', () => {
   it('allows direct orders without a client', () => {
@@ -157,5 +169,49 @@ describe('database migrations cover billing workflow schema', () => {
     expect(migrationSql).toContain('client_accepted')
     expect(migrationSql).toContain("cert_type = 'client'")
     expect(migrationSql).toContain("cert_type = 'internal'")
+  })
+
+  it('adds category grouping to service catalog and seeds the NE4 rate card', () => {
+    expect(migrationSql).toContain('migration 022')
+    expect(migrationSql).toContain('depends on: 021_team_pins.sql')
+    expect(migrationSql).toMatch(
+      /alter\s+table\s+(public\.)?service_items\s+add\s+column\s+if\s+not\s+exists\s+category\s+text/,
+    )
+    expect(migrationSql).toContain('ne4 > ont / aktivierung')
+    expect(migrationSql).toContain('ne4 > hausanschluss / nas / acometida cliente')
+    expect(migrationSql).toContain('ne4 > altas cliente deutsche glasfaser / ugg')
+    expect(migrationSql).toContain('ne4 > replanteo / citas / activaciones posteriores')
+    expect(migrationSql).toContain('ne4 > suplementos / mehraufwand')
+    expect(migration022Sql).toContain("'WESTC'")
+    expect(migration022Sql).not.toContain('WESTCONNECT')
+  })
+
+  it('adds project defaults for order-form derivation', () => {
+    expect(migrationSql).toContain('migration 023')
+    expect(migrationSql).toContain('depends on: 022_service_item_categories.sql')
+    expect(migrationSql).toMatch(
+      /alter\s+table\s+(public\.)?projects[\s\S]*add\s+column\s+if\s+not\s+exists\s+default_operator_id/,
+    )
+    expect(migrationSql).toContain('default_line')
+  })
+
+  it('adds employee teams and app-profile links', () => {
+    expect(migrationSql).toContain('migration 024')
+    expect(migration024Sql).toContain('depends on: 023_project_defaults.sql')
+    expect(migration024Sql).toMatch(
+      /alter\s+table\s+(public\.)?employees[\s\S]*add\s+column\s+if\s+not\s+exists\s+team\s+(public\.)?team_color/,
+    )
+    expect(migration024Sql).toMatch(
+      /add\s+column\s+if\s+not\s+exists\s+profile_id\s+uuid\s+references\s+public\.profiles\(id\)/,
+    )
+    expect(migration024Sql).toContain('idx_employees_team')
+  })
+
+  it('adds NE4 bridge provenance columns to work_orders', () => {
+    expect(migration025Sql).toContain('Depends on: 024_employee_teams.sql')
+    expect(migration025Sql).toMatch(
+      /source TEXT NOT NULL DEFAULT 'lumen'/,
+    )
+    expect(migration025Sql).toContain('external_metadata JSONB')
   })
 })

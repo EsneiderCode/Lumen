@@ -25,6 +25,9 @@ const SI_FUSION_AP = '40000000-0000-0000-0000-000000000002'
 const SI_ALTA_BASIC = '40000000-0000-0000-0000-000000000003'
 const SI_ALTA_NT = '40000000-0000-0000-0000-000000000004'
 const SI_PATCHKABEL = '40000000-0000-0000-0000-000000000005'
+const SI_NAS_PAKET_1 = '40000000-0000-0000-0000-000000000006'
+const SI_WESTC_130 = '40000000-0000-0000-0000-000000000007'
+const SI_VANCOM_160 = '40000000-0000-0000-0000-000000000008'
 
 const VEHICLE_ROT_COMBO = '41000000-0000-0000-0000-000000000001'
 const MAT_GFP_HUEP_48 = '42000000-0000-0000-0000-000000000001'
@@ -39,6 +42,10 @@ const WO_4_DIRECT = '50000000-0000-0000-0000-000000000004'
 const WO_5_PAID = '50000000-0000-0000-0000-000000000005'
 const WO_6_REJECTED = '50000000-0000-0000-0000-000000000006'
 const WO_7_EXTERNAL = '50000000-0000-0000-0000-000000000007'
+const WO_8_NE4 = '50000000-0000-0000-0000-000000000008'
+
+const EMPLOYEE_TECH = '60000000-0000-0000-0000-000000000001'
+const EMPLOYEE_OFFICE = '60000000-0000-0000-0000-000000000002'
 
 const NOW = new Date('2026-04-28T08:00:00Z').toISOString()
 const YESTERDAY = new Date('2026-04-27T08:00:00Z').toISOString()
@@ -85,7 +92,7 @@ export const initialFixtures = () => ({
       email: 'contractor@demo.lumen',
       full_name: 'Demo Contractor',
       role: 'contractor',
-      team: null,
+      team: 'blau',
       pin_login_code: 'contractor-demo',
       pin_set_at: LAST_WEEK,
       last_pin_login_at: null,
@@ -107,15 +114,67 @@ export const initialFixtures = () => ({
     updated_at: string
   }>,
 
+  employees: [
+    {
+      id: EMPLOYEE_TECH,
+      full_name: 'Demo Técnico',
+      email: 'tech@demo.lumen',
+      phone: '+49 170 0000002',
+      sv_nummer: '12 345678 T 002',
+      steuer_id: '12 345 678 902',
+      steuerklasse: 'I',
+      iban: 'DE89370400440532013002',
+      gross_salary: 3200,
+      start_date: '2026-01-01',
+      end_date: null,
+      notes: 'Demo: field technician linked to app profile',
+      team: 'rot',
+      profile_id: TECH_ID,
+      is_active: true,
+      created_at: LAST_WEEK,
+      updated_at: LAST_WEEK,
+    },
+    {
+      id: EMPLOYEE_OFFICE,
+      full_name: 'Mara Backoffice',
+      email: 'office@demo.lumen',
+      phone: '+49 170 0000004',
+      sv_nummer: '12 345678 O 004',
+      steuer_id: '12 345 678 904',
+      steuerklasse: 'IV',
+      iban: 'DE89370400440532013004',
+      gross_salary: 2850,
+      start_date: '2026-02-01',
+      end_date: null,
+      notes: 'Demo: office staff without field team',
+      team: null,
+      profile_id: null,
+      is_active: true,
+      created_at: LAST_WEEK,
+      updated_at: LAST_WEEK,
+    },
+  ],
+
+  vacation_requests: [],
+
   clients: [
     { id: CLIENT_INSYTE, name: 'Insyte Deutschland', code: 'INSYTE', is_active: true, created_at: LAST_WEEK },
     { id: CLIENT_VANCOM, name: 'Vancom IT',         code: 'VANCOM', is_active: true, created_at: LAST_WEEK },
   ],
 
   projects: [
-    { id: PROJECT_HXT, code: 'HXT', name: 'Höxter Nord',  client_id: CLIENT_INSYTE, is_active: true, created_at: LAST_WEEK },
-    { id: PROJECT_RSD, code: 'RSD', name: 'Roßdorf 1',    client_id: CLIENT_INSYTE, is_active: true, created_at: LAST_WEEK },
-    { id: PROJECT_WCB, code: 'WCB', name: 'Westconnect',  client_id: CLIENT_VANCOM, is_active: true, created_at: LAST_WEEK },
+    {
+      id: PROJECT_HXT, code: 'HXT', name: 'Höxter Nord', client_id: CLIENT_INSYTE,
+      default_operator_id: OP_DGF, default_line: 'NE3', is_active: true, created_at: LAST_WEEK,
+    },
+    {
+      id: PROJECT_RSD, code: 'RSD', name: 'Roßdorf 1', client_id: CLIENT_INSYTE,
+      default_operator_id: OP_DGF, default_line: 'NE3', is_active: true, created_at: LAST_WEEK,
+    },
+    {
+      id: PROJECT_WCB, code: 'WCB', name: 'Westconnect', client_id: CLIENT_VANCOM,
+      default_operator_id: OP_GFPLUS, default_line: 'NE4', is_active: true, created_at: LAST_WEEK,
+    },
   ],
 
   operators: [
@@ -128,32 +187,58 @@ export const initialFixtures = () => ({
     {
       id: SI_SOPLADO_M, code: 'SOP-M', description_de: 'Einblasen Glasfaser je Meter',
       description_es: 'Soplado por metro', unit: 'm', unit_price: 1.85, unit_price_external: 1.20,
+      category: 'NE3 > Infraestructura',
       operator_id: OP_DGF, client_id: CLIENT_INSYTE, detail_form: 'soplado',
       display_order: 10, active: true, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK,
     },
     {
       id: SI_FUSION_AP, code: 'FUS-AP', description_de: 'Spleißung am AP (pro Schrank)',
       description_es: 'Fusión AP por armario', unit: 'Stk', unit_price: 95.00, unit_price_external: 60.00,
+      category: 'NE3 > Infraestructura',
       operator_id: OP_DGF, client_id: CLIENT_INSYTE, detail_form: 'fusion_ap',
       display_order: 20, active: true, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK,
     },
     {
       id: SI_ALTA_BASIC, code: 'ALTA-BASIC', description_de: 'Standard-Hausanschluss',
       description_es: 'Alta básica', unit: 'Stk', unit_price: 145.00, unit_price_external: 95.00,
+      category: 'NE4 > Altas cliente Deutsche Glasfaser / UGG',
       operator_id: OP_DGF, client_id: CLIENT_INSYTE, detail_form: 'alta',
       display_order: 30, active: true, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK,
     },
     {
       id: SI_ALTA_NT, code: 'ALTA-NT', description_de: 'NT-Installation und Aktivierung',
       description_es: 'Instalación NT', unit: 'Stk', unit_price: 65.00, unit_price_external: 40.00,
+      category: 'NE4 > Altas cliente Deutsche Glasfaser / UGG',
       operator_id: OP_DGF, client_id: CLIENT_INSYTE, detail_form: 'nt',
       display_order: 31, active: true, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK,
     },
     {
       id: SI_PATCHKABEL, code: 'PATCH', description_de: 'Patchkabel Anschluss',
       description_es: 'Patchkabel', unit: 'Stk', unit_price: 38.00, unit_price_external: 22.00,
+      category: 'NE4 > ONT / Aktivierung',
       operator_id: OP_GFPLUS, client_id: CLIENT_VANCOM, detail_form: 'patchkabel',
       display_order: 40, active: true, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK,
+    },
+    {
+      id: SI_NAS_PAKET_1, code: 'NAS Paket 1', description_de: 'ACT_001 + HBG + GB + Termin + OTDR',
+      description_es: null, unit: 'Psch.', unit_price: 589.80, unit_price_external: 400.00,
+      category: 'NE4 > Hausanschluss / NAS / acometida cliente',
+      operator_id: OP_DGF, client_id: null, detail_form: 'alta',
+      display_order: 215, active: true, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK,
+    },
+    {
+      id: SI_WESTC_130, code: 'WESTC_MDU_130', description_de: 'Mehraufwand Raumhöhe über 2,65 m',
+      description_es: null, unit: 'Stück', unit_price: 21.00, unit_price_external: 15.00,
+      category: 'NE4 > Suplementos / Mehraufwand',
+      operator_id: null, client_id: null, detail_form: null,
+      display_order: 500, active: true, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK,
+    },
+    {
+      id: SI_VANCOM_160, code: 'Vancom 160', description_de: 'Denkmalschutz',
+      description_es: null, unit: 'Stk', unit_price: null, unit_price_external: null,
+      category: 'NE4 > Suplementos / Mehraufwand',
+      operator_id: null, client_id: CLIENT_VANCOM, detail_form: null,
+      display_order: 540, active: true, notes: 'Precio según oferta', created_at: LAST_WEEK, updated_at: LAST_WEEK,
     },
   ],
 
@@ -315,6 +400,33 @@ export const initialFixtures = () => ({
       service_item_id: SI_ALTA_BASIC, created_by: ADMIN_ID,
       created_at: LAST_WEEK, updated_at: NOW,
     },
+    // 8 — NE4 bridge: synced from NE4 Work Manager, awaiting internal certification
+    {
+      id: WO_8_NE4, order_number: 'NE4-demo-0001',
+      client_id: CLIENT_INSYTE, project_id: PROJECT_WCB, operator_id: OP_GFPLUS,
+      line: 'NE4', work_type: 'alta', status: 'rueckmeldung_sent', priority: 'normal',
+      assigned_team: null, assigned_technician: null, assigned_date: '2026-04-21',
+      address: 'Westfalenstraße 7', postal_code: '44141', city: 'Dortmund',
+      internal_notes: 'Synced from NE4 Work Manager\nNE4 report: a1b2c3d4-0000-0000-0000-000000000001\nNE4 cita: c5d6e7f8-0000-0000-0000-000000000002\nHA: HA-2024-5501\nWE: 4\nWorkflow: ALTA_STANDARD\nInstallation type: Tiefbau\nWork zones: Zone-A, Zone-B\nScore: 5',
+      source: 'ne4',
+      external_metadata: {
+        system: 'ne4-work-manager',
+        report_id: 'a1b2c3d4-0000-0000-0000-000000000001',
+        cita_id: 'c5d6e7f8-0000-0000-0000-000000000002',
+        ha: 'HA-2024-5501',
+        we_count: 4,
+        workflow_code: 'ALTA_STANDARD',
+        installation_type: 'Tiefbau',
+        work_zones: ['Zone-A', 'Zone-B'],
+        score: 5,
+        submitted_at: LAST_WEEK,
+        contact_name: 'Hans Müller',
+        contact_phone: '+49 231 555 0101',
+      },
+      assigned_detail_snapshot: null,
+      service_item_id: SI_ALTA_BASIC, created_by: ADMIN_ID,
+      created_at: LAST_WEEK, updated_at: LAST_WEEK,
+    },
   ],
 
   wo_detail_soplado: [
@@ -378,6 +490,7 @@ export const initialFixtures = () => ({
     { id: 'h0000000-0000-0000-0000-000000000074', work_order_id: WO_7_EXTERNAL, from_status: 'executed',              to_status: 'rueckmeldung_pending', changed_by: CONTRACTOR_ID, notes: null, created_at: LAST_WEEK },
     { id: 'h0000000-0000-0000-0000-000000000075', work_order_id: WO_7_EXTERNAL, from_status: 'rueckmeldung_pending',  to_status: 'rueckmeldung_sent',    changed_by: CONTRACTOR_ID, notes: null, created_at: LAST_WEEK },
     { id: 'h0000000-0000-0000-0000-000000000076', work_order_id: WO_7_EXTERNAL, from_status: 'rueckmeldung_sent',     to_status: 'internally_certified', changed_by: ADMIN_ID, notes: 'Hash: f7e6d5...', created_at: LAST_WEEK },
+    { id: 'h0000000-0000-0000-0000-000000000080', work_order_id: WO_8_NE4, from_status: null,               to_status: 'rueckmeldung_sent', changed_by: ADMIN_ID, notes: 'Auto-synced from NE4 Work Manager', created_at: LAST_WEEK },
   ],
 
   certification_audits: [
