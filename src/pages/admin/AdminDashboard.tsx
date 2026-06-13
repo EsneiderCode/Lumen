@@ -32,29 +32,34 @@ export function AdminDashboard() {
   useEffect(() => {
     let cancelled = false
     async function load() {
-      // Use pageSize=1 to minimise data transfer — we only need the `total` count per status.
-      // Attention feed needs actual records, so fetch up to 10.
-      const countBucket = (statuses: WorkOrderStatus[]) =>
-        Promise.all(statuses.map((s) => fetchWorkOrders({ status: s }, 0, 1)))
-          .then((rs) => rs.reduce((sum, r) => sum + r.total, 0))
+      try {
+        // Use pageSize=1 to minimise data transfer — we only need the `total` count per status.
+        // Attention feed needs actual records, so fetch up to 10.
+        const countBucket = (statuses: WorkOrderStatus[]) =>
+          Promise.all(statuses.map((s) => fetchWorkOrders({ status: s }, 0, 1)))
+            .then((rs) => rs.reduce((sum, r) => sum + r.total, 0))
 
-      const [openCount, inProgCount, pendCertCount, doneCount, attnData] = await Promise.all([
-        countBucket(STATUS_GROUPS.open),
-        countBucket(STATUS_GROUPS.inProgress),
-        countBucket(STATUS_GROUPS.pendingCert),
-        countBucket(STATUS_GROUPS.done),
-        Promise.all(STATUS_GROUPS.attention.map((s) => fetchWorkOrders({ status: s }, 0, 10)))
-          .then((rs) => rs.flatMap((r) => r.data)),
-      ])
-      if (cancelled) return
-      setCounts({
-        open: openCount,
-        inProgress: inProgCount,
-        pendingCert: pendCertCount,
-        done: doneCount,
-      })
-      setAlerts(attnData.slice(0, 5))
-      setIsLoading(false)
+        const [openCount, inProgCount, pendCertCount, doneCount, attnData] = await Promise.all([
+          countBucket(STATUS_GROUPS.open),
+          countBucket(STATUS_GROUPS.inProgress),
+          countBucket(STATUS_GROUPS.pendingCert),
+          countBucket(STATUS_GROUPS.done),
+          Promise.all(STATUS_GROUPS.attention.map((s) => fetchWorkOrders({ status: s }, 0, 10)))
+            .then((rs) => rs.flatMap((r) => r.data)),
+        ])
+        if (cancelled) return
+        setCounts({
+          open: openCount,
+          inProgress: inProgCount,
+          pendingCert: pendCertCount,
+          done: doneCount,
+        })
+        setAlerts(attnData.slice(0, 5))
+      } catch {
+        // Connection error — counts stay at 0, alerts empty
+      } finally {
+        if (!cancelled) setIsLoading(false)
+      }
     }
     void load()
     return () => { cancelled = true }

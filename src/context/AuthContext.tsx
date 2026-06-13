@@ -24,12 +24,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        // Pass session.user.id when available to avoid calling getSession() inside the callback,
-        // which would race with the lock already held by onAuthStateChange.
-        const profile = await authService.getCurrentUser(session?.user?.id)
-        if (mounted) {
-          setUser(profile)
-          setIsLoading(false)
+        try {
+          // Pass session.user.id when available to avoid calling getSession() inside the callback,
+          // which would race with the lock already held by onAuthStateChange.
+          const profile = await authService.getCurrentUser(session?.user?.id)
+          if (mounted) {
+            setUser(profile)
+          }
+        } catch {
+          // Network error during token refresh — keep current user state
+        } finally {
+          if (mounted) setIsLoading(false)
         }
       }
     })

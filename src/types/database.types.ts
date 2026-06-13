@@ -1522,7 +1522,7 @@ export type Database = {
           id: string
           photo_type: string
           storage_path: string
-          uploaded_by: string
+          uploaded_by: string | null
           work_order_id: string
         }
         Insert: {
@@ -1531,7 +1531,7 @@ export type Database = {
           id?: string
           photo_type: string
           storage_path: string
-          uploaded_by: string
+          uploaded_by?: string | null
           work_order_id: string
         }
         Update: {
@@ -1540,7 +1540,7 @@ export type Database = {
           id?: string
           photo_type?: string
           storage_path?: string
-          uploaded_by?: string
+          uploaded_by?: string | null
           work_order_id?: string
         }
         Relationships: [
@@ -1562,7 +1562,7 @@ export type Database = {
       }
       work_order_state_history: {
         Row: {
-          changed_by: string
+          changed_by: string | null
           created_at: string
           from_status: Database["public"]["Enums"]["work_order_status"] | null
           id: string
@@ -1571,7 +1571,7 @@ export type Database = {
           work_order_id: string
         }
         Insert: {
-          changed_by: string
+          changed_by?: string | null
           created_at?: string
           from_status?: Database["public"]["Enums"]["work_order_status"] | null
           id?: string
@@ -1580,7 +1580,7 @@ export type Database = {
           work_order_id: string
         }
         Update: {
-          changed_by?: string
+          changed_by?: string | null
           created_at?: string
           from_status?: Database["public"]["Enums"]["work_order_status"] | null
           id?: string
