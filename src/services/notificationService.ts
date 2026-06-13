@@ -109,13 +109,21 @@ export async function notifyOrderCancelled(
  * Notifies configured groups that a work order has been deleted.
  * Triggered after a successful deletion.
  */
-export async function notifyOrderDeleted(
-  orderNumber: string,
-  adminName?: string,
-): Promise<void> {
+export async function notifyOrderDeleted(opts: {
+  orderNumber: string
+  teamName?: string
+  technicianName?: string
+  workType?: string
+  address?: string
+  adminName?: string
+}): Promise<void> {
   await sendTelegram({
     type: 'order_deleted',
-    orderNumber,
-    ...(adminName ? { adminName } : {}),
+    orderNumber: opts.orderNumber,
+    assignedTo: opts.teamName ?? '',
+    technicianName: opts.technicianName ?? '',
+    workType: opts.workType ?? '',
+    address: opts.address ?? '',
+    ...(opts.adminName ? { adminName: opts.adminName } : {}),
   })
 }

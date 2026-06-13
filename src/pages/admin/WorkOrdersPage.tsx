@@ -75,13 +75,22 @@ export function WorkOrdersPage() {
   }, [])
 
   async function handleDelete(id: string) {
-    const orderNumber = orders.find((o) => o.id === id)?.order_number
+    const order = orders.find((o) => o.id === id)
     const { error } = await deleteWorkOrder(id)
     if (error) {
       setError(error)
     } else {
       setOrders((prev) => prev.filter((o) => o.id !== id))
-      if (orderNumber) void notifyOrderDeleted(orderNumber, user?.email ?? undefined)
+      if (order?.order_number) {
+        void notifyOrderDeleted({
+          orderNumber: order.order_number,
+          teamName: order.assigned_team ? t(`teamColor.${order.assigned_team}`) : undefined,
+          technicianName: order.assignedProfile?.full_name ?? undefined,
+          workType: order.work_type ? t(`workType.${order.work_type}`) : undefined,
+          address: order.address ?? undefined,
+          adminName: user?.email ?? undefined,
+        })
+      }
     }
     setDeleteId(null)
   }

@@ -232,11 +232,29 @@ function buildMessage(body: TelegramBody): string | null {
 
     case 'order_deleted': {
       if (!orderNumber) return null
-      return (
-        `🗑️ <b>Orden eliminada</b>\n\n` +
-        `🔖 OS: <b>${esc(orderNumber)}</b>\n` +
-        `👤 Eliminada${who}`
-      )
+      const assignedTo     = trim(body.assignedTo,     MAX.assignedTo)
+      const technicianName = trim(body.technicianName, MAX.technicianName)
+      const workType       = trim(body.workType,       MAX.workType)
+      const address        = trim(body.address,        MAX.address)
+
+      const lines: string[] = [
+        `🗑️ <b>Orden eliminada</b>`,
+        '',
+        `🔖 OS: <b>${esc(orderNumber)}</b>`,
+      ]
+
+      if (workType) lines.push(`🔧 Tipo: <b>${esc(workType)}</b>`)
+      if (address) lines.push(`📍 Dirección: ${esc(address)}`)
+      if (assignedTo) {
+        lines.push('')
+        lines.push(`👷 Equipo: <b>${esc(assignedTo)}</b>`)
+        if (technicianName) lines.push(`👤 Técnico responsable: <b>${esc(technicianName)}</b>`)
+      }
+
+      lines.push('')
+      lines.push(`👤 Eliminada${who}`)
+
+      return lines.join('\n')
     }
 
     default:
