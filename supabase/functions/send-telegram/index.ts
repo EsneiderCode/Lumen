@@ -263,15 +263,22 @@ async function handleValidateChat(body: TelegramBody, botToken: string): Promise
 
 // ── Group lookup ──────────────────────────────────────────────────────────────
 
+/** Map derived event types to their parent for group resolution. */
+const EVENT_TYPE_FALLBACKS: Partial<Record<TelegramEventType, TelegramEventType>> = {
+  order_cancelled: 'order_status_changed',
+  order_deleted: 'order_status_changed',
+}
+
 async function resolveGroups(
   eventType: TelegramEventType,
   supabaseUrl: string,
   serviceRoleKey: string,
 ): Promise<string[]> {
+  const lookupType = EVENT_TYPE_FALLBACKS[eventType] ?? eventType
   const mappings = await supabaseFetch<MappingRow[]>(
     supabaseUrl,
     serviceRoleKey,
-    `event_group_mappings?select=telegram_group_id&event_type=eq.${encodeURIComponent(eventType)}&is_active=eq.true`,
+    `event_group_mappings?select=telegram_group_id&event_type=eq.${encodeURIComponent(lookupType)}&is_active=eq.true`,
     { method: 'GET' },
   )
   if (!mappings.length) return []
