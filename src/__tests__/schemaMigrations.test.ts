@@ -214,4 +214,26 @@ describe('database migrations cover billing workflow schema', () => {
     )
     expect(migration025Sql).toContain('external_metadata JSONB')
   })
+
+  it('adds the scheduler role enum value in its own migration', () => {
+    expect(migrationSql).toContain('depends on: 026_telegram_event_types.sql')
+    expect(migrationSql).toMatch(
+      /alter\s+type\s+(public\.)?user_role\s+add\s+value\s+if\s+not\s+exists\s+'scheduler'/,
+    )
+  })
+
+  it('adds appointments table and scheduler scope with scoped RLS', () => {
+    expect(migrationSql).toContain('depends on: 027_user_role_scheduler.sql')
+    expect(migrationSql).toMatch(
+      /alter\s+table\s+(public\.)?profiles[\s\S]*add\s+column\s+if\s+not\s+exists\s+scheduler_line/,
+    )
+    expect(migrationSql).toContain('scheduler_operator')
+    expect(migrationSql).toContain('create table if not exists public.appointments')
+    expect(migrationSql).toContain('appointments_line_operator_idx')
+    expect(migrationSql).toContain('appointments_admin_all')
+    expect(migrationSql).toContain('appointments_scheduler_scope')
+    expect(migrationSql).toMatch(
+      /create\s+policy\s+appointments_scheduler_scope[\s\S]*public\.get_user_role\(\)\s*=\s*'scheduler'/,
+    )
+  })
 })

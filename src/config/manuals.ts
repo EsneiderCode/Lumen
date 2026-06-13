@@ -5,6 +5,7 @@ import type { UserRole } from '@/types/enums'
  * - admin      → always Spanish (only one variant)
  * - technician → always Spanish (only one variant)
  * - contractor → German ('de') or Spanish (all other locales)
+ * - scheduler  → always Spanish (Citas NE3, only one variant)
  */
 export function manualHrefForRole(role: UserRole, lang: string): string {
   switch (role) {
@@ -16,5 +17,7 @@ export function manualHrefForRole(role: UserRole, lang: string): string {
       return lang.startsWith('de')
         ? '/manuals/handbuch-extern-de.pdf'
         : '/manuals/manual-externo-es.pdf'
+    case 'scheduler':
+      return '/manuals/manual-citas-ne3-es.pdf'
   }
 }

@@ -12,6 +12,7 @@ const ROLE_ROUTES: Record<UserRole, string> = {
   admin: ROUTES.ADMIN.DASHBOARD,
   technician: ROUTES.TECHNICIAN.DASHBOARD,
   contractor: ROUTES.CONTRACTOR.DASHBOARD,
+  scheduler: ROUTES.SCHEDULER.APPOINTMENTS,
 }
 
 const TEAM_LABEL: Record<string, string> = {

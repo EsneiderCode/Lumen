@@ -9,6 +9,7 @@ import {
   Users,
   UserRound,
   Package,
+  CalendarDays,
   Settings,
   type LucideIcon,
 } from 'lucide-react'
@@ -49,6 +50,7 @@ const NAV_SECTIONS: NavSection[] = [
       { labelKey: 'nav.personnel', path: ROUTES.ADMIN.PERSONNEL, icon: Users },
       { labelKey: 'nav.employees', path: ROUTES.ADMIN.EMPLOYEES, icon: UserRound },
       { labelKey: 'nav.materials', path: ROUTES.ADMIN.MATERIALS, icon: Package },
+      { labelKey: 'nav.cycles',    path: ROUTES.ADMIN.CYCLES,    icon: CalendarDays },
       { labelKey: 'nav.settings',  path: ROUTES.ADMIN.SETTINGS,  icon: Settings },
     ],
   },

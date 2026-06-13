@@ -24,4 +24,9 @@ describe('manualHrefForRole', () => {
     expect(manualHrefForRole('contractor', 'en')).toBe('/manuals/manual-externo-es.pdf')
     expect(manualHrefForRole('contractor', 'fr')).toBe('/manuals/manual-externo-es.pdf')
   })
+
+  it('returns the Citas NE3 manual for the scheduler role (any language)', () => {
+    expect(manualHrefForRole('scheduler', 'de')).toBe('/manuals/manual-citas-ne3-es.pdf')
+    expect(manualHrefForRole('scheduler', 'es')).toBe('/manuals/manual-citas-ne3-es.pdf')
+  })
 })

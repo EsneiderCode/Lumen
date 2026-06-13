@@ -790,6 +790,8 @@ function makeFunctions() {
             pin_set_at: body.pin ? new Date().toISOString() : null,
             last_pin_login_at: null,
             is_active: body.isActive !== false,
+            scheduler_line: (body.schedulerLine as string | null) ?? null,
+            scheduler_operator: (body.schedulerOperator as string | null) ?? null,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           }

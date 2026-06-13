@@ -7,6 +7,7 @@ import { ProtectedRoute } from '@/components/layout/ProtectedRoute'
 import { AdminLayout } from '@/components/layout/AdminLayout'
 import { TechnicianLayout } from '@/components/layout/TechnicianLayout'
 import { ContractorLayout } from '@/components/layout/ContractorLayout'
+import { SchedulerLayout } from '@/components/layout/SchedulerLayout'
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
 import { ROUTES } from '@/config/routes'
 
@@ -28,6 +29,7 @@ const ProjectDetailPage  = lazy(() => import('@/pages/admin/ProjectDetailPage').
 const UsersPage          = lazy(() => import('@/pages/admin/UsersPage').then(m => ({ default: m.UsersPage })))
 const PersonnelPage      = lazy(() => import('@/pages/admin/PersonnelPage').then(m => ({ default: m.PersonnelPage })))
 const MaterialsPage      = lazy(() => import('@/pages/admin/MaterialsPage').then(m => ({ default: m.MaterialsPage })))
+const CollaboratorCyclesPage = lazy(() => import('@/pages/admin/CollaboratorCyclesPage').then(m => ({ default: m.CollaboratorCyclesPage })))
 const SettingsPage       = lazy(() => import('@/pages/admin/SettingsPage').then(m => ({ default: m.SettingsPage })))
 
 // Technician chunk (field technicians on slow connections — keep lean)
@@ -41,6 +43,12 @@ const TechSettingsPage   = lazy(() => import('@/pages/technician/TechSettingsPag
 const ContractorDashboard  = lazy(() => import('@/pages/contractor/ContractorDashboard').then(m => ({ default: m.ContractorDashboard })))
 const ContractorOrdersPage = lazy(() => import('@/pages/contractor/ContractorOrdersPage').then(m => ({ default: m.ContractorOrdersPage })))
 const ContractorDocumentsPage = lazy(() => import('@/pages/contractor/ContractorDocumentsPage').then(m => ({ default: m.ContractorDocumentsPage })))
+const ContractorCalendarPage = lazy(() => import('@/pages/contractor/ContractorCalendarPage').then(m => ({ default: m.ContractorCalendarPage })))
+
+// Scheduler chunk (Terminplanung — appointments for one line + operator)
+const AppointmentsListPage  = lazy(() => import('@/pages/scheduler/AppointmentsListPage').then(m => ({ default: m.AppointmentsListPage })))
+const AppointmentDetailPage = lazy(() => import('@/pages/scheduler/AppointmentDetailPage').then(m => ({ default: m.AppointmentDetailPage })))
+const AppointmentNewPage    = lazy(() => import('@/pages/scheduler/AppointmentNewPage').then(m => ({ default: m.AppointmentNewPage })))
 
 function App() {
   useTheme()
@@ -71,6 +79,7 @@ function App() {
                 <Route path={ROUTES.ADMIN.PERSONNEL} element={<UsersPage />} />
                 <Route path={ROUTES.ADMIN.EMPLOYEES} element={<PersonnelPage />} />
                 <Route path={ROUTES.ADMIN.MATERIALS} element={<MaterialsPage />} />
+                <Route path={ROUTES.ADMIN.CYCLES} element={<CollaboratorCyclesPage />} />
                 <Route path={ROUTES.ADMIN.SETTINGS} element={<SettingsPage />} />
               </Route>
             </Route>
@@ -92,6 +101,16 @@ function App() {
                 <Route path={ROUTES.CONTRACTOR.DASHBOARD} element={<ContractorDashboard />} />
                 <Route path={ROUTES.CONTRACTOR.ORDERS} element={<ContractorOrdersPage />} />
                 <Route path={ROUTES.CONTRACTOR.DOCUMENTS} element={<ContractorDocumentsPage />} />
+                <Route path={ROUTES.CONTRACTOR.CALENDAR} element={<ContractorCalendarPage />} />
+              </Route>
+            </Route>
+
+            {/* Scheduler routes */}
+            <Route element={<ProtectedRoute allowedRoles={['scheduler']} />}>
+              <Route element={<SchedulerLayout />}>
+                <Route path={ROUTES.SCHEDULER.APPOINTMENTS} element={<AppointmentsListPage />} />
+                <Route path={ROUTES.SCHEDULER.APPOINTMENTS_NEW} element={<AppointmentNewPage />} />
+                <Route path={ROUTES.SCHEDULER.APPOINTMENTS_DETAIL} element={<AppointmentDetailPage />} />
               </Route>
             </Route>
 

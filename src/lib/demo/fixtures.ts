@@ -8,6 +8,7 @@
 const ADMIN_ID = '00000000-0000-0000-0000-000000000001'
 const TECH_ID = '00000000-0000-0000-0000-000000000002'
 const CONTRACTOR_ID = '00000000-0000-0000-0000-000000000003'
+const SCHEDULER_ID = '00000000-0000-0000-0000-000000000004'
 
 const CLIENT_INSYTE = '10000000-0000-0000-0000-000000000001'
 const CLIENT_VANCOM = '10000000-0000-0000-0000-000000000002'
@@ -44,6 +45,11 @@ const WO_6_REJECTED = '50000000-0000-0000-0000-000000000006'
 const WO_7_EXTERNAL = '50000000-0000-0000-0000-000000000007'
 const WO_8_NE4 = '50000000-0000-0000-0000-000000000008'
 
+const APPT_1 = '70000000-0000-0000-0000-000000000001'
+const APPT_2 = '70000000-0000-0000-0000-000000000002'
+const APPT_3 = '70000000-0000-0000-0000-000000000003'
+const APPT_4 = '70000000-0000-0000-0000-000000000004'
+
 const EMPLOYEE_TECH = '60000000-0000-0000-0000-000000000001'
 const EMPLOYEE_OFFICE = '60000000-0000-0000-0000-000000000002'
 
@@ -71,6 +77,8 @@ export const initialFixtures = () => ({
       pin_set_at: null,
       last_pin_login_at: null,
       is_active: true,
+      scheduler_line: null,
+      scheduler_operator: null,
       created_at: LAST_WEEK,
       updated_at: LAST_WEEK,
     },
@@ -84,6 +92,8 @@ export const initialFixtures = () => ({
       pin_set_at: LAST_WEEK,
       last_pin_login_at: null,
       is_active: true,
+      scheduler_line: null,
+      scheduler_operator: null,
       created_at: LAST_WEEK,
       updated_at: LAST_WEEK,
     },
@@ -97,6 +107,23 @@ export const initialFixtures = () => ({
       pin_set_at: LAST_WEEK,
       last_pin_login_at: null,
       is_active: true,
+      scheduler_line: null,
+      scheduler_operator: null,
+      created_at: LAST_WEEK,
+      updated_at: LAST_WEEK,
+    },
+    {
+      id: SCHEDULER_ID,
+      email: 'beatriz@demo.lumen',
+      full_name: 'Beatriz Sandoval',
+      role: 'scheduler',
+      team: null,
+      pin_login_code: null,
+      pin_set_at: null,
+      last_pin_login_at: null,
+      is_active: true,
+      scheduler_line: 'NE3',
+      scheduler_operator: OP_DGF,
       created_at: LAST_WEEK,
       updated_at: LAST_WEEK,
     },
@@ -110,6 +137,8 @@ export const initialFixtures = () => ({
     pin_set_at: string | null
     last_pin_login_at: string | null
     is_active: boolean
+    scheduler_line: string | null
+    scheduler_operator: string | null
     created_at: string
     updated_at: string
   }>,
@@ -429,6 +458,46 @@ export const initialFixtures = () => ({
     },
   ],
 
+  appointments: [
+    // Within Beatriz's scope (NE3 + DGF) — visible to her
+    {
+      id: APPT_1, work_order_id: WO_1, line: 'NE3', operator_id: OP_DGF,
+      scheduled_at: new Date('2026-05-02T09:00:00Z').toISOString(), duration_min: 60,
+      address: 'Bahnhofstraße 12, 37671 Höxter', contact_name: 'Klaus Berger', contact_phone: '+49 170 1111001',
+      status: 'proposed', notes: 'Demo: cita propuesta, pendiente de confirmar',
+      assigned_to: SCHEDULER_ID, created_by: SCHEDULER_ID, created_at: NOW, updated_at: NOW,
+    },
+    {
+      id: APPT_2, work_order_id: WO_3, line: 'NE3', operator_id: OP_DGF,
+      scheduled_at: new Date('2026-05-03T11:30:00Z').toISOString(), duration_min: 90,
+      address: 'Hauptstraße 88, 37671 Höxter', contact_name: 'Renate Vogel', contact_phone: '+49 170 1111002',
+      status: 'confirmed', notes: 'Demo: confirmada con el cliente',
+      assigned_to: SCHEDULER_ID, created_by: SCHEDULER_ID, created_at: YESTERDAY, updated_at: NOW,
+    },
+    {
+      id: APPT_3, work_order_id: null, line: 'NE3', operator_id: OP_DGF,
+      scheduled_at: new Date('2026-04-30T14:00:00Z').toISOString(), duration_min: 60,
+      address: 'Schulstraße 3, 64380 Roßdorf', contact_name: 'Markus Lange', contact_phone: '+49 170 1111003',
+      status: 'completed', notes: 'Demo: cita cerrada sin orden vinculada',
+      assigned_to: SCHEDULER_ID, created_by: SCHEDULER_ID, created_at: LAST_WEEK, updated_at: YESTERDAY,
+    },
+    {
+      id: APPT_4, work_order_id: null, line: 'NE3', operator_id: OP_DGF,
+      scheduled_at: new Date('2026-05-05T08:00:00Z').toISOString(), duration_min: 60,
+      address: 'Lindenstraße 22, 37671 Höxter', contact_name: 'Sabine Roth', contact_phone: '+49 170 1111004',
+      status: 'rescheduled', notes: 'Demo: reagendada a petición del cliente',
+      assigned_to: SCHEDULER_ID, created_by: SCHEDULER_ID, created_at: LAST_WEEK, updated_at: NOW,
+    },
+    // Out of scope (NE4 / different operator) — must NOT appear for Beatriz
+    {
+      id: '70000000-0000-0000-0000-000000000099', work_order_id: WO_5_PAID, line: 'NE4', operator_id: OP_GFPLUS,
+      scheduled_at: new Date('2026-05-04T10:00:00Z').toISOString(), duration_min: 60,
+      address: 'Industriestraße 4, 70567 Stuttgart', contact_name: 'Out Of Scope', contact_phone: '+49 170 9999999',
+      status: 'proposed', notes: 'Demo: fuera del scope de Beatriz (NE4/GFPLUS)',
+      assigned_to: null, created_by: ADMIN_ID, created_at: NOW, updated_at: NOW,
+    },
+  ],
+
   wo_detail_soplado: [
     { id: 'd1000000-0000-0000-0000-000000000001', work_order_id: WO_3, meters: 142.5, section: 'AP-37 → DP-12', tube_diameter: '40/33', result: 'OK', created_at: NOW },
     { id: 'd1000000-0000-0000-0000-000000000005', work_order_id: WO_5_PAID, meters: 95, section: 'POP-2 → AP-1', tube_diameter: '32/26', result: 'OK', created_at: LAST_WEEK },
@@ -624,6 +693,49 @@ export const initialFixtures = () => ({
   ],
 
   pin_trusted_devices: [],
+
+  // Plan 009 — collaborator cycle calendar.
+  // One PUBLISHED cycle (visible to contractor@demo.lumen) with all 4 milestones
+  // and 2 attached orders, plus one DRAFT cycle (must NOT be visible to the
+  // contractor) to prove the publish gate.
+  collaborator_cycles: [
+    {
+      id: 'c1c1c1c1-0000-0000-0000-000000000001',
+      collaborator_id: CONTRACTOR_ID,
+      period_start: '2026-04-01',
+      period_end: '2026-04-30',
+      period_label: 'April 2026',
+      emission_date: '2026-04-06',
+      review_start_date: '2026-04-10', // + 3 business days → 2026-04-15
+      final_cert_date: '2026-04-20',
+      payment_date: '2026-05-10', // = final_cert_date + 20 (D4)
+      status: 'published',
+      published_at: LAST_WEEK,
+      published_by: ADMIN_ID,
+      created_at: LAST_WEEK,
+      updated_at: LAST_WEEK,
+    },
+    {
+      id: 'c1c1c1c1-0000-0000-0000-000000000002',
+      collaborator_id: CONTRACTOR_ID,
+      period_start: '2026-05-01',
+      period_end: '2026-05-31',
+      period_label: 'Mai 2026 (Entwurf)',
+      emission_date: '2026-05-05',
+      review_start_date: '2026-05-08',
+      final_cert_date: '2026-05-18',
+      payment_date: '2026-06-07',
+      status: 'draft',
+      published_at: null,
+      published_by: null,
+      created_at: NOW,
+      updated_at: NOW,
+    },
+  ],
+  collaborator_cycle_orders: [
+    { cycle_id: 'c1c1c1c1-0000-0000-0000-000000000001', work_order_id: WO_7_EXTERNAL },
+    { cycle_id: 'c1c1c1c1-0000-0000-0000-000000000001', work_order_id: WO_5_PAID },
+  ],
 
   _session: { user: null, access_token: null } as DemoSession,
 })

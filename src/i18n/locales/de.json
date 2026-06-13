@@ -453,6 +453,106 @@
       "rejected": "Abgelehnt"
     }
   },
+  "appointments": {
+    "pageTitle": "Termine",
+    "newTitle": "Neuer Termin",
+    "operator": "Betreiber",
+    "noScope": "Kein Terminbereich konfiguriert.",
+    "loadError": "Termine konnten nicht geladen werden.",
+    "notFound": "Termin nicht gefunden.",
+    "noContact": "Kein Kontakt",
+    "emptyTitle": "Keine Termine",
+    "emptySubtitle": "Legen Sie einen neuen Termin an, um zu starten.",
+    "terminal": "Dieser Termin ist abgeschlossen und kann nicht mehr geändert werden.",
+    "status": {
+      "proposed": "Vorgeschlagen",
+      "confirmed": "Bestätigt",
+      "rescheduled": "Verschoben",
+      "completed": "Abgeschlossen",
+      "cancelled": "Storniert"
+    },
+    "fields": {
+      "line": "Linie",
+      "operator": "Betreiber",
+      "scheduledAt": "Termin",
+      "scheduledAtRequired": "Termin (Datum/Uhrzeit) ist erforderlich.",
+      "durationMin": "Dauer (Min.)",
+      "contactName": "Kontaktname",
+      "contactPhone": "Telefon",
+      "address": "Adresse",
+      "notes": "Notizen"
+    },
+    "actions": {
+      "new": "Neuer Termin",
+      "create": "Termin anlegen",
+      "back": "Zurück",
+      "confirm": "Bestätigen",
+      "complete": "Abschließen",
+      "cancel": "Stornieren",
+      "cancelForm": "Abbrechen",
+      "reschedule": "Verschieben"
+    }
+  },
+  "cycle": {
+    "milestone": {
+      "emission": "Ausstellung",
+      "review": "Prüffenster",
+      "final_cert": "Endabnahme",
+      "payment": "Zahlung"
+    },
+    "status": {
+      "draft": "Entwurf",
+      "published": "Veröffentlicht"
+    },
+    "view": {
+      "adminTitle": "Abrechnungszyklen der Nachunternehmer",
+      "adminSubtitle": "Meilensteindaten festlegen, Aufträge zuordnen und für den Nachunternehmer veröffentlichen.",
+      "contractorTitle": "Mein Abrechnungskalender",
+      "contractorSubtitle": "Veröffentlichte Meilensteine Ihrer Abrechnungszyklen.",
+      "cyclesTitle": "Zyklen",
+      "emptyAdmin": "Noch keine Zyklen für diesen Nachunternehmer.",
+      "emptyContractor": "Keine veröffentlichten Zyklen vorhanden."
+    },
+    "legend": {
+      "title": "Konventionen",
+      "rangeHint": "(3 Werktage)"
+    },
+    "weekday": {
+      "mon": "Mo",
+      "tue": "Di",
+      "wed": "Mi",
+      "thu": "Do",
+      "fri": "Fr",
+      "sat": "Sa",
+      "sun": "So"
+    },
+    "calendar": {
+      "prevMonth": "Vorheriger Monat",
+      "nextMonth": "Nächster Monat"
+    },
+    "fields": {
+      "collaborator": "Nachunternehmer",
+      "selectCollaborator": "Nachunternehmer auswählen",
+      "periodStart": "Zeitraum von",
+      "periodEnd": "Zeitraum bis",
+      "periodLabel": "Bezeichnung (optional)",
+      "reviewStart": "Prüfung Beginn",
+      "reviewEndHint": "Prüfung Ende: {{date}}",
+      "paymentHint": "Automatisch = Endabnahme + 20 Tage. Manuell bearbeitbar, wird bei Änderung der Endabnahme neu gesetzt.",
+      "orders": "Zugeordnete Aufträge"
+    },
+    "actions": {
+      "newCycle": "Neuer Zyklus",
+      "save": "Speichern",
+      "cancel": "Abbrechen",
+      "edit": "Bearbeiten",
+      "delete": "Löschen",
+      "publish": "Veröffentlichen",
+      "unpublish": "Zurückziehen",
+      "attachOrder": "Auftrag zuordnen",
+      "detachOrder": "Auftrag entfernen"
+    }
+  },
   "nav": {
     "operations": "Operations",
     "catalog": "Katalog",
@@ -463,6 +563,9 @@
     "workOrder": "Auftrag",
     "create": "Anlegen",
     "schedule": "Kalender",
+    "appointments": "Termine",
+    "calendar": "Kalender",
+    "cycles": "Zyklen",
     "documents": "Dokumente",
     "certification": "Zertifizierung",
     "serviceCatalog": "Service-Katalog",

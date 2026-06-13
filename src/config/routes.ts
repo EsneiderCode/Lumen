@@ -17,6 +17,7 @@ export const ROUTES = {
     PERSONNEL: '/admin/personnel',
     EMPLOYEES: '/admin/employees',
     MATERIALS: '/admin/materials',
+    CYCLES: '/admin/cycles',
     SETTINGS: '/admin/settings',
   },
 
@@ -35,5 +36,12 @@ export const ROUTES = {
     ORDERS: '/contractor/orders',
     DOCUMENTS: '/contractor/documents',
     CERTIFICATIONS: '/contractor/certifications',
+    CALENDAR: '/contractor/calendar',
+  },
+
+  SCHEDULER: {
+    APPOINTMENTS: '/scheduler/appointments',
+    APPOINTMENTS_NEW: '/scheduler/appointments/new',
+    APPOINTMENTS_DETAIL: '/scheduler/appointments/:id',
   },
 } as const

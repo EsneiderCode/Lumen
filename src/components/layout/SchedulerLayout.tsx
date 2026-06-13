@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import { Outlet, useLocation } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { Home, ClipboardList, FileText, CalendarDays } from 'lucide-react'
+import { CalendarClock } from 'lucide-react'
 import { BottomNav, type BottomNavItem } from './BottomNav'
 import { LanguageSelector } from '@/components/ui/LanguageSelector'
 import { ROUTES } from '@/config/routes'
@@ -9,16 +9,13 @@ import { useAuth } from '@/hooks/useAuth'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { OfflineBanner } from '@/components/ui/OfflineBanner'
 
-export function ContractorLayout() {
+export function SchedulerLayout() {
   const { t } = useTranslation()
   const { user, signOut } = useAuth()
   const { pathname } = useLocation()
 
   const navItems: BottomNavItem[] = [
-    { label: t('nav.dashboard'), path: ROUTES.CONTRACTOR.DASHBOARD, icon: Home },
-    { label: t('nav.workOrders'), path: ROUTES.CONTRACTOR.ORDERS, icon: ClipboardList },
-    { label: t('nav.documents'), path: ROUTES.CONTRACTOR.DOCUMENTS, icon: FileText },
-    { label: t('nav.calendar'), path: ROUTES.CONTRACTOR.CALENDAR, icon: CalendarDays },
+    { label: t('nav.appointments'), path: ROUTES.SCHEDULER.APPOINTMENTS, icon: CalendarClock },
   ]
 
   return (
@@ -27,15 +24,12 @@ export function ContractorLayout() {
       <header className="nx-field-header">
         <div>
           <span className="nx-brand-name text-sm">LUMEN<span className="text-accent">.OS</span></span>
-          <div className="nx-brand-meta leading-none">CONTRACTOR MODE</div>
+          <div className="nx-brand-meta leading-none">SCHEDULER MODE</div>
         </div>
         <div className="ml-auto flex items-center gap-2">
           <LanguageSelector />
           <span className="hidden text-xs text-fg-2 sm:inline">{user?.fullName}</span>
-          <button
-            onClick={signOut}
-            className="btn btn-g btn-sm"
-          >
+          <button onClick={signOut} className="btn btn-g btn-sm">
             {t('auth.signOut')}
           </button>
         </div>

@@ -480,6 +480,106 @@
       "rejected": "Rechazado"
     }
   },
+  "appointments": {
+    "pageTitle": "Citas",
+    "newTitle": "Nueva cita",
+    "operator": "Operador",
+    "noScope": "No tiene un ámbito de citas configurado.",
+    "loadError": "No se pudieron cargar las citas.",
+    "notFound": "Cita no encontrada.",
+    "noContact": "Sin contacto",
+    "emptyTitle": "Sin citas",
+    "emptySubtitle": "Cree una nueva cita para comenzar.",
+    "terminal": "Esta cita está cerrada y ya no puede modificarse.",
+    "status": {
+      "proposed": "Propuesta",
+      "confirmed": "Confirmada",
+      "rescheduled": "Reagendada",
+      "completed": "Completada",
+      "cancelled": "Cancelada"
+    },
+    "fields": {
+      "line": "Línea",
+      "operator": "Operador",
+      "scheduledAt": "Fecha y hora",
+      "scheduledAtRequired": "La fecha y hora de la cita es obligatoria.",
+      "durationMin": "Duración (min)",
+      "contactName": "Nombre de contacto",
+      "contactPhone": "Teléfono",
+      "address": "Dirección",
+      "notes": "Notas"
+    },
+    "actions": {
+      "new": "Nueva cita",
+      "create": "Crear cita",
+      "back": "Volver",
+      "confirm": "Confirmar",
+      "complete": "Completar",
+      "cancel": "Cancelar",
+      "cancelForm": "Descartar",
+      "reschedule": "Reagendar"
+    }
+  },
+  "cycle": {
+    "milestone": {
+      "emission": "Emisión",
+      "review": "Ventana de revisión",
+      "final_cert": "Certificación final",
+      "payment": "Pago"
+    },
+    "status": {
+      "draft": "Borrador",
+      "published": "Publicado"
+    },
+    "view": {
+      "adminTitle": "Ciclos de facturación de colaboradores",
+      "adminSubtitle": "Defina las fechas de los hitos, vincule órdenes y publique el ciclo para el colaborador.",
+      "contractorTitle": "Mi calendario de facturación",
+      "contractorSubtitle": "Hitos publicados de sus ciclos de facturación.",
+      "cyclesTitle": "Ciclos",
+      "emptyAdmin": "Aún no hay ciclos para este colaborador.",
+      "emptyContractor": "No hay ciclos publicados."
+    },
+    "legend": {
+      "title": "Convenciones",
+      "rangeHint": "(3 días hábiles)"
+    },
+    "weekday": {
+      "mon": "Lu",
+      "tue": "Ma",
+      "wed": "Mi",
+      "thu": "Ju",
+      "fri": "Vi",
+      "sat": "Sá",
+      "sun": "Do"
+    },
+    "calendar": {
+      "prevMonth": "Mes anterior",
+      "nextMonth": "Mes siguiente"
+    },
+    "fields": {
+      "collaborator": "Colaborador",
+      "selectCollaborator": "Seleccione un colaborador",
+      "periodStart": "Periodo desde",
+      "periodEnd": "Periodo hasta",
+      "periodLabel": "Etiqueta (opcional)",
+      "reviewStart": "Inicio de revisión",
+      "reviewEndHint": "Fin de revisión: {{date}}",
+      "paymentHint": "Automático = certificación final + 20 días. Editable manualmente; se vuelve a fijar al cambiar la certificación final.",
+      "orders": "Órdenes vinculadas"
+    },
+    "actions": {
+      "newCycle": "Nuevo ciclo",
+      "save": "Guardar",
+      "cancel": "Cancelar",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "publish": "Publicar",
+      "unpublish": "Despublicar",
+      "attachOrder": "Vincular orden",
+      "detachOrder": "Quitar orden"
+    }
+  },
   "nav": {
     "operations": "Operaciones",
     "catalog": "Catálogo",
@@ -490,6 +590,9 @@
     "workOrder": "Orden",
     "create": "Crear",
     "schedule": "Calendario",
+    "appointments": "Citas",
+    "calendar": "Calendario",
+    "cycles": "Ciclos",
     "documents": "Documentos",
     "certification": "Certificación",
     "serviceCatalog": "Catálogo de servicios",
