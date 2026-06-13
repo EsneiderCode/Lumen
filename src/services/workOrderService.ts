@@ -331,7 +331,8 @@ export async function fetchWorkOrders(filters: WorkOrderFilters = {}, page = 0, 
     .range(from, to)
 
   if (filters.statuses && filters.statuses.length > 0) {
-    query = query.in('status', filters.statuses)
+    // Use .or() instead of .in() — more reliable with PostgreSQL enum columns
+    query = query.or(filters.statuses.map((s) => `status.eq.${s}`).join(','))
   } else if (filters.status) {
     query = query.eq('status', filters.status)
   }
