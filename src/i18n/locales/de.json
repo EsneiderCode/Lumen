@@ -348,7 +348,12 @@
     "chooseProfile": "— Profil wählen —",
     "noAssigneesForTeam": "Keine Profile für dieses Team gefunden.",
     "assigning": "Zuweisen...",
-    "assignSubmit": "Zuweisen & Status → Assigned"
+    "assignSubmit": "Zuweisen & Status → Assigned",
+    "reassignTitle": "Auftrag neu zuweisen",
+    "reassignNote": "Grund der Neuzuweisung",
+    "reassignNotePlaceholder": "Warum wird dieser Auftrag neu zugewiesen?",
+    "reassignSubmit": "Neu zuweisen",
+    "currentAssignment": "Aktuelle Zuordnung"
   },
   "contractorDocs": {
     "title": "Contractor-Dokumente",

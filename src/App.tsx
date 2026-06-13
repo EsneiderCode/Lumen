@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router'
 import { AuthProvider } from '@/context/AuthContext'
+import { useTheme } from '@/hooks/useTheme'
 import { LernmodusBodyClass } from '@/components/LernmodusBodyClass'
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute'
 import { AdminLayout } from '@/components/layout/AdminLayout'
@@ -42,6 +43,8 @@ const ContractorOrdersPage = lazy(() => import('@/pages/contractor/ContractorOrd
 const ContractorDocumentsPage = lazy(() => import('@/pages/contractor/ContractorDocumentsPage').then(m => ({ default: m.ContractorDocumentsPage })))
 
 function App() {
+  useTheme()
+
   return (
     <AuthProvider>
       <LernmodusBodyClass />

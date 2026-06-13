@@ -191,11 +191,10 @@ function buildMessage(body: TelegramBody): string | null {
       if (isReassign) {
         lines.push('')
         lines.push(`⬅️ Antes: <b>${esc(previousTeam!)}</b>${previousTechnician ? ` (${esc(previousTechnician)})` : ''}`)
-      }
-
-      if (who) {
-        lines.push('')
-        lines.push(`✏️ Asignada${who}`)
+        const reason = trim(body.reason, MAX.reason)
+        if (reason) {
+          lines.push(`📋 Motivo: ${esc(reason)}`)
+        }
       }
 
       if (orderUrl) lines.push(`\n🔗 <a href="${orderUrl}">Ver orden</a>`)

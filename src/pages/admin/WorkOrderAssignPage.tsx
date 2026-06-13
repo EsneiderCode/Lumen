@@ -47,9 +47,12 @@ export function WorkOrderAssignPage() {
   )
   const [assignmentReasons, setAssignmentReasons] = useState<WorkOrderActionReason[]>([])
   const [isCheckingDocuments, setIsCheckingDocuments] = useState(false)
+  const [reassignmentNote, setReassignmentNote] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const isReassignment = !!(order?.assigned_team)
 
   useEffect(() => {
     if (!id) return
@@ -147,6 +150,7 @@ export function WorkOrderAssignPage() {
       assignedDate || null,
       user.id,
       selectedTechnicianId || null,
+      isReassignment && reassignmentNote.trim() ? reassignmentNote.trim() : null,
     )
 
     if (error) {
@@ -173,6 +177,7 @@ export function WorkOrderAssignPage() {
           assignedDate: assignedDate || undefined,
           address: location,
           orderUrl: `${window.location.origin}/admin/orders/${id}`,
+          reassignmentNote: isReassignment && reassignmentNote.trim() ? reassignmentNote.trim() : undefined,
         })
       }
       navigate('/admin/orders')
@@ -198,7 +203,7 @@ export function WorkOrderAssignPage() {
           ←
         </button>
         <div>
-          <h2 className="font-display text-xl font-bold text-fg-1">{t('assignment.title')}</h2>
+          <h2 className="font-display text-xl font-bold text-fg-1">{isReassignment ? t('assignment.reassignTitle') : t('assignment.title')}</h2>
           {order && (
             <p className="text-sm text-fg-2 font-mono">{order.order_number}</p>
           )}
@@ -228,6 +233,21 @@ export function WorkOrderAssignPage() {
               </p>
             </div>
           </div>
+
+          {isReassignment && (
+            <div className="mt-3 border-t border-line pt-3">
+              <p className="text-xs font-medium text-fg-2 mb-1">{t('assignment.currentAssignment')}</p>
+              <div className="flex items-center gap-2 text-sm text-fg-1">
+                <span className={`h-2 w-2 rounded-full ${TEAMS.find((t) => t.value === order.assigned_team)?.dot ?? 'bg-fg-3'}`} />
+                <span className="font-medium">
+                  {TEAMS.find((t) => t.value === order.assigned_team)?.label ?? order.assigned_team}
+                </span>
+                {order.assignedProfile?.full_name && (
+                  <span className="text-fg-2">· {order.assignedProfile.full_name}</span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -295,6 +315,21 @@ export function WorkOrderAssignPage() {
               className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
             />
           </div>
+
+          {isReassignment && (
+            <div>
+              <label className="mb-1 block text-xs font-medium text-fg-2">
+                {t('assignment.reassignNote')}
+              </label>
+              <textarea
+                value={reassignmentNote}
+                onChange={(e) => setReassignmentNote(e.target.value)}
+                placeholder={t('assignment.reassignNotePlaceholder')}
+                rows={3}
+                className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+              />
+            </div>
+          )}
         </div>
 
         {isCheckingDocuments && (
@@ -336,7 +371,7 @@ export function WorkOrderAssignPage() {
             disabled={!selectedTeam || isSaving || isCheckingDocuments || assignmentReasons.length > 0}
             className="flex-1 rounded-s bg-accent px-4 py-2.5 text-sm font-semibold text-ink hover:bg-accent disabled:opacity-50 transition-colors"
           >
-            {isSaving ? t('assignment.assigning') : t('assignment.assignSubmit')}
+            {isSaving ? t('assignment.assigning') : isReassignment ? t('assignment.reassignSubmit') : t('assignment.assignSubmit')}
           </button>
         </div>
       </form>

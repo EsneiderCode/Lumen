@@ -62,6 +62,7 @@
 }
 
 :root {
+  color-scheme: dark;
   --ink: var(--color-ink);
   --paper: var(--color-paper);
   --accent: var(--color-accent);
@@ -83,6 +84,35 @@
   --r-s: var(--radius-s);
   --r-m: var(--radius-m);
   --r-l: var(--radius-l);
+}
+
+/* ─── Light theme (NE4 palette) ────────────────────────────────────────── */
+/* Applied via data-theme="light" on <html>. Day-mode auto-detection sets  */
+/* this attribute; night falls back to the dark defaults above.            */
+[data-theme="light"] {
+  --color-bg-0: #F5F3EE;
+  --color-bg-1: #FFFFFF;
+  --color-bg-2: #EAE6DC;
+  --color-bg-3: #DED8CA;
+  --color-bg-4: #D2CCBE;
+
+  --color-fg-1: #0A0B0D;
+  --color-fg-2: #34363A;
+  --color-fg-3: #646660;
+  --color-fg-4: #9A9A94;
+
+  --color-line:   #0A0B0D1F;
+  --color-line-s: #0A0B0D38;
+
+  --color-ok:   #1E8E3E;
+  --color-warn: #F9AB00;
+  --color-err:  #D93025;
+  --color-info: #1A73E8;
+
+  --color-paper: #F5F3EE;
+  --color-ink:   #0A0B0D;
+
+  color-scheme: light;
 }
 
 /* ─── Base styles ──────────────────────────────────────────────────────── */

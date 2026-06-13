@@ -51,6 +51,7 @@ export async function notifyTaskAssigned(opts: {
   address?: string
   orderUrl: string
   adminName?: string
+  reassignmentNote?: string
 }): Promise<void> {
   await sendTelegram({
     type: 'task_assigned',
@@ -64,6 +65,7 @@ export async function notifyTaskAssigned(opts: {
     address: opts.address ?? '',
     orderUrl: opts.orderUrl,
     ...(opts.adminName ? { adminName: opts.adminName } : {}),
+    ...(opts.reassignmentNote ? { reason: opts.reassignmentNote } : {}),
   })
 }
 

@@ -430,6 +430,7 @@ export async function assignWorkOrder(
   assignedDate: string | null,
   changedBy: string,
   technicianId: string | null = null,
+  reassignmentNote: string | null = null,
 ): Promise<{
   data: WorkOrderRow | null
   error: string | null
@@ -463,7 +464,7 @@ export async function assignWorkOrder(
     from_status: fromStatus,
     to_status: 'assigned',
     changed_by: changedBy,
-    notes: `Zugewiesen an Team ${team ?? '-'}${technicianId ? ' · Techniker zugewiesen' : ''}`,
+    notes: `Zugewiesen an Team ${team ?? '-'}${technicianId ? ' · Techniker zugewiesen' : ''}${reassignmentNote ? ` · Grund: ${reassignmentNote}` : ''}`,
   })
 
   return { data, error: null }

@@ -375,7 +375,12 @@
     "chooseProfile": "— elegir perfil —",
     "noAssigneesForTeam": "No hay perfiles para este equipo.",
     "assigning": "Asignando...",
-    "assignSubmit": "Asignar y pasar a Assigned"
+    "assignSubmit": "Asignar y pasar a Assigned",
+    "reassignTitle": "Reasignar orden",
+    "reassignNote": "Motivo de la reasignación",
+    "reassignNotePlaceholder": "¿Por qué se reasigna esta orden?",
+    "reassignSubmit": "Reasignar",
+    "currentAssignment": "Asignación actual"
   },
   "contractorDocs": {
     "title": "Documentos del contratista",
