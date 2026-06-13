@@ -30,8 +30,20 @@ interface TelegramBody {
   orderNumber?: string
   reason?: string
   adminName?: string
-  /** task_assigned: person assigned */
+  /** task_assigned: team assigned */
   assignedTo?: string
+  /** task_assigned: technician name */
+  technicianName?: string
+  /** task_assigned: previous team (reassignment) */
+  previousTeam?: string
+  /** task_assigned: previous technician (reassignment) */
+  previousTechnician?: string
+  /** task_assigned: work type label */
+  workType?: string
+  /** task_assigned: assignment date */
+  assignedDate?: string
+  /** task_assigned: work order address */
+  address?: string
   /** task_assigned: direct link to the order */
   orderUrl?: string
   /** order_status_changed: human-readable new status */
@@ -49,13 +61,19 @@ interface MappingRow {
 // ── Field limits (prevent oversized Telegram messages) ────────────────────────
 
 const MAX = {
-  orderNumber: 120,
-  reason:      3_000,
-  adminName:   120,
-  assignedTo:  120,
-  orderUrl:    512,
-  newStatus:   120,
-  chatId:      64,
+  orderNumber:        120,
+  reason:             3_000,
+  adminName:          120,
+  assignedTo:         120,
+  technicianName:     120,
+  previousTeam:       120,
+  previousTechnician: 120,
+  workType:           120,
+  assignedDate:       20,
+  address:            200,
+  orderUrl:           512,
+  newStatus:          120,
+  chatId:             64,
 } as const
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -67,12 +85,18 @@ function readBody(value: unknown): TelegramBody {
     action:      typeof b.action      === 'string' ? (b.action as TelegramBody['action']) : undefined,
     chatId:      typeof b.chatId      === 'string' ? b.chatId      : undefined,
     type:        typeof b.type        === 'string' ? (b.type as TelegramEventType) : undefined,
-    orderNumber: typeof b.orderNumber === 'string' ? b.orderNumber : undefined,
-    reason:      typeof b.reason      === 'string' ? b.reason      : undefined,
-    adminName:   typeof b.adminName   === 'string' ? b.adminName   : undefined,
-    assignedTo:  typeof b.assignedTo  === 'string' ? b.assignedTo  : undefined,
-    orderUrl:    typeof b.orderUrl    === 'string' ? b.orderUrl    : undefined,
-    newStatus:   typeof b.newStatus   === 'string' ? b.newStatus   : undefined,
+    orderNumber:        typeof b.orderNumber        === 'string' ? b.orderNumber        : undefined,
+    reason:             typeof b.reason             === 'string' ? b.reason             : undefined,
+    adminName:          typeof b.adminName          === 'string' ? b.adminName          : undefined,
+    assignedTo:         typeof b.assignedTo         === 'string' ? b.assignedTo         : undefined,
+    technicianName:     typeof b.technicianName     === 'string' ? b.technicianName     : undefined,
+    previousTeam:       typeof b.previousTeam       === 'string' ? b.previousTeam       : undefined,
+    previousTechnician: typeof b.previousTechnician === 'string' ? b.previousTechnician : undefined,
+    workType:           typeof b.workType           === 'string' ? b.workType           : undefined,
+    assignedDate:       typeof b.assignedDate       === 'string' ? b.assignedDate       : undefined,
+    address:            typeof b.address            === 'string' ? b.address            : undefined,
+    orderUrl:           typeof b.orderUrl           === 'string' ? b.orderUrl           : undefined,
+    newStatus:          typeof b.newStatus          === 'string' ? b.newStatus          : undefined,
   }
 }
 
@@ -137,16 +161,46 @@ function buildMessage(body: TelegramBody): string | null {
     }
 
     case 'task_assigned': {
-      const assignedTo = trim(body.assignedTo, MAX.assignedTo)
-      const orderUrl   = trim(body.orderUrl,   MAX.orderUrl)
+      const assignedTo         = trim(body.assignedTo,         MAX.assignedTo)
+      const technicianName     = trim(body.technicianName,     MAX.technicianName)
+      const previousTeam       = trim(body.previousTeam,       MAX.previousTeam)
+      const previousTechnician = trim(body.previousTechnician, MAX.previousTechnician)
+      const workType           = trim(body.workType,           MAX.workType)
+      const assignedDate       = trim(body.assignedDate,       MAX.assignedDate)
+      const address            = trim(body.address,            MAX.address)
+      const orderUrl           = trim(body.orderUrl,           MAX.orderUrl)
       if (!orderNumber || !assignedTo) return null
-      const linkLine = orderUrl ? `\n\n🔗 <a href="${orderUrl}">Ver orden</a>` : ''
-      return (
-        `📋 <b>Tarea asignada</b>\n\n` +
-        `🔖 OS: <b>${esc(orderNumber)}</b>\n` +
-        `👷 Asignada a: <b>${esc(assignedTo)}</b>` +
-        linkLine
-      )
+
+      const isReassign = !!previousTeam
+      const title = isReassign ? '🔄 <b>Orden reasignada</b>' : '📋 <b>Nueva asignación</b>'
+
+      const lines: string[] = [
+        title,
+        '',
+        `🔖 OS: <b>${esc(orderNumber)}</b>`,
+      ]
+
+      if (workType) lines.push(`🔧 Tipo: <b>${esc(workType)}</b>`)
+      if (address) lines.push(`📍 Dirección: ${esc(address)}`)
+      if (assignedDate) lines.push(`📅 Fecha: <b>${esc(assignedDate)}</b>`)
+
+      lines.push('')
+      lines.push(`👷 Equipo: <b>${esc(assignedTo)}</b>`)
+      if (technicianName) lines.push(`👤 Técnico responsable: <b>${esc(technicianName)}</b>`)
+
+      if (isReassign) {
+        lines.push('')
+        lines.push(`⬅️ Antes: <b>${esc(previousTeam!)}</b>${previousTechnician ? ` (${esc(previousTechnician)})` : ''}`)
+      }
+
+      if (who) {
+        lines.push('')
+        lines.push(`✏️ Asignada${who}`)
+      }
+
+      if (orderUrl) lines.push(`\n🔗 <a href="${orderUrl}">Ver orden</a>`)
+
+      return lines.join('\n')
     }
 
     case 'order_status_changed': {

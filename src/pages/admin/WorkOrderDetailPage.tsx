@@ -500,7 +500,7 @@ export function WorkOrderDetailPage() {
         void doTransition('paid', 'Als bezahlt markiert')
         break
       case 'return_nonconformity': {
-        if (!modal.categoryValue || modal.inputValue.trim().length < 20) return
+        if (!modal.categoryValue || !modal.inputValue.trim()) return
         const reason = `Nichtkonformität (${modal.categoryValue}): ${modal.inputValue.trim()}`
         void doTransition('returned', reason)
         if (order)
@@ -1296,9 +1296,6 @@ export function WorkOrderDetailPage() {
           role="dialog"
           aria-modal="true"
           aria-label="Aktion bestätigen"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) closeModal()
-          }}
         >
           <div className="w-full max-w-sm rounded-l border border-line bg-bg-1 p-6">
             {modal.type === 'send_to_client' && (
@@ -1397,7 +1394,7 @@ export function WorkOrderDetailPage() {
                 </div>
                 <div className="mb-2">
                   <label className="mb-1.5 block text-xs font-medium text-fg-2">
-                    Beschreibung <span className="text-fg-4">(min. 20 Zeichen)</span>
+                    Beschreibung
                   </label>
                   <textarea
                     value={modal.inputValue}
@@ -1406,11 +1403,6 @@ export function WorkOrderDetailPage() {
                     rows={4}
                     className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder-fg-4 focus:border-accent focus:outline-none resize-none"
                   />
-                  {modal.inputValue.length > 0 && modal.inputValue.length < 20 && (
-                    <p className="mt-1 text-xs text-err">
-                      {20 - modal.inputValue.length} Zeichen fehlen
-                    </p>
-                  )}
                 </div>
                 <div className="mb-4" />
               </>
@@ -1431,7 +1423,7 @@ export function WorkOrderDetailPage() {
                   ((modal.type === 'reject' || modal.type === 'invoice') &&
                     !modal.inputValue.trim()) ||
                   (modal.type === 'return_nonconformity' &&
-                    (!modal.categoryValue || modal.inputValue.trim().length < 20))
+                    (!modal.categoryValue || !modal.inputValue.trim()))
                 }
                 className="rounded-s bg-accent px-4 py-2 text-sm font-semibold text-ink hover:bg-accent disabled:opacity-50 transition-colors"
               >

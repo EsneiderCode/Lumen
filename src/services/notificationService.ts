@@ -40,18 +40,30 @@ export async function notifyOrderReturnedForCorrection(
  * Notifies configured groups that a work order has been assigned to someone.
  * Triggered after a successful assignment action.
  */
-export async function notifyTaskAssigned(
-  orderNumber: string,
-  assignedTo: string,
-  orderUrl: string,
-  adminName?: string,
-): Promise<void> {
+export async function notifyTaskAssigned(opts: {
+  orderNumber: string
+  teamName: string
+  technicianName?: string
+  previousTeam?: string
+  previousTechnician?: string
+  workType?: string
+  assignedDate?: string
+  address?: string
+  orderUrl: string
+  adminName?: string
+}): Promise<void> {
   await sendTelegram({
     type: 'task_assigned',
-    orderNumber,
-    assignedTo,
-    orderUrl,
-    ...(adminName ? { adminName } : {}),
+    orderNumber: opts.orderNumber,
+    assignedTo: opts.teamName,
+    technicianName: opts.technicianName ?? '',
+    previousTeam: opts.previousTeam ?? '',
+    previousTechnician: opts.previousTechnician ?? '',
+    workType: opts.workType ?? '',
+    assignedDate: opts.assignedDate ?? '',
+    address: opts.address ?? '',
+    orderUrl: opts.orderUrl,
+    ...(opts.adminName ? { adminName: opts.adminName } : {}),
   })
 }
 

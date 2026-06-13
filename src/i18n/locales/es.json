@@ -73,7 +73,7 @@
   "status": {
     "created": "Creada",
     "assigned": "Asignada",
-    "in_progress": "En ejecución",
+    "in_progress": "En curso",
     "executed": "Ejecutada",
     "rueckmeldung_pending": "RM pendiente",
     "rueckmeldung_sent": "RM enviada",
@@ -85,6 +85,13 @@
     "paid": "Pagada",
     "returned": "Requiere corrección",
     "cancelled": "Cancelada"
+  },
+  "statusGroup": {
+    "open": "Abiertas (Creada + Asignada)",
+    "inProgress": "En ejecución (En curso + Ejecutada + RM pendiente)",
+    "pendingCert": "Certificación (RM enviada + Certificada + Enviada al cliente)",
+    "done": "Completadas (Aceptada + Facturada + Pagada)",
+    "attention": "Atención (Corrección + Rechazada)"
   },
   "workType": {
     "soplado": "Soplado",
@@ -196,6 +203,8 @@
     "noWorkType": "Este ítem del catálogo no tiene un tipo de trabajo asignado. Seleccioná otro ítem.",
     "fixErrors": "Completá todos los campos obligatorios (marcados en rojo).",
     "allStatuses": "Todos los estados",
+    "statusGroups": "Grupos",
+    "individualStatuses": "Estado individual",
     "allTeams": "Todos los equipos",
     "allTypes": "Todos los tipos",
     "allClients": "Todos los clientes",
@@ -259,7 +268,34 @@
     "openOrders": "Órdenes abiertas",
     "pending": "Pendientes",
     "completed": "Completadas",
-    "invoiced": "Facturadas"
+    "invoiced": "Facturadas",
+    "admin": {
+      "title": "Dashboard",
+      "subtitle": "§ Operaciones · Resumen",
+      "statOpen": "Órdenes abiertas",
+      "statInProgress": "En ejecución",
+      "statPendingCert": "Pendiente de certificación",
+      "statDone": "Completadas",
+      "attentionTitle": "Requiere atención",
+      "attentionOpen": "{{count}} abierto(s)",
+      "attentionEmpty": "Sin reportes abiertos.",
+      "attentionRejected": "Rechazada",
+      "attentionReturned": "Devuelta",
+      "team": "Equipo {{team}}",
+      "welcomeTitle": "Bienvenido a LUMEN",
+      "welcomeBody": "Plataforma operativa central de HMR Nexus Engineering GmbH. Órdenes, certificaciones y gestión de personal en un solo lugar."
+    },
+    "tech": {
+      "greeting": "Hola, {{name}}",
+      "team": "Equipo {{name}}",
+      "statToday": "Hoy",
+      "statOpen": "Abiertas",
+      "statDone": "Completadas",
+      "myOrders": "Mis órdenes",
+      "viewAll": "Ver todas →",
+      "emptyTitle": "Sin órdenes activas",
+      "emptyBody": "No tienes órdenes asignadas actualmente."
+    }
   },
   "contractor": {
     "documentStatus": "Estado de documentos",

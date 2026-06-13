@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router'
+import { useNavigate, useSearchParams } from 'react-router'
 import { ClipboardList, RefreshCw } from 'lucide-react'
 import {
   fetchWorkOrders,
@@ -10,7 +10,7 @@ import {
   type WorkOrderWithRelations,
 } from '@/services/workOrderService'
 import type { WorkOrderStatus, WorkType, TeamColor } from '@/types/enums'
-import { useLabels } from '@/i18n/labels'
+import { useLabels, STATUS_GROUPS } from '@/i18n/labels'
 import { useTranslation } from 'react-i18next'
 import { STATUS_COLORS, TEAM_DOT, PRIORITY_COLORS } from '@/constants/styles'
 
@@ -20,6 +20,7 @@ export function WorkOrdersPage() {
   const { t } = useTranslation()
   const L = useLabels()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [orders, setOrders] = useState<WorkOrderWithRelations[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(0)
@@ -29,7 +30,13 @@ export function WorkOrdersPage() {
   const [error, setError] = useState<string | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
 
-  const [filters, setFilters] = useState<WorkOrderFilters>({})
+  const [filters, setFilters] = useState<WorkOrderFilters>(() => {
+    const group = searchParams.get('statusGroup') as keyof typeof STATUS_GROUPS | null
+    if (group && STATUS_GROUPS[group]) {
+      return { statuses: [...STATUS_GROUPS[group]] }
+    }
+    return {}
+  })
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
 
@@ -113,17 +120,31 @@ export function WorkOrdersPage() {
 
           {/* Status filter */}
           <select
-            value={filters.status ?? ''}
+            value={filters.statuses ? `group:${Object.entries(STATUS_GROUPS).find(([, v]) => JSON.stringify(v) === JSON.stringify(filters.statuses))?.[0] ?? ''}` : filters.status ?? ''}
             onChange={(e) => {
               setPage(0)
-              setFilters((f) => ({ ...f, status: (e.target.value as WorkOrderStatus) || undefined }))
+              const val = e.target.value
+              if (val.startsWith('group:')) {
+                const groupKey = val.replace('group:', '') as keyof typeof STATUS_GROUPS
+                const statuses = STATUS_GROUPS[groupKey]
+                setFilters((f) => ({ ...f, status: undefined, statuses: statuses ? [...statuses] : undefined }))
+              } else {
+                setFilters((f) => ({ ...f, statuses: undefined, status: (val as WorkOrderStatus) || undefined }))
+              }
             }}
             className="rounded-s border border-line-s bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           >
             <option value="">{t('workOrder.allStatuses')}</option>
-            {L.statusOptions().map(({ value, label }) => (
-              <option key={value} value={value}>{label}</option>
-            ))}
+            <optgroup label={t('workOrder.statusGroups')}>
+              {L.statusGroupOptions().map(({ value, label }) => (
+                <option key={`group:${value}`} value={`group:${value}`}>{label}</option>
+              ))}
+            </optgroup>
+            <optgroup label={t('workOrder.individualStatuses')}>
+              {L.statusOptions().map(({ value, label }) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </optgroup>
           </select>
 
           {/* Team filter */}

@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.4"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       certification_audits: {
@@ -180,10 +205,12 @@ export type Database = {
           is_active: boolean
           notes: string | null
           phone: string | null
+          profile_id: string | null
           start_date: string
           steuer_id: string | null
           steuerklasse: string | null
           sv_nummer: string | null
+          team: Database["public"]["Enums"]["team_color"] | null
           updated_at: string
         }
         Insert: {
@@ -197,10 +224,12 @@ export type Database = {
           is_active?: boolean
           notes?: string | null
           phone?: string | null
+          profile_id?: string | null
           start_date: string
           steuer_id?: string | null
           steuerklasse?: string | null
           sv_nummer?: string | null
+          team?: Database["public"]["Enums"]["team_color"] | null
           updated_at?: string
         }
         Update: {
@@ -214,13 +243,23 @@ export type Database = {
           is_active?: boolean
           notes?: string | null
           phone?: string | null
+          profile_id?: string | null
           start_date?: string
           steuer_id?: string | null
           steuerklasse?: string | null
           sv_nummer?: string | null
+          team?: Database["public"]["Enums"]["team_color"] | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "employees_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       event_group_mappings: {
         Row: {
@@ -452,6 +491,8 @@ export type Database = {
           client_id: string | null
           code: string
           created_at: string
+          default_line: string | null
+          default_operator_id: string | null
           id: string
           is_active: boolean
           name: string
@@ -460,6 +501,8 @@ export type Database = {
           client_id?: string | null
           code: string
           created_at?: string
+          default_line?: string | null
+          default_operator_id?: string | null
           id?: string
           is_active?: boolean
           name: string
@@ -468,6 +511,8 @@ export type Database = {
           client_id?: string | null
           code?: string
           created_at?: string
+          default_line?: string | null
+          default_operator_id?: string | null
           id?: string
           is_active?: boolean
           name?: string
@@ -480,11 +525,19 @@ export type Database = {
             referencedRelation: "clients"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "projects_default_operator_id_fkey"
+            columns: ["default_operator_id"]
+            isOneToOne: false
+            referencedRelation: "operators"
+            referencedColumns: ["id"]
+          },
         ]
       }
       service_items: {
         Row: {
           active: boolean
+          category: string | null
           client_id: string | null
           code: string
           created_at: string
@@ -502,6 +555,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          category?: string | null
           client_id?: string | null
           code: string
           created_at?: string
@@ -519,6 +573,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          category?: string | null
           client_id?: string | null
           code?: string
           created_at?: string
@@ -1395,6 +1450,7 @@ export type Database = {
           client_id: string | null
           created_at: string
           created_by: string
+          external_metadata: Json | null
           id: string
           internal_notes: string | null
           line: string
@@ -1404,6 +1460,7 @@ export type Database = {
           priority: Database["public"]["Enums"]["priority_level"]
           project_id: string
           service_item_id: string | null
+          source: string
           status: Database["public"]["Enums"]["work_order_status"]
           updated_at: string
           work_type: Database["public"]["Enums"]["work_type"]
@@ -1420,6 +1477,7 @@ export type Database = {
           client_id?: string | null
           created_at?: string
           created_by: string
+          external_metadata?: Json | null
           id?: string
           internal_notes?: string | null
           line: string
@@ -1429,6 +1487,7 @@ export type Database = {
           priority?: Database["public"]["Enums"]["priority_level"]
           project_id: string
           service_item_id?: string | null
+          source?: string
           status?: Database["public"]["Enums"]["work_order_status"]
           updated_at?: string
           work_type: Database["public"]["Enums"]["work_type"]
@@ -1445,6 +1504,7 @@ export type Database = {
           client_id?: string | null
           created_at?: string
           created_by?: string
+          external_metadata?: Json | null
           id?: string
           internal_notes?: string | null
           line?: string
@@ -1454,6 +1514,7 @@ export type Database = {
           priority?: Database["public"]["Enums"]["priority_level"]
           project_id?: string
           service_item_id?: string | null
+          source?: string
           status?: Database["public"]["Enums"]["work_order_status"]
           updated_at?: string
           work_type?: Database["public"]["Enums"]["work_type"]
@@ -1522,6 +1583,7 @@ export type Database = {
       service_items_public: {
         Row: {
           active: boolean | null
+          category: string | null
           client_code: string | null
           client_id: string | null
           client_name: string | null
@@ -1577,6 +1639,7 @@ export type Database = {
           client_id: string | null
           created_at: string
           created_by: string
+          external_metadata: Json | null
           id: string
           internal_notes: string | null
           line: string
@@ -1586,6 +1649,7 @@ export type Database = {
           priority: Database["public"]["Enums"]["priority_level"]
           project_id: string
           service_item_id: string | null
+          source: string
           status: Database["public"]["Enums"]["work_order_status"]
           updated_at: string
           work_type: Database["public"]["Enums"]["work_type"]
@@ -1622,6 +1686,7 @@ export type Database = {
           client_id: string | null
           created_at: string
           created_by: string
+          external_metadata: Json | null
           id: string
           internal_notes: string | null
           line: string
@@ -1631,6 +1696,7 @@ export type Database = {
           priority: Database["public"]["Enums"]["priority_level"]
           project_id: string
           service_item_id: string | null
+          source: string
           status: Database["public"]["Enums"]["work_order_status"]
           updated_at: string
           work_type: Database["public"]["Enums"]["work_type"]
@@ -1661,6 +1727,7 @@ export type Database = {
           client_id: string | null
           created_at: string
           created_by: string
+          external_metadata: Json | null
           id: string
           internal_notes: string | null
           line: string
@@ -1670,6 +1737,7 @@ export type Database = {
           priority: Database["public"]["Enums"]["priority_level"]
           project_id: string
           service_item_id: string | null
+          source: string
           status: Database["public"]["Enums"]["work_order_status"]
           updated_at: string
           work_type: Database["public"]["Enums"]["work_type"]
@@ -1723,6 +1791,7 @@ export type Database = {
           client_id: string | null
           created_at: string
           created_by: string
+          external_metadata: Json | null
           id: string
           internal_notes: string | null
           line: string
@@ -1732,6 +1801,7 @@ export type Database = {
           priority: Database["public"]["Enums"]["priority_level"]
           project_id: string
           service_item_id: string | null
+          source: string
           status: Database["public"]["Enums"]["work_order_status"]
           updated_at: string
           work_type: Database["public"]["Enums"]["work_type"]
@@ -1902,6 +1972,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       document_type: ["plano", "cartas_empalme", "diagrama_routing", "other"],

@@ -86,6 +86,13 @@
     "returned": "Korrektur erforderlich",
     "cancelled": "Storniert"
   },
+  "statusGroup": {
+    "open": "Offen (Erstellt + Zugewiesen)",
+    "inProgress": "In Bearbeitung (Laufend + Ausgeführt + RM ausstehend)",
+    "pendingCert": "Zertifizierung (RM gesendet + Zertifiziert + An Kunden)",
+    "done": "Abgeschlossen (Akzeptiert + Fakturiert + Bezahlt)",
+    "attention": "Achtung (Korrektur + Abgelehnt)"
+  },
   "workType": {
     "soplado": "Soplado",
     "fusion_ap": "Fusión AP",
@@ -196,6 +203,8 @@
     "noWorkType": "Dieses Katalogelement hat keinen zugeordneten Auftragstyp. Bitte ein anderes Element wählen.",
     "fixErrors": "Bitte alle Pflichtfelder ausfüllen (rot markiert).",
     "allStatuses": "Alle Status",
+    "statusGroups": "Gruppen",
+    "individualStatuses": "Einzelstatus",
     "allTeams": "Alle Teams",
     "allTypes": "Alle Typen",
     "allClients": "Alle Kunden",
@@ -430,7 +439,7 @@
       "statOpen": "Offene Aufträge",
       "statInProgress": "In Bearbeitung",
       "statPendingCert": "Zertifizierung ausstehend",
-      "statDone": "Abgeschlossen · Monat",
+      "statDone": "Abgeschlossen",
       "attentionTitle": "Benötigt Aufmerksamkeit",
       "attentionOpen": "{{count}} offen",
       "attentionEmpty": "Keine offenen Meldungen.",

@@ -240,6 +240,7 @@ export interface WorkOrderWithRelations extends WorkOrderRow {
 
 export interface WorkOrderFilters {
   status?: WorkOrderStatus
+  statuses?: WorkOrderStatus[]
   team?: TeamColor
   work_type?: WorkType
   project_id?: string
@@ -329,7 +330,11 @@ export async function fetchWorkOrders(filters: WorkOrderFilters = {}, page = 0, 
     .order('created_at', { ascending: false })
     .range(from, to)
 
-  if (filters.status) query = query.eq('status', filters.status)
+  if (filters.statuses && filters.statuses.length > 0) {
+    query = query.in('status', filters.statuses)
+  } else if (filters.status) {
+    query = query.eq('status', filters.status)
+  }
   if (filters.team) query = query.eq('assigned_team', filters.team)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (filters.work_type) query = query.eq('work_type', filters.work_type as any)

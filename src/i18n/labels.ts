@@ -25,6 +25,15 @@ export const TEAM_COLOR_KEYS: readonly TeamColor[] = ['rot', 'gruen', 'blau', 'g
 
 export const PHOTO_TYPE_KEYS: readonly PhotoType[] = ['before', 'during', 'after'] as const
 
+// Status groups matching the AdminDashboard KPI buckets
+export const STATUS_GROUPS = {
+  open: ['created', 'assigned'] as WorkOrderStatus[],
+  inProgress: ['in_progress', 'executed', 'rueckmeldung_pending'] as WorkOrderStatus[],
+  pendingCert: ['rueckmeldung_sent', 'internally_certified', 'sent_to_client'] as WorkOrderStatus[],
+  done: ['client_accepted', 'invoiced', 'paid'] as WorkOrderStatus[],
+  attention: ['returned', 'client_rejected'] as WorkOrderStatus[],
+} as const
+
 /**
  * React hook: translated labels for enum-like fields.
  * Use inside components. For service/non-React contexts, use the
@@ -41,6 +50,13 @@ export function useLabels() {
     photo:       (p: PhotoType)       => t(`photo.${p}`),
     // Options helpers for dropdowns / filter lists
     statusOptions:   () => STATUS_KEYS.map((v) => ({ value: v, label: t(`status.${v}`) })),
+    statusGroupOptions: () => [
+      { value: 'open',        statuses: STATUS_GROUPS.open,        label: t('statusGroup.open') },
+      { value: 'inProgress',  statuses: STATUS_GROUPS.inProgress,  label: t('statusGroup.inProgress') },
+      { value: 'pendingCert', statuses: STATUS_GROUPS.pendingCert, label: t('statusGroup.pendingCert') },
+      { value: 'done',        statuses: STATUS_GROUPS.done,        label: t('statusGroup.done') },
+      { value: 'attention',   statuses: STATUS_GROUPS.attention,   label: t('statusGroup.attention') },
+    ],
     workTypeOptions: () => WORK_TYPE_KEYS.map((v) => ({ value: v, label: t(`workType.${v}`) })),
     priorityOptions: () => PRIORITY_KEYS.map((v) => ({ value: v, label: t(`priority.${v}`) })),
     teamOptions:     () => TEAM_COLOR_KEYS.map((v) => ({ value: v, label: t(`teamColor.${v}`) })),

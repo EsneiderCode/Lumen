@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { AlertTriangle } from 'lucide-react'
 import { fetchWorkOrders, type WorkOrderWithRelations } from '@/services/workOrderService'
 import type { WorkOrderStatus } from '@/types/enums'
+import { STATUS_GROUPS } from '@/i18n/labels'
 
 interface StatCounts {
   open: number
@@ -11,15 +12,6 @@ interface StatCounts {
   pendingCert: number
   done: number
 }
-
-// Status buckets for the dashboard KPIs
-const OPEN_STATUSES: WorkOrderStatus[] = ['created', 'assigned']
-const IN_PROGRESS_STATUSES: WorkOrderStatus[] = ['in_progress', 'executed', 'rueckmeldung_pending']
-const PENDING_CERT_STATUSES: WorkOrderStatus[] = ['rueckmeldung_sent']
-const DONE_STATUSES: WorkOrderStatus[] = ['client_accepted', 'invoiced', 'paid']
-
-// Attention buckets for the alert feed
-const ATTENTION_STATUSES: WorkOrderStatus[] = ['returned', 'client_rejected']
 
 function timeAgo(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime()
@@ -40,33 +32,28 @@ export function AdminDashboard() {
   useEffect(() => {
     let cancelled = false
     async function load() {
-      const [open, inProg, pend, done, attn] = await Promise.all([
-        ...OPEN_STATUSES.map((s) => fetchWorkOrders({ status: s })),
-        fetchWorkOrders({ status: 'in_progress' }).then(async (r) => {
-          const more = await Promise.all(
-            IN_PROGRESS_STATUSES.slice(1).map((s) => fetchWorkOrders({ status: s })),
-          )
-          return { data: [...r.data, ...more.flatMap((m) => m.data)], total: 0, error: null }
-        }),
-        ...PENDING_CERT_STATUSES.map((s) => fetchWorkOrders({ status: s })),
-        fetchWorkOrders({ status: 'client_accepted' }).then(async (r) => {
-          const more = await Promise.all(
-            DONE_STATUSES.slice(1).map((s) => fetchWorkOrders({ status: s })),
-          )
-          return { data: [...r.data, ...more.flatMap((m) => m.data)], total: 0, error: null }
-        }),
-        Promise.all(ATTENTION_STATUSES.map((s) => fetchWorkOrders({ status: s }))).then((rs) => ({
-          data: rs.flatMap((r) => r.data),
-        })),
+      // Use pageSize=1 to minimise data transfer — we only need the `total` count per status.
+      // Attention feed needs actual records, so fetch up to 10.
+      const countBucket = (statuses: WorkOrderStatus[]) =>
+        Promise.all(statuses.map((s) => fetchWorkOrders({ status: s }, 0, 1)))
+          .then((rs) => rs.reduce((sum, r) => sum + r.total, 0))
+
+      const [openCount, inProgCount, pendCertCount, doneCount, attnData] = await Promise.all([
+        countBucket(STATUS_GROUPS.open),
+        countBucket(STATUS_GROUPS.inProgress),
+        countBucket(STATUS_GROUPS.pendingCert),
+        countBucket(STATUS_GROUPS.done),
+        Promise.all(STATUS_GROUPS.attention.map((s) => fetchWorkOrders({ status: s }, 0, 10)))
+          .then((rs) => rs.flatMap((r) => r.data)),
       ])
       if (cancelled) return
       setCounts({
-        open: open.data.length,
-        inProgress: inProg.data.length,
-        pendingCert: pend.data.length,
-        done: done.data.length,
+        open: openCount,
+        inProgress: inProgCount,
+        pendingCert: pendCertCount,
+        done: doneCount,
       })
-      setAlerts(attn.data.slice(0, 5))
+      setAlerts(attnData.slice(0, 5))
       setIsLoading(false)
     }
     void load()
@@ -74,10 +61,10 @@ export function AdminDashboard() {
   }, [])
 
   const stats = [
-    { label: t('dashboard.admin.statOpen'),         value: counts.open,        color: 'bg-accent' },
-    { label: t('dashboard.admin.statInProgress'),   value: counts.inProgress,  color: 'bg-info' },
-    { label: t('dashboard.admin.statPendingCert'),  value: counts.pendingCert, color: 'bg-warn' },
-    { label: t('dashboard.admin.statDone'),         value: counts.done,        color: 'bg-ok' },
+    { label: t('dashboard.admin.statOpen'),         value: counts.open,        color: 'bg-accent', group: 'open' },
+    { label: t('dashboard.admin.statInProgress'),   value: counts.inProgress,  color: 'bg-info',   group: 'inProgress' },
+    { label: t('dashboard.admin.statPendingCert'),  value: counts.pendingCert, color: 'bg-warn',   group: 'pendingCert' },
+    { label: t('dashboard.admin.statDone'),         value: counts.done,        color: 'bg-ok',     group: 'done' },
   ]
 
   return (
@@ -91,13 +78,17 @@ export function AdminDashboard() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
-          <div key={stat.label} className="nx-kpi-card">
+          <button
+            key={stat.label}
+            onClick={() => navigate(`/admin/orders?statusGroup=${stat.group}`)}
+            className="nx-kpi-card text-left transition-colors hover:bg-bg-2 cursor-pointer"
+          >
             <p className="nx-kpi-label">{stat.label}</p>
             <p className="nx-kpi-value">
               {isLoading ? <span className="text-fg-3">—</span> : stat.value}
             </p>
             <div className={`h-0.5 w-8 rounded-full ${stat.color}`} />
-          </div>
+          </button>
         ))}
       </div>
 

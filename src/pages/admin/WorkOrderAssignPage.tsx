@@ -23,8 +23,12 @@ type AssignableOrder = {
   work_type: string
   address: string | null
   city: string | null
+  assigned_team: string | null
+  assigned_technician: string | null
+  assigned_date: string | null
   clients: { name: string } | null
   projects: { code: string } | null
+  assignedProfile?: { full_name: string } | null
 }
 
 export function WorkOrderAssignPage() {
@@ -151,11 +155,25 @@ export function WorkOrderAssignPage() {
     } else {
       if (order) {
         const teamLabel = TEAMS.find((t) => t.value === selectedTeam)?.label ?? selectedTeam
-        void notifyTaskAssigned(
-          order.order_number,
-          teamLabel,
-          `${window.location.origin}/admin/orders/${id}`,
-        )
+        const techName = selectedPerson?.full_name
+        const prevTeamLabel = order.assigned_team
+          ? TEAMS.find((t) => t.value === order.assigned_team)?.label ?? order.assigned_team
+          : undefined
+        const prevTechName = order.assigned_technician
+          ? technicians.find((t) => t.id === order.assigned_technician)?.full_name
+          : undefined
+        const location = [order.address, order.city].filter(Boolean).join(', ') || undefined
+        void notifyTaskAssigned({
+          orderNumber: order.order_number,
+          teamName: teamLabel,
+          technicianName: techName,
+          previousTeam: prevTeamLabel,
+          previousTechnician: prevTechName,
+          workType: L.workType(order.work_type as WorkType),
+          assignedDate: assignedDate || undefined,
+          address: location,
+          orderUrl: `${window.location.origin}/admin/orders/${id}`,
+        })
       }
       navigate('/admin/orders')
     }
