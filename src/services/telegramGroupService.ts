@@ -8,11 +8,15 @@ export type TelegramEventType =
   | 'order_returned_for_correction'
   | 'task_assigned'
   | 'order_status_changed'
+  | 'order_cancelled'
+  | 'order_deleted'
 
 export const TELEGRAM_EVENT_TYPES: TelegramEventType[] = [
   'order_returned_for_correction',
   'task_assigned',
   'order_status_changed',
+  'order_cancelled',
+  'order_deleted',
 ]
 
 export const TELEGRAM_GROUP_PURPOSES: TelegramGroupPurpose[] = [

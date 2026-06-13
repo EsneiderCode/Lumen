@@ -1822,6 +1822,8 @@ export type Database = {
         | "order_returned_for_correction"
         | "task_assigned"
         | "order_status_changed"
+        | "order_cancelled"
+        | "order_deleted"
       telegram_group_purpose: "tareas" | "alertas" | "notificaciones"
       user_role: "admin" | "technician" | "contractor"
       work_order_status:
@@ -1984,6 +1986,8 @@ export const Constants = {
         "order_returned_for_correction",
         "task_assigned",
         "order_status_changed",
+        "order_cancelled",
+        "order_deleted",
       ],
       telegram_group_purpose: ["tareas", "alertas", "notificaciones"],
       user_role: ["admin", "technician", "contractor"],

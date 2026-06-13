@@ -976,7 +976,9 @@
         "events": {
           "order_returned_for_correction": "Orden devuelta para corrección",
           "task_assigned": "Tarea asignada",
-          "order_status_changed": "Cambio de estado / reasignación / modificación"
+          "order_status_changed": "Cambio de estado / reasignación / modificación",
+          "order_cancelled": "Orden cancelada",
+          "order_deleted": "Orden eliminada"
         }
       }
     }

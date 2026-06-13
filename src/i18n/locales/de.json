@@ -949,7 +949,9 @@
         "events": {
           "order_returned_for_correction": "Auftrag zur Korrektur zurückgegeben",
           "task_assigned": "Aufgabe zugewiesen",
-          "order_status_changed": "Statusänderung / Neuzuweisung / Bearbeitung"
+          "order_status_changed": "Statusänderung / Neuzuweisung / Bearbeitung",
+          "order_cancelled": "Auftrag storniert",
+          "order_deleted": "Auftrag gelöscht"
         }
       }
     }
