@@ -1,6 +1,6 @@
 # Plan 009 — Calendario de ciclo del colaborador externo (hitos administrativos)
 
-**Status:** SPEC v0.2 — unidad y decisiones D1–D7 confirmadas, 2026-06-13. NO implementation yet.
+**Status:** IMPLEMENTED — 2026-06-13, decisiones D1–D7 confirmadas. Migración 029 + UI admin/contractor. PR #19 → EsneiderCode/Lumen:develop.
 **Owner:** Jarl
 **Target users:** Admin (define y publica) · Colaborador externo (ve su calendario)
 **Created:** 2026-06-13

@@ -1,6 +1,6 @@
 # Plan 007 — Perfil "Citas NE3 (DGF)" / Termine scheduler role
 
-**Status:** SPEC v0.2 — central decision confirmed (A) Gestora, 2026-06-13. NO implementation yet.
+**Status:** IMPLEMENTED — 2026-06-13, decision (A) Gestora. Migrations 027/028 + scheduler UI/role. PR #19 → EsneiderCode/Lumen:develop.
 **Owner:** Jarl
 **Target user:** Beatriz Sandoval — `bsandoval@umtelkomd.com`
 **Created:** 2026-06-13
