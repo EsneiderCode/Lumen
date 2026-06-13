@@ -955,5 +955,10 @@
         }
       }
     }
+  },
+  "manual": {
+    "title": "Handbuch",
+    "description": "Rollenspezifisches Benutzerhandbuch als PDF herunterladen oder öffnen.",
+    "open": "Handbuch öffnen"
   }
 }

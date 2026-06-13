@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { ContractorDocumentsPanel } from '@/components/contractor/ContractorDocumentsPanel'
 import { useAuth } from '@/hooks/useAuth'
+import { ManualCard } from '@/components/profile/ManualCard'
 
 export function ContractorDocumentsPage() {
   const { t } = useTranslation()
@@ -16,6 +17,8 @@ export function ContractorDocumentsPage() {
           <p className="nx-label mt-2">{t('contractorDocs.pageSubtitle')}</p>
         </div>
       </div>
+
+      <ManualCard />
 
       <ContractorDocumentsPanel contractorId={user.id} />
     </div>

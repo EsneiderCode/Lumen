@@ -982,5 +982,10 @@
         }
       }
     }
+  },
+  "manual": {
+    "title": "Manual de usuario",
+    "description": "Descargue o abra el manual de usuario correspondiente a su rol en formato PDF.",
+    "open": "Abrir manual"
   }
 }

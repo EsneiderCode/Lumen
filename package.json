@@ -17,7 +17,8 @@
     "preflight": "npm run typecheck && npm run lint && npm test",
     "pre-pr": "npm run preflight && npm run build",
     "feature:start": "bash scripts/start-feature.sh",
-    "feature:check": "bash scripts/check-pr-ready.sh"
+    "feature:check": "bash scripts/check-pr-ready.sh",
+    "manuals:generate": "node scripts/generate-manuals.mjs"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
@@ -53,6 +54,7 @@
     "globals": "^17.4.0",
     "jsdom": "^29.0.2",
     "prettier": "^3.8.1",
+    "qrcode": "1.5.4",
     "sharp": "^0.34.5",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.57.0",

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CheckSquare, KeyRound, Pencil, Plus, Send, Square, Trash2 } from 'lucide-react'
+import { ManualCard } from '@/components/profile/ManualCard'
 import {
   fetchTeamPinStatuses,
   setTeamPin,
@@ -270,6 +271,8 @@ export function SettingsPage() {
           <p className="nx-label mt-2">{t('settings.subtitle')}</p>
         </div>
       </div>
+
+      <ManualCard />
 
       {dataError && (
         <p className="text-sm text-gf-danger">{dataError}</p>

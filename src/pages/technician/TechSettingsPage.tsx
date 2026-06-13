@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Delete } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import { ManualCard } from '@/components/profile/ManualCard'
 
 const NUMPAD_KEYS = ['1','2','3','4','5','6','7','8','9','','0','⌫']
 
@@ -117,6 +118,8 @@ export function TechSettingsPage() {
           <span className="font-mono text-xs text-fg-2">{user?.fullName}</span>
         </div>
       </div>
+
+      <ManualCard />
 
       {success && (
         <div className="rounded-s border border-ok/30 bg-ok/10 px-4 py-3 text-sm text-ok">
