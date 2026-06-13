@@ -43,6 +43,7 @@ import { useLabels } from '@/i18n/labels'
 import { STATUS_COLORS, TEAM_DOT } from '@/constants/styles'
 import { DocumentUploader } from '@/components/ui/DocumentUploader'
 import {
+  notifyOrderCancelled,
   notifyOrderReturnedForCorrection,
   notifyOrderStatusChanged,
 } from '@/services/notificationService'
@@ -310,7 +311,13 @@ export function WorkOrderDetailPage() {
       await refreshLifecycleEvidence(id)
       setModal({ type: null, inputValue: '', categoryValue: '' })
       // Skip 'returned' — notifyOrderReturnedForCorrection is called at the call site
-      if (toStatus !== 'returned')
+      if (toStatus === 'cancelled')
+        void notifyOrderCancelled(
+          order.order_number,
+          notes || undefined,
+          user.email ?? undefined,
+        )
+      else if (toStatus !== 'returned')
         void notifyOrderStatusChanged(
           order.order_number,
           L.status(toStatus),

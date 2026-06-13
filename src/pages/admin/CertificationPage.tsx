@@ -31,6 +31,7 @@ import {
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/hooks/useAuth'
 import type { WorkOrderStatus, TeamColor, UserRole } from '@/types/enums'
+import { useTranslation } from 'react-i18next'
 import { useLabels } from '@/i18n/labels'
 import { TEAM_DOT } from '@/constants/styles'
 import { Alert, Badge, Button, EmptyState, KPI, KPIGrid, Panel } from '@/components/ui/nexus'
@@ -50,33 +51,33 @@ const CERT_STATUSES: WorkOrderStatus[] = [
   'invoiced',
 ]
 
-const SECTIONS: {
+const SECTION_KEYS: {
   status: WorkOrderStatus
-  label: string
-  description: string
+  labelKey: string
+  descKey: string
   bulkAction?: string
 }[] = [
   {
     status: 'rueckmeldung_sent',
-    label: 'Rückmeldung eingegangen',
-    description: 'Warten auf interne Zertifizierung',
+    labelKey: 'certPage.stageRueckmeldungSent',
+    descKey: 'certPage.stageRueckmeldungSentDesc',
     bulkAction: 'certify',
   },
   {
     status: 'internally_certified',
-    label: 'Intern zertifiziert',
-    description: 'Bereit zur Weiterleitung an den Kunden',
+    labelKey: 'certPage.stageInternallyCertified',
+    descKey: 'certPage.stageInternallyCertifiedDesc',
     bulkAction: 'send_to_client',
   },
-  { status: 'sent_to_client', label: 'Beim Kunden', description: 'Warten auf Kundenentscheid' },
-  { status: 'client_rejected', label: 'Abgelehnt', description: 'Zur Überarbeitung zurückgegeben' },
+  { status: 'sent_to_client', labelKey: 'certPage.stageSentToClient', descKey: 'certPage.stageSentToClientDesc' },
+  { status: 'client_rejected', labelKey: 'certPage.stageClientRejected', descKey: 'certPage.stageClientRejectedDesc' },
   {
     status: 'client_accepted',
-    label: 'Akzeptiert',
-    description: 'Bereit zur Fakturierung',
+    labelKey: 'certPage.stageClientAccepted',
+    descKey: 'certPage.stageClientAcceptedDesc',
     bulkAction: 'invoice',
   },
-  { status: 'invoiced', label: 'Fakturiert', description: 'Warten auf Zahlungseingang' },
+  { status: 'invoiced', labelKey: 'certPage.stageInvoiced', descKey: 'certPage.stageInvoicedDesc' },
 ]
 
 const SECTION_TONE: Partial<
@@ -109,6 +110,7 @@ async function downloadWorkbook(workbook: ExcelJS.Workbook, fileName: string) {
 }
 
 export function CertificationPage() {
+  const { t } = useTranslation()
   const L = useLabels()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -390,7 +392,7 @@ export function CertificationPage() {
   const hasSelection = selected.size > 0
 
   const total = orders.length
-  const activeSection = SECTIONS.find((s) => s.status === activeTab) ?? SECTIONS[0]
+  const activeSection = SECTION_KEYS.find((s) => s.status === activeTab) ?? SECTION_KEYS[0]
   const activeItems = byStatus(activeTab)
   const allActiveSelected = activeItems.length > 0 && activeItems.every((o) => selected.has(o.id))
   const totalClient = orders.reduce((sum, order) => sum + (orderTotals[order.id]?.client ?? 0), 0)
@@ -407,9 +409,9 @@ export function CertificationPage() {
     <div className="space-y-5">
       <div className="ph">
         <div>
-          <div className="sub">§ LUMEN · CERTIFICATION PIPELINE</div>
+          <div className="sub">{t('certPage.subtitle')}</div>
           <h1>
-            Certification <em>Control</em>
+            {t('certPage.title')} <em>{t('certPage.titleEm')}</em>
           </h1>
         </div>
         <div className="r">
@@ -417,7 +419,7 @@ export function CertificationPage() {
             disabled={datevDisabled}
             icon={Download}
             onClick={handleDatevExport}
-            title="Fakturierte Aufträge als DATEV-Buchungsstapel exportieren"
+            title={t('certPage.datevTooltip')}
             variant="ghost"
           >
             DATEV
@@ -435,38 +437,38 @@ export function CertificationPage() {
 
       <KPIGrid columns={4}>
         <KPI
-          delta={total === 0 ? 'No active certification load' : `${total} work orders in scope`}
+          delta={total === 0 ? t('certPage.noActiveLoad') : t('certPage.ordersInScope', { count: total })}
           icon={Workflow}
-          label="Pipeline Load"
+          label={t('certPage.pipelineLoad')}
           value={total}
         />
         <KPI
-          delta="Requires admin approval"
+          delta={t('certPage.requiresApproval')}
           icon={ShieldCheck}
-          label="Internal Queue"
+          label={t('certPage.internalQueue')}
           tone="warn"
           value={byStatus('rueckmeldung_sent').length}
         />
         <KPI
-          delta={`${byStatus('client_accepted').length} ready for billing`}
+          delta={t('certPage.readyForBilling', { count: byStatus('client_accepted').length })}
           icon={Clock3}
-          label="Client Accepted"
+          label={t('certPage.clientAccepted')}
           tone="accent"
           value={byStatus('client_accepted').length}
         />
         <KPI
-          delta={`External payable ${fmtMoney(totalExternal)}`}
+          delta={t('certPage.externalPayable', { amount: fmtMoney(totalExternal) })}
           icon={Euro}
-          label="Client Volume"
+          label={t('certPage.clientVolume')}
           value={fmtMoney(totalClient)}
         />
       </KPIGrid>
 
       <div className="nx-cert-console">
         <div className="space-y-4">
-          <Panel title="Pipeline" meta="Status queue · click to focus" padding="sm">
+          <Panel title={t('certPage.pipeline')} meta={t('certPage.pipelineMeta')} padding="sm">
             <div className="nx-cert-pipeline">
-              {SECTIONS.map(({ status, label, description }) => {
+              {SECTION_KEYS.map(({ status, labelKey, descKey }) => {
                 const count = byStatus(status).length
                 const active = activeTab === status
                 return (
@@ -479,10 +481,10 @@ export function CertificationPage() {
                     type="button"
                   >
                     <span className="nx-cert-stage-top">
-                      <span className="nx-cert-stage-label">{label}</span>
+                      <span className="nx-cert-stage-label">{t(labelKey)}</span>
                       <span className="nx-cert-stage-count">{count}</span>
                     </span>
-                    <span className="nx-cert-stage-desc">{description}</span>
+                    <span className="nx-cert-stage-desc">{t(descKey)}</span>
                   </button>
                 )
               })}
@@ -496,7 +498,7 @@ export function CertificationPage() {
                 Filter
               </span>
             }
-            meta="Team · project · collaborator · date"
+            meta={t('certPage.filterMeta')}
           >
             <div className="nx-filter-grid">
               <div className="input">
@@ -505,18 +507,17 @@ export function CertificationPage() {
                   value={filterTeam}
                   onChange={(e) => setFilterTeam(e.target.value as TeamColor | '')}
                 >
-                  <option value="">Alle Teams</option>
-                  <option value="rot">Rot</option>
-                  <option value="gruen">Grün</option>
-                  <option value="blau">Blau</option>
-                  <option value="gelb">Gelb</option>
+                  <option value="">{t('certPage.allTeams')}</option>
+                  {L.teamOptions().map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
                 </select>
               </div>
 
               <div className="input">
-                <label>Projekt</label>
+                <label>{t('certPage.project')}</label>
                 <select value={filterProject} onChange={(e) => setFilterProject(e.target.value)}>
-                  <option value="">Alle Projekte</option>
+                  <option value="">{t('certPage.allProjects')}</option>
                   {projects.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.code} - {p.name}
@@ -526,19 +527,19 @@ export function CertificationPage() {
               </div>
 
               <div className="input">
-                <label>Mitarbeiter</label>
+                <label>{t('certPage.collaborator')}</label>
                 <select
                   value={filterCollab}
                   onChange={(e) => setFilterCollab(e.target.value as '' | CollaboratorType)}
                 >
-                  <option value="">Alle Mitarbeiter</option>
-                  <option value="internal">Intern</option>
-                  <option value="external">Extern</option>
+                  <option value="">{t('certPage.allCollaborators')}</option>
+                  <option value="internal">{t('certPage.internal')}</option>
+                  <option value="external">{t('certPage.external')}</option>
                 </select>
               </div>
 
               <div className="input">
-                <label>Von</label>
+                <label>{t('certPage.from')}</label>
                 <input
                   type="date"
                   value={filterDateFrom}
@@ -547,7 +548,7 @@ export function CertificationPage() {
               </div>
 
               <div className="input">
-                <label>Bis</label>
+                <label>{t('certPage.to')}</label>
                 <input
                   type="date"
                   value={filterDateTo}
@@ -566,7 +567,7 @@ export function CertificationPage() {
                   }}
                   variant="danger"
                 >
-                  Filter löschen
+                  {t('certPage.clearFilters')}
                 </Button>
               )}
             </div>
@@ -587,7 +588,7 @@ export function CertificationPage() {
                       size="sm"
                       variant="secondary"
                     >
-                      Intern zertifizieren ({selectedCertifiable})
+                      {t('certPage.certifyInternally', { count: selectedCertifiable })}
                     </Button>
                   )}
                   {selectedSendable > 0 && (
@@ -599,7 +600,7 @@ export function CertificationPage() {
                       size="sm"
                       variant="primary"
                     >
-                      An Kunden senden ({selectedSendable})
+                      {t('certPage.sendToClient', { count: selectedSendable })}
                     </Button>
                   )}
                   {selectedInvoiceable > 0 && (
@@ -610,24 +611,24 @@ export function CertificationPage() {
                       size="sm"
                       variant="secondary"
                     >
-                      Fakturieren ({selectedInvoiceable})
+                      {t('certPage.invoiceAction', { count: selectedInvoiceable })}
                     </Button>
                   )}
                   <Button onClick={() => setSelected(new Set())} size="sm" variant="ghost">
-                    Auswahl aufheben
+                    {t('certPage.clearSelection')}
                   </Button>
                 </>
               }
-              title={`${selected.size} ausgewählt`}
+              title={t('certPage.selected', { count: selected.size })}
               tone="info"
             >
-              Bulk actions affect only compatible status lanes.
+              {t('certPage.bulkHint')}
             </Alert>
           )}
 
           {bulkResult && (
             <Alert
-              title={`Bulk result: ${bulkResult.succeeded} succeeded, ${bulkResult.failed} failed, ${bulkResult.skipped} skipped`}
+              title={t('certPage.bulkResult', { succeeded: bulkResult.succeeded, failed: bulkResult.failed, skipped: bulkResult.skipped })}
               tone={bulkResult.failed > 0 || bulkResult.skipped > 0 ? 'warn' : 'ok'}
             >
               <div className="mt-2 max-h-40 overflow-auto border border-line">
@@ -671,8 +672,8 @@ export function CertificationPage() {
             </Panel>
           ) : total === 0 ? (
             <EmptyState
-              description="Keine Aufträge im Zertifizierungsprozess für die aktuelle Filterkombination."
-              title="Certification queue empty"
+              description={t('certPage.emptyDescription')}
+              title={t('certPage.emptyTitle')}
             />
           ) : (
             <Panel
@@ -685,15 +686,15 @@ export function CertificationPage() {
                       onChange={() => toggleSection(activeTab)}
                       type="checkbox"
                     />
-                    <span className="nx-toggle-label">Select lane</span>
+                    <span className="nx-toggle-label">{t('certPage.selectLane')}</span>
                   </label>
                 ) : null
               }
-              meta={`${activeItems.length} items · ${fmtMoney(activeItems.reduce((sum, order) => sum + (orderTotals[order.id]?.client ?? 0), 0))}`}
+              meta={`${t('certPage.items', { count: activeItems.length })} · ${fmtMoney(activeItems.reduce((sum, order) => sum + (orderTotals[order.id]?.client ?? 0), 0))}`}
               padding="sm"
               title={
                 <span className="inline-flex items-center gap-2">
-                  {activeSection.label}
+                  {t(activeSection.labelKey)}
                   <Badge tone={SECTION_TONE[activeTab] ?? 'neutral'}>
                     {L.status(activeTab) || activeTab}
                   </Badge>
@@ -702,8 +703,8 @@ export function CertificationPage() {
             >
               {activeItems.length === 0 ? (
                 <EmptyState
-                  description="Keine Aufträge in diesem Status. Wechsel die Pipeline-Lane oder passe die Filter an."
-                  title={activeSection.label}
+                  description={t('certPage.emptyLaneDescription')}
+                  title={t(activeSection.labelKey)}
                 />
               ) : (
                 <div className="nx-cert-rows">
@@ -726,15 +727,15 @@ export function CertificationPage() {
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="nx-cert-row-title">{order.order_number}</span>
                             <Badge tone="neutral">{L.workType(order.work_type)}</Badge>
-                            {isDirect ? <Badge tone="info">Direkt</Badge> : null}
-                            {isExternal ? <Badge tone="accent">Extern</Badge> : null}
+                            {isDirect ? <Badge tone="info">{t('certPage.direct')}</Badge> : null}
+                            {isExternal ? <Badge tone="accent">{t('certPage.external')}</Badge> : null}
                           </div>
                           <div className="nx-cert-row-meta">
                             <span>
-                              {order.clients?.name ?? (isDirect ? 'direkt' : 'client missing')}
+                              {order.clients?.name ?? (isDirect ? t('certPage.direct') : t('certPage.clientMissing'))}
                             </span>
                             <span>·</span>
-                            <span>{order.projects?.code ?? 'project missing'}</span>
+                            <span>{order.projects?.code ?? t('certPage.projectMissing')}</span>
                             {order.assigned_team ? (
                               <>
                                 <span>·</span>
@@ -750,7 +751,7 @@ export function CertificationPage() {
                         </div>
 
                         <div>
-                          <span className="nx-cert-cell-label">Date</span>
+                          <span className="nx-cert-cell-label">{t('certPage.date')}</span>
                           <span className="nx-cert-cell-value">
                             {order.assigned_date
                               ? new Date(order.assigned_date).toLocaleDateString('de-DE')
@@ -759,7 +760,7 @@ export function CertificationPage() {
                         </div>
 
                         <div>
-                          <span className="nx-cert-cell-label">Client</span>
+                          <span className="nx-cert-cell-label">{t('certPage.client')}</span>
                           <span className="nx-cert-cell-value">
                             {totals.client > 0 ? fmtMoney(totals.client) : '—'}
                           </span>
@@ -767,7 +768,7 @@ export function CertificationPage() {
 
                         <div>
                           <span className="nx-cert-cell-label">
-                            {isExternal ? 'Ext / Margin' : 'Internal'}
+                            {isExternal ? t('certPage.extMargin') : t('certPage.internalLabel')}
                           </span>
                           <span className="nx-cert-cell-value">
                             {isExternal && totals.external > 0
@@ -782,7 +783,7 @@ export function CertificationPage() {
                           size="sm"
                           variant="ghost"
                         >
-                          Öffnen
+                          {t('certPage.open')}
                         </Button>
                       </div>
                     )
@@ -805,19 +806,19 @@ export function CertificationPage() {
           <div className="modal-card compact">
             <div className="phead">
               <div>
-                <div className="title">Sammel-Fakturierung</div>
-                <div className="m">{selectedInvoiceable} Aufträge · Pflichtfeld</div>
+                <div className="title">{t('certPage.bulkInvoiceTitle')}</div>
+                <div className="m">{t('certPage.bulkInvoiceMeta', { count: selectedInvoiceable })}</div>
               </div>
             </div>
             <div className="pbody space-y-5">
               <div className="input">
-                <label>Rechnungsnummer</label>
+                <label>{t('certPage.invoiceNumber')}</label>
                 <input
                   autoFocus
                   onChange={(e) =>
                     setBulkInvoiceModal((m) => ({ ...m, invoiceNumber: e.target.value }))
                   }
-                  placeholder="z.B. RE-2026-0042"
+                  placeholder={t('certPage.invoicePlaceholder')}
                   type="text"
                   value={bulkInvoiceModal.invoiceNumber}
                 />
@@ -827,7 +828,7 @@ export function CertificationPage() {
                   onClick={() => setBulkInvoiceModal({ open: false, invoiceNumber: '' })}
                   variant="ghost"
                 >
-                  Abbrechen
+                  {t('common.cancel')}
                 </Button>
                 <Button
                   disabled={!bulkInvoiceModal.invoiceNumber.trim() || isBulkWorking}
@@ -835,7 +836,7 @@ export function CertificationPage() {
                   onClick={() => void handleBulkInvoice()}
                   variant="primary"
                 >
-                  Fakturieren
+                  {t('certPage.invoiceAction', { count: selectedInvoiceable })}
                 </Button>
               </div>
             </div>

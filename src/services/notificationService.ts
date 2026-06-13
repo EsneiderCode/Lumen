@@ -87,3 +87,20 @@ export async function notifyOrderStatusChanged(
     ...(reason ? { reason } : {}),
   })
 }
+
+/**
+ * Notifies configured groups that a work order has been cancelled.
+ * Triggered after a successful transition to `cancelled`.
+ */
+export async function notifyOrderCancelled(
+  orderNumber: string,
+  reason?: string,
+  adminName?: string,
+): Promise<void> {
+  await sendTelegram({
+    type: 'order_cancelled',
+    orderNumber,
+    ...(reason ? { reason } : {}),
+    ...(adminName ? { adminName } : {}),
+  })
+}
