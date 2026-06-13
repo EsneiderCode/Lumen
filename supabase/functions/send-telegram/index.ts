@@ -20,6 +20,7 @@ type TelegramEventType =
   | 'task_assigned'
   | 'order_status_changed'
   | 'order_cancelled'
+  | 'order_deleted'
 
 interface TelegramBody {
   /** Special action — not a notification send */
@@ -226,6 +227,15 @@ function buildMessage(body: TelegramBody): string | null {
         `🔖 OS: <b>${esc(orderNumber)}</b>\n` +
         `👤 Cancelada${who}` +
         reasonLine
+      )
+    }
+
+    case 'order_deleted': {
+      if (!orderNumber) return null
+      return (
+        `🗑️ <b>Orden eliminada</b>\n\n` +
+        `🔖 OS: <b>${esc(orderNumber)}</b>\n` +
+        `👤 Eliminada${who}`
       )
     }
 

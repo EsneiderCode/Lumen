@@ -13,11 +13,14 @@ import type { WorkOrderStatus, WorkType, TeamColor } from '@/types/enums'
 import { useLabels, STATUS_GROUPS } from '@/i18n/labels'
 import { useTranslation } from 'react-i18next'
 import { STATUS_COLORS, TEAM_DOT, PRIORITY_COLORS } from '@/constants/styles'
+import { useAuth } from '@/hooks/useAuth'
+import { notifyOrderDeleted } from '@/services/notificationService'
 
 const PAGE_SIZE = 25
 
 export function WorkOrdersPage() {
   const { t } = useTranslation()
+  const { user } = useAuth()
   const L = useLabels()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -72,11 +75,13 @@ export function WorkOrdersPage() {
   }, [])
 
   async function handleDelete(id: string) {
+    const orderNumber = orders.find((o) => o.id === id)?.order_number
     const { error } = await deleteWorkOrder(id)
     if (error) {
       setError(error)
     } else {
       setOrders((prev) => prev.filter((o) => o.id !== id))
+      if (orderNumber) void notifyOrderDeleted(orderNumber, user?.email ?? undefined)
     }
     setDeleteId(null)
   }
