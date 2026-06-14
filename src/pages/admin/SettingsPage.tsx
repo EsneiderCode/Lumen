@@ -275,23 +275,23 @@ export function SettingsPage() {
       <ManualCard />
 
       {dataError && (
-        <p className="text-sm text-gf-danger">{dataError}</p>
+        <p className="text-sm text-err">{dataError}</p>
       )}
 
       {/* ════════════════════════════════════════════════════════════════════
           Section 1 — Telegram groups CRUD
       ═══════════════════════════════════════════════════════════════════════ */}
-      <div className="rounded-gf-card border border-gf-border bg-gf-card">
+      <div className="rounded-l border border-line bg-bg-1">
         {/* Card header */}
-        <div className="flex items-center justify-between border-b border-gf-border px-5 py-4">
+        <div className="flex items-center justify-between border-b border-line px-5 py-4">
           <div>
-            <h3 className="text-sm font-medium text-gf-text">{t('settings.telegram.groups.title')}</h3>
-            <p className="mt-0.5 text-xs text-gf-text-muted">{t('settings.telegram.subtitle')}</p>
+            <h3 className="text-sm font-medium text-fg-1">{t('settings.telegram.groups.title')}</h3>
+            <p className="mt-0.5 text-xs text-fg-2">{t('settings.telegram.subtitle')}</p>
           </div>
           {!formOpen && (
             <button
               onClick={openAdd}
-              className="flex items-center gap-1.5 rounded-gf-btn border border-gf-border bg-transparent px-3 py-1.5 text-xs text-gf-text transition-colors duration-150 hover:border-gf-primary hover:text-gf-primary"
+              className="flex items-center gap-1.5 rounded-s border border-line bg-transparent px-3 py-1.5 text-xs text-fg-1 transition-colors duration-150 hover:border-accent hover:text-accent"
             >
               <Plus size={13} strokeWidth={1.5} />
               {t('settings.telegram.groups.add')}
@@ -301,8 +301,8 @@ export function SettingsPage() {
 
         {/* ── Inline form ── */}
         {formOpen && (
-          <div className="border-b border-gf-border bg-gf-base-light px-5 py-4">
-            <p className="mb-4 text-xs font-medium text-gf-text-muted">
+          <div className="border-b border-line bg-bg-2 px-5 py-4">
+            <p className="mb-4 text-xs font-medium text-fg-2">
               {isEditing ? t('settings.telegram.groups.edit') : t('settings.telegram.groups.add')}
             </p>
 
@@ -312,7 +312,7 @@ export function SettingsPage() {
                 <label className="nx-label mb-1.5 block">{t('settings.telegram.groups.chatId')}</label>
                 <div className="flex gap-2">
                   <input
-                    className="nx-input flex-1"
+                    className="flex-1 rounded-s border border-line-s bg-bg-2 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                     value={form.chat_id}
                     onChange={(e) => setField('chat_id', e.target.value)}
                     placeholder={t('settings.telegram.groups.chatIdPlaceholder')}
@@ -321,7 +321,7 @@ export function SettingsPage() {
                   <button
                     onClick={handleValidate}
                     disabled={!form.chat_id.trim() || validation.status === 'loading'}
-                    className="flex items-center gap-1.5 rounded-gf-btn border border-gf-border px-3 py-1.5 text-xs text-gf-text-muted transition-colors duration-150 hover:border-gf-primary hover:text-gf-primary disabled:opacity-40"
+                    className="flex items-center gap-1.5 rounded-s border border-line px-3 py-1.5 text-xs text-fg-2 transition-colors duration-150 hover:border-accent hover:text-accent disabled:opacity-40"
                   >
                     <Send size={12} strokeWidth={1.5} />
                     {validation.status === 'loading'
@@ -330,12 +330,12 @@ export function SettingsPage() {
                   </button>
                 </div>
                 {validation.status === 'ok' && (
-                  <p className="mt-1 text-xs text-gf-success">
+                  <p className="mt-1 text-xs text-ok">
                     {t('settings.telegram.groups.validOk', { title: validation.title })}
                   </p>
                 )}
                 {validation.status === 'error' && (
-                  <p className="mt-1 text-xs text-gf-danger">{t('settings.telegram.groups.validFail')}</p>
+                  <p className="mt-1 text-xs text-err">{t('settings.telegram.groups.validFail')}</p>
                 )}
               </div>
 
@@ -343,7 +343,7 @@ export function SettingsPage() {
               <div>
                 <label className="nx-label mb-1.5 block">{t('settings.telegram.groups.name')}</label>
                 <input
-                  className="nx-input w-full"
+                  className="w-full rounded-s border border-line-s bg-bg-2 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                   value={form.name}
                   onChange={(e) => setField('name', e.target.value)}
                   placeholder={t('settings.telegram.groups.namePlaceholder')}
@@ -354,7 +354,7 @@ export function SettingsPage() {
               <div>
                 <label className="nx-label mb-1.5 block">{t('settings.telegram.groups.purpose')}</label>
                 <select
-                  className="nx-input w-full"
+                  className="w-full rounded-s border border-line-s bg-bg-2 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                   value={form.purpose}
                   onChange={(e) => setField('purpose', e.target.value as TelegramGroupPurpose)}
                 >
@@ -372,16 +372,16 @@ export function SettingsPage() {
                 <button
                   onClick={() => setField('is_active', !form.is_active)}
                   className={`relative h-5 w-9 rounded-full transition-colors duration-150 ${
-                    form.is_active ? 'bg-gf-success' : 'bg-gf-border'
+                    form.is_active ? 'bg-ok' : 'bg-line'
                   }`}
                 >
                   <span
-                    className={`absolute top-0.5 h-4 w-4 rounded-full bg-gf-text transition-transform duration-150 ${
+                    className={`absolute top-0.5 h-4 w-4 rounded-full bg-fg-1 transition-transform duration-150 ${
                       form.is_active ? 'translate-x-4' : 'translate-x-0.5'
                     }`}
                   />
                 </button>
-                <span className="text-xs text-gf-text-muted">
+                <span className="text-xs text-fg-2">
                   {form.is_active
                     ? t('settings.telegram.groups.active')
                     : t('settings.telegram.groups.inactive')}
@@ -389,21 +389,21 @@ export function SettingsPage() {
               </div>
             </div>
 
-            {saveError && <p className="mt-3 text-xs text-gf-danger">{saveError}</p>}
+            {saveError && <p className="mt-3 text-xs text-err">{saveError}</p>}
 
             {/* Form actions */}
             <div className="mt-4 flex gap-2">
               <button
                 onClick={handleSave}
                 disabled={saving || !form.chat_id.trim() || !form.name.trim()}
-                className="rounded-gf-btn bg-gf-primary px-4 py-1.5 text-xs font-medium text-gf-base transition-opacity duration-150 hover:opacity-80 disabled:opacity-40"
+                className="rounded-s bg-accent px-4 py-1.5 text-xs font-medium text-bg-0 transition-opacity duration-150 hover:opacity-80 disabled:opacity-40"
               >
                 {saving ? t('common.saving') : t('common.save')}
               </button>
               <button
                 onClick={closeForm}
                 disabled={saving}
-                className="rounded-gf-btn border border-gf-border px-4 py-1.5 text-xs text-gf-text-muted transition-colors duration-150 hover:text-gf-text"
+                className="rounded-s border border-line px-4 py-1.5 text-xs text-fg-2 transition-colors duration-150 hover:text-fg-1"
               >
                 {t('common.cancel')}
               </button>
@@ -413,13 +413,13 @@ export function SettingsPage() {
 
         {/* ── Groups table ── */}
         {loadingData ? (
-          <p className="px-5 py-8 text-xs text-gf-text-muted">[{t('common.loading')}]</p>
+          <p className="px-5 py-8 text-xs text-fg-2">[{t('common.loading')}]</p>
         ) : groups.length === 0 ? (
-          <p className="px-5 py-8 text-xs text-gf-text-muted">{t('settings.telegram.groups.empty')}</p>
+          <p className="px-5 py-8 text-xs text-fg-2">{t('settings.telegram.groups.empty')}</p>
         ) : (
           <table className="w-full text-xs">
             <thead>
-              <tr className="border-b border-gf-border text-left text-gf-text-muted">
+              <tr className="border-b border-line text-left text-fg-2">
                 <th className="px-5 py-2.5 font-mono font-normal">Chat ID</th>
                 <th className="px-3 py-2.5 font-mono font-normal">{t('settings.telegram.groups.name')}</th>
                 <th className="px-3 py-2.5 font-mono font-normal">{t('settings.telegram.groups.purpose')}</th>
@@ -429,18 +429,18 @@ export function SettingsPage() {
             </thead>
             <tbody>
               {groups.map((g) => (
-                <tr key={g.id} className="border-b border-gf-border last:border-0">
-                  <td className="px-5 py-3 font-mono text-gf-text-muted">{g.chat_id}</td>
-                  <td className="px-3 py-3 text-gf-text">{g.name}</td>
+                <tr key={g.id} className="border-b border-line last:border-0">
+                  <td className="px-5 py-3 font-mono text-fg-2">{g.chat_id}</td>
+                  <td className="px-3 py-3 text-fg-1">{g.name}</td>
                   <td className="px-3 py-3">
-                    <span className="rounded-full border border-gf-border px-2 py-0.5 text-gf-text-muted">
+                    <span className="rounded-full border border-line px-2 py-0.5 text-fg-2">
                       {t(`settings.telegram.groups.purposes.${g.purpose}`)}
                     </span>
                   </td>
                   <td className="px-3 py-3">
                     <span
                       className={`font-mono text-xs ${
-                        g.is_active ? 'text-gf-success' : 'text-gf-text-muted'
+                        g.is_active ? 'text-ok' : 'text-fg-2'
                       }`}
                     >
                       {g.is_active
@@ -452,7 +452,7 @@ export function SettingsPage() {
                     <div className="flex items-center justify-end gap-2">
                       <button
                         onClick={() => openEdit(g)}
-                        className="text-gf-text-muted transition-colors duration-150 hover:text-gf-text"
+                        className="text-fg-2 transition-colors duration-150 hover:text-fg-1"
                         title={t('common.edit')}
                       >
                         <Pencil size={13} strokeWidth={1.5} />
@@ -460,7 +460,7 @@ export function SettingsPage() {
                       <button
                         onClick={() => handleDelete(g.id)}
                         disabled={deletingId === g.id}
-                        className="text-gf-text-muted transition-colors duration-150 hover:text-gf-danger disabled:opacity-40"
+                        className="text-fg-2 transition-colors duration-150 hover:text-err disabled:opacity-40"
                         title={t('common.delete')}
                       >
                         <Trash2 size={13} strokeWidth={1.5} />
@@ -477,38 +477,38 @@ export function SettingsPage() {
       {/* ════════════════════════════════════════════════════════════════════
           Section 2 — Event → Group mappings
       ═══════════════════════════════════════════════════════════════════════ */}
-      <div className="rounded-gf-card border border-gf-border bg-gf-card">
-        <div className="border-b border-gf-border px-5 py-4">
-          <h3 className="text-sm font-medium text-gf-text">{t('settings.telegram.mappings.title')}</h3>
-          <p className="mt-0.5 text-xs text-gf-text-muted">{t('settings.telegram.mappings.subtitle')}</p>
+      <div className="rounded-l border border-line bg-bg-1">
+        <div className="border-b border-line px-5 py-4">
+          <h3 className="text-sm font-medium text-fg-1">{t('settings.telegram.mappings.title')}</h3>
+          <p className="mt-0.5 text-xs text-fg-2">{t('settings.telegram.mappings.subtitle')}</p>
         </div>
 
         {loadingData ? (
-          <p className="px-5 py-8 text-xs text-gf-text-muted">[{t('common.loading')}]</p>
+          <p className="px-5 py-8 text-xs text-fg-2">[{t('common.loading')}]</p>
         ) : groups.length === 0 ? (
-          <p className="px-5 py-8 text-xs text-gf-text-muted">{t('settings.telegram.mappings.noGroups')}</p>
+          <p className="px-5 py-8 text-xs text-fg-2">{t('settings.telegram.mappings.noGroups')}</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
-                <tr className="border-b border-gf-border text-left">
-                  <th className="px-5 py-2.5 font-mono font-normal text-gf-text-muted">
+                <tr className="border-b border-line text-left">
+                  <th className="px-5 py-2.5 font-mono font-normal text-fg-2">
                     {t('settings.telegram.mappings.eventLabel')}
                   </th>
                   {groups.map((g) => (
                     <th
                       key={g.id}
-                      className="px-3 py-2.5 text-center font-mono font-normal text-gf-text-muted"
+                      className="px-3 py-2.5 text-center font-mono font-normal text-fg-2"
                     >
                       <span
                         className={`block max-w-[110px] truncate ${
-                          g.is_active ? 'text-gf-text' : 'text-gf-text-placeholder line-through'
+                          g.is_active ? 'text-fg-1' : 'text-fg-3 line-through'
                         }`}
                         title={g.name}
                       >
                         {g.name}
                       </span>
-                      <span className="mt-0.5 block text-gf-text-placeholder">
+                      <span className="mt-0.5 block text-fg-3">
                         {t(`settings.telegram.groups.purposes.${g.purpose}`)}
                       </span>
                     </th>
@@ -517,8 +517,8 @@ export function SettingsPage() {
               </thead>
               <tbody>
                 {TELEGRAM_EVENT_TYPES.map((eventType) => (
-                  <tr key={eventType} className="border-b border-gf-border last:border-0">
-                    <td className="px-5 py-3 text-gf-text">
+                  <tr key={eventType} className="border-b border-line last:border-0">
+                    <td className="px-5 py-3 text-fg-1">
                       {t(`settings.telegram.mappings.events.${eventType}`)}
                     </td>
                     {groups.map((g) => {
@@ -535,7 +535,7 @@ export function SettingsPage() {
                             onClick={() => handleToggleMapping(eventType, g.id)}
                             disabled={togglingKey === key || !g.is_active}
                             className={`transition-colors duration-150 disabled:opacity-40 ${
-                              active ? 'text-gf-primary' : 'text-gf-border hover:text-gf-text-muted'
+                              active ? 'text-accent' : 'text-line hover:text-fg-2'
                             }`}
                             title={g.name}
                           >
@@ -558,13 +558,13 @@ export function SettingsPage() {
       {/* ════════════════════════════════════════════════════════════════════
           Section 3 — Team PINs
       ═══════════════════════════════════════════════════════════════════════ */}
-      <div className="rounded-gf-card border border-gf-border bg-gf-card">
-        <div className="border-b border-gf-border px-5 py-4">
+      <div className="rounded-l border border-line bg-bg-1">
+        <div className="border-b border-line px-5 py-4">
           <div className="flex items-center gap-2">
-            <KeyRound size={14} strokeWidth={1.5} className="text-gf-text-muted" />
-            <h3 className="text-sm font-medium text-gf-text">Team-PINs</h3>
+            <KeyRound size={14} strokeWidth={1.5} className="text-fg-2" />
+            <h3 className="text-sm font-medium text-fg-1">Team-PINs</h3>
           </div>
-          <p className="mt-0.5 text-xs text-gf-text-muted">
+          <p className="mt-0.5 text-xs text-fg-2">
             6-stellige PIN pro Equipo. Techniker und Subcontratas nutzen sie beim Einloggen.
           </p>
         </div>
@@ -574,23 +574,23 @@ export function SettingsPage() {
           const isEditing = editingTeam === color
 
           return (
-            <div key={color} className="border-b border-gf-border last:border-0">
+            <div key={color} className="border-b border-line last:border-0">
               {/* Row */}
               <div className="flex items-center justify-between px-5 py-3">
                 <div className="flex items-center gap-3">
                   <span className={`h-2.5 w-2.5 rounded-full ${dot}`} />
-                  <span className="font-sans text-sm text-gf-text">{label}</span>
+                  <span className="font-sans text-sm text-fg-1">{label}</span>
                   {status?.has_pin ? (
-                    <span className="rounded-full border border-gf-success/40 bg-gf-success/10 px-2 py-0.5 font-mono text-xs text-gf-success">
+                    <span className="rounded-full border border-ok/40 bg-ok/10 px-2 py-0.5 font-mono text-xs text-ok">
                       PIN gesetzt
                     </span>
                   ) : (
-                    <span className="rounded-full border border-gf-border px-2 py-0.5 font-mono text-xs text-gf-text-muted">
+                    <span className="rounded-full border border-line px-2 py-0.5 font-mono text-xs text-fg-2">
                       Kein PIN
                     </span>
                   )}
                   {status?.updated_at && (
-                    <span className="font-mono text-xs text-gf-text-placeholder">
+                    <span className="font-mono text-xs text-fg-3">
                       {new Date(status.updated_at).toLocaleDateString('de-DE')}
                     </span>
                   )}
@@ -598,7 +598,7 @@ export function SettingsPage() {
                 {!isEditing && (
                   <button
                     onClick={() => openPinEdit(color)}
-                    className="flex items-center gap-1.5 rounded-gf-btn border border-gf-border px-3 py-1.5 text-xs text-gf-text-muted transition-colors hover:border-gf-primary hover:text-gf-primary"
+                    className="flex items-center gap-1.5 rounded-s border border-line px-3 py-1.5 text-xs text-fg-2 transition-colors hover:border-accent hover:text-accent"
                   >
                     <Pencil size={12} strokeWidth={1.5} />
                     {status?.has_pin ? 'Ändern' : 'Setzen'}
@@ -608,13 +608,13 @@ export function SettingsPage() {
 
               {/* Inline PIN form */}
               {isEditing && (
-                <div className="border-t border-gf-border bg-gf-base-light px-5 py-4">
+                <div className="border-t border-line bg-bg-2 px-5 py-4">
                   {pinError && (
-                    <p className="mb-3 text-xs text-gf-danger">{pinError}</p>
+                    <p className="mb-3 text-xs text-err">{pinError}</p>
                   )}
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div>
-                      <label className="mb-1.5 block font-mono text-xs text-gf-text-muted">NEUE PIN (6 Ziffern)</label>
+                      <label className="mb-1.5 block font-mono text-xs text-fg-2">NEUE PIN (6 Ziffern)</label>
                       <div className="relative">
                         <input
                           type="password"
@@ -623,13 +623,13 @@ export function SettingsPage() {
                           maxLength={6}
                           value={newPin}
                           onChange={(e) => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                          className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-center font-mono text-base tracking-[0.4em] text-gf-text focus:border-gf-primary focus:outline-none"
+                          className="w-full rounded-s border border-line bg-bg-2 px-3 py-2 text-center font-mono text-base tracking-[0.4em] text-fg-1 focus:border-accent focus:outline-none"
                           placeholder="••••••"
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="mb-1.5 block font-mono text-xs text-gf-text-muted">BESTÄTIGEN</label>
+                      <label className="mb-1.5 block font-mono text-xs text-fg-2">BESTÄTIGEN</label>
                       <input
                         type="password"
                         inputMode="numeric"
@@ -637,7 +637,7 @@ export function SettingsPage() {
                         maxLength={6}
                         value={confirmPin}
                         onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                        className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 text-center font-mono text-base tracking-[0.4em] text-gf-text focus:border-gf-primary focus:outline-none"
+                        className="w-full rounded-s border border-line bg-bg-2 px-3 py-2 text-center font-mono text-base tracking-[0.4em] text-fg-1 focus:border-accent focus:outline-none"
                         placeholder="••••••"
                       />
                     </div>
@@ -646,14 +646,14 @@ export function SettingsPage() {
                     <button
                       onClick={handleSavePin}
                       disabled={pinSaving || newPin.length !== 6 || confirmPin.length !== 6}
-                      className="rounded-gf-btn bg-gf-primary px-4 py-1.5 text-xs font-medium text-gf-base transition-opacity hover:opacity-80 disabled:opacity-40"
+                      className="rounded-s bg-accent px-4 py-1.5 text-xs font-medium text-bg-0 transition-opacity hover:opacity-80 disabled:opacity-40"
                     >
                       {pinSaving ? 'Speichern…' : 'Speichern'}
                     </button>
                     <button
                       onClick={closePinEdit}
                       disabled={pinSaving}
-                      className="rounded-gf-btn border border-gf-border px-4 py-1.5 text-xs text-gf-text-muted transition-colors hover:text-gf-text"
+                      className="rounded-s border border-line px-4 py-1.5 text-xs text-fg-2 transition-colors hover:text-fg-1"
                     >
                       Abbrechen
                     </button>

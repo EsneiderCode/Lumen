@@ -37,9 +37,9 @@ const EMPTY_FORM: EmployeePayload = {
 
 function TeamChip({ team }: { team: TeamColorType | null }) {
   const { t } = useTranslation()
-  if (!team) return <span className="font-mono text-xs text-gf-text-muted">—</span>
+  if (!team) return <span className="font-mono text-xs text-fg-2">—</span>
   return (
-    <span className="rounded-full border border-gf-border px-2 py-0.5 font-mono text-xs text-gf-text-muted">
+    <span className="rounded-full border border-line px-2 py-0.5 font-mono text-xs text-fg-2">
       {t('teamColor.' + team)}
     </span>
   )
@@ -117,51 +117,51 @@ function EmployeeModal({ employee, technicians, onClose, onSaved }: EmployeeModa
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-gf-base/80 p-4">
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-gf-card border border-gf-border bg-gf-card">
-        <div className="flex items-center justify-between border-b border-gf-border px-5 py-4">
-          <h2 className="font-sans text-sm font-medium text-gf-text">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-0/80 p-4">
+      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-l border border-line bg-bg-1">
+        <div className="flex items-center justify-between border-b border-line px-5 py-4">
+          <h2 className="font-sans text-sm font-medium text-fg-1">
             {isEdit ? 'Mitarbeiter bearbeiten' : 'Neuer Mitarbeiter'}
           </h2>
-          <button onClick={onClose} className="text-gf-text-muted transition-colors hover:text-gf-text" aria-label="Schließen">
+          <button onClick={onClose} className="text-fg-2 transition-colors hover:text-fg-1" aria-label="Schließen">
             ✕
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 p-5">
           {error && (
-            <p className="rounded-gf-card border border-gf-accent/30 bg-gf-accent-light px-3 py-2 font-sans text-xs text-gf-accent">
+            <p className="rounded-l border border-err/30 bg-err/10 px-3 py-2 font-sans text-xs text-err">
               {error}
             </p>
           )}
 
           <div>
-            <label className="mb-1 block font-mono text-xs text-gf-text-muted">NAME *</label>
-            <input type="text" value={form.full_name} onChange={(e) => set('full_name', e.target.value)} placeholder="Max Mustermann" className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 font-sans text-sm text-gf-text placeholder-gf-text-placeholder focus:border-gf-primary focus:outline-none" required />
+            <label className="mb-1 block font-mono text-xs text-fg-2">NAME *</label>
+            <input type="text" value={form.full_name} onChange={(e) => set('full_name', e.target.value)} placeholder="Max Mustermann" className="w-full rounded-s border border-line bg-bg-2 px-3 py-2 font-sans text-sm text-fg-1 placeholder-fg-3 focus:border-accent focus:outline-none" required />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block font-mono text-xs text-gf-text-muted">E-MAIL</label>
-              <input type="email" value={form.email ?? ''} onChange={(e) => set('email', e.target.value)} placeholder="max@firma.de" className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 font-sans text-sm text-gf-text placeholder-gf-text-placeholder focus:border-gf-primary focus:outline-none" />
+              <label className="mb-1 block font-mono text-xs text-fg-2">E-MAIL</label>
+              <input type="email" value={form.email ?? ''} onChange={(e) => set('email', e.target.value)} placeholder="max@firma.de" className="w-full rounded-s border border-line bg-bg-2 px-3 py-2 font-sans text-sm text-fg-1 placeholder-fg-3 focus:border-accent focus:outline-none" />
             </div>
             <div>
-              <label className="mb-1 block font-mono text-xs text-gf-text-muted">TELEFON</label>
-              <input type="tel" value={form.phone ?? ''} onChange={(e) => set('phone', e.target.value)} placeholder="+49 ..." className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 font-sans text-sm text-gf-text placeholder-gf-text-placeholder focus:border-gf-primary focus:outline-none" />
+              <label className="mb-1 block font-mono text-xs text-fg-2">TELEFON</label>
+              <input type="tel" value={form.phone ?? ''} onChange={(e) => set('phone', e.target.value)} placeholder="+49 ..." className="w-full rounded-s border border-line bg-bg-2 px-3 py-2 font-sans text-sm text-fg-1 placeholder-fg-3 focus:border-accent focus:outline-none" />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block font-mono text-xs text-gf-text-muted">TEAM</label>
-              <select value={form.team ?? ''} onChange={(e) => set('team', (e.target.value || null) as TeamColorType | null)} className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 font-sans text-sm text-gf-text focus:border-gf-primary focus:outline-none">
+              <label className="mb-1 block font-mono text-xs text-fg-2">TEAM</label>
+              <select value={form.team ?? ''} onChange={(e) => set('team', (e.target.value || null) as TeamColorType | null)} className="w-full rounded-s border border-line bg-bg-2 px-3 py-2 font-sans text-sm text-fg-1 focus:border-accent focus:outline-none">
                 <option value="">— kein Team —</option>
                 {TEAM_OPTIONS.map((team) => <option key={team} value={team}>{t('teamColor.' + team)}</option>)}
               </select>
             </div>
             <div>
-              <label className="mb-1 block font-mono text-xs text-gf-text-muted">{t('personnel.appUser')}</label>
-              <select value={form.profile_id ?? ''} onChange={(e) => set('profile_id', e.target.value || null)} className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 font-sans text-sm text-gf-text focus:border-gf-primary focus:outline-none">
+              <label className="mb-1 block font-mono text-xs text-fg-2">{t('personnel.appUser')}</label>
+              <select value={form.profile_id ?? ''} onChange={(e) => set('profile_id', e.target.value || null)} className="w-full rounded-s border border-line bg-bg-2 px-3 py-2 font-sans text-sm text-fg-1 focus:border-accent focus:outline-none">
                 <option value="">— kein App-Zugang —</option>
                 {technicians.map((profile) => (
                   <option key={profile.id} value={profile.id}>
@@ -174,53 +174,53 @@ function EmployeeModal({ employee, technicians, onClose, onSaved }: EmployeeModa
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block font-mono text-xs text-gf-text-muted">SV-NUMMER</label>
-              <input type="text" value={form.sv_nummer ?? ''} onChange={(e) => set('sv_nummer', e.target.value)} placeholder="12 345678 A 001" className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 font-mono text-sm text-gf-text placeholder-gf-text-placeholder focus:border-gf-primary focus:outline-none" />
+              <label className="mb-1 block font-mono text-xs text-fg-2">SV-NUMMER</label>
+              <input type="text" value={form.sv_nummer ?? ''} onChange={(e) => set('sv_nummer', e.target.value)} placeholder="12 345678 A 001" className="w-full rounded-s border border-line bg-bg-2 px-3 py-2 font-mono text-sm text-fg-1 placeholder-fg-3 focus:border-accent focus:outline-none" />
             </div>
             <div>
-              <label className="mb-1 block font-mono text-xs text-gf-text-muted">STEUER-ID</label>
-              <input type="text" value={form.steuer_id ?? ''} onChange={(e) => set('steuer_id', e.target.value)} placeholder="12 345 678 901" className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 font-mono text-sm text-gf-text placeholder-gf-text-placeholder focus:border-gf-primary focus:outline-none" />
+              <label className="mb-1 block font-mono text-xs text-fg-2">STEUER-ID</label>
+              <input type="text" value={form.steuer_id ?? ''} onChange={(e) => set('steuer_id', e.target.value)} placeholder="12 345 678 901" className="w-full rounded-s border border-line bg-bg-2 px-3 py-2 font-mono text-sm text-fg-1 placeholder-fg-3 focus:border-accent focus:outline-none" />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block font-mono text-xs text-gf-text-muted">STEUERKLASSE</label>
-              <select value={form.steuerklasse ?? ''} onChange={(e) => set('steuerklasse', e.target.value || null)} className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 font-sans text-sm text-gf-text focus:border-gf-primary focus:outline-none">
+              <label className="mb-1 block font-mono text-xs text-fg-2">STEUERKLASSE</label>
+              <select value={form.steuerklasse ?? ''} onChange={(e) => set('steuerklasse', e.target.value || null)} className="w-full rounded-s border border-line bg-bg-2 px-3 py-2 font-sans text-sm text-fg-1 focus:border-accent focus:outline-none">
                 <option value="">— wählen —</option>
                 {STEUERKLASSEN.map((sk) => <option key={sk} value={sk}>Klasse {sk}</option>)}
               </select>
             </div>
             <div>
-              <label className="mb-1 block font-mono text-xs text-gf-text-muted">BRUTTOLOHN (€)</label>
-              <input type="number" min={0} step={0.01} value={form.gross_salary} onChange={(e) => set('gross_salary', parseFloat(e.target.value) || 0)} className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 font-mono text-sm text-gf-text focus:border-gf-primary focus:outline-none" />
+              <label className="mb-1 block font-mono text-xs text-fg-2">BRUTTOLOHN (€)</label>
+              <input type="number" min={0} step={0.01} value={form.gross_salary} onChange={(e) => set('gross_salary', parseFloat(e.target.value) || 0)} className="w-full rounded-s border border-line bg-bg-2 px-3 py-2 font-mono text-sm text-fg-1 focus:border-accent focus:outline-none" />
             </div>
           </div>
 
           <div>
-            <label className="mb-1 block font-mono text-xs text-gf-text-muted">IBAN</label>
-            <input type="text" value={form.iban ?? ''} onChange={(e) => set('iban', e.target.value.toUpperCase())} placeholder="DE89 3704 0044 0532 0130 00" className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 font-mono text-sm text-gf-text placeholder-gf-text-placeholder focus:border-gf-primary focus:outline-none" />
+            <label className="mb-1 block font-mono text-xs text-fg-2">IBAN</label>
+            <input type="text" value={form.iban ?? ''} onChange={(e) => set('iban', e.target.value.toUpperCase())} placeholder="DE89 3704 0044 0532 0130 00" className="w-full rounded-s border border-line bg-bg-2 px-3 py-2 font-mono text-sm text-fg-1 placeholder-fg-3 focus:border-accent focus:outline-none" />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block font-mono text-xs text-gf-text-muted">EINSTELLUNG *</label>
-              <input type="date" value={form.start_date} onChange={(e) => set('start_date', e.target.value)} className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 font-sans text-sm text-gf-text focus:border-gf-primary focus:outline-none" required />
+              <label className="mb-1 block font-mono text-xs text-fg-2">EINSTELLUNG *</label>
+              <input type="date" value={form.start_date} onChange={(e) => set('start_date', e.target.value)} className="w-full rounded-s border border-line bg-bg-2 px-3 py-2 font-sans text-sm text-fg-1 focus:border-accent focus:outline-none" required />
             </div>
             <div>
-              <label className="mb-1 block font-mono text-xs text-gf-text-muted">AUSTRITT</label>
-              <input type="date" value={form.end_date ?? ''} onChange={(e) => set('end_date', e.target.value || null)} className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 font-sans text-sm text-gf-text focus:border-gf-primary focus:outline-none" />
+              <label className="mb-1 block font-mono text-xs text-fg-2">AUSTRITT</label>
+              <input type="date" value={form.end_date ?? ''} onChange={(e) => set('end_date', e.target.value || null)} className="w-full rounded-s border border-line bg-bg-2 px-3 py-2 font-sans text-sm text-fg-1 focus:border-accent focus:outline-none" />
             </div>
           </div>
 
           <div>
-            <label className="mb-1 block font-mono text-xs text-gf-text-muted">NOTIZEN</label>
-            <textarea value={form.notes ?? ''} onChange={(e) => set('notes', e.target.value)} rows={2} className="w-full rounded-gf-btn border border-gf-border bg-gf-surface px-3 py-2 font-sans text-sm text-gf-text placeholder-gf-text-placeholder focus:border-gf-primary focus:outline-none" />
+            <label className="mb-1 block font-mono text-xs text-fg-2">NOTIZEN</label>
+            <textarea value={form.notes ?? ''} onChange={(e) => set('notes', e.target.value)} rows={2} className="w-full rounded-s border border-line bg-bg-2 px-3 py-2 font-sans text-sm text-fg-1 placeholder-fg-3 focus:border-accent focus:outline-none" />
           </div>
 
           <div className="flex justify-end gap-2 pt-1">
-            <button type="button" onClick={onClose} className="rounded-gf-btn border border-gf-border px-4 py-2 font-sans text-sm text-gf-text-muted transition-colors hover:text-gf-text">Abbrechen</button>
-            <button type="submit" disabled={saving} className="rounded-gf-btn bg-gf-primary px-4 py-2 font-sans text-sm text-gf-text-inverse transition-opacity disabled:opacity-50">{saving ? 'Speichern…' : 'Speichern'}</button>
+            <button type="button" onClick={onClose} className="rounded-s border border-line px-4 py-2 font-sans text-sm text-fg-2 transition-colors hover:text-fg-1">Abbrechen</button>
+            <button type="submit" disabled={saving} className="rounded-s bg-accent px-4 py-2 font-sans text-sm text-fg-1 transition-opacity disabled:opacity-50">{saving ? 'Speichern…' : 'Speichern'}</button>
           </div>
         </form>
       </div>
@@ -242,35 +242,35 @@ function EmployeeRow({ employee, onEdit, onDeactivate, onPayroll, onVacation }: 
 
   return (
     <>
-      <tr className="border-b border-gf-border transition-colors hover:bg-gf-base-light/40">
+      <tr className="border-b border-line transition-colors hover:bg-bg-2/40">
         <td className="px-4 py-3">
           <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-full border border-gf-border"><UserRound size={13} strokeWidth={1.5} className="text-gf-text-muted" /></div>
+            <div className="flex h-7 w-7 items-center justify-center rounded-full border border-line"><UserRound size={13} strokeWidth={1.5} className="text-fg-2" /></div>
             <div>
-              <p className="font-sans text-sm text-gf-text">{employee.full_name}</p>
-              {employee.email && <p className="font-mono text-xs text-gf-text-muted">{employee.email}</p>}
+              <p className="font-sans text-sm text-fg-1">{employee.full_name}</p>
+              {employee.email && <p className="font-mono text-xs text-fg-2">{employee.email}</p>}
             </div>
           </div>
         </td>
         <td className="px-4 py-3"><TeamChip team={employee.team} /></td>
-        <td className="px-4 py-3"><span className="font-mono text-xs text-gf-text-muted">{employee.steuerklasse ? 'Klasse ' + employee.steuerklasse : '—'}</span></td>
-        <td className="px-4 py-3"><span className="font-mono text-sm text-gf-text">{salary}</span></td>
-        <td className="px-4 py-3"><span className="font-mono text-xs text-gf-text-muted">{employee.start_date}</span></td>
+        <td className="px-4 py-3"><span className="font-mono text-xs text-fg-2">{employee.steuerklasse ? 'Klasse ' + employee.steuerklasse : '—'}</span></td>
+        <td className="px-4 py-3"><span className="font-mono text-sm text-fg-1">{salary}</span></td>
+        <td className="px-4 py-3"><span className="font-mono text-xs text-fg-2">{employee.start_date}</span></td>
         <td className="px-4 py-3">
-          {employee.is_active ? <span className="rounded-full border border-gf-success/40 bg-gf-success/10 px-2 py-0.5 font-mono text-xs text-gf-success">AKTIV</span> : <span className="rounded-full border border-gf-border px-2 py-0.5 font-mono text-xs text-gf-text-muted">INAKTIV</span>}
+          {employee.is_active ? <span className="rounded-full border border-ok/40 bg-ok/10 px-2 py-0.5 font-mono text-xs text-ok">AKTIV</span> : <span className="rounded-full border border-line px-2 py-0.5 font-mono text-xs text-fg-2">INAKTIV</span>}
         </td>
         <td className="px-4 py-3">
           <div className="flex items-center gap-1">
-            <button onClick={() => setExpanded((x) => !x)} className="rounded p-1 text-gf-text-muted transition-colors hover:text-gf-text" title="Details">{expanded ? <ChevronUp size={14} strokeWidth={1.5} /> : <ChevronDown size={14} strokeWidth={1.5} />}</button>
-            <button onClick={() => onVacation(employee)} className="rounded p-1 text-gf-text-muted transition-colors hover:text-gf-primary" title="Urlaubsverwaltung"><CalendarDays size={14} strokeWidth={1.5} /></button>
-            <button onClick={() => onPayroll(employee)} className="rounded p-1 text-gf-text-muted transition-colors hover:text-gf-primary" title="Gehaltsabrechnung"><Receipt size={14} strokeWidth={1.5} /></button>
-            <button onClick={() => onEdit(employee)} className="rounded p-1 text-gf-text-muted transition-colors hover:text-gf-primary" title="Bearbeiten"><Pencil size={14} strokeWidth={1.5} /></button>
-            {employee.is_active && <button onClick={() => onDeactivate(employee)} className="rounded p-1 text-gf-text-muted transition-colors hover:text-gf-danger" title="Deaktivieren"><UserX size={14} strokeWidth={1.5} /></button>}
+            <button onClick={() => setExpanded((x) => !x)} className="rounded p-1 text-fg-2 transition-colors hover:text-fg-1" title="Details">{expanded ? <ChevronUp size={14} strokeWidth={1.5} /> : <ChevronDown size={14} strokeWidth={1.5} />}</button>
+            <button onClick={() => onVacation(employee)} className="rounded p-1 text-fg-2 transition-colors hover:text-accent" title="Urlaubsverwaltung"><CalendarDays size={14} strokeWidth={1.5} /></button>
+            <button onClick={() => onPayroll(employee)} className="rounded p-1 text-fg-2 transition-colors hover:text-accent" title="Gehaltsabrechnung"><Receipt size={14} strokeWidth={1.5} /></button>
+            <button onClick={() => onEdit(employee)} className="rounded p-1 text-fg-2 transition-colors hover:text-accent" title="Bearbeiten"><Pencil size={14} strokeWidth={1.5} /></button>
+            {employee.is_active && <button onClick={() => onDeactivate(employee)} className="rounded p-1 text-fg-2 transition-colors hover:text-err" title="Deaktivieren"><UserX size={14} strokeWidth={1.5} /></button>}
           </div>
         </td>
       </tr>
       {expanded && (
-        <tr className="border-b border-gf-border bg-gf-base-light/20">
+        <tr className="border-b border-line bg-bg-2/20">
           <td colSpan={7} className="px-4 pb-3 pt-1">
             <div className="grid grid-cols-2 gap-x-8 gap-y-1 md:grid-cols-4">
               <Detail label="SV-NUMMER" value={employee.sv_nummer} />
@@ -290,17 +290,17 @@ function EmployeeRow({ employee, onEdit, onDeactivate, onPayroll, onVacation }: 
 
 function Detail({ label, value, mono = false }: { label: string; value: string | null | undefined; mono?: boolean }) {
   if (!value) return null
-  return <div><p className="font-mono text-[10px] text-gf-text-label">{label}</p><p className={(mono ? 'font-mono ' : 'font-sans ') + 'text-xs text-gf-text'}>{value}</p></div>
+  return <div><p className="font-mono text-[10px] text-fg-3">{label}</p><p className={(mono ? 'font-mono ' : 'font-sans ') + 'text-xs text-fg-1'}>{value}</p></div>
 }
 
 function ContractorRow({ contractor }: { contractor: TechnicianProfile }) {
   const { t } = useTranslation()
   return (
-    <tr className="border-b border-gf-border transition-colors hover:bg-gf-base-light/40">
-      <td className="px-4 py-3 font-sans text-sm text-gf-text">{contractor.full_name}</td>
+    <tr className="border-b border-line transition-colors hover:bg-bg-2/40">
+      <td className="px-4 py-3 font-sans text-sm text-fg-1">{contractor.full_name}</td>
       <td className="px-4 py-3"><TeamChip team={contractor.team} /></td>
-      <td className="px-4 py-3"><span className="rounded-full border border-gf-success/40 bg-gf-success/10 px-2 py-0.5 font-mono text-xs text-gf-success">AKTIV</span></td>
-      <td className="px-4 py-3 text-right"><Link to="/admin/personnel" className="font-sans text-xs text-gf-primary hover:underline">{t('personnel.manageInUsers')}</Link></td>
+      <td className="px-4 py-3"><span className="rounded-full border border-ok/40 bg-ok/10 px-2 py-0.5 font-mono text-xs text-ok">AKTIV</span></td>
+      <td className="px-4 py-3 text-right"><Link to="/admin/personnel" className="font-sans text-xs text-accent hover:underline">{t('personnel.manageInUsers')}</Link></td>
     </tr>
   )
 }
@@ -366,20 +366,20 @@ export function PersonnelPage() {
 
   const tabClass = (tab: 'internal' | 'external') =>
     activeTab === tab
-      ? 'rounded-gf-btn border border-gf-primary bg-gf-primary/10 px-3 py-2 font-sans text-sm text-gf-primary transition-colors'
-      : 'rounded-gf-btn border border-gf-border px-3 py-2 font-sans text-sm text-gf-text-muted transition-colors hover:text-gf-text'
+      ? 'rounded-s border border-accent bg-accent/10 px-3 py-2 font-sans text-sm text-accent transition-colors'
+      : 'rounded-s border border-line px-3 py-2 font-sans text-sm text-fg-2 transition-colors hover:text-fg-1'
 
   return (
     <div className="space-y-5 p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-display text-xl font-bold text-gf-text-inverse">Mitarbeiter</h1>
-          <p className="mt-0.5 font-sans text-xs text-gf-text-muted">Interne Angestellte — Gehaltsabrechnung &amp; Urlaubsverwaltung</p>
+          <h1 className="font-display text-xl font-bold text-fg-1">Mitarbeiter</h1>
+          <p className="mt-0.5 font-sans text-xs text-fg-2">Interne Angestellte — Gehaltsabrechnung &amp; Urlaubsverwaltung</p>
         </div>
-        {activeTab === 'internal' && <button onClick={() => setCreating(true)} className="flex items-center gap-2 rounded-gf-btn bg-gf-primary px-4 py-2 font-sans text-sm text-gf-text-inverse transition-opacity hover:opacity-90"><Plus size={14} strokeWidth={2} />Neuer Mitarbeiter</button>}
+        {activeTab === 'internal' && <button onClick={() => setCreating(true)} className="flex items-center gap-2 rounded-s bg-accent px-4 py-2 font-sans text-sm text-fg-1 transition-opacity hover:opacity-90"><Plus size={14} strokeWidth={2} />Neuer Mitarbeiter</button>}
       </div>
 
-      <div className="rounded-gf-card border border-gf-warning/30 bg-gf-warning/5 px-4 py-3"><p className="font-sans text-xs text-gf-warning">⚠ Gehaltsberechnungen müssen von Janet Martinez de Peglow validiert werden, bevor dieses Modul produktiv geht.</p></div>
+      <div className="rounded-l border border-warn/30 bg-warn/5 px-4 py-3"><p className="font-sans text-xs text-warn">⚠ Gehaltsberechnungen müssen von Janet Martinez de Peglow validiert werden, bevor dieses Modul produktiv geht.</p></div>
 
       <div className="flex gap-2">
         <button type="button" onClick={() => setActiveTab('internal')} className={tabClass('internal')}>{t('personnel.tabs.internal')}</button>
@@ -388,26 +388,26 @@ export function PersonnelPage() {
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <div className="relative flex-1">
-          <Search size={14} strokeWidth={1.5} className="absolute left-3 top-1/2 -translate-y-1/2 text-gf-text-muted" />
-          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Name, E-Mail oder SV-Nummer suchen…" className="w-full rounded-gf-btn border border-gf-border bg-gf-surface py-2 pl-8 pr-3 font-sans text-sm text-gf-text placeholder-gf-text-placeholder focus:border-gf-primary focus:outline-none" />
+          <Search size={14} strokeWidth={1.5} className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-2" />
+          <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Name, E-Mail oder SV-Nummer suchen…" className="w-full rounded-s border border-line bg-bg-2 py-2 pl-8 pr-3 font-sans text-sm text-fg-1 placeholder-fg-3 focus:border-accent focus:outline-none" />
         </div>
-        {activeTab === 'internal' && <label className="flex cursor-pointer items-center gap-2 font-sans text-sm text-gf-text-muted"><input type="checkbox" checked={includeInactive} onChange={(e) => setIncludeInactive(e.target.checked)} className="accent-gf-primary" />Inaktive anzeigen</label>}
+        {activeTab === 'internal' && <label className="flex cursor-pointer items-center gap-2 font-sans text-sm text-fg-2"><input type="checkbox" checked={includeInactive} onChange={(e) => setIncludeInactive(e.target.checked)} className="accent-accent" />Inaktive anzeigen</label>}
       </div>
 
-      {error && <p className="rounded-gf-card border border-gf-accent/30 bg-gf-accent-light px-4 py-3 font-sans text-sm text-gf-accent">{error}</p>}
+      {error && <p className="rounded-l border border-err/30 bg-err/10 px-4 py-3 font-sans text-sm text-err">{error}</p>}
 
-      <div className="rounded-gf-card border border-gf-border">
+      <div className="rounded-l border border-line">
         {loading ? <div className="flex items-center justify-center py-16"><div className="nx-loader" /></div> : activeTab === 'external' ? (
           filteredContractors.length === 0 ? <EmptyState text="Keine externen Contractor gefunden." /> : <ExternalTable contractors={filteredContractors} />
         ) : filteredEmployees.length === 0 ? <EmptyState text={search ? 'Keine Ergebnisse.' : 'Noch keine Mitarbeiter erfasst.'} /> : (
           <table className="w-full">
-            <thead><tr className="border-b border-gf-border"><th className="px-4 py-3 text-left font-mono text-xs text-gf-text-label">MITARBEITER</th><th className="px-4 py-3 text-left font-mono text-xs text-gf-text-label">TEAM</th><th className="px-4 py-3 text-left font-mono text-xs text-gf-text-label">STEUERKLASSE</th><th className="px-4 py-3 text-left font-mono text-xs text-gf-text-label">BRUTTOGEHALT</th><th className="px-4 py-3 text-left font-mono text-xs text-gf-text-label">EINSTELLUNG</th><th className="px-4 py-3 text-left font-mono text-xs text-gf-text-label">STATUS</th><th className="px-4 py-3" /></tr></thead>
+            <thead><tr className="border-b border-line"><th className="px-4 py-3 text-left font-mono text-xs text-fg-3">MITARBEITER</th><th className="px-4 py-3 text-left font-mono text-xs text-fg-3">TEAM</th><th className="px-4 py-3 text-left font-mono text-xs text-fg-3">STEUERKLASSE</th><th className="px-4 py-3 text-left font-mono text-xs text-fg-3">BRUTTOGEHALT</th><th className="px-4 py-3 text-left font-mono text-xs text-fg-3">EINSTELLUNG</th><th className="px-4 py-3 text-left font-mono text-xs text-fg-3">STATUS</th><th className="px-4 py-3" /></tr></thead>
             <tbody>{filteredEmployees.map((e) => <EmployeeRow key={e.id} employee={e} onEdit={setEditing} onDeactivate={handleDeactivate} onPayroll={setPayrollEmployee} onVacation={setVacationEmployee} />)}</tbody>
           </table>
         )}
       </div>
 
-      {!loading && activeTab === 'internal' && filteredEmployees.length > 0 && <p className="font-mono text-xs text-gf-text-muted">{filteredEmployees.length} Mitarbeiter{filteredEmployees.length !== employees.length ? ' (von ' + employees.length + ')' : ''}</p>}
+      {!loading && activeTab === 'internal' && filteredEmployees.length > 0 && <p className="font-mono text-xs text-fg-2">{filteredEmployees.length} Mitarbeiter{filteredEmployees.length !== employees.length ? ' (von ' + employees.length + ')' : ''}</p>}
 
       {(creating || editing) && <EmployeeModal employee={editing} technicians={technicians} onClose={() => { setCreating(false); setEditing(null) }} onSaved={handleSaved} />}
       {payrollEmployee && <PayrollSlipModal employee={payrollEmployee} onClose={() => setPayrollEmployee(null)} />}
@@ -417,13 +417,13 @@ export function PersonnelPage() {
 }
 
 function EmptyState({ text }: { text: string }) {
-  return <div className="flex flex-col items-center gap-2 py-16 text-center"><UserRound size={32} strokeWidth={1} className="text-gf-text-muted" /><p className="font-sans text-sm text-gf-text-muted">{text}</p></div>
+  return <div className="flex flex-col items-center gap-2 py-16 text-center"><UserRound size={32} strokeWidth={1} className="text-fg-2" /><p className="font-sans text-sm text-fg-2">{text}</p></div>
 }
 
 function ExternalTable({ contractors }: { contractors: TechnicianProfile[] }) {
   return (
     <table className="w-full">
-      <thead><tr className="border-b border-gf-border"><th className="px-4 py-3 text-left font-mono text-xs text-gf-text-label">NAME</th><th className="px-4 py-3 text-left font-mono text-xs text-gf-text-label">TEAM</th><th className="px-4 py-3 text-left font-mono text-xs text-gf-text-label">STATUS</th><th className="px-4 py-3" /></tr></thead>
+      <thead><tr className="border-b border-line"><th className="px-4 py-3 text-left font-mono text-xs text-fg-3">NAME</th><th className="px-4 py-3 text-left font-mono text-xs text-fg-3">TEAM</th><th className="px-4 py-3 text-left font-mono text-xs text-fg-3">STATUS</th><th className="px-4 py-3" /></tr></thead>
       <tbody>{contractors.map((profile) => <ContractorRow key={profile.id} contractor={profile} />)}</tbody>
     </table>
   )
