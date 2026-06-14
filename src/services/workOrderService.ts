@@ -175,7 +175,7 @@ export async function validateTransitionPrerequisites(
     const requiredCertType: 'internal' | 'client' = isDirect ? 'internal' : 'client'
 
     const { data: audits } = await supabase
-      .from('certification_audits' as 'work_orders')
+      .from('certification_audits')
       .select('cert_type')
       .eq('work_order_id', workOrderId)
       .eq('cert_type', requiredCertType)
@@ -508,13 +508,13 @@ export async function upsertWorkOrderDetail(
   if (existing?.id) {
     const { error } = await supabase
       .from(table as 'wo_detail_soplado')
-      .update(detail)
+      .update(detail as Database['public']['Tables']['wo_detail_soplado']['Update'])
       .eq('id', existing.id)
     return { error: error?.message ?? null }
   } else {
     const { error } = await supabase
       .from(table as 'wo_detail_soplado')
-      .insert({ ...detail, work_order_id: workOrderId })
+      .insert({ ...detail, work_order_id: workOrderId } as Database['public']['Tables']['wo_detail_soplado']['Insert'])
     return { error: error?.message ?? null }
   }
 }
@@ -1032,7 +1032,7 @@ export async function insertCertificationAudit(
  */
 export async function fetchCertificationAudits(workOrderId: string) {
   const { data, error } = await supabase
-    .from('certification_audits' as 'work_orders') // cast — table added in migration 002
+    .from('certification_audits')
     .select('*, profiles ( full_name )')
     .eq('work_order_id', workOrderId)
     .order('certified_at', { ascending: true })
@@ -1124,7 +1124,7 @@ export interface BillingLineDraft {
 
 export async function fetchBillingLines(workOrderId: string) {
   const { data, error } = await supabase
-    .from('work_order_billing_lines' as 'work_orders')
+    .from('work_order_billing_lines')
     .select(
       '*, service_items ( id, code, description_de, description_es, unit, unit_price, unit_price_external )',
     )
@@ -1159,7 +1159,7 @@ export async function fetchBillingLines(workOrderId: string) {
 // with an atomic Postgres RPC before billing is used in production accounting.
 export async function upsertBillingLines(workOrderId: string, drafts: BillingLineDraft[]) {
   const { data: existing, error: fetchErr } = await supabase
-    .from('work_order_billing_lines' as 'work_orders')
+    .from('work_order_billing_lines')
     .select('id')
     .eq('work_order_id', workOrderId)
   if (fetchErr) return { error: fetchErr.message }
@@ -1170,7 +1170,7 @@ export async function upsertBillingLines(workOrderId: string, drafts: BillingLin
   const toDelete = [...existingIds].filter((id) => !draftIds.has(id))
   if (toDelete.length > 0) {
     const { error } = await supabase
-      .from('work_order_billing_lines' as 'work_orders')
+      .from('work_order_billing_lines')
       .delete()
       .in('id', toDelete)
     if (error) return { error: error.message }
@@ -1179,7 +1179,7 @@ export async function upsertBillingLines(workOrderId: string, drafts: BillingLin
   for (const draft of drafts) {
     if (draft.id) {
       const { error } = await supabase
-        .from('work_order_billing_lines' as 'work_orders')
+        .from('work_order_billing_lines')
         .update({
           service_item_id: draft.service_item_id,
           qty: draft.qty,
@@ -1191,7 +1191,7 @@ export async function upsertBillingLines(workOrderId: string, drafts: BillingLin
         .eq('id', draft.id)
       if (error) return { error: error.message }
     } else {
-      const { error } = await supabase.from('work_order_billing_lines' as 'work_orders').insert({
+      const { error } = await supabase.from('work_order_billing_lines').insert({
         work_order_id: workOrderId,
         service_item_id: draft.service_item_id,
         qty: draft.qty,
