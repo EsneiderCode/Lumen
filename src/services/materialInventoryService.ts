@@ -26,7 +26,7 @@ type TableName =
   | 'work_order_material_consumptions'
   | 'stock_movements'
 
-const table = (name: TableName) => supabase.from(name)
+const table = <N extends TableName>(name: N) => supabase.from(name)
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error ?? 'Unknown error')
