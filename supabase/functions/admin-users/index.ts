@@ -199,6 +199,33 @@ Deno.serve(async (req) => {
       return json(200, { users: await listUsers(supabaseUrl, serviceRoleKey) })
     }
 
+    if (req.method === 'DELETE') {
+      if (!payload.id) return json(400, { error: 'User id is required' })
+
+      // Delete profile row first (FK constraints)
+      await supabaseFetch<void>(
+        supabaseUrl,
+        serviceRoleKey,
+        `profiles?id=eq.${encodeURIComponent(payload.id)}`,
+        { method: 'DELETE', headers: { prefer: 'return=minimal' } },
+      )
+
+      // Delete auth user
+      const authRes = await fetch(`${supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(payload.id)}`, {
+        method: 'DELETE',
+        headers: {
+          apikey: serviceRoleKey,
+          authorization: `Bearer ${serviceRoleKey}`,
+        },
+      })
+      if (!authRes.ok) {
+        const text = await authRes.text()
+        console.warn(`[admin-users] auth user delete failed (${authRes.status}): ${text}`)
+      }
+
+      return json(200, { users: await listUsers(supabaseUrl, serviceRoleKey) })
+    }
+
     return json(405, { error: 'Method not allowed' })
   } catch (error) {
     console.error('[admin-users] failed', error)

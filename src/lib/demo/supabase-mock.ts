@@ -815,6 +815,15 @@ function makeFunctions() {
           saveStore(store)
           return { data: { users: store.profiles }, error: null }
         }
+
+        if (options.method === 'DELETE') {
+          const id = String(body.id ?? '')
+          const idx = store.profiles.findIndex((p) => p.id === id)
+          if (idx === -1) return { data: null, error: { message: 'Demo user not found' } }
+          store.profiles.splice(idx, 1)
+          saveStore(store)
+          return { data: { users: store.profiles }, error: null }
+        }
       }
 
       return {

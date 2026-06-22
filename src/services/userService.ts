@@ -53,3 +53,11 @@ export async function updateOperationalUser(payload: OperationalUserPayload & { 
   })
   return { data: data?.users ?? [], error: errorMessage(error) }
 }
+
+export async function deleteOperationalUser(id: string) {
+  const { data, error } = await supabase.functions.invoke<{ users: OperationalUser[] }>('admin-users', {
+    method: 'DELETE',
+    body: { id },
+  })
+  return { data: data?.users ?? [], error: errorMessage(error) }
+}

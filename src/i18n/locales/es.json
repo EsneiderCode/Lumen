@@ -426,7 +426,10 @@
     "pinSet": "creado",
     "pinLogin": "Login PIN",
     "activate": "Activar",
-    "deactivate": "Desactivar"
+    "deactivate": "Desactivar",
+    "delete": "Eliminar",
+    "deleteConfirmTitle": "Eliminar usuario",
+    "deleteConfirmMessage": "¿Desea eliminar a «{{name}}» de forma permanente? Esta acción no se puede deshacer."
   },
   "assignment": {
     "title": "Asignar orden",

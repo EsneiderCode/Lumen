@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { KeyRound, Plus, Save, UserRound, X } from 'lucide-react'
+import { KeyRound, Plus, Save, Trash2, UserRound, X } from 'lucide-react'
 import type { TeamColor, UserRole } from '@/types/enums'
 import {
   createOperationalUser,
+  deleteOperationalUser,
   fetchOperationalUsers,
   updateOperationalUser,
   type OperationalUser,
@@ -57,6 +58,8 @@ export function UsersPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [roleFilter, setRoleFilter] = useState<UserRole | ''>('')
+  const [confirmDelete, setConfirmDelete] = useState<OperationalUser | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const isEditing = Boolean(form.id)
 
@@ -105,6 +108,20 @@ export function UsersPage() {
       resetForm()
     }
     setIsSaving(false)
+  }
+
+  async function handleDelete() {
+    if (!confirmDelete) return
+    setIsDeleting(true)
+    setError(null)
+    const { data, error } = await deleteOperationalUser(confirmDelete.id)
+    if (error) setError(error)
+    else {
+      setUsers(data)
+      if (form.id === confirmDelete.id) resetForm()
+    }
+    setConfirmDelete(null)
+    setIsDeleting(false)
   }
 
   async function toggleActive(user: OperationalUser) {
@@ -314,6 +331,14 @@ export function UsersPage() {
                       >
                         {user.is_active ? t('users.deactivate') : t('users.activate')}
                       </button>
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDelete(user)}
+                        className="rounded-s border border-line px-3 py-1.5 text-xs text-fg-2 transition-colors hover:border-accent hover:text-accent"
+                        title={t('users.delete')}
+                      >
+                        <Trash2 size={13} strokeWidth={1.5} />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -322,6 +347,35 @@ export function UsersPage() {
           </table>
         )}
       </div>
+
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-0/80 p-4">
+          <div className="w-full max-w-sm rounded-l border border-line bg-bg-1 p-5">
+            <h3 className="text-sm font-medium text-fg-1">{t('users.deleteConfirmTitle')}</h3>
+            <p className="mt-2 text-sm text-fg-2">
+              {t('users.deleteConfirmMessage', { name: confirmDelete.full_name })}
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(null)}
+                disabled={isDeleting}
+                className="rounded-s border border-line px-3 py-1.5 text-xs text-fg-2 transition-colors hover:border-accent hover:text-accent disabled:opacity-50"
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="rounded-s border border-accent bg-accent/10 px-3 py-1.5 text-xs text-accent transition-colors hover:bg-accent/20 disabled:opacity-50"
+              >
+                {isDeleting ? t('common.saving') : t('users.delete')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

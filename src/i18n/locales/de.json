@@ -399,7 +399,10 @@
     "pinSet": "gesetzt",
     "pinLogin": "PIN Login",
     "activate": "Aktivieren",
-    "deactivate": "Deaktivieren"
+    "deactivate": "Deaktivieren",
+    "delete": "Löschen",
+    "deleteConfirmTitle": "Benutzer löschen",
+    "deleteConfirmMessage": "Möchten Sie «{{name}}» unwiderruflich löschen? Diese Aktion kann nicht rückgängig gemacht werden."
   },
   "assignment": {
     "title": "Auftrag zuweisen",
