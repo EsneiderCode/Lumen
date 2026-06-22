@@ -25,13 +25,13 @@ ALTER TABLE public.certification_audits
     FOREIGN KEY (certified_by) REFERENCES public.profiles(id)
     ON DELETE SET NULL;
 
--- ── collaborator_pricing.created_by ─────────────────────────────────────
-ALTER TABLE public.collaborator_pricing
+-- ── work_order_line_items.created_by ─────────────────────────────────────
+ALTER TABLE public.work_order_line_items
   ALTER COLUMN created_by DROP NOT NULL;
 
-ALTER TABLE public.collaborator_pricing
-  DROP CONSTRAINT collaborator_pricing_created_by_fkey,
-  ADD CONSTRAINT collaborator_pricing_created_by_fkey
+ALTER TABLE public.work_order_line_items
+  DROP CONSTRAINT work_order_line_items_created_by_fkey,
+  ADD CONSTRAINT work_order_line_items_created_by_fkey
     FOREIGN KEY (created_by) REFERENCES public.profiles(id)
     ON DELETE SET NULL;
 
