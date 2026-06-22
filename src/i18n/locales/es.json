@@ -429,7 +429,8 @@
     "deactivate": "Desactivar",
     "delete": "Eliminar",
     "deleteConfirmTitle": "Eliminar usuario",
-    "deleteConfirmMessage": "¿Desea eliminar a «{{name}}» de forma permanente? Esta acción no se puede deshacer."
+    "deleteConfirmMessage": "¿Desea eliminar a «{{name}}» de forma permanente? Esta acción no se puede deshacer.",
+    "passwordPlaceholder": "Vacío = sin cambios"
   },
   "assignment": {
     "title": "Asignar orden",

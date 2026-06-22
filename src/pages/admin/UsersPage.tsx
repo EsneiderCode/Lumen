@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { KeyRound, Plus, Save, Trash2, UserRound, X } from 'lucide-react'
+import { Eye, EyeOff, KeyRound, Plus, Save, Trash2, UserRound, X } from 'lucide-react'
 import type { TeamColor, UserRole } from '@/types/enums'
 import {
   createOperationalUser,
@@ -16,6 +16,7 @@ const EMPTY_FORM = {
   id: '',
   fullName: '',
   email: '',
+  password: '',
   role: 'technician' as UserRole,
   team: '' as TeamColor | '',
   isActive: true,
@@ -28,6 +29,7 @@ function toForm(user: OperationalUser): UserForm {
     id: user.id,
     fullName: user.full_name,
     email: user.email ?? '',
+    password: '',
     role: user.role,
     team: user.team ?? '',
     isActive: user.is_active,
@@ -39,6 +41,7 @@ function cleanPayload(form: UserForm): OperationalUserPayload {
     id: form.id || undefined,
     fullName: form.fullName.trim(),
     email: form.email.trim() || null,
+    password: form.password || undefined,
     role: form.role,
     team: form.team || null,
     isActive: form.isActive,
@@ -60,6 +63,7 @@ export function UsersPage() {
   const [roleFilter, setRoleFilter] = useState<UserRole | ''>('')
   const [confirmDelete, setConfirmDelete] = useState<OperationalUser | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const isEditing = Boolean(form.id)
 
@@ -89,6 +93,7 @@ export function UsersPage() {
   function resetForm() {
     setForm(EMPTY_FORM)
     setError(null)
+    setShowPassword(false)
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -196,6 +201,31 @@ export function UsersPage() {
               placeholder={t('common.optional')}
             />
           </label>
+
+          <div className="block">
+            <span className="mb-1 block text-xs font-medium text-fg-3">
+              {t('auth.password')}{isEditing ? ` (${t('common.optional')})` : ''}
+            </span>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={form.password}
+                onChange={(e) => updateForm('password', e.target.value)}
+                required={!isEditing}
+                minLength={6}
+                className="w-full rounded-s border border-line-s bg-bg-2 px-3 py-2 pr-10 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                placeholder={isEditing ? t('users.passwordPlaceholder') : ''}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-fg-3 transition-colors hover:text-fg-1"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff size={15} strokeWidth={1.5} /> : <Eye size={15} strokeWidth={1.5} />}
+              </button>
+            </div>
+          </div>
 
           <label className="block">
             <span className="mb-1 block text-xs font-medium text-fg-3">{t('users.role')}</span>

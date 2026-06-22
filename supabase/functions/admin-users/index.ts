@@ -28,6 +28,7 @@ interface UserPayload {
   id?: string
   email?: string | null
   fullName?: string
+  password?: string
   role?: UserRole
   team?: TeamColor | null
   isActive?: boolean
@@ -41,6 +42,7 @@ function readPayload(value: unknown): UserPayload {
     id: typeof raw.id === 'string' ? raw.id : undefined,
     email: typeof raw.email === 'string' ? raw.email : raw.email === null ? null : undefined,
     fullName: typeof raw.fullName === 'string' ? raw.fullName : undefined,
+    password: typeof raw.password === 'string' ? raw.password : undefined,
     role: ['admin', 'technician', 'contractor'].includes(String(raw.role)) ? raw.role as UserRole : undefined,
     team: ['rot', 'gruen', 'blau', 'gelb'].includes(String(raw.team)) ? raw.team as TeamColor : raw.team === null ? null : undefined,
     isActive: typeof raw.isActive === 'boolean' ? raw.isActive : undefined,
@@ -88,7 +90,7 @@ async function requireAdmin(req: Request, supabaseUrl: string, serviceRoleKey: s
 async function createAuthUser(
   supabaseUrl: string,
   serviceRoleKey: string,
-  payload: Required<Pick<UserPayload, 'fullName' | 'role'>> & Pick<UserPayload, 'email'> & { loginCode: string },
+  payload: Required<Pick<UserPayload, 'fullName' | 'role'>> & Pick<UserPayload, 'email' | 'password'> & { loginCode: string },
 ): Promise<string> {
   const email = payload.email?.trim() || syntheticEmail(payload.loginCode)  // loginCode used only for synthetic email
   const res = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
@@ -100,7 +102,7 @@ async function createAuthUser(
     },
     body: JSON.stringify({
       email,
-      password: randomPassword(),
+      password: payload.password || randomPassword(),
       email_confirm: true,
       user_metadata: {
         full_name: payload.fullName,
@@ -178,6 +180,7 @@ Deno.serve(async (req) => {
         fullName: payload.fullName.trim(),
         role: payload.role,
         email: payload.email ?? null,
+        password: payload.password,
         loginCode,
       })
 
@@ -214,6 +217,23 @@ Deno.serve(async (req) => {
       if (payload.role !== undefined) patch.role = payload.role
       if (payload.team !== undefined) patch.team = payload.team
       if (payload.isActive !== undefined) patch.is_active = payload.isActive
+
+      // Update auth user password if provided
+      if (payload.password) {
+        const authRes = await fetch(`${supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(payload.id)}`, {
+          method: 'PUT',
+          headers: {
+            apikey: serviceRoleKey,
+            authorization: `Bearer ${serviceRoleKey}`,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({ password: payload.password }),
+        })
+        if (!authRes.ok) {
+          const text = await authRes.text()
+          throw new Error(`Password update failed (${authRes.status}): ${text}`)
+        }
+      }
 
       await supabaseFetch<void>(
         supabaseUrl,

@@ -19,6 +19,7 @@ export interface OperationalUserPayload {
   id?: string
   email?: string | null
   fullName?: string
+  password?: string
   role?: UserRole
   team?: TeamColor | null
   isActive?: boolean
@@ -59,5 +60,12 @@ export async function deleteOperationalUser(id: string) {
     method: 'POST',
     body: { action: 'delete', id },
   })
+  if (error) {
+    console.error('[userService] delete error:', error)
+    // Try to extract the response body for more details
+    if ('context' in error && (error as { context: { responseBody?: string } }).context?.responseBody) {
+      console.error('[userService] response body:', (error as { context: { responseBody?: string } }).context.responseBody)
+    }
+  }
   return { data: data?.users ?? [], error: errorMessage(error) }
 }

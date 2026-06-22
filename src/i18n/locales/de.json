@@ -402,7 +402,8 @@
     "deactivate": "Deaktivieren",
     "delete": "Löschen",
     "deleteConfirmTitle": "Benutzer löschen",
-    "deleteConfirmMessage": "Möchten Sie «{{name}}» unwiderruflich löschen? Diese Aktion kann nicht rückgängig gemacht werden."
+    "deleteConfirmMessage": "Möchten Sie «{{name}}» unwiderruflich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
+    "passwordPlaceholder": "Leer lassen = unverändert"
   },
   "assignment": {
     "title": "Auftrag zuweisen",
