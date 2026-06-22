@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
     }
 
     // ── Phase 2: profileId provided → issue JWT ────────────────────────────
-    const jwtSecret = env('EDGE_JWT_SECRET')
+    const jwtSecret = env('JWT_SECRET')
 
     const profilesData = await supabaseFetch<ProfileRow[]>(
       supabaseUrl,
