@@ -46,6 +46,7 @@ import {
   fetchVehicleStock,
   registerMaterialConsumption,
 } from '@/services/materialInventoryService'
+import { notifyReportSubmitted } from '@/services/notificationService'
 import type { ServiceItemWithRelations } from '@/types/service-items'
 import type { ConsumptionCorrectionRequired, ConsumptionDraft, InventoryVehicle, VehicleStockRow } from '@/types/material-inventory'
 import type { TeamColor } from '@/types/enums'
@@ -374,6 +375,17 @@ export function RueckmeldungPage() {
       setError(error)
       setIsSending(false)
     } else {
+      const techFullName = user.fullName || user.email || ''
+      notifyReportSubmitted({
+        orderNumber: order.order_number,
+        techName: techFullName,
+        workType: L.workType(order.work_type),
+        address: order.address ?? '',
+        city: order.city ?? '',
+        summary: notes,
+        techNotes: techNotes.trim() || undefined,
+        orderUrl: `${window.location.origin}/admin/orders/${id}`,
+      })
       navigate(`/tech/orders/${id}`)
     }
   }

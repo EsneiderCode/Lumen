@@ -1058,7 +1058,8 @@
           "task_assigned": "Aufgabe zugewiesen",
           "order_status_changed": "Statusänderung / Neuzuweisung / Bearbeitung",
           "order_cancelled": "Auftrag storniert",
-          "order_deleted": "Auftrag gelöscht"
+          "order_deleted": "Auftrag gelöscht",
+          "report_submitted": "Rückmeldung eingereicht"
         }
       }
     }

@@ -21,6 +21,7 @@ type TelegramEventType =
   | 'order_status_changed'
   | 'order_cancelled'
   | 'order_deleted'
+  | 'report_submitted'
 
 interface TelegramBody {
   /** Special action — not a notification send */
@@ -50,6 +51,14 @@ interface TelegramBody {
   orderUrl?: string
   /** order_status_changed: human-readable new status */
   newStatus?: string
+  /** report_submitted: technician name */
+  techName?: string
+  /** report_submitted: city */
+  city?: string
+  /** report_submitted: summary / result */
+  summary?: string
+  /** report_submitted: technician notes */
+  techNotes?: string
 }
 
 interface GroupRow {
@@ -76,6 +85,10 @@ const MAX = {
   orderUrl:           512,
   newStatus:          120,
   chatId:             64,
+  techName:           120,
+  city:               200,
+  summary:            500,
+  techNotes:          1_000,
 } as const
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -99,6 +112,10 @@ function readBody(value: unknown): TelegramBody {
     address:            typeof b.address            === 'string' ? b.address            : undefined,
     orderUrl:           typeof b.orderUrl           === 'string' ? b.orderUrl           : undefined,
     newStatus:          typeof b.newStatus          === 'string' ? b.newStatus          : undefined,
+    techName:           typeof b.techName           === 'string' ? b.techName           : undefined,
+    city:               typeof b.city               === 'string' ? b.city               : undefined,
+    summary:            typeof b.summary            === 'string' ? b.summary            : undefined,
+    techNotes:          typeof b.techNotes          === 'string' ? b.techNotes          : undefined,
   }
 }
 
@@ -114,10 +131,14 @@ function trim(v: string | undefined, max: number): string | undefined {
 
 // ── Auth guard ────────────────────────────────────────────────────────────────
 
-async function requireAdmin(
+/** Event types that any authenticated user (not just admin) can trigger. */
+const OPEN_EVENT_TYPES: Set<string> = new Set(['report_submitted'])
+
+async function requireAuth(
   req: Request,
   supabaseUrl: string,
   serviceRoleKey: string,
+  eventType?: string,
 ): Promise<Response | null> {
   const auth = req.headers.get('authorization')
   if (!auth) return json(401, { error: 'Missing authorization' })
@@ -137,8 +158,15 @@ async function requireAdmin(
     { method: 'GET' },
   )
   const profile = profiles[0] ?? null
-  if (!profile || profile.role !== 'admin' || !profile.is_active) {
-    return json(403, { error: 'Admin access required' })
+  if (!profile || !profile.is_active) {
+    return json(403, { error: 'Active profile required' })
+  }
+
+  // Open events allow any authenticated user; all others require admin
+  if (!eventType || !OPEN_EVENT_TYPES.has(eventType)) {
+    if (profile.role !== 'admin') {
+      return json(403, { error: 'Admin access required' })
+    }
   }
   return null
 }
@@ -228,6 +256,42 @@ function buildMessage(body: TelegramBody): string | null {
         `👤 Cancelada${who}` +
         reasonLine
       )
+    }
+
+    case 'report_submitted': {
+      const techName  = trim(body.techName,  MAX.techName)
+      const address   = trim(body.address,   MAX.address)
+      const city      = trim(body.city,      MAX.city)
+      const summary   = trim(body.summary,   MAX.summary)
+      const techNotes = trim(body.techNotes,  MAX.techNotes)
+      const workType  = trim(body.workType,  MAX.workType)
+      const orderUrl  = trim(body.orderUrl,  MAX.orderUrl)
+      if (!orderNumber) return null
+
+      const lines: string[] = [
+        `📝 <b>Rückmeldung eingereicht</b>`,
+        '',
+        `🔖 OS: <b>${esc(orderNumber)}</b>`,
+      ]
+
+      if (workType) lines.push(`🔧 Typ: <b>${esc(workType)}</b>`)
+      if (techName) lines.push(`👤 Techniker: <b>${esc(techName)}</b>`)
+
+      const location = [address, city].filter(Boolean).join(', ')
+      if (location) lines.push(`📍 ${esc(location)}`)
+
+      if (summary) {
+        lines.push('')
+        lines.push(`📋 <b>Zusammenfassung:</b> ${esc(summary)}`)
+      }
+
+      if (techNotes) {
+        lines.push(`📌 <b>Notizen:</b> ${esc(techNotes)}`)
+      }
+
+      if (orderUrl) lines.push(`\n🔗 <a href="${orderUrl}">Rückmeldung ansehen</a>`)
+
+      return lines.join('\n')
     }
 
     case 'order_deleted': {
@@ -322,10 +386,10 @@ Deno.serve(async (req) => {
     const serviceRoleKey = env('SUPABASE_SERVICE_ROLE_KEY')
     const botToken       = env('TELEGRAM_BOT_TOKEN')
 
-    const adminError = await requireAdmin(req, supabaseUrl, serviceRoleKey)
-    if (adminError) return adminError
-
     const body = readBody(await req.json().catch(() => null))
+
+    const authError = await requireAuth(req, supabaseUrl, serviceRoleKey, body.type ?? body.action)
+    if (authError) return authError
 
     // ── validate_chat action ─────────────────────────────────────────────────
     if (body.action === 'validate_chat') {

@@ -106,6 +106,33 @@ export async function notifyOrderCancelled(
 }
 
 /**
+ * Notifies configured groups that a technician has submitted a Rückmeldung.
+ * Triggered after a successful report submission (rueckmeldung_sent).
+ */
+export async function notifyReportSubmitted(opts: {
+  orderNumber: string
+  techName?: string
+  workType?: string
+  address?: string
+  city?: string
+  summary?: string
+  techNotes?: string
+  orderUrl: string
+}): Promise<void> {
+  await sendTelegram({
+    type: 'report_submitted',
+    orderNumber: opts.orderNumber,
+    techName: opts.techName ?? '',
+    workType: opts.workType ?? '',
+    address: opts.address ?? '',
+    city: opts.city ?? '',
+    summary: opts.summary ?? '',
+    techNotes: opts.techNotes ?? '',
+    orderUrl: opts.orderUrl,
+  })
+}
+
+/**
  * Notifies configured groups that a work order has been deleted.
  * Triggered after a successful deletion.
  */

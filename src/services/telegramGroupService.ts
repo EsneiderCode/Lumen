@@ -10,6 +10,7 @@ export type TelegramEventType =
   | 'order_status_changed'
   | 'order_cancelled'
   | 'order_deleted'
+  | 'report_submitted'
 
 export const TELEGRAM_EVENT_TYPES: TelegramEventType[] = [
   'order_returned_for_correction',
@@ -17,6 +18,7 @@ export const TELEGRAM_EVENT_TYPES: TelegramEventType[] = [
   'order_status_changed',
   'order_cancelled',
   'order_deleted',
+  'report_submitted',
 ]
 
 export const TELEGRAM_GROUP_PURPOSES: TelegramGroupPurpose[] = [
@@ -105,9 +107,11 @@ export async function setMapping(
   groupId: string,
   active: boolean,
 ): Promise<void> {
+  // Cast needed: database.types.ts is regenerated after migration is applied
+  const eventTypeValue = eventType as string
   if (active) {
     const { error } = await supabase.from('event_group_mappings').upsert(
-      { event_type: eventType, telegram_group_id: groupId, is_active: true },
+      { event_type: eventTypeValue as 'order_returned_for_correction', telegram_group_id: groupId, is_active: true },
       { onConflict: 'event_type,telegram_group_id' },
     )
     if (error) throw error
@@ -115,7 +119,7 @@ export async function setMapping(
     const { error } = await supabase
       .from('event_group_mappings')
       .delete()
-      .eq('event_type', eventType)
+      .eq('event_type', eventTypeValue as 'order_returned_for_correction')
       .eq('telegram_group_id', groupId)
     if (error) throw error
   }

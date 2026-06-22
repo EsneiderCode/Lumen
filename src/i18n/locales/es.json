@@ -1085,7 +1085,8 @@
           "task_assigned": "Tarea asignada",
           "order_status_changed": "Cambio de estado / reasignación / modificación",
           "order_cancelled": "Orden cancelada",
-          "order_deleted": "Orden eliminada"
+          "order_deleted": "Orden eliminada",
+          "report_submitted": "Rückmeldung enviada"
         }
       }
     }
