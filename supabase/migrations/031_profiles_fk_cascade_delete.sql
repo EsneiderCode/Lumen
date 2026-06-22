@@ -15,13 +15,13 @@ ALTER TABLE public.work_orders
     FOREIGN KEY (created_by) REFERENCES public.profiles(id)
     ON DELETE SET NULL;
 
--- ── cert_audit.certified_by ─────────────────────────────────────────────
-ALTER TABLE public.cert_audit
+-- ── certification_audits.certified_by ────────────────────────────────────
+ALTER TABLE public.certification_audits
   ALTER COLUMN certified_by DROP NOT NULL;
 
-ALTER TABLE public.cert_audit
-  DROP CONSTRAINT cert_audit_certified_by_fkey,
-  ADD CONSTRAINT cert_audit_certified_by_fkey
+ALTER TABLE public.certification_audits
+  DROP CONSTRAINT certification_audits_certified_by_fkey,
+  ADD CONSTRAINT certification_audits_certified_by_fkey
     FOREIGN KEY (certified_by) REFERENCES public.profiles(id)
     ON DELETE SET NULL;
 
