@@ -19,6 +19,17 @@ export function json(status: number, body: unknown): Response {
   })
 }
 
+/** Extract user ID (sub) from a JWT. The Supabase relay already verified the signature. */
+export function userIdFromJwt(auth: string): string | null {
+  try {
+    const token = auth.replace(/^Bearer\s+/i, '')
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    return typeof payload.sub === 'string' ? payload.sub : null
+  } catch {
+    return null
+  }
+}
+
 export async function supabaseFetch<T>(
   baseUrl: string,
   serviceRoleKey: string,

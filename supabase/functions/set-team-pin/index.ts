@@ -1,12 +1,10 @@
-import { CORS_HEADERS, env, json, selectOne, supabaseFetch } from '../_shared/http.ts'
+import { CORS_HEADERS, env, json, selectOne, supabaseFetch, userIdFromJwt } from '../_shared/http.ts'
 import { assertValidPin, hashPin } from '../_shared/pin.ts'
 
 type UserRole = 'admin' | 'technician' | 'contractor'
 type TeamColor = 'rot' | 'gruen' | 'blau' | 'gelb'
 
 const VALID_TEAMS: TeamColor[] = ['rot', 'gruen', 'blau', 'gelb']
-
-interface AuthUserResponse { id?: string }
 
 interface TeamPinRow {
   id: string
@@ -22,19 +20,14 @@ async function requireAdmin(
   const auth = req.headers.get('authorization')
   if (!auth) return json(401, { error: 'Missing authorization' })
 
-  const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
-    headers: { apikey: serviceRoleKey, authorization: auth },
-  })
-  if (!userRes.ok) return json(401, { error: 'Invalid authorization' })
-
-  const authUser = (await userRes.json()) as AuthUserResponse
-  if (!authUser.id) return json(401, { error: 'Invalid authorization' })
+  const userId = userIdFromJwt(auth)
+  if (!userId) return json(401, { error: 'Invalid authorization' })
 
   const profile = await selectOne<{ role: UserRole; is_active: boolean }>(
     supabaseUrl,
     serviceRoleKey,
     'profiles',
-    `select=role,is_active&id=eq.${encodeURIComponent(authUser.id)}`,
+    `select=role,is_active&id=eq.${encodeURIComponent(userId)}`,
   )
   if (!profile || profile.role !== 'admin' || !profile.is_active) {
     return json(403, { error: 'Admin access required' })

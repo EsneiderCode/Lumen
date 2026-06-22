@@ -1,4 +1,4 @@
-import { CORS_HEADERS, env, json, supabaseFetch } from '../_shared/http.ts'
+import { CORS_HEADERS, env, json, supabaseFetch, userIdFromJwt } from '../_shared/http.ts'
 
 declare const Deno: {
   serve(handler: (req: Request) => Response | Promise<Response>): void
@@ -129,17 +129,6 @@ function trim(v: string | undefined, max: number): string | undefined {
 
 /** Event types that any authenticated user (not just admin) can trigger. */
 const OPEN_EVENT_TYPES: Set<string> = new Set(['report_submitted'])
-
-/** Extract user ID from a JWT (the relay already verified the signature). */
-function userIdFromJwt(auth: string): string | null {
-  try {
-    const token = auth.replace(/^Bearer\s+/i, '')
-    const payload = JSON.parse(atob(token.split('.')[1]))
-    return typeof payload.sub === 'string' ? payload.sub : null
-  } catch {
-    return null
-  }
-}
 
 async function requireAuth(
   req: Request,
