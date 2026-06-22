@@ -3,7 +3,10 @@
 --
 -- Changes all RESTRICT / NO ACTION foreign keys referencing profiles(id)
 -- to ON DELETE SET NULL, so admin can permanently delete a user.
--- Uses DO blocks to skip tables that may not exist yet.
+-- Migration 030 already handled: work_orders.assigned_technician,
+--   work_order_photos.uploaded_by, work_order_state_history.changed_by.
+-- contractor_documents.contractor_id already has ON DELETE CASCADE.
+-- pin_trusted_devices.profile_id already has ON DELETE CASCADE.
 
 -- ── work_orders.created_by ──────────────────────────────────────────────
 ALTER TABLE public.work_orders
@@ -36,17 +39,18 @@ DO $$ BEGIN
   END IF;
 END $$;
 
--- ── vacations.approved_by ───────────────────────────────────────────────
+-- ── vacation_requests.approved_by ───────────────────────────────────────
 DO $$ BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'vacations') THEN
-    ALTER TABLE public.vacations DROP CONSTRAINT IF EXISTS vacations_approved_by_fkey;
-    ALTER TABLE public.vacations
-      ADD CONSTRAINT vacations_approved_by_fkey
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'vacation_requests') THEN
+    ALTER TABLE public.vacation_requests DROP CONSTRAINT IF EXISTS vacation_requests_approved_by_fkey;
+    ALTER TABLE public.vacation_requests DROP CONSTRAINT IF EXISTS vacations_approved_by_fkey;
+    ALTER TABLE public.vacation_requests
+      ADD CONSTRAINT vacation_requests_approved_by_fkey
         FOREIGN KEY (approved_by) REFERENCES public.profiles(id) ON DELETE SET NULL;
   END IF;
 END $$;
 
--- ── appointments.assigned_to ────────────────────────────────────────────
+-- ── appointments.assigned_to + created_by ───────────────────────────────
 DO $$ BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'appointments') THEN
     ALTER TABLE public.appointments DROP CONSTRAINT IF EXISTS appointments_assigned_to_fkey;
@@ -90,35 +94,35 @@ DO $$ BEGIN
   END IF;
 END $$;
 
--- ── material_discrepancies.reported_by ──────────────────────────────────
+-- ── work_order_material_consumptions.reported_by ────────────────────────
 DO $$ BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'material_discrepancies') THEN
-    ALTER TABLE public.material_discrepancies ALTER COLUMN reported_by DROP NOT NULL;
-    ALTER TABLE public.material_discrepancies DROP CONSTRAINT IF EXISTS material_discrepancies_reported_by_fkey;
-    ALTER TABLE public.material_discrepancies
-      ADD CONSTRAINT material_discrepancies_reported_by_fkey
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'work_order_material_consumptions') THEN
+    ALTER TABLE public.work_order_material_consumptions ALTER COLUMN reported_by DROP NOT NULL;
+    ALTER TABLE public.work_order_material_consumptions DROP CONSTRAINT IF EXISTS work_order_material_consumptions_reported_by_fkey;
+    ALTER TABLE public.work_order_material_consumptions
+      ADD CONSTRAINT work_order_material_consumptions_reported_by_fkey
         FOREIGN KEY (reported_by) REFERENCES public.profiles(id) ON DELETE SET NULL;
   END IF;
 END $$;
 
--- ── material_transfers.created_by ───────────────────────────────────────
+-- ── stock_movements.created_by ──────────────────────────────────────────
 DO $$ BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'material_transfers') THEN
-    ALTER TABLE public.material_transfers ALTER COLUMN created_by DROP NOT NULL;
-    ALTER TABLE public.material_transfers DROP CONSTRAINT IF EXISTS material_transfers_created_by_fkey;
-    ALTER TABLE public.material_transfers
-      ADD CONSTRAINT material_transfers_created_by_fkey
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'stock_movements') THEN
+    ALTER TABLE public.stock_movements ALTER COLUMN created_by DROP NOT NULL;
+    ALTER TABLE public.stock_movements DROP CONSTRAINT IF EXISTS stock_movements_created_by_fkey;
+    ALTER TABLE public.stock_movements
+      ADD CONSTRAINT stock_movements_created_by_fkey
         FOREIGN KEY (created_by) REFERENCES public.profiles(id) ON DELETE SET NULL;
   END IF;
 END $$;
 
--- ── project_documents.uploaded_by ───────────────────────────────────────
+-- ── work_order_documents.uploaded_by ────────────────────────────────────
 DO $$ BEGIN
-  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'project_documents') THEN
-    ALTER TABLE public.project_documents ALTER COLUMN uploaded_by DROP NOT NULL;
-    ALTER TABLE public.project_documents DROP CONSTRAINT IF EXISTS project_documents_uploaded_by_fkey;
-    ALTER TABLE public.project_documents
-      ADD CONSTRAINT project_documents_uploaded_by_fkey
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'work_order_documents') THEN
+    ALTER TABLE public.work_order_documents ALTER COLUMN uploaded_by DROP NOT NULL;
+    ALTER TABLE public.work_order_documents DROP CONSTRAINT IF EXISTS work_order_documents_uploaded_by_fkey;
+    ALTER TABLE public.work_order_documents
+      ADD CONSTRAINT work_order_documents_uploaded_by_fkey
         FOREIGN KEY (uploaded_by) REFERENCES public.profiles(id) ON DELETE SET NULL;
   END IF;
 END $$;
