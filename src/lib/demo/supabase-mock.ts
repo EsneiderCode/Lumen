@@ -777,6 +777,16 @@ function makeFunctions() {
         }
 
         const body = options.body ?? {}
+
+        if (options.method === 'POST' && body.action === 'delete') {
+          const id = String(body.id ?? '')
+          const idx = store.profiles.findIndex((p) => p.id === id)
+          if (idx === -1) return { data: null, error: { message: 'Demo user not found' } }
+          store.profiles.splice(idx, 1)
+          saveStore(store)
+          return { data: { users: store.profiles }, error: null }
+        }
+
         if (options.method === 'POST') {
           const id = demoUuid()
           const role = String(body.role ?? 'technician')
@@ -816,14 +826,6 @@ function makeFunctions() {
           return { data: { users: store.profiles }, error: null }
         }
 
-        if (options.method === 'DELETE') {
-          const id = String(body.id ?? '')
-          const idx = store.profiles.findIndex((p) => p.id === id)
-          if (idx === -1) return { data: null, error: { message: 'Demo user not found' } }
-          store.profiles.splice(idx, 1)
-          saveStore(store)
-          return { data: { users: store.profiles }, error: null }
-        }
       }
 
       return {

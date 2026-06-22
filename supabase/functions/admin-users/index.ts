@@ -24,6 +24,7 @@ interface AuthUserResponse {
 }
 
 interface UserPayload {
+  action?: string
   id?: string
   email?: string | null
   fullName?: string
@@ -36,6 +37,7 @@ function readPayload(value: unknown): UserPayload {
   if (!value || typeof value !== 'object') return {}
   const raw = value as Record<string, unknown>
   return {
+    action: typeof raw.action === 'string' ? raw.action : undefined,
     id: typeof raw.id === 'string' ? raw.id : undefined,
     email: typeof raw.email === 'string' ? raw.email : raw.email === null ? null : undefined,
     fullName: typeof raw.fullName === 'string' ? raw.fullName : undefined,
@@ -138,6 +140,33 @@ Deno.serve(async (req) => {
 
     const payload = readPayload(await req.json().catch(() => null))
 
+    if (req.method === 'POST' && payload.action === 'delete') {
+      if (!payload.id) return json(400, { error: 'User id is required' })
+
+      // Delete profile row first (FK constraints)
+      await supabaseFetch<void>(
+        supabaseUrl,
+        serviceRoleKey,
+        `profiles?id=eq.${encodeURIComponent(payload.id)}`,
+        { method: 'DELETE', headers: { prefer: 'return=minimal' } },
+      )
+
+      // Delete auth user
+      const authRes = await fetch(`${supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(payload.id)}`, {
+        method: 'DELETE',
+        headers: {
+          apikey: serviceRoleKey,
+          authorization: `Bearer ${serviceRoleKey}`,
+        },
+      })
+      if (!authRes.ok) {
+        const text = await authRes.text()
+        console.warn(`[admin-users] auth user delete failed (${authRes.status}): ${text}`)
+      }
+
+      return json(200, { users: await listUsers(supabaseUrl, serviceRoleKey) })
+    }
+
     if (req.method === 'POST') {
       if (!payload.fullName?.trim() || !payload.role) {
         return json(400, { error: 'Full name and role are required' })
@@ -196,33 +225,6 @@ Deno.serve(async (req) => {
           body: JSON.stringify(patch),
         },
       )
-      return json(200, { users: await listUsers(supabaseUrl, serviceRoleKey) })
-    }
-
-    if (req.method === 'DELETE') {
-      if (!payload.id) return json(400, { error: 'User id is required' })
-
-      // Delete profile row first (FK constraints)
-      await supabaseFetch<void>(
-        supabaseUrl,
-        serviceRoleKey,
-        `profiles?id=eq.${encodeURIComponent(payload.id)}`,
-        { method: 'DELETE', headers: { prefer: 'return=minimal' } },
-      )
-
-      // Delete auth user
-      const authRes = await fetch(`${supabaseUrl}/auth/v1/admin/users/${encodeURIComponent(payload.id)}`, {
-        method: 'DELETE',
-        headers: {
-          apikey: serviceRoleKey,
-          authorization: `Bearer ${serviceRoleKey}`,
-        },
-      })
-      if (!authRes.ok) {
-        const text = await authRes.text()
-        console.warn(`[admin-users] auth user delete failed (${authRes.status}): ${text}`)
-      }
-
       return json(200, { users: await listUsers(supabaseUrl, serviceRoleKey) })
     }
 
