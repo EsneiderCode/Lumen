@@ -6,10 +6,6 @@ declare const Deno: {
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-interface AuthUserResponse {
-  id?: string
-}
-
 type ProfileRow = Record<string, unknown> & {
   role: 'admin' | 'technician' | 'contractor'
   is_active: boolean
@@ -134,6 +130,17 @@ function trim(v: string | undefined, max: number): string | undefined {
 /** Event types that any authenticated user (not just admin) can trigger. */
 const OPEN_EVENT_TYPES: Set<string> = new Set(['report_submitted'])
 
+/** Extract user ID from a JWT (the relay already verified the signature). */
+function userIdFromJwt(auth: string): string | null {
+  try {
+    const token = auth.replace(/^Bearer\s+/i, '')
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    return typeof payload.sub === 'string' ? payload.sub : null
+  } catch {
+    return null
+  }
+}
+
 async function requireAuth(
   req: Request,
   supabaseUrl: string,
@@ -143,18 +150,13 @@ async function requireAuth(
   const auth = req.headers.get('authorization')
   if (!auth) return json(401, { error: 'Missing authorization' })
 
-  const userRes = await fetch(`${supabaseUrl}/auth/v1/user`, {
-    headers: { apikey: serviceRoleKey, authorization: auth },
-  })
-  if (!userRes.ok) return json(401, { error: 'Invalid authorization' })
-
-  const authUser = (await userRes.json()) as AuthUserResponse
-  if (!authUser.id) return json(401, { error: 'Invalid authorization' })
+  const userId = userIdFromJwt(auth)
+  if (!userId) return json(401, { error: 'Invalid authorization' })
 
   const profiles = await supabaseFetch<ProfileRow[]>(
     supabaseUrl,
     serviceRoleKey,
-    `profiles?select=role,is_active&id=eq.${encodeURIComponent(authUser.id)}&limit=1`,
+    `profiles?select=role,is_active&id=eq.${encodeURIComponent(userId)}&limit=1`,
     { method: 'GET' },
   )
   const profile = profiles[0] ?? null
