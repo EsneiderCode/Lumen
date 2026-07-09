@@ -1,9 +1,13 @@
 export type ContractorDocumentType =
+  | 'a1_bescheinigung'
+  | 'unbedenklichkeit_finanzamt'
+  | 'mindestlohn_meldung_gzd'
+  | 'unbedenklichkeit_sozialkasse'
+  | 'ust_id_reverse_charge'
   | 'gewerbeanmeldung'
   | 'haftpflichtversicherung'
-  | 'unbedenklichkeit_finanzamt'
-  | 'unbedenklichkeit_sozialkasse'
   | 'id_passport'
+  | 'zusatzvereinbarung_mindestlohn'
   | 'subcontractor_agreement'
 
 export type ContractorDocumentStatus = 'pending_review' | 'approved' | 'rejected'
@@ -36,11 +40,16 @@ export interface ContractorDocumentSlot {
   isExpired: boolean
 }
 
+// Order matches the UMTELKOMD Subunternehmer-Onboarding compliance checklist.
 export const REQUIRED_CONTRACTOR_DOCUMENT_TYPES: ContractorDocumentType[] = [
+  'a1_bescheinigung',
+  'unbedenklichkeit_finanzamt',
+  'mindestlohn_meldung_gzd',
+  'unbedenklichkeit_sozialkasse',
+  'ust_id_reverse_charge',
   'gewerbeanmeldung',
   'haftpflichtversicherung',
-  'unbedenklichkeit_finanzamt',
-  'unbedenklichkeit_sozialkasse',
   'id_passport',
+  'zusatzvereinbarung_mindestlohn',
   'subcontractor_agreement',
 ]

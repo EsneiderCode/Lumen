@@ -57,12 +57,16 @@ function contractorDocumentRequirementId(documentType: ContractorDocumentType): 
 }
 
 const CONTRACTOR_DOCUMENT_LABELS: Record<ContractorDocumentType, string> = {
-  gewerbeanmeldung: 'Gewerbeanmeldung',
-  haftpflichtversicherung: 'Haftpflichtversicherung',
-  unbedenklichkeit_finanzamt: 'Unbedenklichkeitsbescheinigung Finanzamt',
-  unbedenklichkeit_sozialkasse: 'Unbedenklichkeitsbescheinigung Sozialkasse',
-  id_passport: 'Ausweis/Reisepass',
-  subcontractor_agreement: 'Subunternehmervertrag',
+  a1_bescheinigung: 'A1-Bescheinigung',
+  unbedenklichkeit_finanzamt: 'Freistellungsbescheinigung § 48b EStG',
+  mindestlohn_meldung_gzd: 'Meldung Mindestlohn / AEntG (GZD)',
+  unbedenklichkeit_sozialkasse: 'SOKA-BAU: Enthaftung / Präqualifikation',
+  ust_id_reverse_charge: 'USt-IdNr. — Reverse Charge § 13b',
+  gewerbeanmeldung: 'Gewerbeanmeldung / Handelsregister',
+  haftpflichtversicherung: 'Betriebshaftpflicht',
+  id_passport: 'Ausweis + Qualifikation',
+  zusatzvereinbarung_mindestlohn: 'Zusatzvereinbarung Mindestlohn',
+  subcontractor_agreement: 'Nachunternehmervertrag',
 }
 
 export function buildContractorDocumentFailureReasons(

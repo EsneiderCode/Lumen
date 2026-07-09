@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { Plus, Search, UserRound, Pencil, UserX, ChevronDown, ChevronUp, Receipt, CalendarDays } from 'lucide-react'
+import { Plus, Search, UserRound, Pencil, UserX, ChevronDown, ChevronUp, Receipt, CalendarDays, ClipboardCheck } from 'lucide-react'
 import {
   fetchEmployees,
   createEmployee,
@@ -300,7 +300,14 @@ function ContractorRow({ contractor }: { contractor: TechnicianProfile }) {
       <td className="px-4 py-3 font-sans text-sm text-fg-1">{contractor.full_name}</td>
       <td className="px-4 py-3"><TeamChip team={contractor.team} /></td>
       <td className="px-4 py-3"><span className="rounded-full border border-ok/40 bg-ok/10 px-2 py-0.5 font-mono text-xs text-ok">AKTIV</span></td>
-      <td className="px-4 py-3 text-right"><Link to="/admin/personnel" className="font-sans text-xs text-accent hover:underline">{t('personnel.manageInUsers')}</Link></td>
+      <td className="px-4 py-3 text-right">
+        <div className="flex items-center justify-end gap-3">
+          <Link to={`/admin/onboarding/${contractor.id}`} className="inline-flex items-center gap-1 font-sans text-xs text-accent hover:underline">
+            <ClipboardCheck size={13} strokeWidth={1.5} />{t('onboarding.linkLabel')}
+          </Link>
+          <Link to="/admin/personnel" className="font-sans text-xs text-fg-2 hover:text-fg-1">{t('personnel.manageInUsers')}</Link>
+        </div>
+      </td>
     </tr>
   )
 }

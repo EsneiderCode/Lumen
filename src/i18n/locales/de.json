@@ -444,17 +444,66 @@
     "certificationBlocked": "Externe Zertifizierung durch unvollständige Dokumente blockiert.",
     "certificationBlockedWithList": "Externe Zertifizierung blockiert. Fehlt oder nicht freigegeben: {{docs}}.",
     "types": {
-      "gewerbeanmeldung": "Gewerbeanmeldung",
-      "haftpflichtversicherung": "Haftpflichtversicherung",
-      "unbedenklichkeit_finanzamt": "Unbedenklichkeitsbescheinigung Finanzamt",
-      "unbedenklichkeit_sozialkasse": "Unbedenklichkeitsbescheinigung Sozialkasse",
-      "id_passport": "Ausweis / Reisepass",
-      "subcontractor_agreement": "Unterschriebener Subunternehmervertrag"
+      "a1_bescheinigung": "A1-Bescheinigung (pro Mitarbeiter)",
+      "unbedenklichkeit_finanzamt": "Freistellungsbescheinigung § 48b EStG",
+      "mindestlohn_meldung_gzd": "Meldung Mindestlohn / AEntG (GZD)",
+      "unbedenklichkeit_sozialkasse": "SOKA-BAU: Enthaftung / Präqualifikation",
+      "ust_id_reverse_charge": "USt-IdNr. — Reverse Charge § 13b UStG",
+      "gewerbeanmeldung": "Gewerbeanmeldung / Handelsregister",
+      "haftpflichtversicherung": "Betriebshaftpflicht (Nachweis)",
+      "id_passport": "Ausweis + Qualifikation (pro Mitarbeiter)",
+      "zusatzvereinbarung_mindestlohn": "Zusatzvereinbarung Mindestlohn (DE/ES)",
+      "subcontractor_agreement": "Nachunternehmervertrag + Klauseln"
     },
     "status": {
       "pending_review": "In Prüfung",
       "approved": "Freigegeben",
       "rejected": "Abgelehnt"
+    }
+  },
+  "onboarding": {
+    "title": "Subunternehmer-Onboarding",
+    "subtitle": "Compliance-Checkliste (UMTELKOMD)",
+    "linkLabel": "Onboarding",
+    "back": "Zurück zum Personal",
+    "save": "Speichern",
+    "saving": "Speichern…",
+    "savedAt": "Gespeichert um {{time}}.",
+    "exportPdf": "PDF exportieren",
+    "complianceHint": "Auszufüllen und mit allen Nachweisen VOR Arbeitsbeginn / Erstzahlung. Alle Dokumente in deutscher Sprache und physisch auf der Baustelle bereitzuhalten (FKS-Kontrolle).",
+    "addWorker": "Mitarbeiter hinzufügen",
+    "removeWorker": "Mitarbeiter entfernen",
+    "noWorkers": "Noch keine Mitarbeiter erfasst.",
+    "sections": {
+      "company": "Angaben zum Subunternehmer",
+      "documents": "Pflichtdokumente",
+      "workers": "Eingesetzte Mitarbeiter (A1)",
+      "verification": "Prüfung & Bestätigung"
+    },
+    "fields": {
+      "companyName": "FIRMENNAME",
+      "ustIdEs": "USt-IdNr. (ES) / NIF-IVA",
+      "address": "ANSCHRIFT",
+      "taxNumberDe": "STEUERNUMMER (DE)",
+      "contactPerson": "ANSPRECHPARTNER",
+      "email": "E-MAIL",
+      "phone": "TELEFON",
+      "projectSite": "PROJEKT / BAUSTELLE",
+      "deploymentPeriod": "EINSATZZEITRAUM",
+      "deploymentPeriodPlaceholder": "z. B. 01.08.2026 – 31.12.2026",
+      "placeDate": "ORT, DATUM",
+      "verifiedBy": "GEPRÜFT DURCH (NAME)",
+      "notes": "NOTIZEN"
+    },
+    "worker": {
+      "name": "NAME",
+      "a1ValidUntil": "A1 GÜLTIG BIS",
+      "idNumber": "AUSWEIS-NR."
+    },
+    "checks": {
+      "checked48b": "§ 48b: Gültigkeit im EIBE-Portal des BZSt online geprüft (Sicherheitsnummer + Dienstsiegel).",
+      "withholdBauabzug": "Ohne gültige § 48b-Bescheinigung: 15 % Bauabzugsteuer einbehalten und abführen.",
+      "ustIdConfirmed": "USt-IdNr. beim BZSt bestätigt / Reverse Charge angewandt (Netto-Rechnung)."
     }
   },
   "appointments": {

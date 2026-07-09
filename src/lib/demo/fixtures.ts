@@ -694,6 +694,37 @@ export const initialFixtures = () => ({
 
   pin_trusted_devices: [],
 
+  // UMTELKOMD Subunternehmer-Onboarding — one seeded compliance record for the
+  // demo contractor (company data + A1 roster + verification block).
+  subcontractor_onboarding: [
+    {
+      id: 'sc000000-0000-0000-0000-000000000001',
+      contractor_id: CONTRACTOR_ID,
+      company_name: 'Fibra Ibérica S.L.',
+      ust_id_es: 'ESB12345678',
+      address: 'Calle Mayor 12, 28013 Madrid',
+      tax_number_de: '27/123/45678',
+      contact_person: 'Carlos Méndez',
+      contact_email: 'carlos@fibra-iberica.es',
+      contact_phone: '+34 600 123 456',
+      project_site: 'HXT — Rot',
+      deployment_period: '01.08.2026 – 31.12.2026',
+      a1_workers: [
+        { name: 'Carlos Méndez', a1_valid_until: '2027-01-31', id_number: 'ESP-9981234' },
+        { name: 'Luis Fernández', a1_valid_until: '2026-11-30', id_number: 'ESP-9985678' },
+      ],
+      checked_48b: true,
+      withhold_bauabzug: false,
+      ust_id_confirmed: true,
+      place_date: 'Berlin, 01.07.2026',
+      verified_by: 'Alejandro Herrera',
+      notes: null,
+      created_by: ADMIN_ID,
+      created_at: LAST_WEEK,
+      updated_at: LAST_WEEK,
+    },
+  ],
+
   // Plan 009 — collaborator cycle calendar.
   // One PUBLISHED cycle (visible to contractor@demo.lumen) with all 4 milestones
   // and 2 attached orders, plus one DRAFT cycle (must NOT be visible to the

@@ -48,9 +48,9 @@ describe('buildContractorDocumentFailureReasons', () => {
   it('reports all missing contractor document requirements together', () => {
     const reasons = buildContractorDocumentFailureReasons([], '2026-05-15')
 
-    expect(reasons).toHaveLength(6)
+    expect(reasons).toHaveLength(REQUIRED_CONTRACTOR_DOCUMENT_TYPES.length)
     expect(reasons.map((reason) => reason.code)).toEqual(
-      Array(6).fill('contractor_documents_missing'),
+      Array(REQUIRED_CONTRACTOR_DOCUMENT_TYPES.length).fill('contractor_documents_missing'),
     )
     expect(reasons.map((reason) => reason.requirementId)).toContain(
       'contractor_document:gewerbeanmeldung',
@@ -93,7 +93,9 @@ describe('buildContractorDocumentFailureReasons', () => {
         }),
       ]),
     )
-    expect(reasons).toHaveLength(3)
+    // 3 documents supplied are valid (gewerbeanmeldung, id_passport,
+    // subcontractor_agreement); every other required type fails.
+    expect(reasons).toHaveLength(REQUIRED_CONTRACTOR_DOCUMENT_TYPES.length - 3)
   })
 })
 

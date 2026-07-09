@@ -15,6 +15,7 @@ export const ROUTES = {
     PROJECTS: '/admin/projects',
     PROJECTS_DETAIL: '/admin/projects/:id',
     PERSONNEL: '/admin/personnel',
+    ONBOARDING: '/admin/onboarding/:contractorId',
     EMPLOYEES: '/admin/employees',
     MATERIALS: '/admin/materials',
     CYCLES: '/admin/cycles',

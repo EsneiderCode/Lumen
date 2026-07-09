@@ -471,17 +471,66 @@
     "certificationBlocked": "Certificación externa bloqueada por documentación incompleta.",
     "certificationBlockedWithList": "Certificación externa bloqueada. Faltan o no están aprobados: {{docs}}.",
     "types": {
-      "gewerbeanmeldung": "Gewerbeanmeldung",
-      "haftpflichtversicherung": "Haftpflichtversicherung",
-      "unbedenklichkeit_finanzamt": "Unbedenklichkeitsbescheinigung Finanzamt",
-      "unbedenklichkeit_sozialkasse": "Unbedenklichkeitsbescheinigung Sozialkasse",
-      "id_passport": "ID / pasaporte",
-      "subcontractor_agreement": "Contrato de subcontratista firmado"
+      "a1_bescheinigung": "Certificado A1 (por trabajador)",
+      "unbedenklichkeit_finanzamt": "Certificado de exención fiscal § 48b",
+      "mindestlohn_meldung_gzd": "Registro salario mínimo (GZD)",
+      "unbedenklichkeit_sozialkasse": "SOKA-BAU: exención / precalificación",
+      "ust_id_reverse_charge": "NIF-IVA — inversión sujeto pasivo § 13b",
+      "gewerbeanmeldung": "Alta de actividad / registro mercantil",
+      "haftpflichtversicherung": "Seguro de responsabilidad civil",
+      "id_passport": "Documento de identidad + cualificación",
+      "zusatzvereinbarung_mindestlohn": "Anexo de salario mínimo (DE/ES)",
+      "subcontractor_agreement": "Contrato de subcontrata + cláusulas"
     },
     "status": {
       "pending_review": "Pendiente de revisión",
       "approved": "Aprobado",
       "rejected": "Rechazado"
+    }
+  },
+  "onboarding": {
+    "title": "Onboarding de subcontratista",
+    "subtitle": "Lista de verificación de cumplimiento (UMTELKOMD)",
+    "linkLabel": "Onboarding",
+    "back": "Volver a Personal",
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "savedAt": "Guardado a las {{time}}.",
+    "exportPdf": "Exportar PDF",
+    "complianceHint": "Completar y entregar con todos los soportes ANTES de iniciar la obra o del primer pago. Todos los documentos en alemán y disponibles físicamente en la obra (control FKS).",
+    "addWorker": "Añadir trabajador",
+    "removeWorker": "Eliminar trabajador",
+    "noWorkers": "Aún no hay trabajadores registrados.",
+    "sections": {
+      "company": "Datos del subcontratista",
+      "documents": "Documentos obligatorios",
+      "workers": "Trabajadores desplazados (A1)",
+      "verification": "Verificación y confirmación"
+    },
+    "fields": {
+      "companyName": "RAZÓN SOCIAL",
+      "ustIdEs": "NIF-IVA / USt-IdNr. (ES)",
+      "address": "DIRECCIÓN",
+      "taxNumberDe": "N.º FISCAL ALEMÁN",
+      "contactPerson": "PERSONA DE CONTACTO",
+      "email": "CORREO",
+      "phone": "TELÉFONO",
+      "projectSite": "PROYECTO / OBRA",
+      "deploymentPeriod": "PERÍODO DE TRABAJO",
+      "deploymentPeriodPlaceholder": "p. ej. 01.08.2026 – 31.12.2026",
+      "placeDate": "LUGAR, FECHA",
+      "verifiedBy": "VERIFICADO POR (NOMBRE)",
+      "notes": "NOTAS"
+    },
+    "worker": {
+      "name": "NOMBRE",
+      "a1ValidUntil": "A1 VÁLIDO HASTA",
+      "idNumber": "N.º DOCUMENTO"
+    },
+    "checks": {
+      "checked48b": "§ 48b: validez comprobada online en el portal EIBE del BZSt (n.º de seguridad + sello).",
+      "withholdBauabzug": "Sin certificado § 48b vigente: retener y girar el 15 % de Bauabzugsteuer.",
+      "ustIdConfirmed": "NIF-IVA confirmado en el BZSt / inversión aplicada (factura sin IVA)."
     }
   },
   "appointments": {
