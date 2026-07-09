@@ -1,16 +1,11 @@
 import { supabase } from '@/lib/supabase'
+import type { Json } from '@/types/database.types'
 import type {
   SubcontractorOnboarding,
   SubcontractorOnboardingPayload,
 } from '@/types/subcontractor-onboarding'
 
 const TABLE = 'subcontractor_onboarding'
-
-// The `subcontractor_onboarding` table is added by migration 033; it only appears
-// in the generated database.types.ts after Alejandro applies the migration and
-// regenerates types. Until then, access it through an untyped client view.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const db = supabase as unknown as { from: (table: string) => any }
 
 /** Normalize payload before persisting: empty strings → null, keep booleans/arrays. */
 function toRow(payload: SubcontractorOnboardingPayload) {
@@ -26,9 +21,11 @@ function toRow(payload: SubcontractorOnboardingPayload) {
     contact_phone: nullable(payload.contact_phone),
     project_site: nullable(payload.project_site),
     deployment_period: nullable(payload.deployment_period),
+    // A1Worker[] → Json: interfaces lack the index signature the generated
+    // JSONB column type requires; the runtime shape is plain JSON.
     a1_workers: payload.a1_workers.filter(
       (w) => w.name.trim() || w.id_number.trim() || w.a1_document_id,
-    ),
+    ) as unknown as Json,
     checked_48b: payload.checked_48b,
     withhold_bauabzug: payload.withhold_bauabzug,
     ust_id_confirmed: payload.ust_id_confirmed,
@@ -39,7 +36,7 @@ function toRow(payload: SubcontractorOnboardingPayload) {
 }
 
 export async function fetchSubcontractorOnboarding(contractorId: string) {
-  const { data, error } = await db
+  const { data, error } = await supabase
     .from(TABLE)
     .select('*')
     .eq('contractor_id', contractorId)
@@ -61,7 +58,7 @@ export async function saveSubcontractorOnboarding(
 ) {
   const row = toRow(payload)
 
-  const { data: existing, error: findErr } = await db
+  const { data: existing, error: findErr } = await supabase
     .from(TABLE)
     .select('id')
     .eq('contractor_id', payload.contractor_id)
@@ -70,7 +67,7 @@ export async function saveSubcontractorOnboarding(
   if (findErr) return { data: null, error: findErr.message }
 
   if (existing) {
-    const { data, error } = await db
+    const { data, error } = await supabase
       .from(TABLE)
       .update(row)
       .eq('id', (existing as { id: string }).id)
@@ -79,7 +76,7 @@ export async function saveSubcontractorOnboarding(
     return { data: data as SubcontractorOnboarding | null, error: error?.message ?? null }
   }
 
-  const { data, error } = await db
+  const { data, error } = await supabase
     .from(TABLE)
     .insert({ ...row, created_by: savedBy })
     .select()

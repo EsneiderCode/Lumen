@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.4"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       appointments: {
@@ -101,7 +126,7 @@ export type Database = {
         Row: {
           cert_type: string
           certified_at: string
-          certified_by: string
+          certified_by: string | null
           created_at: string
           data_hash: string
           id: string
@@ -111,7 +136,7 @@ export type Database = {
         Insert: {
           cert_type: string
           certified_at?: string
-          certified_by: string
+          certified_by?: string | null
           created_at?: string
           data_hash: string
           id?: string
@@ -121,7 +146,7 @@ export type Database = {
         Update: {
           cert_type?: string
           certified_at?: string
-          certified_by?: string
+          certified_by?: string | null
           created_at?: string
           data_hash?: string
           id?: string
@@ -201,7 +226,7 @@ export type Database = {
       }
       collaborator_cycles: {
         Row: {
-          collaborator_id: string
+          collaborator_id: string | null
           created_at: string
           emission_date: string | null
           final_cert_date: string | null
@@ -217,7 +242,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          collaborator_id: string
+          collaborator_id?: string | null
           created_at?: string
           emission_date?: string | null
           final_cert_date?: string | null
@@ -233,7 +258,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          collaborator_id?: string
+          collaborator_id?: string | null
           created_at?: string
           emission_date?: string | null
           final_cert_date?: string | null
@@ -283,7 +308,7 @@ export type Database = {
           storage_path: string
           updated_at: string
           uploaded_at: string
-          uploaded_by: string
+          uploaded_by: string | null
         }
         Insert: {
           contractor_id: string
@@ -302,7 +327,7 @@ export type Database = {
           storage_path: string
           updated_at?: string
           uploaded_at?: string
-          uploaded_by: string
+          uploaded_by?: string | null
         }
         Update: {
           contractor_id?: string
@@ -321,7 +346,7 @@ export type Database = {
           storage_path?: string
           updated_at?: string
           uploaded_at?: string
-          uploaded_by?: string
+          uploaded_by?: string | null
         }
         Relationships: [
           {
@@ -777,7 +802,7 @@ export type Database = {
       stock_movements: {
         Row: {
           created_at: string
-          created_by: string
+          created_by: string | null
           id: string
           material_id: string
           movement_type: string
@@ -790,7 +815,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          created_by: string
+          created_by?: string | null
           id?: string
           material_id: string
           movement_type: string
@@ -803,7 +828,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          created_by?: string
+          created_by?: string | null
           id?: string
           material_id?: string
           movement_type?: string
@@ -841,6 +866,93 @@ export type Database = {
             columns: ["work_order_id"]
             isOneToOne: false
             referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subcontractor_onboarding: {
+        Row: {
+          a1_workers: Json
+          address: string | null
+          checked_48b: boolean
+          company_name: string | null
+          contact_email: string | null
+          contact_person: string | null
+          contact_phone: string | null
+          contractor_id: string
+          created_at: string
+          created_by: string | null
+          deployment_period: string | null
+          id: string
+          notes: string | null
+          place_date: string | null
+          project_site: string | null
+          tax_number_de: string | null
+          updated_at: string
+          ust_id_confirmed: boolean
+          ust_id_es: string | null
+          verified_by: string | null
+          withhold_bauabzug: boolean
+        }
+        Insert: {
+          a1_workers?: Json
+          address?: string | null
+          checked_48b?: boolean
+          company_name?: string | null
+          contact_email?: string | null
+          contact_person?: string | null
+          contact_phone?: string | null
+          contractor_id: string
+          created_at?: string
+          created_by?: string | null
+          deployment_period?: string | null
+          id?: string
+          notes?: string | null
+          place_date?: string | null
+          project_site?: string | null
+          tax_number_de?: string | null
+          updated_at?: string
+          ust_id_confirmed?: boolean
+          ust_id_es?: string | null
+          verified_by?: string | null
+          withhold_bauabzug?: boolean
+        }
+        Update: {
+          a1_workers?: Json
+          address?: string | null
+          checked_48b?: boolean
+          company_name?: string | null
+          contact_email?: string | null
+          contact_person?: string | null
+          contact_phone?: string | null
+          contractor_id?: string
+          created_at?: string
+          created_by?: string | null
+          deployment_period?: string | null
+          id?: string
+          notes?: string | null
+          place_date?: string | null
+          project_site?: string | null
+          tax_number_de?: string | null
+          updated_at?: string
+          ust_id_confirmed?: boolean
+          ust_id_es?: string | null
+          verified_by?: string | null
+          withhold_bauabzug?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subcontractor_onboarding_contractor_id_fkey"
+            columns: ["contractor_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subcontractor_onboarding_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1343,7 +1455,7 @@ export type Database = {
           size_bytes: number | null
           storage_path: string
           uploaded_at: string
-          uploaded_by: string
+          uploaded_by: string | null
           work_order_id: string
         }
         Insert: {
@@ -1354,7 +1466,7 @@ export type Database = {
           size_bytes?: number | null
           storage_path: string
           uploaded_at?: string
-          uploaded_by: string
+          uploaded_by?: string | null
           work_order_id: string
         }
         Update: {
@@ -1365,7 +1477,7 @@ export type Database = {
           size_bytes?: number | null
           storage_path?: string
           uploaded_at?: string
-          uploaded_by?: string
+          uploaded_by?: string | null
           work_order_id?: string
         }
         Relationships: [
@@ -1388,7 +1500,7 @@ export type Database = {
       work_order_line_items: {
         Row: {
           created_at: string
-          created_by: string
+          created_by: string | null
           id: string
           notes: string | null
           quantity: number
@@ -1399,7 +1511,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          created_by: string
+          created_by?: string | null
           id?: string
           notes?: string | null
           quantity?: number
@@ -1410,7 +1522,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          created_by?: string
+          created_by?: string | null
           id?: string
           notes?: string | null
           quantity?: number
@@ -1457,7 +1569,7 @@ export type Database = {
           material_id: string
           notes: string | null
           quantity: number
-          reported_by: string
+          reported_by: string | null
           stock_real_before: number | null
           vehicle_id: string
           work_order_id: string
@@ -1468,7 +1580,7 @@ export type Database = {
           material_id: string
           notes?: string | null
           quantity: number
-          reported_by: string
+          reported_by?: string | null
           stock_real_before?: number | null
           vehicle_id: string
           work_order_id: string
@@ -1479,7 +1591,7 @@ export type Database = {
           material_id?: string
           notes?: string | null
           quantity?: number
-          reported_by?: string
+          reported_by?: string | null
           stock_real_before?: number | null
           vehicle_id?: string
           work_order_id?: string
@@ -1617,7 +1729,7 @@ export type Database = {
           city: string | null
           client_id: string | null
           created_at: string
-          created_by: string
+          created_by: string | null
           external_metadata: Json | null
           id: string
           internal_notes: string | null
@@ -1644,7 +1756,7 @@ export type Database = {
           city?: string | null
           client_id?: string | null
           created_at?: string
-          created_by: string
+          created_by?: string | null
           external_metadata?: Json | null
           id?: string
           internal_notes?: string | null
@@ -1671,7 +1783,7 @@ export type Database = {
           city?: string | null
           client_id?: string | null
           created_at?: string
-          created_by?: string
+          created_by?: string | null
           external_metadata?: Json | null
           id?: string
           internal_notes?: string | null
@@ -1806,7 +1918,7 @@ export type Database = {
           city: string | null
           client_id: string | null
           created_at: string
-          created_by: string
+          created_by: string | null
           external_metadata: Json | null
           id: string
           internal_notes: string | null
@@ -1853,7 +1965,7 @@ export type Database = {
           city: string | null
           client_id: string | null
           created_at: string
-          created_by: string
+          created_by: string | null
           external_metadata: Json | null
           id: string
           internal_notes: string | null
@@ -1894,7 +2006,7 @@ export type Database = {
           city: string | null
           client_id: string | null
           created_at: string
-          created_by: string
+          created_by: string | null
           external_metadata: Json | null
           id: string
           internal_notes: string | null
@@ -1958,7 +2070,7 @@ export type Database = {
           city: string | null
           client_id: string | null
           created_at: string
-          created_by: string
+          created_by: string | null
           external_metadata: Json | null
           id: string
           internal_notes: string | null
@@ -1992,6 +2104,7 @@ export type Database = {
         | "order_status_changed"
         | "order_cancelled"
         | "order_deleted"
+        | "report_submitted"
       telegram_group_purpose: "tareas" | "alertas" | "notificaciones"
       user_role: "admin" | "technician" | "contractor" | "scheduler"
       work_order_status:
@@ -2142,6 +2255,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       document_type: ["plano", "cartas_empalme", "diagrama_routing", "other"],
@@ -2153,6 +2269,7 @@ export const Constants = {
         "order_status_changed",
         "order_cancelled",
         "order_deleted",
+        "report_submitted",
       ],
       telegram_group_purpose: ["tareas", "alertas", "notificaciones"],
       user_role: ["admin", "technician", "contractor", "scheduler"],
