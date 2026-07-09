@@ -260,27 +260,27 @@ function buildMessage(body: TelegramBody): string | null {
       if (!orderNumber) return null
 
       const lines: string[] = [
-        `📝 <b>Rückmeldung eingereicht</b>`,
+        `📝 <b>Reporte registrado</b>`,
         '',
         `🔖 OS: <b>${esc(orderNumber)}</b>`,
       ]
 
-      if (workType) lines.push(`🔧 Typ: <b>${esc(workType)}</b>`)
-      if (techName) lines.push(`👤 Techniker: <b>${esc(techName)}</b>`)
+      if (workType) lines.push(`🔧 Tipo: <b>${esc(workType)}</b>`)
+      if (techName) lines.push(`👤 Técnico: <b>${esc(techName)}</b>`)
 
       const location = [address, city].filter(Boolean).join(', ')
       if (location) lines.push(`📍 ${esc(location)}`)
 
       if (summary) {
         lines.push('')
-        lines.push(`📋 <b>Zusammenfassung:</b> ${esc(summary)}`)
+        lines.push(`📋 <b>Resumen:</b> ${esc(summary)}`)
       }
 
-      if (techNotes) {
-        lines.push(`📌 <b>Notizen:</b> ${esc(techNotes)}`)
+      if (techNotes && techNotes !== summary) {
+        lines.push(`📌 <b>Notas:</b> ${esc(techNotes)}`)
       }
 
-      if (orderUrl) lines.push(`\n🔗 <a href="${orderUrl}">Rückmeldung ansehen</a>`)
+      if (orderUrl) lines.push(`\n🔗 <a href="${orderUrl}">Ver reporte</a>`)
 
       return lines.join('\n')
     }

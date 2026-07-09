@@ -151,7 +151,10 @@ export const authService = {
         body: JSON.stringify({ pin: trimmedPin, profileId, deviceId }),
       })
       if (!response.ok) {
-        return { user: null, error: 'Ungültige PIN oder Mitarbeiterauswahl.' }
+        const payload = await response.json().catch(() => null)
+        const serverMsg = payload?.error
+        console.error('[signInWithTeamPin] server error', response.status, serverMsg)
+        return { user: null, error: serverMsg ?? 'Ungültige PIN oder Mitarbeiterauswahl.' }
       }
       const payload = (await response.json()) as TeamPinLoginResponse
       const authUser: AuthUser = {

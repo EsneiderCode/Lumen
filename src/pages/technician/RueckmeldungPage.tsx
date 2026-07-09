@@ -349,13 +349,13 @@ export function RueckmeldungPage() {
 
     // Build notes string with tech input
     const noteParts: string[] = []
-    if (techNotes.trim()) noteParts.push(`Notizen: ${techNotes.trim()}`)
-    if (startTime) noteParts.push(`Beginn: ${startTime}`)
-    if (endTime) noteParts.push(`Ende: ${endTime}`)
+    if (techNotes.trim()) noteParts.push(techNotes.trim())
+    if (startTime) noteParts.push(`${t('rueckmeldung.startTime')}: ${startTime}`)
+    if (endTime) noteParts.push(`${t('rueckmeldung.endTime')}: ${endTime}`)
     if (validConsumption.length > 0) {
       noteParts.push(t('rueckmeldung.materialConsumption.notes.summary', { count: validConsumption.length }))
     }
-    const notes = noteParts.length > 0 ? noteParts.join(' | ') : 'Rückmeldung gesendet'
+    const notes = noteParts.length > 0 ? noteParts.join(' | ') : t('rueckmeldung.submitted')
 
     // If the order is in 'executed' or 'returned', first move to 'rueckmeldung_pending'
     // before transitioning to 'rueckmeldung_sent' (state machine requires the intermediate step)
