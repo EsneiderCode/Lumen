@@ -26,7 +26,9 @@ function toRow(payload: SubcontractorOnboardingPayload) {
     contact_phone: nullable(payload.contact_phone),
     project_site: nullable(payload.project_site),
     deployment_period: nullable(payload.deployment_period),
-    a1_workers: payload.a1_workers.filter((w) => w.name.trim() || w.id_number.trim()),
+    a1_workers: payload.a1_workers.filter(
+      (w) => w.name.trim() || w.id_number.trim() || w.a1_document_id,
+    ),
     checked_48b: payload.checked_48b,
     withhold_bauabzug: payload.withhold_bauabzug,
     ust_id_confirmed: payload.ust_id_confirmed,

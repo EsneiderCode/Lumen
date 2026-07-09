@@ -522,10 +522,12 @@
       "verifiedBy": "VERIFICADO POR (NOMBRE)",
       "notes": "NOTAS"
     },
+    "a1Hint": "Los certificados A1 se gestionan por trabajador en la sección 3.",
     "worker": {
       "name": "NOMBRE",
       "a1ValidUntil": "A1 VÁLIDO HASTA",
-      "idNumber": "N.º DOCUMENTO"
+      "idNumber": "N.º DOCUMENTO",
+      "a1File": "CERTIFICADO A1"
     },
     "checks": {
       "checked48b": "§ 48b: validez comprobada online en el portal EIBE del BZSt (n.º de seguridad + sello).",

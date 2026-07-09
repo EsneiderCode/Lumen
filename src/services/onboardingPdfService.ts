@@ -1,6 +1,10 @@
 import jsPDF from 'jspdf'
 import type { SubcontractorOnboardingPayload } from '@/types/subcontractor-onboarding'
-import type { ContractorDocumentSlot, ContractorDocumentType } from '@/types/contractor-documents'
+import type {
+  ContractorDocument,
+  ContractorDocumentSlot,
+  ContractorDocumentType,
+} from '@/types/contractor-documents'
 
 // Official bilingual (DE / ES) labels for the UMTELKOMD compliance checklist.
 // These are part of a fixed legal form and are intentionally NOT localized via i18n.
@@ -31,6 +35,9 @@ export function generateOnboardingPdf(
   onboarding: SubcontractorOnboardingPayload,
   slots: ContractorDocumentSlot[],
   contractorName: string,
+  // Per-worker A1 certificates, keyed by contractor_documents id. When given,
+  // the §2 A1 row reflects worker coverage instead of the latest single file.
+  a1Docs: Record<string, ContractorDocument> = {},
 ): void {
   const doc = new jsPDF()
   const pageW = doc.internal.pageSize.getWidth()
@@ -121,6 +128,11 @@ export function generateOnboardingPdf(
   }
   y += 2
 
+  // Workers are needed for both §2 (A1 coverage) and §3 (roster).
+  const workers = onboarding.a1_workers.filter(
+    (w) => w.name.trim() || w.id_number.trim() || w.a1_document_id,
+  )
+
   // ── §2 Pflichtdokumente ───────────────────────────────────────────────────────
   bandTitle('2  Pflichtdokumente', 'Documentos obligatorios')
   const cols = { doc: M + 2, recv: M + 108, chk: M + 126, valid: M + 144, obs: M + 168 }
@@ -142,8 +154,24 @@ export function generateOnboardingPdf(
     checkPage(9)
     const [de, es] = DOC_LABELS[slot.type]
     const latest = slot.latest
-    const received = Boolean(latest)
-    const checked = slot.isValid
+    let received = Boolean(latest)
+    let checked = slot.isValid
+    let validUntil = fmtDate(latest?.expires_at ?? null)
+    let note = latest?.review_notes ?? ''
+    if (slot.type === 'a1_bescheinigung') {
+      // A1 is per worker: received/checked only when EVERY worker is covered.
+      const workerDocs = workers.map((w) => (w.a1_document_id ? a1Docs[w.a1_document_id] : undefined))
+      received = workers.length > 0 && workerDocs.every(Boolean)
+      checked =
+        received &&
+        workerDocs.every(
+          (d) =>
+            d?.status === 'approved' &&
+            (!d.expires_at || new Date(d.expires_at + 'T23:59:59').getTime() >= Date.now()),
+        )
+      validUntil = ''
+      note = `${workerDocs.filter(Boolean).length}/${workers.length} MA / trab.`
+    }
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(7.5)
     doc.text(doc.splitTextToSize(de, 100), cols.doc, y)
@@ -166,8 +194,8 @@ export function generateOnboardingPdf(
     box(cols.chk, checked)
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(7)
-    doc.text(fmtDate(latest?.expires_at ?? null), cols.valid, y)
-    doc.text(doc.splitTextToSize(latest?.review_notes ?? '', pageW - M - cols.obs - 2), cols.obs, y)
+    doc.text(validUntil, cols.valid, y)
+    doc.text(doc.splitTextToSize(note, pageW - M - cols.obs - 2), cols.obs, y)
     y += 8
     doc.setDrawColor(225, 228, 232)
     doc.line(M, y - 2.5, pageW - M, y - 2.5)
@@ -180,22 +208,43 @@ export function generateOnboardingPdf(
   doc.setFontSize(6.5)
   doc.setTextColor(...GREY)
   doc.text('NAME / NOMBRE', M + 2, y)
-  doc.text('A1 GÜLTIG BIS', M + 100, y)
-  doc.text('AUSWEIS-NR.', M + 150, y)
+  doc.text('A1 GÜLTIG BIS', M + 72, y)
+  doc.text('AUSWEIS-NR.', M + 104, y)
+  doc.text('A1-BESCHEINIGUNG / CERTIFICADO', M + 136, y)
   doc.setTextColor(0, 0, 0)
   y += 2
   doc.setDrawColor(...NAVY)
   doc.line(M, y, pageW - M, y)
   y += 5
-  const workers = onboarding.a1_workers.filter((w) => w.name.trim() || w.id_number.trim())
-  const rows = workers.length > 0 ? workers : [{ name: '', a1_valid_until: null, id_number: '' }]
-  doc.setFont('helvetica', 'normal')
+  const rows = workers.length > 0
+    ? workers
+    : [{ name: '', a1_valid_until: null, id_number: '', a1_document_id: null }]
   doc.setFontSize(8)
   for (const w of rows) {
     checkPage(8)
-    doc.text(w.name || '—', M + 2, y)
-    doc.text(fmtDate(w.a1_valid_until) || '—', M + 100, y)
-    doc.text(w.id_number || '—', M + 150, y)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(0, 0, 0)
+    doc.text(doc.splitTextToSize(w.name || '—', 66)[0] ?? '—', M + 2, y)
+    doc.text(fmtDate(w.a1_valid_until) || '—', M + 72, y)
+    doc.text(doc.splitTextToSize(w.id_number || '—', 30)[0] ?? '—', M + 104, y)
+    const a1Doc = w.a1_document_id ? a1Docs[w.a1_document_id] : undefined
+    if (a1Doc) {
+      const ok = a1Doc.status === 'approved'
+      const fileColor: [number, number, number] = ok ? [0, 120, 60] : GREY
+      doc.setFontSize(7)
+      doc.setTextColor(...fileColor)
+      // jsPDF built-in Helvetica is WinAnsi-only — no '✓' glyph.
+      const fileLabel = `${ok ? 'OK' : '•'} ${a1Doc.file_name}`
+      doc.text(doc.splitTextToSize(fileLabel, pageW - M - (M + 136) - 2)[0] ?? '', M + 136, y)
+      doc.setFontSize(8)
+      doc.setTextColor(0, 0, 0)
+    } else {
+      doc.setFontSize(7)
+      doc.setTextColor(180, 60, 60)
+      doc.text('FEHLT / FALTA', M + 136, y)
+      doc.setFontSize(8)
+      doc.setTextColor(0, 0, 0)
+    }
     y += 6
     doc.setDrawColor(225, 228, 232)
     doc.line(M, y - 2, pageW - M, y - 2)

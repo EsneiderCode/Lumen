@@ -495,10 +495,12 @@
       "verifiedBy": "GEPRÜFT DURCH (NAME)",
       "notes": "NOTIZEN"
     },
+    "a1Hint": "A1-Bescheinigungen werden pro Mitarbeiter in Abschnitt 3 verwaltet.",
     "worker": {
       "name": "NAME",
       "a1ValidUntil": "A1 GÜLTIG BIS",
-      "idNumber": "AUSWEIS-NR."
+      "idNumber": "AUSWEIS-NR.",
+      "a1File": "A1-BESCHEINIGUNG"
     },
     "checks": {
       "checked48b": "§ 48b: Gültigkeit im EIBE-Portal des BZSt online geprüft (Sicherheitsnummer + Dienstsiegel).",

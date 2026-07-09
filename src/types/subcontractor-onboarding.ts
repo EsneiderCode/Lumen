@@ -6,6 +6,9 @@ export interface A1Worker {
   name: string
   a1_valid_until: string | null // YYYY-MM-DD
   id_number: string
+  // Per-worker A1-Bescheinigung file: id of a contractor_documents row with
+  // document_type 'a1_bescheinigung'. Every deployed worker needs their own.
+  a1_document_id: string | null
 }
 
 export interface SubcontractorOnboarding {
@@ -68,5 +71,5 @@ export function emptyOnboarding(contractorId: string): SubcontractorOnboardingPa
 }
 
 export function emptyA1Worker(): A1Worker {
-  return { name: '', a1_valid_until: null, id_number: '' }
+  return { name: '', a1_valid_until: null, id_number: '', a1_document_id: null }
 }

@@ -75,7 +75,8 @@ CREATE TABLE IF NOT EXISTS public.subcontractor_onboarding (
   deployment_period TEXT,   -- Einsatzzeitraum / Periodo de trabajo
 
   -- §3 Eingesetzte Mitarbeiter (A1) / Trabajadores desplazados
-  --    [{ "name": string, "a1_valid_until": "YYYY-MM-DD"|null, "id_number": string }]
+  --    [{ "name": string, "a1_valid_until": "YYYY-MM-DD"|null, "id_number": string,
+  --       "a1_document_id": uuid|null }]  -- per-worker A1 file in contractor_documents
   a1_workers        JSONB NOT NULL DEFAULT '[]'::jsonb,
 
   -- §4 Prüfung & Bestätigung / Verificación y confirmación

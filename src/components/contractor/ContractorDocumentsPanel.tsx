@@ -14,6 +14,8 @@ import { useAuth } from '@/hooks/useAuth'
 interface Props {
   contractorId: string
   canReview?: boolean
+  /** Document types managed elsewhere (e.g. A1 per worker on the onboarding page). */
+  excludeTypes?: ContractorDocumentType[]
 }
 
 function formatDate(value: string | null, locale: string): string {
@@ -29,7 +31,7 @@ function statusClass(doc: ContractorDocument | null, isValid: boolean, isExpired
   return 'border-err/40 text-err'
 }
 
-export function ContractorDocumentsPanel({ contractorId, canReview = false }: Props) {
+export function ContractorDocumentsPanel({ contractorId, canReview = false, excludeTypes }: Props) {
   const { t, i18n } = useTranslation()
   const { user } = useAuth()
   const [docs, setDocs] = useState<ContractorDocument[]>([])
@@ -42,7 +44,13 @@ export function ContractorDocumentsPanel({ contractorId, canReview = false }: Pr
   const [expiryDates, setExpiryDates] = useState<Record<string, string>>({})
   const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({})
 
-  const slots = useMemo(() => buildContractorDocumentSlots(docs), [docs])
+  const slots = useMemo(
+    () =>
+      buildContractorDocumentSlots(docs).filter(
+        (slot) => !excludeTypes?.includes(slot.type),
+      ),
+    [docs, excludeTypes],
+  )
   const validCount = slots.filter((slot) => slot.isValid).length
   const isCompliant = validCount === slots.length
 

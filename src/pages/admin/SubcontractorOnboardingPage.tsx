@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, Download, Plus, Save, Trash2 } from 'lucide-react'
+import { ArrowLeft, Check, Clock, Download, FileText, Plus, Save, Trash2, XCircle } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { fetchTechnicians, type TechnicianProfile } from '@/services/workOrderService'
 import {
@@ -11,6 +11,9 @@ import {
 import {
   buildContractorDocumentSlots,
   fetchContractorDocuments,
+  getContractorDocumentSignedUrls,
+  reviewContractorDocument,
+  uploadContractorDocument,
 } from '@/services/contractorDocumentService'
 import { generateOnboardingPdf } from '@/services/onboardingPdfService'
 import { ContractorDocumentsPanel } from '@/components/contractor/ContractorDocumentsPanel'
@@ -19,6 +22,11 @@ import {
   emptyOnboarding,
   type SubcontractorOnboardingPayload,
 } from '@/types/subcontractor-onboarding'
+import type { ContractorDocument, ContractorDocumentType } from '@/types/contractor-documents'
+
+// A1-Bescheinigungen are per worker (§3) — hide the generic slot in §2.
+const PANEL_EXCLUDED_TYPES: ContractorDocumentType[] = ['a1_bescheinigung']
+
 const inputClass =
   'w-full rounded-s border border-line bg-bg-2 px-3 py-2 font-sans text-sm text-fg-1 placeholder-fg-3 focus:border-accent focus:outline-none'
 const labelClass = 'mb-1 block font-mono text-xs text-fg-2'
@@ -38,6 +46,16 @@ function Field({
   )
 }
 
+function a1StatusMeta(doc: ContractorDocument): { cls: string; labelKey: string } {
+  const expired = doc.expires_at
+    ? new Date(doc.expires_at + 'T23:59:59').getTime() < Date.now()
+    : false
+  if (expired) return { cls: 'border-err/40 text-err', labelKey: 'contractorDocs.expired' }
+  if (doc.status === 'approved') return { cls: 'border-ok/40 text-ok', labelKey: 'contractorDocs.status.approved' }
+  if (doc.status === 'pending_review') return { cls: 'border-warn/40 text-warn', labelKey: 'contractorDocs.status.pending_review' }
+  return { cls: 'border-err/40 text-err', labelKey: 'contractorDocs.status.rejected' }
+}
+
 export function SubcontractorOnboardingPage() {
   const { t } = useTranslation()
   const { contractorId = '' } = useParams()
@@ -45,8 +63,12 @@ export function SubcontractorOnboardingPage() {
 
   const [form, setForm] = useState<SubcontractorOnboardingPayload>(() => emptyOnboarding(contractorId))
   const [contractor, setContractor] = useState<TechnicianProfile | null>(null)
+  const [docs, setDocs] = useState<ContractorDocument[]>([])
+  const [docUrls, setDocUrls] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [a1Working, setA1Working] = useState<number | null>(null)
+  const [reviewingId, setReviewingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [savedAt, setSavedAt] = useState<string | null>(null)
 
@@ -54,6 +76,16 @@ export function SubcontractorOnboardingPage() {
     key: K,
     value: SubcontractorOnboardingPayload[K],
   ) => setForm((f) => ({ ...f, [key]: value }))
+
+  const refreshDocs = useCallback(async () => {
+    const { data, error: docErr } = await fetchContractorDocuments(contractorId)
+    if (docErr) setError(docErr)
+    setDocs(data)
+    const a1Paths = data
+      .filter((d) => d.document_type === 'a1_bescheinigung')
+      .map((d) => d.storage_path)
+    setDocUrls(await getContractorDocumentSignedUrls(a1Paths))
+  }, [contractorId])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -76,7 +108,10 @@ export function SubcontractorOnboardingPage() {
         contact_phone: d.contact_phone ?? '',
         project_site: d.project_site ?? '',
         deployment_period: d.deployment_period ?? '',
-        a1_workers: Array.isArray(d.a1_workers) ? d.a1_workers : [],
+        a1_workers: Array.isArray(d.a1_workers)
+          ? // Backfill records saved before per-worker A1 files existed.
+            d.a1_workers.map((w) => ({ ...w, a1_document_id: w.a1_document_id ?? null }))
+          : [],
         checked_48b: d.checked_48b,
         withhold_bauabzug: d.withhold_bauabzug,
         ust_id_confirmed: d.ust_id_confirmed,
@@ -86,14 +121,19 @@ export function SubcontractorOnboardingPage() {
       })
     }
     setContractor(techRes.data.find((p) => p.id === contractorId) ?? null)
+    await refreshDocs()
     setLoading(false)
-  }, [contractorId])
+  }, [contractorId, refreshDocs])
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load()
   }, [load])
 
+  const docsById = useMemo(
+    () => Object.fromEntries(docs.map((d) => [d.id, d])),
+    [docs],
+  )
   const contractorName = contractor?.full_name ?? ''
 
   const handleSave = async () => {
@@ -112,7 +152,12 @@ export function SubcontractorOnboardingPage() {
   const handlePdf = async () => {
     // Use freshest document status for the checklist.
     const { data } = await fetchContractorDocuments(contractorId)
-    generateOnboardingPdf(form, buildContractorDocumentSlots(data), contractorName)
+    const a1Docs = Object.fromEntries(
+      data
+        .filter((d) => d.document_type === 'a1_bescheinigung')
+        .map((d) => [d.id, d]),
+    )
+    generateOnboardingPdf(form, buildContractorDocumentSlots(data), contractorName, a1Docs)
   }
 
   const addWorker = () => set('a1_workers', [...form.a1_workers, emptyA1Worker()])
@@ -125,6 +170,52 @@ export function SubcontractorOnboardingPage() {
         i === idx ? { ...w, [key]: key === 'a1_valid_until' ? value || null : value } : w,
       ),
     )
+
+  // Upload one worker's A1 certificate, link it to the worker and persist the
+  // link right away so it survives a reload without an explicit Save.
+  const handleWorkerA1Upload = async (idx: number, file: File | null) => {
+    if (!file || !user) return
+    setA1Working(idx)
+    setError(null)
+    const worker = form.a1_workers[idx]
+    const { data, error: upErr } = await uploadContractorDocument({
+      contractorId,
+      documentType: 'a1_bescheinigung',
+      file,
+      uploadedBy: user.id,
+      expiresAt: worker.a1_valid_until,
+    })
+    if (upErr || !data) {
+      setError(upErr)
+      setA1Working(null)
+      return
+    }
+    const nextForm: SubcontractorOnboardingPayload = {
+      ...form,
+      a1_workers: form.a1_workers.map((w, i) =>
+        i === idx ? { ...w, a1_document_id: data.id } : w,
+      ),
+    }
+    setForm(nextForm)
+    const { error: saveErr } = await saveSubcontractorOnboarding(nextForm, user.id)
+    if (saveErr) setError(saveErr)
+    await refreshDocs()
+    setA1Working(null)
+  }
+
+  const handleWorkerA1Review = async (doc: ContractorDocument, status: 'approved' | 'rejected') => {
+    if (!user) return
+    setReviewingId(doc.id)
+    setError(null)
+    const { error: err } = await reviewContractorDocument({
+      documentId: doc.id,
+      status,
+      reviewedBy: user.id,
+    })
+    if (err) setError(err)
+    await refreshDocs()
+    setReviewingId(null)
+  }
 
   if (loading) {
     return (
@@ -223,15 +314,16 @@ export function SubcontractorOnboardingPage() {
         </div>
       </section>
 
-      {/* §2 Pflichtdokumente — reuse existing panel (10 items) */}
+      {/* §2 Pflichtdokumente — A1 lives per worker in §3 */}
       <section>
-        <h2 className="mb-3 font-display text-sm font-semibold text-fg-1">
+        <h2 className="mb-1 font-display text-sm font-semibold text-fg-1">
           2 · {t('onboarding.sections.documents')}
         </h2>
-        <ContractorDocumentsPanel contractorId={contractorId} canReview />
+        <p className="mb-3 font-sans text-xs text-fg-3">{t('onboarding.a1Hint')}</p>
+        <ContractorDocumentsPanel contractorId={contractorId} canReview excludeTypes={PANEL_EXCLUDED_TYPES} />
       </section>
 
-      {/* §3 Eingesetzte Mitarbeiter (A1) */}
+      {/* §3 Eingesetzte Mitarbeiter (A1) — one A1 certificate per worker */}
       <section className="rounded-l border border-line bg-bg-1 p-5">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-display text-sm font-semibold text-fg-1">
@@ -247,27 +339,96 @@ export function SubcontractorOnboardingPage() {
         {form.a1_workers.length === 0 ? (
           <p className="py-4 text-center font-sans text-sm text-fg-3">{t('onboarding.noWorkers')}</p>
         ) : (
-          <div className="space-y-2">
-            <div className="grid grid-cols-[1fr_1fr_1fr_auto] gap-3 px-1">
-              <span className="font-mono text-[10px] text-fg-3">{t('onboarding.worker.name')}</span>
-              <span className="font-mono text-[10px] text-fg-3">{t('onboarding.worker.a1ValidUntil')}</span>
-              <span className="font-mono text-[10px] text-fg-3">{t('onboarding.worker.idNumber')}</span>
-              <span className="w-7" />
-            </div>
-            {form.a1_workers.map((w, idx) => (
-              <div key={idx} className="grid grid-cols-[1fr_1fr_1fr_auto] items-center gap-3">
-                <input className={inputClass} value={w.name} onChange={(e) => updateWorker(idx, 'name', e.target.value)} placeholder="Max Mustermann" />
-                <input type="date" className={inputClass} value={w.a1_valid_until ?? ''} onChange={(e) => updateWorker(idx, 'a1_valid_until', e.target.value)} />
-                <input className={inputClass + ' font-mono'} value={w.id_number} onChange={(e) => updateWorker(idx, 'id_number', e.target.value)} />
-                <button
-                  onClick={() => removeWorker(idx)}
-                  className="rounded p-1.5 text-fg-3 transition-colors hover:text-err"
-                  aria-label={t('onboarding.removeWorker')}
-                >
-                  <Trash2 size={14} strokeWidth={1.5} />
-                </button>
-              </div>
-            ))}
+          <div className="space-y-3">
+            {form.a1_workers.map((w, idx) => {
+              const doc = w.a1_document_id ? docsById[w.a1_document_id] : undefined
+              const url = doc ? docUrls[doc.storage_path] : undefined
+              const meta = doc ? a1StatusMeta(doc) : null
+              return (
+                <div key={idx} className="rounded-s border border-line bg-bg-0 p-3">
+                  <div className="grid grid-cols-[1fr_auto] items-end gap-3 md:grid-cols-[1fr_1fr_1fr_auto]">
+                    <Field label={t('onboarding.worker.name')}>
+                      <input className={inputClass} value={w.name} onChange={(e) => updateWorker(idx, 'name', e.target.value)} placeholder="Max Mustermann" />
+                    </Field>
+                    <Field label={t('onboarding.worker.a1ValidUntil')}>
+                      <input type="date" className={inputClass} value={w.a1_valid_until ?? ''} onChange={(e) => updateWorker(idx, 'a1_valid_until', e.target.value)} />
+                    </Field>
+                    <Field label={t('onboarding.worker.idNumber')}>
+                      <input className={inputClass + ' font-mono'} value={w.id_number} onChange={(e) => updateWorker(idx, 'id_number', e.target.value)} />
+                    </Field>
+                    <button
+                      onClick={() => removeWorker(idx)}
+                      className="mb-1.5 rounded p-1.5 text-fg-3 transition-colors hover:text-err"
+                      aria-label={t('onboarding.removeWorker')}
+                    >
+                      <Trash2 size={14} strokeWidth={1.5} />
+                    </button>
+                  </div>
+
+                  {/* Per-worker A1 certificate */}
+                  <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-line pt-3">
+                    <span className="font-mono text-[10px] text-fg-3">{t('onboarding.worker.a1File')}</span>
+                    {doc && meta ? (
+                      <>
+                        <span className="font-sans text-xs text-fg-1">{doc.file_name}</span>
+                        <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-mono text-[10px] ${meta.cls}`}>
+                          {doc.status === 'approved' ? <Check size={11} strokeWidth={1.5} /> : doc.status === 'pending_review' ? <Clock size={11} strokeWidth={1.5} /> : <XCircle size={11} strokeWidth={1.5} />}
+                          {t(meta.labelKey)}
+                        </span>
+                        {url && (
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 rounded-s border border-line px-2 py-0.5 font-sans text-xs text-fg-2 transition-colors hover:border-accent hover:text-accent"
+                          >
+                            <FileText size={12} strokeWidth={1.5} />
+                            {t('common.download')}
+                          </a>
+                        )}
+                        {doc.status === 'pending_review' && (
+                          <span className="inline-flex gap-1.5">
+                            <button
+                              type="button"
+                              disabled={reviewingId === doc.id}
+                              onClick={() => void handleWorkerA1Review(doc, 'approved')}
+                              className="rounded-s border border-ok/40 px-2 py-0.5 font-sans text-xs text-ok transition-colors hover:border-ok disabled:opacity-40"
+                            >
+                              {t('contractorDocs.approve')}
+                            </button>
+                            <button
+                              type="button"
+                              disabled={reviewingId === doc.id}
+                              onClick={() => void handleWorkerA1Review(doc, 'rejected')}
+                              className="rounded-s border border-err/40 px-2 py-0.5 font-sans text-xs text-err transition-colors hover:border-err disabled:opacity-40"
+                            >
+                              {t('contractorDocs.reject')}
+                            </button>
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-full border border-err/40 px-2 py-0.5 font-mono text-[10px] text-err">
+                        <XCircle size={11} strokeWidth={1.5} />
+                        {t('contractorDocs.missing')}
+                      </span>
+                    )}
+                    <label className="ml-auto flex items-center gap-2">
+                      <input
+                        type="file"
+                        accept="application/pdf,image/*"
+                        onChange={(e) => {
+                          void handleWorkerA1Upload(idx, e.target.files?.[0] ?? null)
+                          e.target.value = ''
+                        }}
+                        className="min-w-0 text-xs text-fg-2 file:mr-2 file:rounded-s file:border file:border-line file:bg-bg-1 file:px-2 file:py-1 file:text-xs file:text-fg-1"
+                      />
+                      {a1Working === idx && <span className="nx-loader-sm" aria-label="[LOADING]" />}
+                    </label>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         )}
       </section>
