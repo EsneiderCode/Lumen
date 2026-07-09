@@ -14,7 +14,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return
 
       if (event === 'SIGNED_OUT') {
@@ -24,18 +24,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        try {
-          // Pass session.user.id when available to avoid calling getSession() inside the callback,
-          // which would race with the lock already held by onAuthStateChange.
-          const profile = await authService.getCurrentUser(session?.user?.id)
-          if (mounted) {
-            setUser(profile)
+        // IMPORTANT: this callback runs while auth-js holds its internal lock. Any awaited
+        // Supabase call here (getCurrentUser → supabase.from(...) → getSession()) re-enters
+        // that lock and deadlocks — on reload it leaves isLoading stuck true forever.
+        // Defer the profile fetch to a fresh task so the callback returns and releases the
+        // lock first. (setTimeout, not queueMicrotask — the microtask still runs under the lock.)
+        const userId = session?.user?.id
+        setTimeout(async () => {
+          if (!mounted) return
+          try {
+            const profile = await authService.getCurrentUser(userId)
+            if (mounted) setUser(profile)
+          } catch {
+            // Network error during token refresh — keep current user state
+          } finally {
+            if (mounted) setIsLoading(false)
           }
-        } catch {
-          // Network error during token refresh — keep current user state
-        } finally {
-          if (mounted) setIsLoading(false)
-        }
+        }, 0)
       }
     })
 
