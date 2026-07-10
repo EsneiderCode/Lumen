@@ -236,4 +236,50 @@ describe('database migrations cover billing workflow schema', () => {
       /create\s+policy\s+appointments_scheduler_scope[\s\S]*public\.get_user_role\(\)\s*=\s*'scheduler'/,
     )
   })
+
+  it('adds dynamic RBAC tables, helpers and seeds (034)', () => {
+    expect(migrationSql).toContain('depends on: 033_subcontractor_onboarding.sql')
+    expect(migrationSql).toContain('create table if not exists public.roles')
+    expect(migrationSql).toContain('create table if not exists public.permissions')
+    expect(migrationSql).toContain('create table if not exists public.role_permissions')
+    expect(migrationSql).toContain('create table if not exists public.user_roles')
+    expect(migrationSql).toContain('create table if not exists public.user_permissions')
+    // effective-permission helpers used by RLS, Edge Functions and the frontend
+    expect(migrationSql).toMatch(
+      /create\s+or\s+replace\s+function\s+public\.user_has_permission\(uid\s+uuid,\s*perm\s+text\)/,
+    )
+    expect(migrationSql).toMatch(/create\s+or\s+replace\s+function\s+public\.has_permission\(perm\s+text\)/)
+    expect(migrationSql).toMatch(/create\s+or\s+replace\s+function\s+public\.get_my_permissions\(\)/)
+    expect(migrationSql).toMatch(/create\s+or\s+replace\s+function\s+public\.sync_permissions\(perms\s+jsonb\)/)
+    // system roles seeded and protected; profiles.role stays synced into user_roles
+    expect(migrationSql).toContain('roles_protect_system')
+    expect(migrationSql).toContain('role_permissions_protect_admin')
+    expect(migrationSql).toContain('profiles_sync_user_role')
+    expect(migrationSql).toMatch(/insert\s+into\s+public\.user_roles\s*\(user_id,\s*role_id\)/)
+    // portal-access permissions exist for the field personas
+    expect(migrationSql).toContain("'portal', 'tech.access'")
+    expect(migrationSql).toContain("'portal', 'contractor.access'")
+    expect(migrationSql).toContain("'portal', 'scheduler.access'")
+  })
+
+  it('rewrites admin-gated RLS policies to permission checks (035)', () => {
+    expect(migrationSql).toContain('depends on: 034_rbac_core.sql')
+    // the old role-literal admin gates must be dropped…
+    expect(migrationSql).toContain('drop policy if exists "admins full access to work orders"')
+    expect(migrationSql).toContain('drop policy if exists "profiles_update_admin"')
+    // …including 005's billing_lines_admin, which 009/014 never removed
+    expect(migrationSql).toContain('drop policy if exists "billing_lines_admin"')
+    // …and replaced by has_permission() checks per module.action
+    expect(migrationSql).toMatch(
+      /create\s+policy\s+"work_orders_delete_perm"[\s\S]*public\.has_permission\('work_orders\.delete'\)/,
+    )
+    expect(migrationSql).toMatch(
+      /create\s+policy\s+"profiles_update_perm"[\s\S]*public\.has_permission\('users\.edit'\)/,
+    )
+    expect(migrationSql).toMatch(
+      /create\s+policy\s+"cert_audits_write_perm"[\s\S]*public\.has_permission\('certification\.certify_internal'\)/,
+    )
+    // ownership/scope policies stay keyed on the base persona
+    expect(migrationSql).toContain('appointments_scheduler_scope')
+  })
 })
