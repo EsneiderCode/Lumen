@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.4"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       appointments: {
@@ -582,6 +557,33 @@ export type Database = {
         }
         Relationships: []
       }
+      permissions: {
+        Row: {
+          action: string
+          created_at: string
+          description: string | null
+          id: string
+          key: string | null
+          module: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string | null
+          module: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string | null
+          module?: string
+        }
+        Relationships: []
+      }
       pin_trusted_devices: {
         Row: {
           created_at: string
@@ -726,6 +728,72 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      role_permissions: {
+        Row: {
+          created_at: string
+          permission_id: string
+          role_id: string
+        }
+        Insert: {
+          created_at?: string
+          permission_id: string
+          role_id: string
+        }
+        Update: {
+          created_at?: string
+          permission_id?: string
+          role_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_permissions_permission_id_fkey"
+            columns: ["permission_id"]
+            isOneToOne: false
+            referencedRelation: "permissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "role_permissions_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      roles: {
+        Row: {
+          auto_grant_new: boolean
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          is_system: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          auto_grant_new?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          auto_grant_new?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       service_items: {
         Row: {
@@ -1010,6 +1078,72 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      user_permissions: {
+        Row: {
+          created_at: string
+          permission_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          permission_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          permission_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_permissions_permission_id_fkey"
+            columns: ["permission_id"]
+            isOneToOne: false
+            referencedRelation: "permissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_permissions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          role_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          role_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          role_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_roles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vacation_requests: {
         Row: {
@@ -2048,10 +2182,12 @@ export type Database = {
         Returns: number
       }
       generate_order_number: { Args: never; Returns: string }
+      get_my_permissions: { Args: never; Returns: string[] }
       get_user_role: {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      has_permission: { Args: { perm: string }; Returns: boolean }
       invoice_work_order_checked: {
         Args: {
           p_billing_reference?: string
@@ -2092,6 +2228,11 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      sync_permissions: { Args: { perms: Json }; Returns: Json }
+      user_has_permission: {
+        Args: { perm: string; uid: string }
+        Returns: boolean
       }
     }
     Enums: {
@@ -2255,9 +2396,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       document_type: ["plano", "cartas_empalme", "diagrama_routing", "other"],
