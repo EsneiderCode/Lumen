@@ -20,6 +20,7 @@ const SEGMENT_LABEL_KEYS: Record<string, string> = {
   documents: 'breadcrumb.documents',
   certifications: 'breadcrumb.certifications',
   projects: 'breadcrumb.projects',
+  roles: 'breadcrumb.roles',
 }
 
 // Root label per user area. Admin lands on Overview when no sub-path.

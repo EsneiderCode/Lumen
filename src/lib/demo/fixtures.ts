@@ -5,6 +5,8 @@
  * This is NOT real production data. All UUIDs are stable so links survive reload.
  */
 
+import { MODULE_REGISTRY } from '@/config/permissions'
+
 const ADMIN_ID = '00000000-0000-0000-0000-000000000001'
 const TECH_ID = '00000000-0000-0000-0000-000000000002'
 const CONTRACTOR_ID = '00000000-0000-0000-0000-000000000003'
@@ -56,6 +58,51 @@ const EMPLOYEE_OFFICE = '60000000-0000-0000-0000-000000000002'
 const NOW = new Date('2026-04-28T08:00:00Z').toISOString()
 const YESTERDAY = new Date('2026-04-27T08:00:00Z').toISOString()
 const LAST_WEEK = new Date('2026-04-21T08:00:00Z').toISOString()
+
+// ── RBAC (migration 034) ─────────────────────────────────────────────────────
+const ROLE_ADMIN = '90000000-0000-0000-0000-000000000001'
+const ROLE_TECHNICIAN = '90000000-0000-0000-0000-000000000002'
+const ROLE_CONTRACTOR = '90000000-0000-0000-0000-000000000003'
+const ROLE_SCHEDULER = '90000000-0000-0000-0000-000000000004'
+const ROLE_SUPERVISOR = '90000000-0000-0000-0000-000000000010'
+
+export const SYSTEM_ROLE_IDS: Record<string, string> = {
+  admin: ROLE_ADMIN,
+  technician: ROLE_TECHNICIAN,
+  contractor: ROLE_CONTRACTOR,
+  scheduler: ROLE_SCHEDULER,
+}
+
+// Permission ids are derived from the key so they stay stable across reloads.
+export const demoPermissionId = (key: string) => `permission-${key}`
+
+const DEMO_PERMISSIONS = MODULE_REGISTRY.flatMap((entry) =>
+  entry.actions.map((action) => ({
+    id: demoPermissionId(`${entry.module}.${action}`),
+    module: entry.module as string,
+    action: action as string,
+    description: null as string | null,
+    key: `${entry.module}.${action}`,
+    created_at: LAST_WEEK,
+  })),
+)
+
+const DEMO_ROLE_PERMISSIONS = [
+  // admin → everything (mirrors the migration seed)
+  ...DEMO_PERMISSIONS.map((permission) => ({
+    role_id: ROLE_ADMIN,
+    permission_id: permission.id,
+    created_at: LAST_WEEK,
+  })),
+  // field/scheduler personas → portal access only
+  { role_id: ROLE_TECHNICIAN, permission_id: demoPermissionId('portal.tech.access'), created_at: LAST_WEEK },
+  { role_id: ROLE_CONTRACTOR, permission_id: demoPermissionId('portal.contractor.access'), created_at: LAST_WEEK },
+  { role_id: ROLE_SCHEDULER, permission_id: demoPermissionId('portal.scheduler.access'), created_at: LAST_WEEK },
+  // sample custom role: read-only operations supervisor
+  ...['portal.admin.access', 'dashboard.view', 'work_orders.view', 'work_orders.export', 'certification.view'].map(
+    (key) => ({ role_id: ROLE_SUPERVISOR, permission_id: demoPermissionId(key), created_at: LAST_WEEK }),
+  ),
+]
 
 export const DEMO_PASSWORD = 'demo123'
 export const DEMO_TECH_PIN = '1234'
@@ -816,6 +863,85 @@ export const initialFixtures = () => ({
     { cycle_id: 'c1c1c1c1-0000-0000-0000-000000000001', work_order_id: WO_7_EXTERNAL },
     { cycle_id: 'c1c1c1c1-0000-0000-0000-000000000001', work_order_id: WO_5_PAID },
   ],
+
+  roles: [
+    {
+      id: ROLE_ADMIN,
+      name: 'admin',
+      description: 'Full administrative access (system role)',
+      is_system: true,
+      auto_grant_new: true,
+      is_active: true,
+      created_at: LAST_WEEK,
+      updated_at: LAST_WEEK,
+    },
+    {
+      id: ROLE_TECHNICIAN,
+      name: 'technician',
+      description: 'Internal field collaborator portal (system role)',
+      is_system: true,
+      auto_grant_new: false,
+      is_active: true,
+      created_at: LAST_WEEK,
+      updated_at: LAST_WEEK,
+    },
+    {
+      id: ROLE_CONTRACTOR,
+      name: 'contractor',
+      description: 'External subcontractor portal (system role)',
+      is_system: true,
+      auto_grant_new: false,
+      is_active: true,
+      created_at: LAST_WEEK,
+      updated_at: LAST_WEEK,
+    },
+    {
+      id: ROLE_SCHEDULER,
+      name: 'scheduler',
+      description: 'Appointment scheduler portal (system role)',
+      is_system: true,
+      auto_grant_new: false,
+      is_active: true,
+      created_at: LAST_WEEK,
+      updated_at: LAST_WEEK,
+    },
+    {
+      id: ROLE_SUPERVISOR,
+      name: 'Supervisor',
+      description: 'Solo lectura: órdenes y certificación',
+      is_system: false,
+      auto_grant_new: false,
+      is_active: true,
+      created_at: LAST_WEEK,
+      updated_at: LAST_WEEK,
+    },
+  ] as Array<{
+    id: string
+    name: string
+    description: string | null
+    is_system: boolean
+    auto_grant_new: boolean
+    is_active: boolean
+    created_at: string
+    updated_at: string
+  }>,
+
+  permissions: DEMO_PERMISSIONS,
+
+  role_permissions: DEMO_ROLE_PERMISSIONS as Array<{
+    role_id: string
+    permission_id: string
+    created_at: string
+  }>,
+
+  user_roles: [
+    { user_id: ADMIN_ID, role_id: ROLE_ADMIN, created_at: LAST_WEEK },
+    { user_id: TECH_ID, role_id: ROLE_TECHNICIAN, created_at: LAST_WEEK },
+    { user_id: CONTRACTOR_ID, role_id: ROLE_CONTRACTOR, created_at: LAST_WEEK },
+    { user_id: SCHEDULER_ID, role_id: ROLE_SCHEDULER, created_at: LAST_WEEK },
+  ] as Array<{ user_id: string; role_id: string; created_at: string }>,
+
+  user_permissions: [] as Array<{ user_id: string; permission_id: string; created_at: string }>,
 
   _session: { user: null, access_token: null } as DemoSession,
 })

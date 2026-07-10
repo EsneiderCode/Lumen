@@ -35,6 +35,7 @@ import { useTranslation } from 'react-i18next'
 import { useLabels } from '@/i18n/labels'
 import { TEAM_DOT } from '@/constants/styles'
 import { Alert, Badge, Button, EmptyState, KPI, KPIGrid, Panel } from '@/components/ui/nexus'
+import { Can } from '@/components/ui/Can'
 
 interface Project {
   id: string
@@ -415,23 +416,27 @@ export function CertificationPage() {
           </h1>
         </div>
         <div className="r">
-          <Button
-            disabled={datevDisabled}
-            icon={Download}
-            onClick={handleDatevExport}
-            title={t('certPage.datevTooltip')}
-            variant="ghost"
-          >
-            DATEV
-          </Button>
-          <Button
-            disabled={total === 0}
-            icon={FileSpreadsheet}
-            onClick={handleExcelExport}
-            variant="secondary"
-          >
-            Excel {hasSelection ? `(${selected.size})` : ''}
-          </Button>
+          <Can permission="certification.export_datev">
+            <Button
+              disabled={datevDisabled}
+              icon={Download}
+              onClick={handleDatevExport}
+              title={t('certPage.datevTooltip')}
+              variant="ghost"
+            >
+              DATEV
+            </Button>
+          </Can>
+          <Can permission="certification.export_excel">
+            <Button
+              disabled={total === 0}
+              icon={FileSpreadsheet}
+              onClick={handleExcelExport}
+              variant="secondary"
+            >
+              Excel {hasSelection ? `(${selected.size})` : ''}
+            </Button>
+          </Can>
         </div>
       </div>
 
@@ -580,39 +585,45 @@ export function CertificationPage() {
               actions={
                 <>
                   {selectedCertifiable > 0 && (
-                    <Button
-                      disabled={isBulkWorking}
-                      icon={Check}
-                      loading={isBulkWorking}
-                      onClick={() => void handleBulkCertify()}
-                      size="sm"
-                      variant="secondary"
-                    >
-                      {t('certPage.certifyInternally', { count: selectedCertifiable })}
-                    </Button>
+                    <Can permission="certification.certify_internal">
+                      <Button
+                        disabled={isBulkWorking}
+                        icon={Check}
+                        loading={isBulkWorking}
+                        onClick={() => void handleBulkCertify()}
+                        size="sm"
+                        variant="secondary"
+                      >
+                        {t('certPage.certifyInternally', { count: selectedCertifiable })}
+                      </Button>
+                    </Can>
                   )}
                   {selectedSendable > 0 && (
-                    <Button
-                      disabled={isBulkWorking}
-                      icon={Send}
-                      loading={isBulkWorking}
-                      onClick={() => void handleBulkSendToClient()}
-                      size="sm"
-                      variant="primary"
-                    >
-                      {t('certPage.sendToClient', { count: selectedSendable })}
-                    </Button>
+                    <Can permission="certification.accept_client">
+                      <Button
+                        disabled={isBulkWorking}
+                        icon={Send}
+                        loading={isBulkWorking}
+                        onClick={() => void handleBulkSendToClient()}
+                        size="sm"
+                        variant="primary"
+                      >
+                        {t('certPage.sendToClient', { count: selectedSendable })}
+                      </Button>
+                    </Can>
                   )}
                   {selectedInvoiceable > 0 && (
-                    <Button
-                      disabled={isBulkWorking}
-                      icon={Receipt}
-                      onClick={() => setBulkInvoiceModal({ open: true, invoiceNumber: '' })}
-                      size="sm"
-                      variant="secondary"
-                    >
-                      {t('certPage.invoiceAction', { count: selectedInvoiceable })}
-                    </Button>
+                    <Can permission="certification.invoice">
+                      <Button
+                        disabled={isBulkWorking}
+                        icon={Receipt}
+                        onClick={() => setBulkInvoiceModal({ open: true, invoiceNumber: '' })}
+                        size="sm"
+                        variant="secondary"
+                      >
+                        {t('certPage.invoiceAction', { count: selectedInvoiceable })}
+                      </Button>
+                    </Can>
                   )}
                   <Button onClick={() => setSelected(new Set())} size="sm" variant="ghost">
                     {t('certPage.clearSelection')}

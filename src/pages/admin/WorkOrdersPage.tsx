@@ -14,6 +14,7 @@ import { useLabels, STATUS_GROUPS } from '@/i18n/labels'
 import { useTranslation } from 'react-i18next'
 import { STATUS_COLORS, TEAM_DOT, PRIORITY_COLORS } from '@/constants/styles'
 import { useAuth } from '@/hooks/useAuth'
+import { Can } from '@/components/ui/Can'
 import { notifyOrderDeleted } from '@/services/notificationService'
 
 const PAGE_SIZE = 25
@@ -103,12 +104,14 @@ export function WorkOrdersPage() {
           <h2 className="nx-page-title">{t('workOrder.title')}</h2>
           <p className="nx-label mt-2 tabular-nums">{total} total</p>
         </div>
-        <button
-          onClick={() => navigate('/admin/orders/new')}
-          className="btn btn-p"
-        >
-          <span className="text-base leading-none">+</span> {t('workOrder.newOrder')}
-        </button>
+        <Can permission="work_orders.create">
+          <button
+            onClick={() => navigate('/admin/orders/new')}
+            className="btn btn-p"
+          >
+            <span className="text-base leading-none">+</span> {t('workOrder.newOrder')}
+          </button>
+        </Can>
       </div>
 
       {/* Filters */}
@@ -393,28 +396,34 @@ export function WorkOrdersPage() {
                           )}
                         </button>
                         {(order.status === 'created' || order.status === 'assigned') && (
-                          <button
-                            onClick={() => navigate(`/admin/orders/${order.id}/assign`)}
-                            aria-label={`${t('workOrder.actionAssign')} ${order.order_number}`}
-                            className="rounded px-2.5 py-1.5 text-xs font-medium text-accent hover:bg-accent/10 transition-colors"
-                          >
-                            {order.status === 'assigned' ? t('workOrder.actionReassign') : t('workOrder.actionAssign')}
-                          </button>
+                          <Can permission="work_orders.assign">
+                            <button
+                              onClick={() => navigate(`/admin/orders/${order.id}/assign`)}
+                              aria-label={`${t('workOrder.actionAssign')} ${order.order_number}`}
+                              className="rounded px-2.5 py-1.5 text-xs font-medium text-accent hover:bg-accent/10 transition-colors"
+                            >
+                              {order.status === 'assigned' ? t('workOrder.actionReassign') : t('workOrder.actionAssign')}
+                            </button>
+                          </Can>
                         )}
-                        <button
-                          onClick={() => navigate(`/admin/orders/${order.id}/edit`)}
-                          aria-label={`${t('workOrder.actionEdit')} ${order.order_number}`}
-                          className="rounded px-2.5 py-1.5 text-xs font-medium text-fg-2 hover:bg-bg-0 hover:text-fg-1 transition-colors"
-                        >
-                          {t('workOrder.actionEdit')}
-                        </button>
-                        <button
-                          onClick={() => setDeleteId(order.id)}
-                          aria-label={`${t('common.delete')} ${order.order_number}`}
-                          className="rounded px-2.5 py-1.5 text-xs font-medium text-fg-2 hover:bg-err/10 hover:text-err transition-colors"
-                        >
-                          {t('common.delete')}
-                        </button>
+                        <Can permission="work_orders.edit">
+                          <button
+                            onClick={() => navigate(`/admin/orders/${order.id}/edit`)}
+                            aria-label={`${t('workOrder.actionEdit')} ${order.order_number}`}
+                            className="rounded px-2.5 py-1.5 text-xs font-medium text-fg-2 hover:bg-bg-0 hover:text-fg-1 transition-colors"
+                          >
+                            {t('workOrder.actionEdit')}
+                          </button>
+                        </Can>
+                        <Can permission="work_orders.delete">
+                          <button
+                            onClick={() => setDeleteId(order.id)}
+                            aria-label={`${t('common.delete')} ${order.order_number}`}
+                            className="rounded px-2.5 py-1.5 text-xs font-medium text-fg-2 hover:bg-err/10 hover:text-err transition-colors"
+                          >
+                            {t('common.delete')}
+                          </button>
+                        </Can>
                       </div>
                     </td>
                   </tr>

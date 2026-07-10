@@ -11,7 +11,7 @@
  */
 
 import { getStore, saveStore, demoUuid } from './store'
-import { DEMO_PASSWORD, DEMO_TECH_PIN, type DemoStore } from './fixtures'
+import { DEMO_PASSWORD, DEMO_TECH_PIN, SYSTEM_ROLE_IDS, type DemoStore } from './fixtures'
 import {
   buildContractorDocumentFailureReasons,
   reasonsToMessage,
@@ -500,6 +500,15 @@ function makeAuth() {
     },
     onAuthStateChange(callback: AuthChangeListener) {
       listeners.push(callback)
+      // Real auth-js emits INITIAL_SESSION on subscribe; without it a page
+      // reload while logged in leaves AuthContext stuck on isLoading forever.
+      setTimeout(() => {
+        const store = getStore()
+        const profile = store._session.user
+          ? store.profiles.find((p) => p.id === store._session.user!.id) ?? null
+          : null
+        callback('INITIAL_SESSION', profile ? { user: profile } : null)
+      }, 0)
       return {
         data: {
           subscription: {
@@ -581,8 +590,103 @@ function addCertificationAudit(
   })
 }
 
+// ── RBAC helpers (mirrors user_has_permission / get_my_permissions, 034) ────
+
+function effectivePermissionKeys(store: DemoStore, userId: string): string[] {
+  const profile = store.profiles.find((p) => p.id === userId)
+  if (!profile || !profile.is_active) return []
+
+  const activeRoleIds = new Set(
+    store.user_roles
+      .filter((assignment) => assignment.user_id === userId)
+      .map((assignment) => assignment.role_id)
+      .filter((roleId) => store.roles.some((role) => role.id === roleId && role.is_active)),
+  )
+  const permissionIds = new Set(
+    store.role_permissions
+      .filter((grant) => activeRoleIds.has(grant.role_id))
+      .map((grant) => grant.permission_id),
+  )
+  for (const grant of store.user_permissions) {
+    if (grant.user_id === userId) permissionIds.add(grant.permission_id)
+  }
+  return store.permissions
+    .filter((permission) => permissionIds.has(permission.id))
+    .map((permission) => permission.key)
+}
+
+// Mirrors the profiles_sync_user_role trigger: keep the base-persona system
+// role in user_roles aligned with profiles.role, leaving custom roles alone.
+function syncUserRoleFromProfile(store: DemoStore, userId: string, role: string) {
+  const systemRoleId = SYSTEM_ROLE_IDS[role]
+  store.user_roles = store.user_roles.filter((assignment) => {
+    if (assignment.user_id !== userId) return true
+    const assigned = store.roles.find((r) => r.id === assignment.role_id)
+    return !(assigned?.is_system && assigned.name !== role)
+  })
+  if (
+    systemRoleId &&
+    !store.user_roles.some((a) => a.user_id === userId && a.role_id === systemRoleId)
+  ) {
+    store.user_roles.push({ user_id: userId, role_id: systemRoleId, created_at: new Date().toISOString() })
+  }
+}
+
 function makeRpc() {
   return async (fn: string, params: Record<string, unknown> = {}) => {
+    if (fn === 'get_my_permissions') {
+      const store = getStore()
+      const userId = store._session.user?.id
+      if (!userId) return { data: [], error: null }
+      return { data: effectivePermissionKeys(store, userId), error: null }
+    }
+
+    if (fn === 'user_has_permission') {
+      const store = getStore()
+      const uid = String(params.uid ?? '')
+      const perm = String(params.perm ?? '')
+      return { data: effectivePermissionKeys(store, uid).includes(perm), error: null }
+    }
+
+    if (fn === 'sync_permissions') {
+      const store = getStore()
+      const userId = store._session.user?.id
+      if (!userId || !effectivePermissionKeys(store, userId).includes('roles.edit')) {
+        return { data: null, error: { message: 'sync_permissions requires roles.edit permission' } }
+      }
+      const incoming = (params.perms ?? []) as { module?: string; action?: string; description?: string }[]
+      const created: string[] = []
+      for (const item of incoming) {
+        if (!item.module || !item.action) continue
+        const exists = store.permissions.some(
+          (permission) => permission.module === item.module && permission.action === item.action,
+        )
+        if (exists) continue
+        const key = `${item.module}.${item.action}`
+        const id = `permission-${key}`
+        store.permissions.push({
+          id,
+          module: item.module,
+          action: item.action,
+          description: item.description ?? null,
+          key,
+          created_at: new Date().toISOString(),
+        })
+        created.push(key)
+        for (const role of store.roles) {
+          if (role.auto_grant_new && role.is_active) {
+            store.role_permissions.push({
+              role_id: role.id,
+              permission_id: id,
+              created_at: new Date().toISOString(),
+            })
+          }
+        }
+      }
+      if (created.length > 0) saveStore(store)
+      return { data: { created }, error: null }
+    }
+
     if (fn === 'generate_order_number') {
       const store = getStore()
       const today = new Date().toISOString().slice(0, 10).replace(/-/g, '')
@@ -783,6 +887,8 @@ function makeFunctions() {
           const idx = store.profiles.findIndex((p) => p.id === id)
           if (idx === -1) return { data: null, error: { message: 'Demo user not found' } }
           store.profiles.splice(idx, 1)
+          store.user_roles = store.user_roles.filter((assignment) => assignment.user_id !== id)
+          store.user_permissions = store.user_permissions.filter((grant) => grant.user_id !== id)
           saveStore(store)
           return { data: { users: store.profiles }, error: null }
         }
@@ -806,6 +912,7 @@ function makeFunctions() {
             updated_at: new Date().toISOString(),
           }
           store.profiles.push(user)
+          syncUserRoleFromProfile(store, id, role)
           saveStore(store)
           return { data: { users: store.profiles }, error: null }
         }
@@ -816,7 +923,10 @@ function makeFunctions() {
           if (!user) return { data: null, error: { message: 'Demo user not found' } }
           if (body.email !== undefined) user.email = body.email as string | null
           if (body.fullName !== undefined) user.full_name = String(body.fullName)
-          if (body.role !== undefined) user.role = String(body.role)
+          if (body.role !== undefined) {
+            user.role = String(body.role)
+            syncUserRoleFromProfile(store, id, user.role)
+          }
           if (body.team !== undefined) user.team = body.team as string | null
           if (body.loginCode !== undefined) user.pin_login_code = body.loginCode as string | null
           if (body.isActive !== undefined) user.is_active = Boolean(body.isActive)

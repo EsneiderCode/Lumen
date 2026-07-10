@@ -19,6 +19,8 @@ export const ROUTES = {
     EMPLOYEES: '/admin/employees',
     MATERIALS: '/admin/materials',
     CYCLES: '/admin/cycles',
+    ROLES: '/admin/roles',
+    ROLES_DETAIL: '/admin/roles/:id',
     SETTINGS: '/admin/settings',
   },
 

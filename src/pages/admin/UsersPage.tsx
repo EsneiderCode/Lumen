@@ -11,6 +11,8 @@ import {
   type OperationalUserPayload,
 } from '@/services/userService'
 import { ContractorDocumentsPanel } from '@/components/contractor/ContractorDocumentsPanel'
+import { UserAccessPanel } from '@/components/admin/UserAccessPanel'
+import { Can } from '@/components/ui/Can'
 
 const EMPTY_FORM = {
   id: '',
@@ -234,9 +236,10 @@ export function UsersPage() {
               onChange={(e) => updateForm('role', e.target.value as UserRole)}
               className="w-full rounded-s border border-line-s bg-bg-2 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
             >
-              <option value="admin">{t('nav.admin')}</option>
-              <option value="technician">{t('nav.technician')}</option>
-              <option value="contractor">{t('nav.contractor')}</option>
+              <option value="admin">{t('users.roles.admin')}</option>
+              <option value="technician">{t('users.roles.technician')}</option>
+              <option value="contractor">{t('users.roles.contractor')}</option>
+              <option value="scheduler">{t('users.roles.scheduler')}</option>
             </select>
           </label>
 
@@ -280,6 +283,12 @@ export function UsersPage() {
         <ContractorDocumentsPanel contractorId={form.id} canReview />
       )}
 
+      {isEditing && (
+        <Can permission="roles.assign">
+          <UserAccessPanel userId={form.id} />
+        </Can>
+      )}
+
       <div className="flex flex-wrap items-center gap-2">
         <button
           onClick={() => setRoleFilter('')}
@@ -287,7 +296,7 @@ export function UsersPage() {
         >
           {t('common.all')}
         </button>
-        {(['admin', 'technician', 'contractor'] as UserRole[]).map((role) => (
+        {(['admin', 'technician', 'contractor', 'scheduler'] as UserRole[]).map((role) => (
           <button
             key={role}
             onClick={() => setRoleFilter(role)}
@@ -361,14 +370,16 @@ export function UsersPage() {
                       >
                         {user.is_active ? t('users.deactivate') : t('users.activate')}
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => setConfirmDelete(user)}
-                        className="rounded-s border border-line px-3 py-1.5 text-xs text-fg-2 transition-colors hover:border-accent hover:text-accent"
-                        title={t('users.delete')}
-                      >
-                        <Trash2 size={13} strokeWidth={1.5} />
-                      </button>
+                      <Can permission="users.delete">
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDelete(user)}
+                          className="rounded-s border border-line px-3 py-1.5 text-xs text-fg-2 transition-colors hover:border-accent hover:text-accent"
+                          title={t('users.delete')}
+                        >
+                          <Trash2 size={13} strokeWidth={1.5} />
+                        </button>
+                      </Can>
                     </div>
                   </td>
                 </tr>

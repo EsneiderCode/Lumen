@@ -234,10 +234,36 @@
     }
   },
   "rueckmeldung": {
-    "pending": "Rückmeldung pendiente",
-    "sent": "Rückmeldung enviada",
-    "submitReport": "Enviar Rückmeldung",
-    "technicianData": "Datos cargados por el técnico"
+    "materialConsumption": {
+      "title": "Consumo de material",
+      "subtitle": "Opcional. El consumo se descuenta del stock del vehículo del equipo.",
+      "empty": "Sin consumo de material reportado.",
+      "correctionRequired": "Stock real obligatorio: {{items}}",
+      "optionStock": "Stock {{quantity}} {{unit}}",
+      "registered": "Registrado: {{quantity}} {{unit}}",
+      "fields": {
+        "vehicle": "Vehículo",
+        "material": "Material",
+        "quantity": "Cantidad",
+        "realStockBefore": "Stock real antes del consumo"
+      },
+      "actions": {
+        "add": "Material",
+        "remove": "Quitar material"
+      },
+      "placeholders": {
+        "noVehicle": "— sin consumo / elegir vehículo —",
+        "choose": "— elegir —",
+        "minimum": "mín. {{quantity}}"
+      },
+      "errors": {
+        "vehicleRequired": "Elegí un vehículo para reportar consumo de material.",
+        "stockCorrectionRequired": "El stock registrado no alcanza. Ingresá el stock real antes del consumo."
+      },
+      "notes": {
+        "summary": "Consumo de material: {{count}} posición(es)"
+      }
+    }
   },
   "certification": {
     "internal": "Certificación interna",
@@ -325,40 +351,32 @@
     "reported": "Reportado"
   },
   "dashboard": {
-    "welcome": "Bienvenido",
-    "today": "Hoy",
-    "thisWeek": "Esta semana",
-    "thisMonth": "Este mes",
-    "openOrders": "Órdenes abiertas",
-    "pending": "Pendientes",
-    "completed": "Completadas",
-    "invoiced": "Facturadas",
     "admin": {
-      "title": "Dashboard",
+      "title": "Tablero",
       "subtitle": "§ Operaciones · Resumen",
       "statOpen": "Órdenes abiertas",
-      "statInProgress": "En ejecución",
-      "statPendingCert": "Pendiente de certificación",
-      "statDone": "Completadas",
+      "statInProgress": "En curso",
+      "statPendingCert": "Certificación pendiente",
+      "statDone": "Cerradas · mes",
       "attentionTitle": "Requiere atención",
-      "attentionOpen": "{{count}} abierto(s)",
-      "attentionEmpty": "Sin reportes abiertos.",
+      "attentionOpen": "{{count}} abiertas",
+      "attentionEmpty": "Sin alertas abiertas.",
       "attentionRejected": "Rechazada",
       "attentionReturned": "Devuelta",
       "team": "Equipo {{team}}",
       "welcomeTitle": "Bienvenido a LUMEN",
-      "welcomeBody": "Plataforma operativa central de HMR Nexus Engineering GmbH. Órdenes, certificaciones y gestión de personal en un solo lugar."
+      "welcomeBody": "Plataforma operativa central para HMR Nexus Engineering GmbH. Órdenes, certificaciones y gestión de personal en un solo lugar."
     },
     "tech": {
       "greeting": "Hola, {{name}}",
       "team": "Equipo {{name}}",
       "statToday": "Hoy",
       "statOpen": "Abiertas",
-      "statDone": "Completadas",
+      "statDone": "Hechas",
       "myOrders": "Mis órdenes",
-      "viewAll": "Ver todas →",
+      "viewAll": "Ver todo →",
       "emptyTitle": "Sin órdenes activas",
-      "emptyBody": "No tienes órdenes asignadas actualmente."
+      "emptyBody": "No tenés órdenes asignadas en este momento."
     }
   },
   "contractor": {
@@ -414,7 +432,8 @@
     "roles": {
       "admin": "Admin",
       "technician": "Técnico",
-      "contractor": "Subcontratista"
+      "contractor": "Subcontratista",
+      "scheduler": "Planificador"
     },
     "noTeam": "Sin equipo",
     "pinLoginCode": "Código de login PIN",
@@ -663,7 +682,8 @@
     "contractor": "Subcontratista",
     "menuOpen": "Abrir menú",
     "search": "Buscar...",
-    "installApp": "Instalar"
+    "installApp": "Instalar",
+    "roles": "Roles y permisos"
   },
   "breadcrumb": {
     "admin": "Operaciones",
@@ -684,68 +704,8 @@
     "certifications": "Certificaciones",
     "projects": "Proyectos",
     "overview": "Resumen",
-    "dashboard": "Tablero"
-  },
-  "dashboard": {
-    "admin": {
-      "title": "Tablero",
-      "subtitle": "§ Operaciones · Resumen",
-      "statOpen": "Órdenes abiertas",
-      "statInProgress": "En curso",
-      "statPendingCert": "Certificación pendiente",
-      "statDone": "Cerradas · mes",
-      "attentionTitle": "Requiere atención",
-      "attentionOpen": "{{count}} abiertas",
-      "attentionEmpty": "Sin alertas abiertas.",
-      "attentionRejected": "Rechazada",
-      "attentionReturned": "Devuelta",
-      "team": "Equipo {{team}}",
-      "welcomeTitle": "Bienvenido a LUMEN",
-      "welcomeBody": "Plataforma operativa central para HMR Nexus Engineering GmbH. Órdenes, certificaciones y gestión de personal en un solo lugar."
-    },
-    "tech": {
-      "greeting": "Hola, {{name}}",
-      "team": "Equipo {{name}}",
-      "statToday": "Hoy",
-      "statOpen": "Abiertas",
-      "statDone": "Hechas",
-      "myOrders": "Mis órdenes",
-      "viewAll": "Ver todo →",
-      "emptyTitle": "Sin órdenes activas",
-      "emptyBody": "No tenés órdenes asignadas en este momento."
-    }
-  },
-  "rueckmeldung": {
-    "materialConsumption": {
-      "title": "Consumo de material",
-      "subtitle": "Opcional. El consumo se descuenta del stock del vehículo del equipo.",
-      "empty": "Sin consumo de material reportado.",
-      "correctionRequired": "Stock real obligatorio: {{items}}",
-      "optionStock": "Stock {{quantity}} {{unit}}",
-      "registered": "Registrado: {{quantity}} {{unit}}",
-      "fields": {
-        "vehicle": "Vehículo",
-        "material": "Material",
-        "quantity": "Cantidad",
-        "realStockBefore": "Stock real antes del consumo"
-      },
-      "actions": {
-        "add": "Material",
-        "remove": "Quitar material"
-      },
-      "placeholders": {
-        "noVehicle": "— sin consumo / elegir vehículo —",
-        "choose": "— elegir —",
-        "minimum": "mín. {{quantity}}"
-      },
-      "errors": {
-        "vehicleRequired": "Elegí un vehículo para reportar consumo de material.",
-        "stockCorrectionRequired": "El stock registrado no alcanza. Ingresá el stock real antes del consumo."
-      },
-      "notes": {
-        "summary": "Consumo de material: {{count}} posición(es)"
-      }
-    }
+    "dashboard": "Tablero",
+    "roles": "Roles"
   },
   "materials": {
     "eyebrow": "Stock por vehículo · Consumo en campo",
@@ -846,9 +806,39 @@
     "empty": "No se encontraron ítems",
     "errorRequired": "El código y la descripción en alemán son obligatorios.",
     "modal": {
-      "titleCreate": "Nuevo ítem",
-      "titleEdit": "Editar ítem",
-      "section": "Catálogo de servicios"
+      "category": "Catálogo de servicios",
+      "createTitle": "Nuevo artículo",
+      "editTitle": "Editar artículo",
+      "sectionIdentification": "Identificación",
+      "sectionPrice": "Precio y orden",
+      "sectionAssignment": "Asignación",
+      "fieldCode": "Código SAP",
+      "fieldCodePlaceholder": "ej. DGF_ACT_001",
+      "fieldUnit": "Unidad",
+      "fieldUnitNone": "— ninguna —",
+      "fieldDescDe": "Descripción (DE)",
+      "fieldDescDePlaceholder": "Descripción del servicio en alemán",
+      "fieldDescEs": "Descripción (ES)",
+      "fieldDescEsPlaceholder": "Descripción en español (opcional)",
+      "fieldPrice": "Precio (€ neto) — vacío = a cotizar",
+      "fieldExternalPrice": "Precio externo",
+      "fieldDisplayOrder": "Orden de visualización",
+      "fieldOperator": "Operador",
+      "fieldOperatorGlobal": "— Global / Todos —",
+      "fieldClient": "Cliente",
+      "fieldClientNone": "— sin cliente —",
+      "fieldDetailForm": "Formulario de detalle (ruta técnica)",
+      "fieldNotes": "Notas",
+      "fieldNotesPlaceholder": "Notas internas del artículo…",
+      "active": "Artículo activo",
+      "activeVisible": "Visible en catálogo",
+      "activeHidden": "Oculto",
+      "errorRequired": "El código y la descripción en alemán son obligatorios.",
+      "buttonCancel": "Cancelar",
+      "buttonClose": "Cerrar",
+      "buttonCreate": "Crear",
+      "buttonSave": "Guardar",
+      "buttonSaving": "[GUARDANDO…]"
     },
     "sections": {
       "identification": "Identificación",
@@ -902,41 +892,6 @@
       "actions": "Acciones",
       "active": "Activo",
       "inactive": "Inactivo"
-    },
-    "modal": {
-      "category": "Catálogo de servicios",
-      "createTitle": "Nuevo artículo",
-      "editTitle": "Editar artículo",
-      "sectionIdentification": "Identificación",
-      "sectionPrice": "Precio y orden",
-      "sectionAssignment": "Asignación",
-      "fieldCode": "Código SAP",
-      "fieldCodePlaceholder": "ej. DGF_ACT_001",
-      "fieldUnit": "Unidad",
-      "fieldUnitNone": "— ninguna —",
-      "fieldDescDe": "Descripción (DE)",
-      "fieldDescDePlaceholder": "Descripción del servicio en alemán",
-      "fieldDescEs": "Descripción (ES)",
-      "fieldDescEsPlaceholder": "Descripción en español (opcional)",
-      "fieldPrice": "Precio (€ neto) — vacío = a cotizar",
-      "fieldExternalPrice": "Precio externo",
-      "fieldDisplayOrder": "Orden de visualización",
-      "fieldOperator": "Operador",
-      "fieldOperatorGlobal": "— Global / Todos —",
-      "fieldClient": "Cliente",
-      "fieldClientNone": "— sin cliente —",
-      "fieldDetailForm": "Formulario de detalle (ruta técnica)",
-      "fieldNotes": "Notas",
-      "fieldNotesPlaceholder": "Notas internas del artículo…",
-      "active": "Artículo activo",
-      "activeVisible": "Visible en catálogo",
-      "activeHidden": "Oculto",
-      "errorRequired": "El código y la descripción en alemán son obligatorios.",
-      "buttonCancel": "Cancelar",
-      "buttonClose": "Cerrar",
-      "buttonCreate": "Crear",
-      "buttonSave": "Guardar",
-      "buttonSaving": "[GUARDANDO…]"
     },
     "delete": {
       "title": "Eliminar ítem",
@@ -1146,5 +1101,118 @@
     "title": "Manual de usuario",
     "description": "Descargue o abra el manual de usuario correspondiente a su rol en formato PDF.",
     "open": "Abrir manual"
+  },
+  "roles": {
+    "title": "Roles y permisos",
+    "subtitle": "{{count}} roles",
+    "new": "Nuevo rol",
+    "createRole": "Crear rol",
+    "name": "Nombre",
+    "description": "Descripción",
+    "autoGrantNew": "Recibir permisos nuevos automáticamente",
+    "role": "Rol",
+    "permissions": "Permisos",
+    "users": "Usuarios",
+    "status": "Estado",
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "open": "Abrir",
+    "duplicate": "Duplicar",
+    "duplicateTitle": "Duplicar rol \"{{name}}\"",
+    "newName": "Nombre del nuevo rol",
+    "delete": "Eliminar",
+    "deactivate": "Desactivar",
+    "activate": "Activar",
+    "system": "Sistema",
+    "systemRoleProtected": "Los roles de sistema no se pueden eliminar.",
+    "syncedPermissions": "{{count}} permisos nuevos registrados",
+    "deleteConfirmTitle": "¿Eliminar rol?",
+    "deleteConfirmMessage": "El rol \"{{name}}\" se eliminará y se quitará a {{count}} usuario(s). Esta acción no se puede deshacer.",
+    "notFound": "Rol no encontrado.",
+    "detailSubtitle": "{{permissions}} permisos · {{users}} usuarios",
+    "saved": "Cambios guardados.",
+    "adminRoleHint": "El rol de administrador del sistema siempre tiene todos los permisos y no se puede editar.",
+    "allModule": "Todo el módulo",
+    "assignUser": "Asignar rol a un usuario",
+    "selectUser": "Seleccionar usuario…",
+    "assign": "Asignar",
+    "noUsers": "Ningún usuario tiene este rol.",
+    "basePersona": "Perfil base",
+    "basePersonaHint": "Gestionado desde Personal",
+    "removeUser": "Quitar",
+    "userAccessTitle": "Roles y permisos adicionales",
+    "userAccessHint": "Roles personalizados y permisos directos además del perfil base.",
+    "extraRoles": "Roles adicionales",
+    "noCustomRoles": "No hay roles personalizados. Créalos en Roles y permisos.",
+    "directPermissions": "Permisos directos",
+    "selectPermission": "Seleccionar permiso…",
+    "grant": "Conceder",
+    "revoke": "Revocar",
+    "noDirectPermissions": "Sin permisos directos.",
+    "tabs": {
+      "permissions": "Permisos",
+      "users": "Usuarios"
+    },
+    "moduleNames": {
+      "work_orders": "Órdenes de servicio",
+      "certification": "Certificación",
+      "service_catalog": "Catálogo de servicios",
+      "projects": "Proyectos",
+      "users": "Usuarios",
+      "roles": "Roles y permisos",
+      "employees": "Empleados",
+      "onboarding": "Onboarding de subcontratistas",
+      "materials": "Materiales",
+      "cycles": "Ciclos de colaboradores",
+      "settings": "Configuración",
+      "dashboard": "Dashboard",
+      "appointments": "Citas",
+      "portal": "Acceso a portales"
+    },
+    "actionNames": {
+      "view": "Ver",
+      "create": "Crear",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "assign": "Asignar",
+      "transition_status": "Cambiar estado",
+      "bulk_action": "Acciones masivas",
+      "manage_photos": "Gestionar fotos",
+      "manage_documents": "Gestionar documentos",
+      "view_billing": "Ver facturación",
+      "edit_billing": "Editar facturación",
+      "export": "Exportar",
+      "certify_internal": "Certificar internamente",
+      "accept_client": "Aceptación del cliente",
+      "invoice": "Facturar",
+      "export_excel": "Exportar Excel",
+      "export_datev": "Exportar DATEV",
+      "generate_pdf": "Generar PDF",
+      "toggle_active": "Activar/desactivar",
+      "deactivate": "Desactivar",
+      "manage_vacations": "Gestionar vacaciones",
+      "generate_payroll": "Generar nómina",
+      "review_documents": "Revisar documentos",
+      "import": "Importar",
+      "register_consumption": "Registrar consumo",
+      "publish": "Publicar",
+      "manage_telegram": "Gestionar Telegram",
+      "manage_team_pins": "Gestionar PINs de equipo",
+      "confirm": "Confirmar",
+      "complete": "Completar",
+      "cancel": "Cancelar",
+      "admin": {
+        "access": "Portal administrativo"
+      },
+      "tech": {
+        "access": "Portal de técnicos"
+      },
+      "contractor": {
+        "access": "Portal de subcontratistas"
+      },
+      "scheduler": {
+        "access": "Portal de planificación"
+      }
+    }
   }
 }

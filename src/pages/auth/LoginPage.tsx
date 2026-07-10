@@ -5,15 +5,8 @@ import { Eye, EyeOff, Delete, ChevronLeft } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { LanguageSelector } from '@/components/ui/LanguageSelector'
 import { ROUTES } from '@/config/routes'
+import { getLandingRoute } from '@/config/permissions'
 import type { TeamMember } from '@/context/authTypes'
-import type { UserRole } from '@/types/enums'
-
-const ROLE_ROUTES: Record<UserRole, string> = {
-  admin: ROUTES.ADMIN.DASHBOARD,
-  technician: ROUTES.TECHNICIAN.DASHBOARD,
-  contractor: ROUTES.CONTRACTOR.DASHBOARD,
-  scheduler: ROUTES.SCHEDULER.APPOINTMENTS,
-}
 
 const TEAM_LABEL: Record<string, string> = {
   rot: 'Equipo Rot',
@@ -37,7 +30,7 @@ type PinStep = 'enter' | 'pick'
 export function LoginPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { signInWithEmail, getTeamByPin, signInWithTeamPin, user } = useAuth()
+  const { signInWithEmail, getTeamByPin, signInWithTeamPin, user, permissions } = useAuth()
 
   const [mode, setMode] = useState<LoginMode>('pin')
 
@@ -119,7 +112,7 @@ export function LoginPage() {
       return
     }
     if (result.user) {
-      navigate(ROLE_ROUTES[result.user.role])
+      navigate(result.landingRoute ?? ROUTES.LOGIN)
     }
   }
 
@@ -141,12 +134,13 @@ export function LoginPage() {
     if (result.error) {
       setError(result.error)
     } else if (result.user) {
-      navigate(ROLE_ROUTES[result.user.role])
+      navigate(result.landingRoute ?? ROUTES.LOGIN)
     }
   }
 
   if (user) {
-    return <Navigate to={ROLE_ROUTES[user.role]} replace />
+    const landing = getLandingRoute(permissions)
+    if (landing !== ROUTES.LOGIN) return <Navigate to={landing} replace />
   }
 
   return (

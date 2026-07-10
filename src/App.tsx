@@ -1,9 +1,11 @@
-import { Suspense, lazy } from 'react'
+import { Suspense, lazy, type ReactNode } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router'
 import { AuthProvider } from '@/context/AuthContext'
 import { useTheme } from '@/hooks/useTheme'
 import { LernmodusBodyClass } from '@/components/LernmodusBodyClass'
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute'
+import { RequirePermission } from '@/components/layout/RequirePermission'
+import { ROUTE_PERMISSIONS } from '@/config/permissions'
 import { AdminLayout } from '@/components/layout/AdminLayout'
 import { TechnicianLayout } from '@/components/layout/TechnicianLayout'
 import { ContractorLayout } from '@/components/layout/ContractorLayout'
@@ -32,6 +34,8 @@ const SubcontractorOnboardingPage = lazy(() => import('@/pages/admin/Subcontract
 const MaterialsPage      = lazy(() => import('@/pages/admin/MaterialsPage').then(m => ({ default: m.MaterialsPage })))
 const CollaboratorCyclesPage = lazy(() => import('@/pages/admin/CollaboratorCyclesPage').then(m => ({ default: m.CollaboratorCyclesPage })))
 const SettingsPage       = lazy(() => import('@/pages/admin/SettingsPage').then(m => ({ default: m.SettingsPage })))
+const RolesPage          = lazy(() => import('@/pages/admin/RolesPage').then(m => ({ default: m.RolesPage })))
+const RoleDetailPage     = lazy(() => import('@/pages/admin/RoleDetailPage').then(m => ({ default: m.RoleDetailPage })))
 
 // Technician chunk (field technicians on slow connections — keep lean)
 const TechDashboard      = lazy(() => import('@/pages/technician/TechDashboard').then(m => ({ default: m.TechDashboard })))
@@ -51,6 +55,17 @@ const AppointmentsListPage  = lazy(() => import('@/pages/scheduler/AppointmentsL
 const AppointmentDetailPage = lazy(() => import('@/pages/scheduler/AppointmentDetailPage').then(m => ({ default: m.AppointmentDetailPage })))
 const AppointmentNewPage    = lazy(() => import('@/pages/scheduler/AppointmentNewPage').then(m => ({ default: m.AppointmentNewPage })))
 
+// Admin route wrapped in its per-page permission guard (from ROUTE_PERMISSIONS).
+function adminRoute(path: string, element: ReactNode) {
+  return (
+    <Route
+      key={path}
+      path={path}
+      element={<RequirePermission permission={ROUTE_PERMISSIONS[path]}>{element}</RequirePermission>}
+    />
+  )
+}
+
 function App() {
   useTheme()
 
@@ -64,30 +79,32 @@ function App() {
             <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
             <Route path={ROUTES.RESET_PASSWORD} element={<ResetPasswordPage />} />
 
-            {/* Admin routes */}
-            <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+            {/* Admin portal — every page additionally requires its module permission */}
+            <Route element={<ProtectedRoute requiredPermission="portal.admin.access" />}>
               <Route element={<AdminLayout />}>
-                <Route path={ROUTES.ADMIN.DASHBOARD} element={<AdminDashboard />} />
-                <Route path={ROUTES.ADMIN.ORDERS} element={<WorkOrdersPage />} />
-                <Route path={ROUTES.ADMIN.ORDERS_NEW} element={<WorkOrderFormPage />} />
-                <Route path={ROUTES.ADMIN.ORDERS_EDIT} element={<WorkOrderFormPage />} />
-                <Route path={ROUTES.ADMIN.ORDERS_ASSIGN} element={<WorkOrderAssignPage />} />
-                <Route path={ROUTES.ADMIN.ORDERS_DETAIL} element={<WorkOrderDetailPage />} />
-                <Route path={ROUTES.ADMIN.CERTIFICATION} element={<CertificationPage />} />
-                <Route path={ROUTES.ADMIN.SERVICE_ITEMS} element={<ServiceItemsPage />} />
-                <Route path={ROUTES.ADMIN.PROJECTS} element={<ProjectsPage />} />
-                <Route path={ROUTES.ADMIN.PROJECTS_DETAIL} element={<ProjectDetailPage />} />
-                <Route path={ROUTES.ADMIN.PERSONNEL} element={<UsersPage />} />
-                <Route path={ROUTES.ADMIN.EMPLOYEES} element={<PersonnelPage />} />
-                <Route path={ROUTES.ADMIN.ONBOARDING} element={<SubcontractorOnboardingPage />} />
-                <Route path={ROUTES.ADMIN.MATERIALS} element={<MaterialsPage />} />
-                <Route path={ROUTES.ADMIN.CYCLES} element={<CollaboratorCyclesPage />} />
-                <Route path={ROUTES.ADMIN.SETTINGS} element={<SettingsPage />} />
+                {adminRoute(ROUTES.ADMIN.DASHBOARD, <AdminDashboard />)}
+                {adminRoute(ROUTES.ADMIN.ORDERS, <WorkOrdersPage />)}
+                {adminRoute(ROUTES.ADMIN.ORDERS_NEW, <WorkOrderFormPage />)}
+                {adminRoute(ROUTES.ADMIN.ORDERS_EDIT, <WorkOrderFormPage />)}
+                {adminRoute(ROUTES.ADMIN.ORDERS_ASSIGN, <WorkOrderAssignPage />)}
+                {adminRoute(ROUTES.ADMIN.ORDERS_DETAIL, <WorkOrderDetailPage />)}
+                {adminRoute(ROUTES.ADMIN.CERTIFICATION, <CertificationPage />)}
+                {adminRoute(ROUTES.ADMIN.SERVICE_ITEMS, <ServiceItemsPage />)}
+                {adminRoute(ROUTES.ADMIN.PROJECTS, <ProjectsPage />)}
+                {adminRoute(ROUTES.ADMIN.PROJECTS_DETAIL, <ProjectDetailPage />)}
+                {adminRoute(ROUTES.ADMIN.PERSONNEL, <UsersPage />)}
+                {adminRoute(ROUTES.ADMIN.EMPLOYEES, <PersonnelPage />)}
+                {adminRoute(ROUTES.ADMIN.ONBOARDING, <SubcontractorOnboardingPage />)}
+                {adminRoute(ROUTES.ADMIN.MATERIALS, <MaterialsPage />)}
+                {adminRoute(ROUTES.ADMIN.CYCLES, <CollaboratorCyclesPage />)}
+                {adminRoute(ROUTES.ADMIN.ROLES, <RolesPage />)}
+                {adminRoute(ROUTES.ADMIN.ROLES_DETAIL, <RoleDetailPage />)}
+                {adminRoute(ROUTES.ADMIN.SETTINGS, <SettingsPage />)}
               </Route>
             </Route>
 
-            {/* Technician routes */}
-            <Route element={<ProtectedRoute allowedRoles={['technician']} />}>
+            {/* Technician portal */}
+            <Route element={<ProtectedRoute requiredPermission="portal.tech.access" />}>
               <Route element={<TechnicianLayout />}>
                 <Route path={ROUTES.TECHNICIAN.DASHBOARD} element={<TechDashboard />} />
                 <Route path={ROUTES.TECHNICIAN.ORDERS} element={<TechOrdersPage />} />
@@ -97,8 +114,8 @@ function App() {
               </Route>
             </Route>
 
-            {/* Contractor routes */}
-            <Route element={<ProtectedRoute allowedRoles={['contractor']} />}>
+            {/* Contractor portal */}
+            <Route element={<ProtectedRoute requiredPermission="portal.contractor.access" />}>
               <Route element={<ContractorLayout />}>
                 <Route path={ROUTES.CONTRACTOR.DASHBOARD} element={<ContractorDashboard />} />
                 <Route path={ROUTES.CONTRACTOR.ORDERS} element={<ContractorOrdersPage />} />
@@ -107,8 +124,8 @@ function App() {
               </Route>
             </Route>
 
-            {/* Scheduler routes */}
-            <Route element={<ProtectedRoute allowedRoles={['scheduler']} />}>
+            {/* Scheduler portal */}
+            <Route element={<ProtectedRoute requiredPermission="portal.scheduler.access" />}>
               <Route element={<SchedulerLayout />}>
                 <Route path={ROUTES.SCHEDULER.APPOINTMENTS} element={<AppointmentsListPage />} />
                 <Route path={ROUTES.SCHEDULER.APPOINTMENTS_NEW} element={<AppointmentNewPage />} />

@@ -10,10 +10,13 @@ import {
   UserRound,
   Package,
   CalendarDays,
+  ShieldCheck,
   Settings,
   type LucideIcon,
 } from 'lucide-react'
 import { ROUTES } from '@/config/routes'
+import { ROUTE_PERMISSIONS } from '@/config/permissions'
+import { usePermissions } from '@/hooks/usePermissions'
 import { LernmodusToggle } from '@/components/LernmodusToggle'
 import { G } from '@/i18n/glossarize'
 
@@ -28,6 +31,8 @@ interface NavSection {
   items: NavItem[]
 }
 
+// Item visibility is driven by ROUTE_PERMISSIONS: an item only renders when the
+// user holds the permission its route requires.
 const NAV_SECTIONS: NavSection[] = [
   {
     labelKey: 'nav.operations',
@@ -51,6 +56,7 @@ const NAV_SECTIONS: NavSection[] = [
       { labelKey: 'nav.employees', path: ROUTES.ADMIN.EMPLOYEES, icon: UserRound },
       { labelKey: 'nav.materials', path: ROUTES.ADMIN.MATERIALS, icon: Package },
       { labelKey: 'nav.cycles',    path: ROUTES.ADMIN.CYCLES,    icon: CalendarDays },
+      { labelKey: 'nav.roles',     path: ROUTES.ADMIN.ROLES,     icon: ShieldCheck },
       { labelKey: 'nav.settings',  path: ROUTES.ADMIN.SETTINGS,  icon: Settings },
     ],
   },
@@ -63,6 +69,13 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { t } = useTranslation()
+  const { can } = usePermissions()
+
+  const visibleSections = NAV_SECTIONS.map((section) => ({
+    ...section,
+    items: section.items.filter((item) => can(ROUTE_PERMISSIONS[item.path])),
+  })).filter((section) => section.items.length > 0)
+
   return (
     <>
       {/* Mobile backdrop */}
@@ -98,7 +111,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         {/* Navigation */}
         <nav className="flex-1 overflow-auto px-2 py-2">
-          {NAV_SECTIONS.map((section) => (
+          {visibleSections.map((section) => (
             <div key={section.labelKey}>
               <div className="nx-sb-section"><G>{t(section.labelKey)}</G></div>
               {section.items.map((item) => {
