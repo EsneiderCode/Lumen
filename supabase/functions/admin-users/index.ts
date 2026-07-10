@@ -1,8 +1,10 @@
 import { CORS_HEADERS, env, json, selectOne, supabaseFetch, userIdFromJwt } from '../_shared/http.ts'
 import { normalizeLoginCode } from '../_shared/pin.ts'
 
-type UserRole = 'admin' | 'technician' | 'contractor'
+type UserRole = 'admin' | 'technician' | 'contractor' | 'scheduler'
 type TeamColor = 'rot' | 'gruen' | 'blau' | 'gelb'
+
+const VALID_ROLES: UserRole[] = ['admin', 'technician', 'contractor', 'scheduler']
 
 interface ProfileRow {
   id: string
@@ -43,7 +45,7 @@ function readPayload(value: unknown): UserPayload {
     email: typeof raw.email === 'string' ? raw.email : raw.email === null ? null : undefined,
     fullName: typeof raw.fullName === 'string' ? raw.fullName : undefined,
     password: typeof raw.password === 'string' ? raw.password : undefined,
-    role: ['admin', 'technician', 'contractor'].includes(String(raw.role)) ? raw.role as UserRole : undefined,
+    role: VALID_ROLES.includes(String(raw.role) as UserRole) ? raw.role as UserRole : undefined,
     team: ['rot', 'gruen', 'blau', 'gelb'].includes(String(raw.team)) ? raw.team as TeamColor : raw.team === null ? null : undefined,
     isActive: typeof raw.isActive === 'boolean' ? raw.isActive : undefined,
   }
@@ -60,23 +62,49 @@ function syntheticEmail(loginCode: string): string {
   return `${loginCode}.${crypto.randomUUID().slice(0, 8)}@pin.lumen.local`
 }
 
-async function requireAdmin(req: Request, supabaseUrl: string, serviceRoleKey: string): Promise<Response | null> {
+// Dynamic-RBAC gate (migration 034): the caller needs the given users.*
+// permission. Falls back to the legacy admin-role check when the RPC does not
+// exist yet (migration not applied).
+async function requirePermission(
+  req: Request,
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  permission: string,
+): Promise<Response | null> {
   const auth = req.headers.get('authorization')
   if (!auth) return json(401, { error: 'Missing authorization' })
 
   const userId = userIdFromJwt(auth)
   if (!userId) return json(401, { error: 'Invalid authorization' })
 
-  const profile = await selectOne<{ role: UserRole; is_active: boolean }>(
-    supabaseUrl,
-    serviceRoleKey,
-    'profiles',
-    `select=role,is_active&id=eq.${encodeURIComponent(userId)}`,
-  )
-  if (!profile || profile.role !== 'admin' || !profile.is_active) {
-    return json(403, { error: 'Admin access required' })
+  try {
+    const allowed = await supabaseFetch<boolean>(
+      supabaseUrl,
+      serviceRoleKey,
+      'rpc/user_has_permission',
+      { method: 'POST', body: JSON.stringify({ uid: userId, perm: permission }) },
+    )
+    if (allowed !== true) return json(403, { error: `Permission required: ${permission}` })
+    return null
+  } catch {
+    const profile = await selectOne<{ role: UserRole; is_active: boolean }>(
+      supabaseUrl,
+      serviceRoleKey,
+      'profiles',
+      `select=role,is_active&id=eq.${encodeURIComponent(userId)}`,
+    )
+    if (!profile || profile.role !== 'admin' || !profile.is_active) {
+      return json(403, { error: 'Admin access required' })
+    }
+    return null
   }
-  return null
+}
+
+function requiredPermissionFor(req: Request, action: string | undefined): string {
+  if (req.method === 'GET') return 'users.view'
+  if (req.method === 'PATCH') return 'users.edit'
+  if (action === 'delete') return 'users.delete'
+  return 'users.create'
 }
 
 async function createAuthUser(
@@ -125,14 +153,21 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = env('SUPABASE_URL')
     const serviceRoleKey = env('SUPABASE_SERVICE_ROLE_KEY')
-    const adminError = await requireAdmin(req, supabaseUrl, serviceRoleKey)
-    if (adminError) return adminError
 
     if (req.method === 'GET') {
+      const gateError = await requirePermission(req, supabaseUrl, serviceRoleKey, 'users.view')
+      if (gateError) return gateError
       return json(200, { users: await listUsers(supabaseUrl, serviceRoleKey) })
     }
 
     const payload = readPayload(await req.json().catch(() => null))
+    const gateError = await requirePermission(
+      req,
+      supabaseUrl,
+      serviceRoleKey,
+      requiredPermissionFor(req, payload.action),
+    )
+    if (gateError) return gateError
 
     if (req.method === 'POST' && payload.action === 'delete') {
       if (!payload.id) return json(400, { error: 'User id is required' })
