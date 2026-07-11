@@ -5,7 +5,7 @@ import { useTheme } from '@/hooks/useTheme'
 import { LernmodusBodyClass } from '@/components/LernmodusBodyClass'
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute'
 import { RequirePermission } from '@/components/layout/RequirePermission'
-import { ROUTE_PERMISSIONS } from '@/config/permissions'
+import { ROUTE_PERMISSIONS, hasAdminPanelAccess } from '@/config/permissions'
 import { AdminLayout } from '@/components/layout/AdminLayout'
 import { TechnicianLayout } from '@/components/layout/TechnicianLayout'
 import { ContractorLayout } from '@/components/layout/ContractorLayout'
@@ -79,8 +79,9 @@ function App() {
             <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPasswordPage />} />
             <Route path={ROUTES.RESET_PASSWORD} element={<ResetPasswordPage />} />
 
-            {/* Admin portal — every page additionally requires its module permission */}
-            <Route element={<ProtectedRoute requiredPermission="portal.admin.access" />}>
+            {/* Admin portal — entry is derived from any admin-page permission;
+                every page additionally requires its module permission */}
+            <Route element={<ProtectedRoute requiredPermission={hasAdminPanelAccess} />}>
               <Route element={<AdminLayout />}>
                 {adminRoute(ROUTES.ADMIN.DASHBOARD, <AdminDashboard />)}
                 {adminRoute(ROUTES.ADMIN.ORDERS, <WorkOrdersPage />)}

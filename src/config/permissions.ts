@@ -107,9 +107,22 @@ const ADMIN_LANDING_CANDIDATES: string[] = [
   ROUTES.ADMIN.SETTINGS,
 ]
 
+// Admin panel entry is derived: holding ANY permission that unlocks an admin
+// page grants access to the panel shell (the sidebar/routes then show only the
+// permitted modules). `portal.admin.access` is kept as an explicit override.
+const ADMIN_PANEL_PERMISSIONS = new Set<string>(Object.values(ROUTE_PERMISSIONS))
+
+export function hasAdminPanelAccess(permissions: ReadonlySet<string>): boolean {
+  if (permissions.has('portal.admin.access')) return true
+  for (const key of permissions) {
+    if (ADMIN_PANEL_PERMISSIONS.has(key)) return true
+  }
+  return false
+}
+
 /** First route the user is allowed to land on, by portal priority. */
 export function getLandingRoute(permissions: ReadonlySet<string>): string {
-  if (permissions.has('portal.admin.access')) {
+  if (hasAdminPanelAccess(permissions)) {
     const candidate = ADMIN_LANDING_CANDIDATES.find((route) =>
       permissions.has(ROUTE_PERMISSIONS[route]),
     )

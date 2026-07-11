@@ -683,7 +683,12 @@
     "menuOpen": "Menü öffnen",
     "search": "Suchen...",
     "installApp": "Installieren",
-    "roles": "Rollen & Berechtigungen"
+    "roles": "Rollen & Berechtigungen",
+    "portals": "Portale",
+    "portalTech": "Portal Interne Mitarbeiter",
+    "portalContractor": "Portal Externe Mitarbeiter",
+    "portalScheduler": "Termin-Portal",
+    "adminPanel": "Admin-Panel"
   },
   "breadcrumb": {
     "admin": "Operations",

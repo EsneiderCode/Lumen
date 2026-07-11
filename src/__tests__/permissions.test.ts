@@ -5,6 +5,7 @@ import {
   ROUTE_PERMISSIONS,
   fallbackPermissionsForRole,
   getLandingRoute,
+  hasAdminPanelAccess,
   registryToSyncPayload,
 } from '@/config/permissions'
 import { ROUTES } from '@/config/routes'
@@ -60,9 +61,29 @@ describe('getLandingRoute', () => {
     expect(getLandingRoute(new Set(['portal.scheduler.access']))).toBe(ROUTES.SCHEDULER.APPOINTMENTS)
   })
 
+  it('lands users with admin-page permissions in the admin panel without portal.admin.access', () => {
+    expect(getLandingRoute(new Set(['work_orders.view']))).toBe(ROUTES.ADMIN.ORDERS)
+    expect(getLandingRoute(new Set(['portal.scheduler.access', 'certification.view']))).toBe(
+      ROUTES.ADMIN.CERTIFICATION,
+    )
+  })
+
   it('sends users without any portal access back to login', () => {
     expect(getLandingRoute(new Set())).toBe(ROUTES.LOGIN)
-    expect(getLandingRoute(new Set(['work_orders.view']))).toBe(ROUTES.LOGIN)
+  })
+})
+
+describe('hasAdminPanelAccess', () => {
+  it('grants access via portal.admin.access or any admin-page permission', () => {
+    expect(hasAdminPanelAccess(new Set(['portal.admin.access']))).toBe(true)
+    expect(hasAdminPanelAccess(new Set(['work_orders.view']))).toBe(true)
+    expect(hasAdminPanelAccess(new Set(['roles.view']))).toBe(true)
+  })
+
+  it('denies access for permissions that unlock no admin page', () => {
+    expect(hasAdminPanelAccess(new Set())).toBe(false)
+    expect(hasAdminPanelAccess(new Set(['portal.scheduler.access']))).toBe(false)
+    expect(hasAdminPanelAccess(new Set(['appointments.view']))).toBe(false)
   })
 })
 

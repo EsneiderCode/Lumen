@@ -10,12 +10,15 @@ import {
   UserRound,
   Package,
   CalendarDays,
+  CalendarClock,
   ShieldCheck,
   Settings,
+  Wrench,
+  Briefcase,
   type LucideIcon,
 } from 'lucide-react'
 import { ROUTES } from '@/config/routes'
-import { ROUTE_PERMISSIONS } from '@/config/permissions'
+import { ROUTE_PERMISSIONS, type PermissionKey } from '@/config/permissions'
 import { usePermissions } from '@/hooks/usePermissions'
 import { LernmodusToggle } from '@/components/LernmodusToggle'
 import { G } from '@/i18n/glossarize'
@@ -62,6 +65,14 @@ const NAV_SECTIONS: NavSection[] = [
   },
 ]
 
+// Cross-portal links, gated by the portal-access permission of each portal —
+// rendered only for users who also hold access to a field/scheduler portal.
+const PORTAL_LINKS: { labelKey: string; path: string; icon: LucideIcon; permission: PermissionKey }[] = [
+  { labelKey: 'nav.portalTech',       path: ROUTES.TECHNICIAN.DASHBOARD,   icon: Wrench,        permission: 'portal.tech.access' },
+  { labelKey: 'nav.portalContractor', path: ROUTES.CONTRACTOR.DASHBOARD,   icon: Briefcase,     permission: 'portal.contractor.access' },
+  { labelKey: 'nav.portalScheduler',  path: ROUTES.SCHEDULER.APPOINTMENTS, icon: CalendarClock, permission: 'portal.scheduler.access' },
+]
+
 interface SidebarProps {
   isOpen: boolean
   onClose: () => void
@@ -75,6 +86,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     ...section,
     items: section.items.filter((item) => can(ROUTE_PERMISSIONS[item.path])),
   })).filter((section) => section.items.length > 0)
+
+  const portalLinks = PORTAL_LINKS.filter((link) => can(link.permission))
 
   return (
     <>
@@ -133,6 +146,26 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               })}
             </div>
           ))}
+
+          {portalLinks.length > 0 && (
+            <div>
+              <div className="nx-sb-section"><G>{t('nav.portals')}</G></div>
+              {portalLinks.map((link) => {
+                const Icon = link.icon
+                return (
+                  <NavLink
+                    key={link.path}
+                    to={link.path}
+                    onClick={onClose}
+                    className="nx-sb-link"
+                  >
+                    <Icon size={14} strokeWidth={1.5} className="opacity-70" />
+                    <G>{t(link.labelKey)}</G>
+                  </NavLink>
+                )
+              })}
+            </div>
+          )}
         </nav>
 
         <div className="px-2 pb-2">

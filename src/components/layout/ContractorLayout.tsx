@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { Home, ClipboardList, FileText, CalendarDays } from 'lucide-react'
 import { BottomNav, type BottomNavItem } from './BottomNav'
+import { AdminPanelLink } from './AdminPanelLink'
 import { LanguageSelector } from '@/components/ui/LanguageSelector'
 import { ROUTES } from '@/config/routes'
 import { useAuth } from '@/hooks/useAuth'
@@ -30,6 +31,7 @@ export function ContractorLayout() {
           <div className="nx-brand-meta leading-none">CONTRACTOR MODE</div>
         </div>
         <div className="ml-auto flex items-center gap-2">
+          <AdminPanelLink />
           <LanguageSelector />
           <span className="hidden text-xs text-fg-2 sm:inline">{user?.fullName}</span>
           <button
