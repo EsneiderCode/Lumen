@@ -5,19 +5,23 @@ import { ArrowLeft } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { ROUTES } from '@/config/routes'
 import {
-  getSchedulerScope,
   createAppointment,
-  type SchedulerScope,
+  type AppointmentLine,
 } from '@/services/appointmentsService'
+import { fetchOperators } from '@/services/workOrderService'
+
+const LINES: AppointmentLine[] = ['NE3', 'NE4']
 
 export function AppointmentNewPage() {
   const { t } = useTranslation()
   const { user } = useAuth()
   const navigate = useNavigate()
-  const [scope, setScope] = useState<SchedulerScope | null>(null)
+  const [operators, setOperators] = useState<{ id: string; code: string; name: string }[]>([])
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
+  const [line, setLine] = useState<AppointmentLine>('NE3')
+  const [operatorId, setOperatorId] = useState('')
   const [scheduledAt, setScheduledAt] = useState('')
   const [durationMin, setDurationMin] = useState(60)
   const [contactName, setContactName] = useState('')
@@ -26,32 +30,36 @@ export function AppointmentNewPage() {
   const [notes, setNotes] = useState('')
 
   useEffect(() => {
-    if (!user) return
-    const userId = user.id
     let cancelled = false
     async function load() {
-      const { data, error: err } = await getSchedulerScope(userId)
+      const { data } = await fetchOperators()
       if (cancelled) return
-      if (err || !data) setError(err ?? t('appointments.noScope'))
-      else setScope(data)
+      setOperators(data)
+      if (data.length > 0) setOperatorId((current) => current || data[0].id)
     }
     void load()
     return () => {
       cancelled = true
     }
-  }, [user?.id, t])
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!scope || !user) return
+    if (!user) return
     if (!scheduledAt) {
       setError(t('appointments.fields.scheduledAtRequired'))
+      return
+    }
+    if (!operatorId) {
+      setError(t('appointments.fields.operatorRequired'))
       return
     }
     setBusy(true)
     setError(null)
     const { data, error: err } = await createAppointment(
       {
+        line,
+        operator_id: operatorId,
         scheduled_at: new Date(scheduledAt).toISOString(),
         duration_min: durationMin,
         contact_name: contactName,
@@ -59,7 +67,6 @@ export function AppointmentNewPage() {
         address,
         notes,
       },
-      scope,
       user.id,
     )
     setBusy(false)
@@ -90,6 +97,36 @@ export function AppointmentNewPage() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4 rounded-l border border-line bg-bg-1 p-5">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField label={t('appointments.fields.line')} htmlFor="line" required>
+            <select
+              id="line"
+              value={line}
+              onChange={(e) => setLine(e.target.value as AppointmentLine)}
+              className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            >
+              {LINES.map((l) => (
+                <option key={l} value={l}>{l}</option>
+              ))}
+            </select>
+          </FormField>
+
+          <FormField label={t('appointments.fields.operator')} htmlFor="operator" required>
+            <select
+              id="operator"
+              value={operatorId}
+              onChange={(e) => setOperatorId(e.target.value)}
+              required
+              className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            >
+              <option value="" disabled>{t('appointments.fields.operatorPlaceholder')}</option>
+              {operators.map((op) => (
+                <option key={op.id} value={op.id}>{op.code} · {op.name}</option>
+              ))}
+            </select>
+          </FormField>
+        </div>
+
         <FormField label={t('appointments.fields.scheduledAt')} htmlFor="scheduled-at" required>
           <input
             id="scheduled-at"
@@ -157,7 +194,7 @@ export function AppointmentNewPage() {
           <Link to={ROUTES.SCHEDULER.APPOINTMENTS} className="btn btn-g btn-sm">
             {t('appointments.actions.cancelForm')}
           </Link>
-          <button type="submit" disabled={busy || !scope} className="btn btn-p btn-sm">
+          <button type="submit" disabled={busy || !operatorId} className="btn btn-p btn-sm">
             {t('appointments.actions.create')}
           </button>
         </div>

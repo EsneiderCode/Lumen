@@ -8,8 +8,6 @@ vi.mock('@/lib/supabase', () => ({
 
 import {
   canTransition,
-  filterByScope,
-  getSchedulerScope,
   listAppointments,
   createAppointment,
   confirmAppointment,
@@ -17,10 +15,7 @@ import {
   cancelAppointment,
   rescheduleAppointment,
   type Appointment,
-  type SchedulerScope,
 } from '@/services/appointmentsService'
-
-const SCOPE: SchedulerScope = { line: 'NE3', operatorId: 'op-dgf' }
 
 function makeAppointment(over: Partial<Appointment> = {}): Appointment {
   return {
@@ -115,93 +110,57 @@ describe('canTransition', () => {
   })
 })
 
-// ── Scope filtering ───────────────────────────────────────────────────────────
-
-describe('filterByScope', () => {
-  it('keeps only rows matching the scheduler line + operator', () => {
-    const rows = [
-      makeAppointment({ id: 'in-1', line: 'NE3', operator_id: 'op-dgf' }),
-      makeAppointment({ id: 'wrong-line', line: 'NE4', operator_id: 'op-dgf' }),
-      makeAppointment({ id: 'wrong-op', line: 'NE3', operator_id: 'op-gfp' }),
-      makeAppointment({ id: 'in-2', line: 'NE3', operator_id: 'op-dgf' }),
-    ]
-    const result = filterByScope(rows, SCOPE)
-    expect(result.map((r) => r.id)).toEqual(['in-1', 'in-2'])
-  })
-})
-
-// ── getSchedulerScope ─────────────────────────────────────────────────────────
-
-describe('getSchedulerScope', () => {
-  it('returns the scope from the profile', async () => {
-    mockFrom.mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi
-            .fn()
-            .mockResolvedValue({ data: { scheduler_line: 'NE3', scheduler_operator: 'op-dgf' }, error: null }),
-        }),
-      }),
-    })
-    const { data, error } = await getSchedulerScope('sched-1')
-    expect(error).toBeNull()
-    expect(data).toEqual({ line: 'NE3', operatorId: 'op-dgf' })
-  })
-
-  it('errors when the profile has no scheduler scope', async () => {
-    mockFrom.mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({ data: { scheduler_line: null, scheduler_operator: null }, error: null }),
-        }),
-      }),
-    })
-    const { data, error } = await getSchedulerScope('sched-1')
-    expect(data).toBeNull()
-    expect(error).toBeTruthy()
-  })
-})
-
 // ── listAppointments ──────────────────────────────────────────────────────────
 
 describe('listAppointments', () => {
-  it('queries scoped to line + operator and returns rows', async () => {
-    const rows = [makeAppointment({ id: 'a' }), makeAppointment({ id: 'b' })]
+  it('returns every appointment newest-first, without scope filtering', async () => {
+    const rows = [makeAppointment({ id: 'a' }), makeAppointment({ id: 'b', line: 'NE4', operator_id: 'op-gfp' })]
     const { chain, eqCalls } = buildChain(rows)
     mockFrom.mockReturnValue(chain)
 
-    const { data, error } = await listAppointments(SCOPE)
+    const { data, error } = await listAppointments()
     expect(error).toBeNull()
     expect(data).toHaveLength(2)
-    expect(eqCalls).toContainEqual(['line', 'NE3'])
-    expect(eqCalls).toContainEqual(['operator_id', 'op-dgf'])
+    // No line/operator .eq() filter — schedulers share all appointments.
+    expect(eqCalls).toHaveLength(0)
   })
 })
 
 // ── createAppointment ─────────────────────────────────────────────────────────
 
 describe('createAppointment', () => {
-  it('inserts a proposed appointment stamped with scope + user', async () => {
+  it('inserts a proposed appointment stamped with the chosen line/operator + user', async () => {
     const { chain, getPayload } = buildChain([])
     mockFrom.mockReturnValue(chain)
 
     const { data, error } = await createAppointment(
-      { scheduled_at: '2026-05-10T10:00:00.000Z', contact_name: 'Klaus' },
-      SCOPE,
+      { line: 'NE4', operator_id: 'op-gfp', scheduled_at: '2026-05-10T10:00:00.000Z', contact_name: 'Klaus' },
       'sched-1',
     )
     expect(error).toBeNull()
     expect(data?.id).toBe('new-id')
     const payload = getPayload()!
-    expect(payload.line).toBe('NE3')
-    expect(payload.operator_id).toBe('op-dgf')
+    expect(payload.line).toBe('NE4')
+    expect(payload.operator_id).toBe('op-gfp')
     expect(payload.status).toBe('proposed')
     expect(payload.created_by).toBe('sched-1')
     expect(payload.assigned_to).toBe('sched-1')
   })
 
   it('rejects creation without a scheduled time', async () => {
-    const { data, error } = await createAppointment({ scheduled_at: '' }, SCOPE, 'sched-1')
+    const { data, error } = await createAppointment(
+      { line: 'NE3', operator_id: 'op-dgf', scheduled_at: '' },
+      'sched-1',
+    )
+    expect(data).toBeNull()
+    expect(error).toBeTruthy()
+  })
+
+  it('rejects creation without a line or operator', async () => {
+    const { data, error } = await createAppointment(
+      { line: '' as never, operator_id: '', scheduled_at: '2026-05-10T10:00:00.000Z' },
+      'sched-1',
+    )
     expect(data).toBeNull()
     expect(error).toBeTruthy()
   })

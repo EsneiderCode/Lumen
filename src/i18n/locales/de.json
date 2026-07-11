@@ -558,7 +558,6 @@
     "pageTitle": "Termine",
     "newTitle": "Neuer Termin",
     "operator": "Betreiber",
-    "noScope": "Kein Terminbereich konfiguriert.",
     "loadError": "Termine konnten nicht geladen werden.",
     "notFound": "Termin nicht gefunden.",
     "noContact": "Kein Kontakt",
@@ -581,7 +580,9 @@
       "contactName": "Kontaktname",
       "contactPhone": "Telefon",
       "address": "Adresse",
-      "notes": "Notizen"
+      "notes": "Notizen",
+      "operatorPlaceholder": "Betreiber wählen…",
+      "operatorRequired": "Betreiber ist erforderlich."
     },
     "actions": {
       "new": "Neuer Termin",
@@ -592,7 +593,8 @@
       "cancel": "Stornieren",
       "cancelForm": "Abbrechen",
       "reschedule": "Verschieben"
-    }
+    },
+    "total": "{{count}} Termine"
   },
   "cycle": {
     "milestone": {

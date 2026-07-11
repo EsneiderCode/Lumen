@@ -558,7 +558,6 @@
     "pageTitle": "Citas",
     "newTitle": "Nueva cita",
     "operator": "Operador",
-    "noScope": "No tiene un ámbito de citas configurado.",
     "loadError": "No se pudieron cargar las citas.",
     "notFound": "Cita no encontrada.",
     "noContact": "Sin contacto",
@@ -581,7 +580,9 @@
       "contactName": "Nombre de contacto",
       "contactPhone": "Teléfono",
       "address": "Dirección",
-      "notes": "Notas"
+      "notes": "Notas",
+      "operatorPlaceholder": "Selecciona operador…",
+      "operatorRequired": "El operador es obligatorio."
     },
     "actions": {
       "new": "Nueva cita",
@@ -592,7 +593,8 @@
       "cancel": "Cancelar",
       "cancelForm": "Descartar",
       "reschedule": "Reagendar"
-    }
+    },
+    "total": "{{count}} citas"
   },
   "cycle": {
     "milestone": {

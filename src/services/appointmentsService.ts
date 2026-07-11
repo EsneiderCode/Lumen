@@ -29,13 +29,9 @@ export interface Appointment {
   operators?: { id: string; code: string; name: string } | null
 }
 
-/** Scope a scheduler is bound to, read from their profile. */
-export interface SchedulerScope {
-  line: AppointmentLine
-  operatorId: string
-}
-
 export interface CreateAppointmentInput {
+  line: AppointmentLine
+  operator_id: string
   scheduled_at: string
   duration_min?: number
   address?: string | null
@@ -70,42 +66,12 @@ export function canTransition(from: AppointmentStatus, to: AppointmentStatus): b
   return STATUS_TRANSITIONS[from]?.includes(to) ?? false
 }
 
-/**
- * Filter appointments down to a scheduler's scope (line + operator).
- * Mirrors the RLS policy so the demo client (no RLS) behaves like production.
- */
-export function filterByScope(rows: Appointment[], scope: SchedulerScope): Appointment[] {
-  return rows.filter((a) => a.line === scope.line && a.operator_id === scope.operatorId)
-}
-
-/** Read the scheduler scope (line + operator) from the user's own profile. */
-export async function getSchedulerScope(
-  userId: string,
-): Promise<{ data: SchedulerScope | null; error: string | null }> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('scheduler_line, scheduler_operator')
-    .eq('id', userId)
-    .single()
-
-  if (error) return { data: null, error: error.message }
-  const line = data?.scheduler_line as AppointmentLine | null
-  const operatorId = data?.scheduler_operator ?? null
-  if (!line || !operatorId) {
-    return { data: null, error: 'Kein Terminbereich konfiguriert.' }
-  }
-  return { data: { line, operatorId }, error: null }
-}
-
-/** List appointments within the scheduler's scope, newest first. */
-export async function listAppointments(
-  scope: SchedulerScope,
-): Promise<{ data: Appointment[]; error: string | null }> {
+/** List every appointment, newest first. Schedulers share all appointments;
+ *  RLS (migration 037) already restricts this to the scheduler/admin roles. */
+export async function listAppointments(): Promise<{ data: Appointment[]; error: string | null }> {
   const { data, error } = await supabase
     .from('appointments')
     .select(SELECT_WITH_OPERATOR)
-    .eq('line', scope.line)
-    .eq('operator_id', scope.operatorId)
     .order('scheduled_at', { ascending: false })
 
   return { data: (data as Appointment[] | null) ?? [], error: error?.message ?? null }
@@ -125,16 +91,18 @@ export async function getAppointment(
 
 export async function createAppointment(
   input: CreateAppointmentInput,
-  scope: SchedulerScope,
   userId: string,
 ): Promise<{ data: Appointment | null; error: string | null }> {
   if (!input.scheduled_at) {
     return { data: null, error: 'Termin (Datum/Uhrzeit) ist erforderlich.' }
   }
+  if (!input.line || !input.operator_id) {
+    return { data: null, error: 'Linie und Betreiber sind erforderlich.' }
+  }
 
   const payload: AppointmentInsert = {
-    line: scope.line,
-    operator_id: scope.operatorId,
+    line: input.line,
+    operator_id: input.operator_id,
     scheduled_at: input.scheduled_at,
     duration_min: input.duration_min ?? 60,
     address: input.address?.trim() || null,

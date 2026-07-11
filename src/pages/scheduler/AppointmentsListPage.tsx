@@ -6,36 +6,25 @@ import { useAuth } from '@/hooks/useAuth'
 import { ManualCard } from '@/components/profile/ManualCard'
 import { ROUTES } from '@/config/routes'
 import {
-  getSchedulerScope,
   listAppointments,
   type Appointment,
-  type SchedulerScope,
 } from '@/services/appointmentsService'
 import { AppointmentStatusBadge } from '@/components/scheduler/AppointmentStatusBadge'
 
 export function AppointmentsListPage() {
   const { t, i18n } = useTranslation()
   const { user } = useAuth()
-  const [scope, setScope] = useState<SchedulerScope | null>(null)
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!user) return
-    const userId = user.id
     let cancelled = false
     async function load() {
       setIsLoading(true)
       try {
-        const { data: s, error: scopeErr } = await getSchedulerScope(userId)
-        if (cancelled) return
-        if (scopeErr || !s) {
-          setError(scopeErr ?? t('appointments.noScope'))
-          return
-        }
-        setScope(s)
-        const { data, error: listErr } = await listAppointments(s)
+        const { data, error: listErr } = await listAppointments()
         if (cancelled) return
         if (listErr) setError(listErr)
         else setAppointments(data)
@@ -64,8 +53,8 @@ export function AppointmentsListPage() {
       <div className="nx-page-header">
         <div>
           <h2 className="nx-page-title">{t('appointments.pageTitle')}</h2>
-          <p className="nx-label mt-2">
-            {scope ? `${scope.line} · ${appointments[0]?.operators?.code ?? t('appointments.operator')}` : ''}
+          <p className="nx-label mt-2 tabular-nums">
+            {t('appointments.total', { count: appointments.length })}
           </p>
         </div>
         <Link to={ROUTES.SCHEDULER.APPOINTMENTS_NEW} className="btn btn-p btn-sm">
@@ -106,7 +95,7 @@ export function AppointmentsListPage() {
               </div>
               <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-fg-1">
                 <span>{a.contact_name ?? t('appointments.noContact')}</span>
-                <span className="text-xs text-fg-2">{a.line}</span>
+                <span className="text-xs text-fg-2">{a.line} · {a.operators?.code ?? '—'}</span>
               </div>
               {a.address && <p className="text-xs text-fg-2">{a.address}</p>}
             </Link>
