@@ -6,7 +6,7 @@ import { canonicalizeProjectCode } from '@/config/projectCodeAliases'
 import type { CollaboratorCycle } from '@/services/collaboratorCyclesService'
 
 export const FINCONTROL_OPS_CSV_HEADER =
-  'kind,week,project_code,project_id,counterparty,amount,description,document_number,due_date,crew'
+  'kind,week,project_code,project_id,counterparty,amount,description,document_number,due_date,crew,source_key,lumen_work_order_id,lumen_cycle_id'
 
 export type FinControlOpsKind = 'clear' | 'cxc'
 
@@ -21,6 +21,9 @@ export interface FinControlOpsRow {
   document_number: string
   due_date: string
   crew: string
+  source_key?: string
+  lumen_work_order_id?: string
+  lumen_cycle_id?: string
   meta?: Record<string, string>
 }
 
@@ -60,6 +63,9 @@ export function buildFinControlOpsCsv(rows: FinControlOpsRow[]): string {
         r.document_number,
         r.due_date,
         r.crew,
+        r.source_key ?? '',
+        r.lumen_work_order_id ?? '',
+        r.lumen_cycle_id ?? '',
       ]
         .map(csvEscape)
         .join(','),
@@ -101,9 +107,12 @@ export function buildClearRowsFromCycles(inputs: CycleClearInput[]): FinControlO
         counterparty: i.collaboratorName,
         amount: Math.round(i.externalTotal * 100) / 100,
         description: `Ciclo ${i.cycle.period_start}→${i.cycle.period_end} (publicado)`,
-        document_number: i.cycle.id.slice(0, 8),
+        document_number: i.cycle.id,
         due_date: i.cycle.payment_date ?? '',
         crew: i.collaboratorName,
+        source_key: `lumen:cxp:cycle-${i.cycle.id}`,
+        lumen_work_order_id: '',
+        lumen_cycle_id: i.cycle.id,
         meta: { cycle_id: i.cycle.id },
       }
     })
@@ -133,6 +142,9 @@ export function buildCxcRowsFromAccepted(inputs: ClientAcceptedCxcInput[]): FinC
       document_number: i.orderNumber,
       due_date: i.dueDate ?? '',
       crew: '',
+      source_key: `lumen:cxc:wo-${i.workOrderId}`,
+      lumen_work_order_id: i.workOrderId,
+      lumen_cycle_id: '',
       meta: { work_order_id: i.workOrderId },
     }))
 }

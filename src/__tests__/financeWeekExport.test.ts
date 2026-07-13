@@ -102,6 +102,7 @@ describe('buildFinControlOpsCsv', () => {
     ])
     expect(csv.startsWith(FINCONTROL_OPS_CSV_HEADER)).toBe(true)
     expect(csv).toContain('clear,2026-W28,QFF,,Melgarejo,100.00')
+    expect(csv.split('\n')[0]).toContain('source_key')
   })
 })
 
