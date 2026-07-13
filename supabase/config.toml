@@ -15,3 +15,6 @@ verify_jwt = false
 
 [functions.set-team-pin]
 verify_jwt = true
+
+[functions.dispatch-finance-outbox]
+verify_jwt = false

@@ -615,6 +615,18 @@ export async function transitionWorkOrderStatus(
     notes: notes ?? null,
   })
 
+  // S5: client_accepted → finance outbox CXC (also covered by acceptWorkOrderClient RPC path)
+  if (toStatus === 'client_accepted') {
+    void (async () => {
+      try {
+        const { enqueueCxcFromClientAccepted } = await import('@/services/financeOutboxService')
+        await enqueueCxcFromClientAccepted(id)
+      } catch {
+        /* best-effort */
+      }
+    })()
+  }
+
   return { data, error: null }
 }
 
@@ -709,12 +721,26 @@ export async function acceptWorkOrderClient(
   const hashErrors = validateLifecycleDataHash(args.dataHash)
   if (hashErrors.length > 0) return toFailureResult(hashErrors)
 
-  return callLifecycleRpc('accept_work_order_client', {
+  const result = await callLifecycleRpc('accept_work_order_client', {
     p_work_order_id: args.workOrderId,
     p_changed_by: args.changedBy,
     p_data_hash: args.dataHash!.trim(),
     p_notes: args.notes ?? null,
   })
+
+  // S5: enqueue CXC draft for FinControl when client accepts (non-blocking).
+  if (result.ok) {
+    void (async () => {
+      try {
+        const { enqueueCxcFromClientAccepted } = await import('@/services/financeOutboxService')
+        await enqueueCxcFromClientAccepted(args.workOrderId)
+      } catch {
+        /* enqueue best-effort */
+      }
+    })()
+  }
+
+  return result
 }
 
 export async function invoiceWorkOrder(

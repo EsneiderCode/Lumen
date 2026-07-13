@@ -113,7 +113,13 @@ export async function buildFinanceWeekExport(options?: {
   const { data: cycles, error: cyclesErr } = await cyclesQuery
   if (cyclesErr) errors.push(`cycles: ${cyclesErr.message}`)
 
-  const collabIds = [...new Set((cycles ?? []).map((c) => c.collaborator_id))]
+  const collabIds = [
+    ...new Set(
+      (cycles ?? [])
+        .map((c) => c.collaborator_id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ]
   const nameById = new Map<string, string>()
   if (collabIds.length) {
     const { data: profiles } = await supabase

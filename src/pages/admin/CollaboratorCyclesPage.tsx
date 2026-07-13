@@ -23,6 +23,7 @@ import {
   buildFinanceWeekExport,
   downloadCsv,
 } from '@/services/financeWeekExport'
+import { dispatchFinanceOutbox } from '@/services/financeOutboxService'
 
 interface CycleForm {
   period_start: string
@@ -76,6 +77,7 @@ export function CollaboratorCyclesPage() {
   const [busy, setBusy] = useState(false)
   const [exportBusy, setExportBusy] = useState(false)
   const [exportMsg, setExportMsg] = useState<string | null>(null)
+  const [dispatchBusy, setDispatchBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   // D4 wiring: track whether the admin manually edited payment, and the cert date
   // the form was loaded with, so we know if the cert changed (which re-fixes payment).
@@ -288,6 +290,29 @@ export function CollaboratorCyclesPage() {
     setExportBusy(false)
   }
 
+  /** S5: push pending finance_outbox events to FinControl Firestore. */
+  async function handleDispatchOutbox() {
+    setDispatchBusy(true)
+    setExportMsg(null)
+    setError(null)
+    try {
+      const r = await dispatchFinanceOutbox({ limit: 50 })
+      if (!r.ok) {
+        setError(
+          r.error ||
+            'Dispatch falló. ¿Migration 038 aplicada? ¿Secrets FIREBASE_* en la Edge Function?',
+        )
+      } else {
+        setExportMsg(
+          `Outbox → FinControl: procesados ${r.processed ?? 0}, enviados ${r.sent ?? 0}, fallidos ${r.failed ?? 0}.`,
+        )
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    }
+    setDispatchBusy(false)
+  }
+
   const inputClass =
     'w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent'
 
@@ -321,6 +346,15 @@ export function CollaboratorCyclesPage() {
           >
             <Download size={16} strokeWidth={1.5} />
             {exportBusy ? 'Exportando…' : 'CSV FinControl (todos)'}
+          </button>
+          <button
+            type="button"
+            className="btn btn-p btn-sm"
+            disabled={dispatchBusy}
+            onClick={() => void handleDispatchOutbox()}
+            title="Empuja finance_outbox pending a Firestore FinControl (requiere secrets Edge Function)"
+          >
+            {dispatchBusy ? 'Enviando…' : 'Push outbox → FinControl'}
           </button>
         </div>
       </div>

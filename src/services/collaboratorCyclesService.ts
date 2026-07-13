@@ -261,7 +261,27 @@ export async function publishCycle(
     .select('*')
     .single()
 
-  return { data: (data as CollaboratorCycle | null) ?? null, error: error?.message ?? null }
+  const cycle = (data as CollaboratorCycle | null) ?? null
+  if (!error && cycle) {
+    // S5: enqueue CXP for FinControl (non-blocking). Failures stay in outbox UI.
+    void (async () => {
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', cycle.collaborator_id)
+          .maybeSingle()
+        const name =
+          (profile as { full_name?: string } | null)?.full_name || cycle.collaborator_id
+        const { enqueueCxpFromPublishedCycle } = await import('@/services/financeOutboxService')
+        await enqueueCxpFromPublishedCycle(cycle, name)
+      } catch {
+        /* enqueue best-effort */
+      }
+    })()
+  }
+
+  return { data: cycle, error: error?.message ?? null }
 }
 
 export async function unpublishCycle(
