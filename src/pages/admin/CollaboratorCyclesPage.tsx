@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CalendarDays, Plus, Save, Trash2, Eye, EyeOff, X } from 'lucide-react'
+import { CalendarDays, Download, Plus, Save, Trash2, Eye, EyeOff, X } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { fetchOperationalUsers, type OperationalUser } from '@/services/userService'
 import { fetchWorkOrders } from '@/services/workOrderService'
@@ -19,6 +19,10 @@ import {
   unpublishCycle,
   type CollaboratorCycle,
 } from '@/services/collaboratorCyclesService'
+import {
+  buildFinanceWeekExport,
+  downloadCsv,
+} from '@/services/financeWeekExport'
 
 interface CycleForm {
   period_start: string
@@ -70,6 +74,8 @@ export function CollaboratorCyclesPage() {
   const [form, setForm] = useState<CycleForm>(EMPTY_FORM)
   const [isLoading, setIsLoading] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [exportBusy, setExportBusy] = useState(false)
+  const [exportMsg, setExportMsg] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   // D4 wiring: track whether the admin manually edited payment, and the cert date
   // the form was loaded with, so we know if the cert changed (which re-fixes payment).
@@ -252,18 +258,78 @@ export function CollaboratorCyclesPage() {
     setBusy(false)
   }
 
+  /**
+   * Fast bridge to FinControl F1:
+   * - clear = published cycles (optionally only selected collaborator)
+   * - cxc = all client_accepted work orders
+   */
+  async function handleExportFinControl(onlySelected: boolean) {
+    setExportBusy(true)
+    setExportMsg(null)
+    setError(null)
+    try {
+      const result = await buildFinanceWeekExport({
+        collaboratorId: onlySelected && selectedId ? selectedId : undefined,
+      })
+      if (!result.rows.length) {
+        setExportMsg('Sin filas: no hay ciclos publicados con total external ni OT client_accepted con billing.')
+        setExportBusy(false)
+        return
+      }
+      const scope = onlySelected && selectedId ? 'contractor' : 'all'
+      downloadCsv(result.csv, `lumen-fincontrol-ops-${result.week}-${scope}.csv`)
+      const errTail = result.errors.length ? ` · avisos: ${result.errors.length}` : ''
+      setExportMsg(
+        `CSV listo: ${result.clearCount} clear (ciclos) + ${result.cxcCount} cxc (client_accepted). Importar en FinControl → Ops semana.${errTail}`,
+      )
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    }
+    setExportBusy(false)
+  }
+
   const inputClass =
     'w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent'
 
   return (
     <div className="space-y-5">
-      <div className="nx-page-header flex items-center gap-3">
-        <CalendarDays size={22} strokeWidth={1.5} className="text-fg-2" />
-        <div>
-          <h2 className="nx-page-title">{t('cycle.view.adminTitle')}</h2>
-          <p className="nx-label mt-2">{t('cycle.view.adminSubtitle')}</p>
+      <div className="nx-page-header flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <CalendarDays size={22} strokeWidth={1.5} className="text-fg-2" />
+          <div>
+            <h2 className="nx-page-title">{t('cycle.view.adminTitle')}</h2>
+            <p className="nx-label mt-2">{t('cycle.view.adminSubtitle')}</p>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            className="btn btn-g btn-sm"
+            disabled={exportBusy || !selectedId}
+            onClick={() => void handleExportFinControl(true)}
+            title="Exporta ciclos publicados de este colaborador + todas las OT client_accepted"
+          >
+            <Download size={16} strokeWidth={1.5} />
+            CSV FinControl (este)
+          </button>
+          <button
+            type="button"
+            className="btn btn-p btn-sm"
+            disabled={exportBusy}
+            onClick={() => void handleExportFinControl(false)}
+            title="Todos los ciclos publicados + OT client_accepted → FinControl /ops-semana"
+          >
+            <Download size={16} strokeWidth={1.5} />
+            {exportBusy ? 'Exportando…' : 'CSV FinControl (todos)'}
+          </button>
         </div>
       </div>
+
+      {exportMsg && (
+        <div className="rounded-s border border-ok/30 bg-ok/10 px-4 py-3 text-sm text-ok">
+          {exportMsg}
+        </div>
+      )}
 
       <CycleLegend />
 
