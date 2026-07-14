@@ -15,8 +15,17 @@
  * matching DISPATCH_SECRET (optional cron).
  *
  * Idempotent: documents keyed by sourceKey via query + patch/create.
+ *
+ * Actions (POST body, default 'dispatch'):
+ *   { limit? }                          — dispatch pending rows to Firestore
+ *   { action: 'retry', id }             — reset one failed/dead row to pending
+ *   { action: 'requeue_failed' }        — reset ALL failed/dead rows to pending
+ * Retry resets attempts to 0 and clears last_error so the row gets a fresh
+ * retry budget (dispatch marks rows dead at >= 8 attempts). RLS only lets
+ * admins SELECT/INSERT finance_outbox, so these resets must run here with
+ * the service role.
  */
-import { CORS_HEADERS, env, json, supabaseFetch, userIdFromJwt } from '../_shared/http.ts'
+import { CORS_HEADERS, env, json, supabaseFetch } from '../_shared/http.ts'
 
 declare const Deno: {
   serve(handler: (req: Request) => Response | Promise<Response>): void
@@ -295,6 +304,27 @@ async function applyEvent(
   return 'created'
 }
 
+// ── JWT verification ─────────────────────────────────────────────────────────
+// This function has verify_jwt=false in config.toml (the x-dispatch-secret
+// cron path must reach it unauthenticated), so the Supabase gateway does NOT
+// validate the Authorization header for us. A JWT branch must verify the
+// token against Supabase Auth itself before trusting any claim in it.
+
+async function verifiedUserIdFromJwt(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  auth: string,
+): Promise<string | null> {
+  const token = auth.replace(/^Bearer\s+/i, '')
+  if (!token) return null
+  const res = await fetch(`${supabaseUrl}/auth/v1/user`, {
+    headers: { authorization: `Bearer ${token}`, apikey: serviceRoleKey },
+  })
+  if (!res.ok) return null
+  const body = (await res.json()) as { id?: string }
+  return typeof body.id === 'string' ? body.id : null
+}
+
 // ── Handler ──────────────────────────────────────────────────────────────────
 
 Deno.serve(async (req) => {
@@ -308,20 +338,15 @@ Deno.serve(async (req) => {
     const saJson = Deno.env.get('FIREBASE_SERVICE_ACCOUNT_JSON') || ''
     const dispatchSecret = Deno.env.get('DISPATCH_SECRET') || ''
 
-    if (!projectId || !appId || !saJson) {
-      return json(503, {
-        error:
-          'Missing FIREBASE_PROJECT_ID / FIREBASE_APP_ID / FIREBASE_SERVICE_ACCOUNT_JSON secrets on Edge Function',
-      })
-    }
-
-    // Auth: cron secret or admin JWT
+    // Auth: cron secret or admin JWT, verified against Supabase Auth (this
+    // function runs with verify_jwt=false, so the gateway never checks the
+    // token's signature — a forged Authorization header would otherwise pass).
     const auth = req.headers.get('authorization') || ''
     const cronHeader = req.headers.get('x-dispatch-secret') || ''
     let authorized = false
     if (dispatchSecret && cronHeader && cronHeader === dispatchSecret) authorized = true
     if (!authorized && auth) {
-      const uid = userIdFromJwt(auth)
+      const uid = await verifiedUserIdFromJwt(supabaseUrl, serviceKey, auth)
       if (uid) {
         const profile = await supabaseFetch<{ role?: string; is_active?: boolean }[]>(
           supabaseUrl,
@@ -335,13 +360,80 @@ Deno.serve(async (req) => {
     if (!authorized) return json(401, { error: 'Unauthorized' })
 
     let limit = 25
+    let action: 'dispatch' | 'retry' | 'requeue_failed' | 'list' = 'dispatch'
+    let retryId = ''
+    let listStatus = ''
     if (req.method === 'POST') {
       try {
-        const body = (await req.json()) as { limit?: number }
-        if (body.limit) limit = Math.min(100, Math.max(1, body.limit))
+        const body = (await req.json()) as {
+          limit?: number
+          action?: string
+          id?: string
+          status?: string
+        }
+        if (body.action === 'retry' || body.action === 'requeue_failed' || body.action === 'list') {
+          action = body.action
+        }
+        if (body.limit) limit = Math.min(action === 'list' ? 200 : 100, Math.max(1, body.limit))
+        else if (action === 'list') limit = 100
+        if (typeof body.id === 'string') retryId = body.id
+        if (typeof body.status === 'string') listStatus = body.status
       } catch {
         /* empty body ok */
       }
+    }
+
+    // ── List: same authorized gate as retry/requeue_failed — RLS SELECT is
+    //    admin-only, so reads go through here instead of client-side (b1). ──
+    if (action === 'list') {
+      const knownStatuses = ['pending', 'processing', 'sent', 'failed', 'dead']
+      const statusFilter =
+        listStatus && knownStatuses.includes(listStatus) ? `&status=eq.${listStatus}` : ''
+      const rows = await supabaseFetch<Array<Record<string, unknown>>>(
+        supabaseUrl,
+        serviceKey,
+        `finance_outbox?select=id,event_type,idempotency_key,status,attempts,last_error,created_at,sent_at&order=created_at.desc&limit=${limit}${statusFilter}`,
+        { method: 'GET' },
+      )
+      return json(200, { rows })
+    }
+
+    // ── Admin retry: reset failed/dead rows to pending with a fresh attempt
+    //    budget. No Firebase secrets needed — pure outbox state transition. ──
+    if (action === 'retry' || action === 'requeue_failed') {
+      if (action === 'retry') {
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(retryId)) {
+          return json(400, { error: 'retry requires a valid outbox row id (uuid)' })
+        }
+      }
+      const filter =
+        action === 'retry'
+          ? `id=eq.${retryId}&status=in.(failed,dead)`
+          : 'status=in.(failed,dead)'
+      const updated = await supabaseFetch<Array<{ id: string }>>(
+        supabaseUrl,
+        serviceKey,
+        `finance_outbox?${filter}&select=id`,
+        {
+          method: 'PATCH',
+          headers: { Prefer: 'return=representation' },
+          body: JSON.stringify({
+            status: 'pending',
+            attempts: 0,
+            last_error: null,
+            updated_at: new Date().toISOString(),
+          }),
+        },
+      )
+      return json(200, { action, retried: updated?.length ?? 0 })
+    }
+
+    // Dispatch path — needs the Firestore service account.
+    if (!projectId || !appId || !saJson) {
+      return json(503, {
+        error:
+          'Missing FIREBASE_PROJECT_ID / FIREBASE_APP_ID / FIREBASE_SERVICE_ACCOUNT_JSON secrets on Edge Function',
+      })
     }
 
     const pending = await supabaseFetch<

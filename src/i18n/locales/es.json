@@ -669,6 +669,7 @@
     "appointments": "Citas",
     "calendar": "Calendario",
     "cycles": "Ciclos",
+    "financeOutbox": "Outbox finanzas",
     "documents": "Documentos",
     "certification": "Certificación",
     "serviceCatalog": "Catálogo de servicios",

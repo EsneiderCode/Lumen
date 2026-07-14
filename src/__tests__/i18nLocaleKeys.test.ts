@@ -27,7 +27,10 @@ const AUTH_PIN_KEYS = [
 // Breadcrumb keys added for /admin/projects
 const BREADCRUMB_KEYS = ['breadcrumb.projects']
 
-const REQUIRED_KEYS = [...AUTH_PIN_KEYS, ...BREADCRUMB_KEYS]
+// Sidebar keys added for /admin/finance-outbox (S6)
+const NAV_KEYS = ['nav.financeOutbox']
+
+const REQUIRED_KEYS = [...AUTH_PIN_KEYS, ...BREADCRUMB_KEYS, ...NAV_KEYS]
 
 describe('i18n locale key parity — de.json and es.json', () => {
   for (const key of REQUIRED_KEYS) {

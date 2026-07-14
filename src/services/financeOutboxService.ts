@@ -10,12 +10,14 @@ import { isoWeekFromIsoDate, isoWeekLabel } from '@/services/financeWeekExportCo
 
 export type FinanceEventType = 'finance.cxc_draft.v1' | 'finance.cxp_from_cycle.v1'
 
+export type FinanceOutboxStatus = 'pending' | 'processing' | 'sent' | 'failed' | 'dead'
+
 export interface FinanceOutboxRow {
   id: string
   event_type: FinanceEventType
   idempotency_key: string
-  payload: Record<string, unknown>
-  status: 'pending' | 'processing' | 'sent' | 'failed' | 'dead'
+  payload?: Record<string, unknown>
+  status: FinanceOutboxStatus
   attempts: number
   last_error: string | null
   created_at: string
@@ -214,21 +216,76 @@ export async function enqueueCxcFromClientAccepted(
   }
 }
 
-/** List recent outbox rows (admin UI). */
-export async function listFinanceOutbox(limit = 50): Promise<{
+/** List outbox rows (admin UI) via the Edge Function — RLS SELECT stays admin-only (b1). */
+export async function listFinanceOutbox(options?: {
+  status?: FinanceOutboxStatus
+  limit?: number
+}): Promise<{
   data: FinanceOutboxRow[]
   error: string | null
 }> {
-  const { data, error } = await supabase
-    .from('finance_outbox' as never)
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(limit)
+  const { data, error } = await supabase.functions.invoke('dispatch-finance-outbox', {
+    method: 'POST',
+    body: { action: 'list', status: options?.status, limit: options?.limit ?? 100 },
+  })
+  if (error) return { data: [], error: await invokeErrorMessage(error) }
+  const body = data as { rows?: FinanceOutboxRow[]; error?: string } | null
+  if (body?.error) return { data: [], error: body.error }
+  return { data: body?.rows ?? [], error: null }
+}
 
-  return {
-    data: (data as FinanceOutboxRow[] | null) ?? [],
-    error: error?.message ?? null,
+/**
+ * supabase.functions.invoke() throws a generic FunctionsHttpError whose
+ * .message is always "Edge Function returned a non-2xx status code" — the
+ * real diagnostic text (503 missing secrets, 401 Unauthorized, 400 invalid
+ * uuid, ...) lives in error.context, a Response the SDK leaves unread.
+ */
+async function invokeErrorMessage(error: unknown): Promise<string> {
+  try {
+    const context = (error as { context?: Response } | null)?.context
+    const body = (await context?.clone().json()) as { error?: string; message?: string } | undefined
+    if (body?.error) return body.error
+    if (body?.message) return body.message
+  } catch {
+    /* context missing or not JSON — fall back below */
   }
+  return error instanceof Error ? error.message : String(error)
+}
+
+/**
+ * Reset one failed/dead row to pending so the next dispatch picks it up.
+ * Runs through the Edge Function: RLS only grants admins SELECT/INSERT on
+ * finance_outbox — status updates are service-role-only by design. The reset
+ * clears last_error and zeroes attempts, granting a fresh retry budget
+ * (the dispatcher marks rows dead once attempts reach 8).
+ */
+export async function retryOutboxRow(
+  id: string,
+): Promise<{ ok: boolean; retried?: number; error?: string }> {
+  const { data, error } = await supabase.functions.invoke('dispatch-finance-outbox', {
+    method: 'POST',
+    body: { action: 'retry', id },
+  })
+  if (error) return { ok: false, error: await invokeErrorMessage(error) }
+  const body = data as { retried?: number; error?: string } | null
+  if (body?.error) return { ok: false, error: body.error }
+  return { ok: true, retried: body?.retried ?? 0 }
+}
+
+/** Reset ALL failed/dead rows to pending (bulk retry). */
+export async function requeueAllFailed(): Promise<{
+  ok: boolean
+  retried?: number
+  error?: string
+}> {
+  const { data, error } = await supabase.functions.invoke('dispatch-finance-outbox', {
+    method: 'POST',
+    body: { action: 'requeue_failed' },
+  })
+  if (error) return { ok: false, error: await invokeErrorMessage(error) }
+  const body = data as { retried?: number; error?: string } | null
+  if (body?.error) return { ok: false, error: body.error }
+  return { ok: true, retried: body?.retried ?? 0 }
 }
 
 /**
@@ -242,7 +299,7 @@ export async function dispatchFinanceOutbox(options?: {
     method: 'POST',
     body: { limit: options?.limit ?? 25 },
   })
-  if (error) return { ok: false, error: error.message }
+  if (error) return { ok: false, error: await invokeErrorMessage(error) }
   const body = data as {
     processed?: number
     sent?: number

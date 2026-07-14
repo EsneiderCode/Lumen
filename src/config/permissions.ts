@@ -86,6 +86,8 @@ export const ROUTE_PERMISSIONS: Record<string, PermissionKey> = {
   [ROUTES.ADMIN.ONBOARDING]: 'onboarding.view',
   [ROUTES.ADMIN.MATERIALS]: 'materials.view',
   [ROUTES.ADMIN.CYCLES]: 'cycles.view',
+  // Outbox is finance-ops observability of the cycles bridge — same permission.
+  [ROUTES.ADMIN.FINANCE_OUTBOX]: 'cycles.view',
   [ROUTES.ADMIN.SETTINGS]: 'settings.view',
   [ROUTES.ADMIN.ROLES]: 'roles.view',
   [ROUTES.ADMIN.ROLES_DETAIL]: 'roles.view',
@@ -104,6 +106,7 @@ const ADMIN_LANDING_CANDIDATES: string[] = [
   ROUTES.ADMIN.EMPLOYEES,
   ROUTES.ADMIN.MATERIALS,
   ROUTES.ADMIN.CYCLES,
+  ROUTES.ADMIN.FINANCE_OUTBOX,
   ROUTES.ADMIN.SETTINGS,
 ]
 
