@@ -46,16 +46,22 @@ CREATE TRIGGER handle_finance_outbox_updated_at
 
 ALTER TABLE public.finance_outbox ENABLE ROW LEVEL SECURITY;
 
--- Admins can insert (enqueue) and read (debug). Updates/dispatch use service role.
+-- Permission-based pattern as in 035: read for cycles.view (outbox panel);
+-- insert only for write-scoped actors — enqueue fires on cycle publish
+-- (cycles.edit) and on work-order client_accepted (work_orders.edit).
+-- Updates/dispatch use service role.
 DROP POLICY IF EXISTS finance_outbox_admin_select ON public.finance_outbox;
-CREATE POLICY finance_outbox_admin_select ON public.finance_outbox
+CREATE POLICY finance_outbox_select_perm ON public.finance_outbox
   FOR SELECT TO authenticated
-  USING (public.get_user_role() = 'admin');
+  USING (public.has_permission('cycles.view'));
 
 DROP POLICY IF EXISTS finance_outbox_admin_insert ON public.finance_outbox;
-CREATE POLICY finance_outbox_admin_insert ON public.finance_outbox
+CREATE POLICY finance_outbox_insert_perm ON public.finance_outbox
   FOR INSERT TO authenticated
-  WITH CHECK (public.get_user_role() = 'admin');
+  WITH CHECK (
+    public.has_permission('cycles.edit')
+    OR public.has_permission('work_orders.edit')
+  );
 
 COMMENT ON TABLE public.finance_outbox IS
   'Outbound finance events for FinControl. Consumers mark status=sent. Idempotency by idempotency_key.';

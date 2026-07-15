@@ -19,7 +19,12 @@ export function json(status: number, body: unknown): Response {
   })
 }
 
-/** Extract user ID (sub) from a JWT. The Supabase relay already verified the signature. */
+/**
+ * Extract user ID (sub) from a JWT WITHOUT verifying its signature.
+ * Only safe in functions with verify_jwt=true (the gateway checks the signature
+ * before invocation). Functions with verify_jwt=false MUST NOT trust this —
+ * verify against the Auth API instead (see dispatch-finance-outbox).
+ */
 export function userIdFromJwt(auth: string): string | null {
   try {
     const token = auth.replace(/^Bearer\s+/i, '')

@@ -216,7 +216,7 @@ export async function enqueueCxcFromClientAccepted(
   }
 }
 
-/** List outbox rows (admin UI) via the Edge Function — RLS SELECT stays admin-only (b1). */
+/** List outbox rows (admin UI) via the Edge Function (service role — RLS-independent). */
 export async function listFinanceOutbox(options?: {
   status?: FinanceOutboxStatus
   limit?: number
@@ -254,8 +254,9 @@ async function invokeErrorMessage(error: unknown): Promise<string> {
 
 /**
  * Reset one failed/dead row to pending so the next dispatch picks it up.
- * Runs through the Edge Function: RLS only grants admins SELECT/INSERT on
- * finance_outbox — status updates are service-role-only by design. The reset
+ * Runs through the Edge Function: RLS grants cycles.view read and
+ * cycles.edit/work_orders.edit insert on finance_outbox — status updates are
+ * service-role-only by design. The reset
  * clears last_error and zeroes attempts, granting a fresh retry budget
  * (the dispatcher marks rows dead once attempts reach 8).
  */

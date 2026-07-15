@@ -21,9 +21,10 @@
  *   { action: 'retry', id }             — reset one failed/dead row to pending
  *   { action: 'requeue_failed' }        — reset ALL failed/dead rows to pending
  * Retry resets attempts to 0 and clears last_error so the row gets a fresh
- * retry budget (dispatch marks rows dead at >= 8 attempts). RLS only lets
- * admins SELECT/INSERT finance_outbox, so these resets must run here with
- * the service role.
+ * retry budget (dispatch marks rows dead at >= 8 attempts). RLS grants
+ * cycles.view read and cycles.edit/work_orders.edit insert on finance_outbox;
+ * status updates are service-role-only, so resets must run here with the
+ * service role.
  */
 import { CORS_HEADERS, env, json, supabaseFetch } from '../_shared/http.ts'
 
@@ -383,8 +384,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    // ── List: same authorized gate as retry/requeue_failed — RLS SELECT is
-    //    admin-only, so reads go through here instead of client-side (b1). ──
+    // ── List: same authorized gate as retry/requeue_failed — reads use the
+    //    service role here so RLS can never silently filter panel rows (b1). ──
     if (action === 'list') {
       const knownStatuses = ['pending', 'processing', 'sent', 'failed', 'dead']
       const statusFilter =
