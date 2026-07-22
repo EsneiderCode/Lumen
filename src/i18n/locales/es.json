@@ -111,7 +111,15 @@
     "rot": "Rojo",
     "gruen": "Verde",
     "blau": "Azul",
-    "gelb": "Amarillo"
+    "gelb": "Amarillo",
+    "weiss": "Blanco",
+    "grau": "Gris",
+    "braun": "Marrón",
+    "violett": "Violeta",
+    "tuerkis": "Turquesa",
+    "schwarz": "Negro",
+    "orange": "Naranja",
+    "rosa": "Rosa"
   },
   "photo": {
     "before": "Antes",
@@ -459,6 +467,9 @@
     "section": "Asignación",
     "workType": "Tipo de trabajo",
     "technicianOptional": "Técnico (opcional)",
+    "technicianDirect": "Técnico (asignación directa)",
+    "teamOptional": "Equipo (opcional)",
+    "targetHint": "Asigna a un equipo, a un técnico concreto o a ambos.",
     "externalSuffix": "Externo",
     "documentCheck": "Revisando documentación...",
     "assignee": "Técnico / subcontratista",

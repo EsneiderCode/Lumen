@@ -46,6 +46,7 @@ const WO_5_PAID = '50000000-0000-0000-0000-000000000005'
 const WO_6_REJECTED = '50000000-0000-0000-0000-000000000006'
 const WO_7_EXTERNAL = '50000000-0000-0000-0000-000000000007'
 const WO_8_NE4 = '50000000-0000-0000-0000-000000000008'
+const WO_9_DIRECT_TECH = '50000000-0000-0000-0000-000000000009'
 
 const APPT_1 = '70000000-0000-0000-0000-000000000001'
 const APPT_2 = '70000000-0000-0000-0000-000000000002'
@@ -502,6 +503,18 @@ export const initialFixtures = () => ({
       assigned_detail_snapshot: null,
       service_item_id: SI_ALTA_BASIC, created_by: ADMIN_ID,
       created_at: LAST_WEEK, updated_at: LAST_WEEK,
+    },
+    // 9 — direct-to-technician assignment: no team, only assigned_technician
+    {
+      id: WO_9_DIRECT_TECH, order_number: 'LUM-20260428-0009',
+      client_id: CLIENT_INSYTE, project_id: PROJECT_HXT, operator_id: OP_DGF,
+      line: 'NE3', work_type: 'nt_installation', status: 'assigned', priority: 'normal',
+      assigned_team: null, assigned_technician: TECH_ID, assigned_date: '2026-04-29',
+      address: 'Gartenweg 9', postal_code: '37671', city: 'Höxter',
+      internal_notes: 'Demo: asignada directamente a un técnico, sin equipo',
+      assigned_detail_snapshot: null,
+      service_item_id: SI_ALTA_NT, created_by: ADMIN_ID,
+      created_at: NOW, updated_at: NOW,
     },
   ],
 

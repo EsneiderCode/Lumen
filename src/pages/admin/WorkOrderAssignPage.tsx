@@ -52,7 +52,13 @@ export function WorkOrderAssignPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const isReassignment = !!(order?.assigned_team)
+  const isReassignment = !!(order?.assigned_team || order?.assigned_technician)
+
+  const currentTechnicianName =
+    order?.assignedProfile?.full_name ??
+    (order?.assigned_technician
+      ? technicians.find((profile) => profile.id === order.assigned_technician)?.full_name
+      : undefined)
 
   useEffect(() => {
     if (!id) return
@@ -78,8 +84,10 @@ export function WorkOrderAssignPage() {
     }
   }, [id])
 
+  // No team selected → any technician can be assigned directly.
+  // Team selected → narrow the list to that team's members.
   const availableTechnicians = useMemo(() => {
-    if (!selectedTeam) return []
+    if (!selectedTeam) return technicians
     return technicians.filter((profile) => profile.team === selectedTeam)
   }, [selectedTeam, technicians])
 
@@ -122,10 +130,20 @@ export function WorkOrderAssignPage() {
   }, [assignedDate, selectedPerson])
 
   function handleTeamSelect(team: TeamColor) {
-    setSelectedTeam(team)
-    setSelectedTechnicianId('')
-    setAssignmentReasons([])
-    setIsCheckingDocuments(false)
+    // Clicking the selected team again deselects it (team is optional now).
+    const next = selectedTeam === team ? '' : team
+    setSelectedTeam(next)
+    // Keep the chosen technician if they remain selectable; otherwise reset.
+    const keepsTechnician =
+      !selectedTechnicianId ||
+      technicians.some(
+        (profile) => profile.id === selectedTechnicianId && (next === '' || profile.team === next),
+      )
+    if (!keepsTechnician) {
+      setSelectedTechnicianId('')
+      setAssignmentReasons([])
+      setIsCheckingDocuments(false)
+    }
   }
 
   function handleTechnicianSelect(profileId: string) {
@@ -139,14 +157,15 @@ export function WorkOrderAssignPage() {
 
   async function handleAssign(e: React.FormEvent) {
     e.preventDefault()
-    if (!id || !user || !selectedTeam || assignmentReasons.length > 0 || isCheckingDocuments) return
+    // At least one target is required: a team, a specific technician, or both.
+    if (!id || !user || (!selectedTeam && !selectedTechnicianId) || assignmentReasons.length > 0 || isCheckingDocuments) return
 
     setIsSaving(true)
     setError(null)
 
     const { error } = await assignWorkOrder(
       id,
-      selectedTeam,
+      selectedTeam || null,
       assignedDate || null,
       user.id,
       selectedTechnicianId || null,
@@ -158,7 +177,9 @@ export function WorkOrderAssignPage() {
       setIsSaving(false)
     } else {
       if (order) {
-        const teamLabel = TEAMS.find((t) => t.value === selectedTeam)?.label ?? selectedTeam
+        const teamLabel = selectedTeam
+          ? TEAMS.find((t) => t.value === selectedTeam)?.label ?? selectedTeam
+          : undefined
         const techName = selectedPerson?.full_name
         const prevTeamLabel = order.assigned_team
           ? TEAMS.find((t) => t.value === order.assigned_team)?.label ?? order.assigned_team
@@ -240,11 +261,15 @@ export function WorkOrderAssignPage() {
               <p className="text-xs font-medium text-fg-2 mb-1">{t('assignment.currentAssignment')}</p>
               <div className="flex items-center gap-2 text-sm text-fg-1">
                 <span className={`h-2 w-2 rounded-full ${TEAMS.find((t) => t.value === order.assigned_team)?.dot ?? 'bg-fg-3'}`} />
-                <span className="font-medium">
-                  {TEAMS.find((t) => t.value === order.assigned_team)?.label ?? order.assigned_team}
-                </span>
-                {order.assignedProfile?.full_name && (
-                  <span className="text-fg-2">· {order.assignedProfile.full_name}</span>
+                {order.assigned_team && (
+                  <span className="font-medium">
+                    {TEAMS.find((t) => t.value === order.assigned_team)?.label ?? order.assigned_team}
+                  </span>
+                )}
+                {currentTechnicianName && (
+                  <span className={order.assigned_team ? 'text-fg-2' : 'font-medium'}>
+                    {order.assigned_team ? '· ' : ''}{currentTechnicianName}
+                  </span>
                 )}
               </div>
             </div>
@@ -254,12 +279,15 @@ export function WorkOrderAssignPage() {
 
       <form onSubmit={handleAssign}>
         <div className="rounded-l border border-line bg-bg-1 p-5 space-y-5">
-          <h3 className="font-display text-sm font-semibold text-fg-1">{t('assignment.section')}</h3>
+          <div>
+            <h3 className="font-display text-sm font-semibold text-fg-1">{t('assignment.section')}</h3>
+            <p className="mt-0.5 text-xs text-fg-2">{t('assignment.targetHint')}</p>
+          </div>
 
-          {/* Team selection */}
+          {/* Team selection (optional — a direct technician assignment is also valid) */}
           <div>
             <label className="mb-2 block text-xs font-medium text-fg-2">
-              {t('workOrder.team')} <span className="text-err">*</span>
+              {t('assignment.teamOptional')}
             </label>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {TEAMS.map((team) => (
@@ -280,29 +308,30 @@ export function WorkOrderAssignPage() {
             </div>
           </div>
 
-          {selectedTeam && (
-            <div>
-              <label className="mb-1 block text-xs font-medium text-fg-2">
-                {t('assignment.technicianOptional')}
-              </label>
-              <select
-                value={selectedTechnicianId}
-                onChange={(e) => handleTechnicianSelect(e.target.value)}
-                className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-              >
-                <option value="">{t('assignment.chooseProfile')}</option>
-                {availableTechnicians.map((profile) => (
-                  <option key={profile.id} value={profile.id}>
-                    {profile.full_name}
-                    {profile.role === 'contractor' ? ` · ${t('assignment.externalSuffix')}` : ''}
-                  </option>
-                ))}
-              </select>
-              {availableTechnicians.length === 0 && (
-                <p className="mt-2 text-xs text-fg-2">{t('assignment.noAssigneesForTeam')}</p>
-              )}
-            </div>
-          )}
+          {/* Technician selection — always available; without a team it lists
+              every active technician/contractor for a direct assignment. */}
+          <div>
+            <label className="mb-1 block text-xs font-medium text-fg-2">
+              {selectedTeam ? t('assignment.technicianOptional') : t('assignment.technicianDirect')}
+            </label>
+            <select
+              value={selectedTechnicianId}
+              onChange={(e) => handleTechnicianSelect(e.target.value)}
+              className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            >
+              <option value="">{t('assignment.chooseProfile')}</option>
+              {availableTechnicians.map((profile) => (
+                <option key={profile.id} value={profile.id}>
+                  {profile.full_name}
+                  {!selectedTeam && profile.team ? ` · ${TEAMS.find((tm) => tm.value === profile.team)?.label ?? profile.team}` : ''}
+                  {profile.role === 'contractor' ? ` · ${t('assignment.externalSuffix')}` : ''}
+                </option>
+              ))}
+            </select>
+            {selectedTeam && availableTechnicians.length === 0 && (
+              <p className="mt-2 text-xs text-fg-2">{t('assignment.noAssigneesForTeam')}</p>
+            )}
+          </div>
 
           {/* Assigned date */}
           <div>
@@ -369,7 +398,7 @@ export function WorkOrderAssignPage() {
           </button>
           <button
             type="submit"
-            disabled={!selectedTeam || isSaving || isCheckingDocuments || assignmentReasons.length > 0}
+            disabled={(!selectedTeam && !selectedTechnicianId) || isSaving || isCheckingDocuments || assignmentReasons.length > 0}
             className="flex-1 rounded-s bg-accent px-4 py-2.5 text-sm font-semibold text-ink hover:bg-accent disabled:opacity-50 transition-colors"
           >
             {isSaving ? t('assignment.assigning') : isReassignment ? t('assignment.reassignSubmit') : t('assignment.assignSubmit')}

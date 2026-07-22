@@ -464,7 +464,7 @@ export async function assignWorkOrder(
     from_status: fromStatus,
     to_status: 'assigned',
     changed_by: changedBy,
-    notes: `Zugewiesen an Team ${team ?? '-'}${technicianId ? ' · Techniker zugewiesen' : ''}${reassignmentNote ? ` · Grund: ${reassignmentNote}` : ''}`,
+    notes: `Zugewiesen an ${team ? `Team ${team}` : 'Techniker (direkt)'}${team && technicianId ? ' · Techniker zugewiesen' : ''}${reassignmentNote ? ` · Grund: ${reassignmentNote}` : ''}`,
   })
 
   return { data, error: null }
@@ -535,7 +535,7 @@ export async function fetchWorkOrderDetail(table: DetailTable, workOrderId: stri
 // ── Technician / Sprint 4 ──────────────────────────────────────
 
 export async function fetchMyWorkOrders(
-  _userId: string,
+  userId: string,
   team: string | null,
   page = 0,
   pageSize = 20,
@@ -558,8 +558,13 @@ export async function fetchMyWorkOrders(
     .order('assigned_date', { ascending: true, nullsFirst: false })
     .range(from, to)
 
-  if (!team) return { data: [], total: 0, error: null }
-  query = query.eq('assigned_team', team as TeamColor)
+  // An order reaches a technician either through their team or through a
+  // direct personal assignment (assigned_technician), which may carry no team.
+  if (team) {
+    query = query.or(`assigned_team.eq.${team},assigned_technician.eq.${userId}`)
+  } else {
+    query = query.eq('assigned_technician', userId)
+  }
 
   const { data, error, count } = await query
   return {
@@ -847,9 +852,8 @@ export async function fetchStateHistory(workOrderId: string) {
 
 // ── Contractor (LUM-019) ──────────────────────────────────────
 
-export async function fetchContractorWorkOrders(_userId: string, team: string | null) {
-  if (!team) return { data: [] as WorkOrderWithRelations[], error: null }
-  const { data, error } = await supabase
+export async function fetchContractorWorkOrders(userId: string, team: string | null) {
+  let query = supabase
     .from('work_orders')
     .select(
       `
@@ -859,8 +863,16 @@ export async function fetchContractorWorkOrders(_userId: string, team: string | 
       operators ( name, code )
     `,
     )
-    .eq('assigned_team', team as TeamColor)
     .order('assigned_date', { ascending: false, nullsFirst: false })
+
+  // Same rule as fetchMyWorkOrders: team membership or direct personal assignment.
+  if (team) {
+    query = query.or(`assigned_team.eq.${team},assigned_technician.eq.${userId}`)
+  } else {
+    query = query.eq('assigned_technician', userId)
+  }
+
+  const { data, error } = await query
   return {
     data: (data ?? []) as unknown as WorkOrderWithRelations[],
     error: error?.message ?? null,

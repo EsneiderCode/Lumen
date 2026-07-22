@@ -199,9 +199,10 @@ function buildMessage(body: TelegramBody): string | null {
       const assignedDate       = trim(body.assignedDate,       MAX.assignedDate)
       const address            = trim(body.address,            MAX.address)
       const orderUrl           = trim(body.orderUrl,           MAX.orderUrl)
-      if (!orderNumber || !assignedTo) return null
+      // Direct-to-technician assignments carry no team: require at least one target.
+      if (!orderNumber || (!assignedTo && !technicianName)) return null
 
-      const isReassign = !!previousTeam
+      const isReassign = !!previousTeam || !!previousTechnician
       const title = isReassign ? '🔄 <b>Orden reasignada</b>' : '📋 <b>Nueva asignación</b>'
 
       const lines: string[] = [
@@ -215,12 +216,15 @@ function buildMessage(body: TelegramBody): string | null {
       if (assignedDate) lines.push(`📅 Fecha: <b>${esc(assignedDate)}</b>`)
 
       lines.push('')
-      lines.push(`👷 Equipo: <b>${esc(assignedTo)}</b>`)
+      if (assignedTo) lines.push(`👷 Equipo: <b>${esc(assignedTo)}</b>`)
       if (technicianName) lines.push(`👤 Técnico responsable: <b>${esc(technicianName)}</b>`)
 
       if (isReassign) {
         lines.push('')
-        lines.push(`⬅️ Antes: <b>${esc(previousTeam!)}</b>${previousTechnician ? ` (${esc(previousTechnician)})` : ''}`)
+        const before = previousTeam
+          ? `<b>${esc(previousTeam)}</b>${previousTechnician ? ` (${esc(previousTechnician)})` : ''}`
+          : `<b>${esc(previousTechnician!)}</b>`
+        lines.push(`⬅️ Antes: ${before}`)
         const reason = trim(body.reason, MAX.reason)
         if (reason) {
           lines.push(`📋 Motivo: ${esc(reason)}`)

@@ -668,6 +668,30 @@ describe('assignWorkOrder — team-based assignment', () => {
     )
   })
 
+  it('assigns directly to a technician with no team (assigned_team null)', async () => {
+    const updateSpy = vi.fn(() => ({
+      eq: () => ({
+        select: () => ({
+          single: () => Promise.resolve({ data: { id: 'wo-1', status: 'assigned' }, error: null }),
+        }),
+      }),
+    }))
+    mockSupabase.from = vi.fn((table: string) => ({
+      select: () => ({
+        eq: () => ({ single: () => Promise.resolve({ data: { status: 'created' }, error: null }) }),
+      }),
+      update: table === 'work_orders' ? updateSpy : vi.fn(),
+      insert: () => Promise.resolve({ data: null, error: null }),
+    }))
+
+    const result = await assignWorkOrder('wo-1', null, '2026-05-15', 'admin-1', 'tech-1')
+
+    expect(result.error).toBeNull()
+    expect(updateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ assigned_team: null, assigned_technician: 'tech-1' }),
+    )
+  })
+
   it('returns an error when Supabase update fails', async () => {
     mockSupabase.from = vi.fn(() => ({
       select: () => ({

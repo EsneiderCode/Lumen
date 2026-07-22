@@ -111,7 +111,15 @@
     "rot": "Rot",
     "gruen": "Grün",
     "blau": "Blau",
-    "gelb": "Gelb"
+    "gelb": "Gelb",
+    "weiss": "Weiß",
+    "grau": "Grau",
+    "braun": "Braun",
+    "violett": "Violett",
+    "tuerkis": "Türkis",
+    "schwarz": "Schwarz",
+    "orange": "Orange",
+    "rosa": "Rosa"
   },
   "photo": {
     "before": "Vorher",
@@ -459,6 +467,9 @@
     "section": "Zuweisung",
     "workType": "Arbeitstyp",
     "technicianOptional": "Techniker (optional)",
+    "technicianDirect": "Techniker (Direktzuweisung)",
+    "teamOptional": "Team (optional)",
+    "targetHint": "Einem Team, einem bestimmten Techniker oder beiden zuweisen.",
     "externalSuffix": "Extern",
     "documentCheck": "Dokumente werden geprüft...",
     "assignee": "Techniker / Contractor",

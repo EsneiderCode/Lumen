@@ -46,7 +46,8 @@ export async function notifyOrderReturnedForCorrection(
  */
 export async function notifyTaskAssigned(opts: {
   orderNumber: string
-  teamName: string
+  // Optional: an order can be assigned directly to a technician without a team.
+  teamName?: string
   technicianName?: string
   previousTeam?: string
   previousTechnician?: string
@@ -61,7 +62,7 @@ export async function notifyTaskAssigned(opts: {
   await sendTelegram({
     type: 'task_assigned',
     orderNumber: opts.orderNumber,
-    assignedTo: opts.teamName,
+    assignedTo: opts.teamName ?? '',
     technicianName: opts.technicianName ?? '',
     previousTeam: opts.previousTeam ?? '',
     previousTechnician: opts.previousTechnician ?? '',
