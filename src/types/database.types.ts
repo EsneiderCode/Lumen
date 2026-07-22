@@ -1170,42 +1170,6 @@ export type Database = {
           },
         ]
       }
-      user_telegram_groups: {
-        Row: {
-          created_at: string
-          id: string
-          profile_id: string
-          telegram_group_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          profile_id: string
-          telegram_group_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          profile_id?: string
-          telegram_group_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_telegram_groups_profile_id_fkey"
-            columns: ["profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_telegram_groups_telegram_group_id_fkey"
-            columns: ["telegram_group_id"]
-            isOneToOne: false
-            referencedRelation: "telegram_groups"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       vacation_requests: {
         Row: {
           approved_at: string | null
@@ -1905,6 +1869,42 @@ export type Database = {
           },
           {
             foreignKeyName: "work_order_state_history_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: false
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      work_order_telegram_groups: {
+        Row: {
+          created_at: string
+          id: string
+          telegram_group_id: string
+          work_order_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          telegram_group_id: string
+          work_order_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          telegram_group_id?: string
+          work_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_order_telegram_groups_telegram_group_id_fkey"
+            columns: ["telegram_group_id"]
+            isOneToOne: false
+            referencedRelation: "telegram_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_order_telegram_groups_work_order_id_fkey"
             columns: ["work_order_id"]
             isOneToOne: false
             referencedRelation: "work_orders"

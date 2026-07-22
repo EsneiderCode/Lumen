@@ -127,19 +127,14 @@ export async function setMapping(
 
 // ── Work order ↔ group assignment ─────────────────────────────────────────────
 
-// Cast needed: database.types.ts is regenerated after migration 041 is applied.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const woTelegramGroups = () => (supabase as any).from('work_order_telegram_groups')
-
 /** Returns the ids of the Telegram groups assigned to the given work order. */
 export async function fetchOrderGroupIds(workOrderId: string): Promise<string[]> {
-  const { data, error } = await woTelegramGroups()
+  const { data, error } = await supabase
+    .from('work_order_telegram_groups')
     .select('telegram_group_id')
     .eq('work_order_id', workOrderId)
   if (error) throw error
-  return ((data ?? []) as Array<{ telegram_group_id: string }>).map(
-    (r) => r.telegram_group_id,
-  )
+  return (data ?? []).map((r) => r.telegram_group_id)
 }
 
 /**
@@ -150,12 +145,13 @@ export async function setOrderGroups(
   workOrderId: string,
   groupIds: string[],
 ): Promise<void> {
-  const { error: deleteError } = await woTelegramGroups()
+  const { error: deleteError } = await supabase
+    .from('work_order_telegram_groups')
     .delete()
     .eq('work_order_id', workOrderId)
   if (deleteError) throw deleteError
   if (!groupIds.length) return
-  const { error } = await woTelegramGroups().insert(
+  const { error } = await supabase.from('work_order_telegram_groups').insert(
     groupIds.map((groupId) => ({
       work_order_id: workOrderId,
       telegram_group_id: groupId,
