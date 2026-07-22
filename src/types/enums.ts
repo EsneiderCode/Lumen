@@ -12,6 +12,14 @@ export const TeamColor = {
   GRUEN: 'gruen',
   BLAU: 'blau',
   GELB: 'gelb',
+  WEISS: 'weiss',
+  GRAU: 'grau',
+  BRAUN: 'braun',
+  VIOLETT: 'violett',
+  TUERKIS: 'tuerkis',
+  SCHWARZ: 'schwarz',
+  ORANGE: 'orange',
+  ROSA: 'rosa',
 } as const
 
 export type TeamColor = (typeof TeamColor)[keyof typeof TeamColor]

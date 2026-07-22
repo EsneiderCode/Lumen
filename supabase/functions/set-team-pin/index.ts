@@ -2,9 +2,16 @@ import { CORS_HEADERS, env, json, selectOne, supabaseFetch, userIdFromJwt } from
 import { assertValidPin, hashPin } from '../_shared/pin.ts'
 
 type UserRole = 'admin' | 'technician' | 'contractor'
-type TeamColor = 'rot' | 'gruen' | 'blau' | 'gelb'
+type TeamColor =
+  | 'rot' | 'gruen' | 'blau' | 'gelb'
+  | 'weiss' | 'grau' | 'braun' | 'violett'
+  | 'tuerkis' | 'schwarz' | 'orange' | 'rosa'
 
-const VALID_TEAMS: TeamColor[] = ['rot', 'gruen', 'blau', 'gelb']
+const VALID_TEAMS: TeamColor[] = [
+  'rot', 'gruen', 'blau', 'gelb',
+  'weiss', 'grau', 'braun', 'violett',
+  'tuerkis', 'schwarz', 'orange', 'rosa',
+]
 
 interface TeamPinRow {
   id: string

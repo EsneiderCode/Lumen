@@ -21,7 +21,10 @@ export const WORK_TYPE_KEYS: readonly WorkType[] = [
 
 export const PRIORITY_KEYS: readonly Priority[] = ['normal', 'alta', 'urgente'] as const
 
-export const TEAM_COLOR_KEYS: readonly TeamColor[] = ['rot', 'gruen', 'blau', 'gelb'] as const
+export const TEAM_COLOR_KEYS: readonly TeamColor[] = [
+  'rot', 'gruen', 'blau', 'gelb', 'weiss', 'grau',
+  'braun', 'violett', 'tuerkis', 'schwarz', 'orange', 'rosa',
+] as const
 
 export const PHOTO_TYPE_KEYS: readonly PhotoType[] = ['before', 'during', 'after'] as const
 

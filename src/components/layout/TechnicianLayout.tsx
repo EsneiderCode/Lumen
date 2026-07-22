@@ -9,19 +9,14 @@ import { ROUTES } from '@/config/routes'
 import { useAuth } from '@/hooks/useAuth'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { OfflineBanner } from '@/components/ui/OfflineBanner'
-
-const TEAM_COLORS: Record<string, string> = {
-  rot: 'bg-team-rot',
-  gruen: 'bg-team-gruen',
-  blau: 'bg-team-blau',
-  gelb: 'bg-team-gelb',
-}
+import { TEAM_DOT } from '@/constants/styles'
+import type { TeamColor } from '@/types/enums'
 
 export function TechnicianLayout() {
   const { t } = useTranslation()
   const { user, signOut } = useAuth()
   const { pathname } = useLocation()
-  const teamColorClass = user?.team ? TEAM_COLORS[user.team] ?? 'bg-fg-2' : 'bg-fg-2'
+  const teamColorClass = user?.team ? TEAM_DOT[user.team as TeamColor] ?? 'bg-fg-2' : 'bg-fg-2'
 
   const navItems: BottomNavItem[] = [
     { label: t('nav.workOrders'), path: ROUTES.TECHNICIAN.ORDERS, icon: ClipboardList },

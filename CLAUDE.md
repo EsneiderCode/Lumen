@@ -118,7 +118,7 @@ Client Accepted → Invoiced → Paid
 ## Client Context
 
 - **Primary Clients**: Insyte Deutschland, Vancom IT
-- **Field Teams**: Rot, Grün, Blau, Gelb (Red, Green, Blue, Yellow)
+- **Field Teams** (12): Rot, Grün, Blau, Gelb, Weiß, Grau, Braun, Violett, Türkis, Schwarz, Orange, Rosa
 - **Projects**: HXT, RSD, WCB, QFF, WRZ, EHR
 - **Operators**: DGF, GFP, UGG
 - **Lines**: NE3 / NE4
@@ -183,13 +183,21 @@ All new UI MUST follow the NEXUS Brand System. All tokens live in `src/index.css
 | `--color-paper` | #F5F3EE |
 | `--color-ink` | #0A0B0D |
 
-**Team Colors**
+**Team Colors** (12 teams)
 | Token | Value |
 |---|---|
 | `--color-team-rot` | #ef4444 |
 | `--color-team-gruen` | #22c55e |
 | `--color-team-blau` | #6BA6FF |
 | `--color-team-gelb` | #eab308 |
+| `--color-team-weiss` | var(--color-paper) |
+| `--color-team-grau` | #9ca3af |
+| `--color-team-braun` | #b45309 |
+| `--color-team-violett` | #a855f7 |
+| `--color-team-tuerkis` | #2dd4bf |
+| `--color-team-schwarz` | #52525b (visible-on-dark "black") |
+| `--color-team-orange` | #f97316 |
+| `--color-team-rosa` | #ec4899 |
 
 ### Typography
 

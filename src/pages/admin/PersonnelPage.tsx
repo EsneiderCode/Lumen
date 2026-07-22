@@ -13,10 +13,11 @@ import {
 import { fetchTechnicians, type TechnicianProfile } from '@/services/workOrderService'
 import { PayrollSlipModal } from '@/components/admin/PayrollSlipModal'
 import { VacationModal } from '@/components/admin/VacationModal'
-import { TeamColor, type TeamColor as TeamColorType } from '@/types/enums'
+import type { TeamColor as TeamColorType } from '@/types/enums'
+import { TEAM_COLOR_KEYS } from '@/i18n/labels'
 
 const STEUERKLASSEN = ['I', 'II', 'III', 'IV', 'V', 'VI'] as const
-const TEAM_OPTIONS = [TeamColor.ROT, TeamColor.GRUEN, TeamColor.BLAU, TeamColor.GELB] as const
+const TEAM_OPTIONS = TEAM_COLOR_KEYS
 
 const EMPTY_FORM: EmployeePayload = {
   full_name: '',

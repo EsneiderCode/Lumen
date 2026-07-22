@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Eye, EyeOff, KeyRound, Plus, Save, Trash2, UserRound, X } from 'lucide-react'
 import type { TeamColor, UserRole } from '@/types/enums'
+import { TEAM_COLOR_KEYS } from '@/i18n/labels'
 import {
   createOperationalUser,
   deleteOperationalUser,
@@ -252,10 +253,9 @@ export function UsersPage() {
               className="w-full rounded-s border border-line-s bg-bg-2 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
             >
               <option value="">{t('users.noTeam')}</option>
-              <option value="rot">{t('teamColor.rot')}</option>
-              <option value="gruen">{t('teamColor.gruen')}</option>
-              <option value="blau">{t('teamColor.blau')}</option>
-              <option value="gelb">{t('teamColor.gelb')}</option>
+              {TEAM_COLOR_KEYS.map((color) => (
+                <option key={color} value={color}>{t(`teamColor.${color}`)}</option>
+              ))}
             </select>
           </label>
 

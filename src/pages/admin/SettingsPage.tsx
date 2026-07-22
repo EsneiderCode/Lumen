@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { CheckSquare, KeyRound, Pencil, Plus, Send, Square, Trash2 } from 'lucide-react'
 import { ManualCard } from '@/components/profile/ManualCard'
+import { TEAMS } from '@/constants/styles'
 import {
   fetchTeamPinStatuses,
   setTeamPin,
@@ -27,12 +28,10 @@ import {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const TEAM_CONFIGS: { color: TeamColor; label: string; dot: string }[] = [
-  { color: 'rot',   label: 'Equipo Rot',  dot: 'bg-team-rot' },
-  { color: 'gruen', label: 'Equipo Grün', dot: 'bg-team-gruen' },
-  { color: 'blau',  label: 'Equipo Blau', dot: 'bg-team-blau' },
-  { color: 'gelb',  label: 'Equipo Gelb', dot: 'bg-team-gelb' },
-]
+// All 12 teams, derived from the shared TEAMS constant (single source of truth).
+const TEAM_CONFIGS: { color: TeamColor; label: string; dot: string }[] = TEAMS.map(
+  ({ value, label, dot }) => ({ color: value, label, dot }),
+)
 
 const EMPTY_FORM: GroupPayload = {
   chat_id: '',

@@ -2299,7 +2299,19 @@ export type Database = {
     Enums: {
       document_type: "plano" | "cartas_empalme" | "diagrama_routing" | "other"
       priority_level: "normal" | "alta" | "urgente"
-      team_color: "rot" | "gruen" | "blau" | "gelb"
+      team_color:
+        | "rot"
+        | "gruen"
+        | "blau"
+        | "gelb"
+        | "weiss"
+        | "grau"
+        | "braun"
+        | "violett"
+        | "tuerkis"
+        | "schwarz"
+        | "orange"
+        | "rosa"
       telegram_event_type:
         | "order_returned_for_correction"
         | "task_assigned"
@@ -2464,7 +2476,20 @@ export const Constants = {
     Enums: {
       document_type: ["plano", "cartas_empalme", "diagrama_routing", "other"],
       priority_level: ["normal", "alta", "urgente"],
-      team_color: ["rot", "gruen", "blau", "gelb"],
+      team_color: [
+        "rot",
+        "gruen",
+        "blau",
+        "gelb",
+        "weiss",
+        "grau",
+        "braun",
+        "violett",
+        "tuerkis",
+        "schwarz",
+        "orange",
+        "rosa",
+      ],
       telegram_event_type: [
         "order_returned_for_correction",
         "task_assigned",

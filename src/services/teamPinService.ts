@@ -2,7 +2,8 @@ import { supabase } from '@/lib/supabase'
 
 const SET_TEAM_PIN_ENDPOINT = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/set-team-pin`
 
-export type TeamColor = 'rot' | 'gruen' | 'blau' | 'gelb'
+export type { TeamColor } from '@/types/enums'
+import type { TeamColor } from '@/types/enums'
 
 export interface TeamPinStatus {
   team_color: TeamColor

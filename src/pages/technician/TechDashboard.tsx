@@ -11,11 +11,20 @@ import { STATUS_COLORS, TEAM_DOT } from '@/constants/styles'
 const ACTIVE_STATUSES: WorkOrderStatus[] = ['assigned', 'in_progress', 'executed', 'rueckmeldung_pending']
 const DONE_STATUSES: WorkOrderStatus[] = ['rueckmeldung_sent', 'internally_certified', 'sent_to_client', 'client_accepted', 'invoiced', 'paid']
 
+// Class names must stay literal so Tailwind picks them up at build time.
 const TEAM_COLORS: Record<string, { dot: string; badge: string }> = {
   rot: { dot: 'bg-team-rot', badge: 'bg-team-rot/15 text-team-rot' },
   gruen: { dot: 'bg-team-gruen', badge: 'bg-team-gruen/15 text-team-gruen' },
   blau: { dot: 'bg-team-blau', badge: 'bg-team-blau/15 text-team-blau' },
   gelb: { dot: 'bg-team-gelb', badge: 'bg-team-gelb/15 text-team-gelb' },
+  weiss: { dot: 'bg-team-weiss', badge: 'bg-team-weiss/15 text-team-weiss' },
+  grau: { dot: 'bg-team-grau', badge: 'bg-team-grau/15 text-team-grau' },
+  braun: { dot: 'bg-team-braun', badge: 'bg-team-braun/15 text-team-braun' },
+  violett: { dot: 'bg-team-violett', badge: 'bg-team-violett/15 text-team-violett' },
+  tuerkis: { dot: 'bg-team-tuerkis', badge: 'bg-team-tuerkis/15 text-team-tuerkis' },
+  schwarz: { dot: 'bg-team-schwarz', badge: 'bg-team-schwarz/15 text-team-schwarz' },
+  orange: { dot: 'bg-team-orange', badge: 'bg-team-orange/15 text-team-orange' },
+  rosa: { dot: 'bg-team-rosa', badge: 'bg-team-rosa/15 text-team-rosa' },
 }
 
 export function TechDashboard() {

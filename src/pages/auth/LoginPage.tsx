@@ -7,20 +7,8 @@ import { LanguageSelector } from '@/components/ui/LanguageSelector'
 import { ROUTES } from '@/config/routes'
 import { getLandingRoute } from '@/config/permissions'
 import type { TeamMember } from '@/context/authTypes'
-
-const TEAM_LABEL: Record<string, string> = {
-  rot: 'Equipo Rot',
-  gruen: 'Equipo Grün',
-  blau: 'Equipo Blau',
-  gelb: 'Equipo Gelb',
-}
-
-const TEAM_DOT: Record<string, string> = {
-  rot: 'bg-team-rot',
-  gruen: 'bg-team-gruen',
-  blau: 'bg-team-blau',
-  gelb: 'bg-team-gelb',
-}
+import { TEAM_DOT } from '@/constants/styles'
+import type { TeamColor } from '@/types/enums'
 
 const NUMPAD_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫'] as const
 
@@ -261,10 +249,10 @@ export function LoginPage() {
                   </button>
                   <div className="flex items-center gap-2">
                     {team && (
-                      <span className={`h-2.5 w-2.5 rounded-full ${TEAM_DOT[team] ?? 'bg-fg-3'}`} />
+                      <span className={`h-2.5 w-2.5 rounded-full ${TEAM_DOT[team as TeamColor] ?? 'bg-fg-3'}`} />
                     )}
                     <span className="font-mono text-xs uppercase tracking-wider text-fg-3">
-                      {team ? TEAM_LABEL[team] ?? team : '—'}
+                      {team ? t(`teamColor.${team}`) : '—'}
                     </span>
                   </div>
                 </div>

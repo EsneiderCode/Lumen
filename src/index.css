@@ -41,10 +41,19 @@
   --color-info: #6BA6FF;
 
   /* ── Team colors (status encoding by cuadrilla) ── */
-  --color-team-rot:   #ef4444;
-  --color-team-gruen: #22c55e;
-  --color-team-blau:  var(--color-info);
-  --color-team-gelb:  #eab308;
+  --color-team-rot:     #ef4444;
+  --color-team-gruen:   #22c55e;
+  --color-team-blau:    var(--color-info);
+  --color-team-gelb:    #eab308;
+  --color-team-weiss:   var(--color-paper);
+  --color-team-grau:    #9ca3af;
+  --color-team-braun:   #b45309;
+  --color-team-violett: #a855f7;
+  --color-team-tuerkis: #2dd4bf;
+  /* Schwarz is rendered as dark zinc so the dot stays visible on bg-0/bg-1 */
+  --color-team-schwarz: #52525b;
+  --color-team-orange:  #f97316;
+  --color-team-rosa:    #ec4899;
 
   /* ── Typography ── */
   /* Space Grotesk  — display / hero / page titles (weight 300/400/500/700) */
