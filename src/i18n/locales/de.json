@@ -56,7 +56,7 @@
     },
     "pin": {
       "tabLabel": "PIN",
-      "emailTab": "Admin",
+      "emailTab": "E-Mail",
       "selectTeamLabel": "Team",
       "pinLabel": "PIN",
       "selectTeam": "Bitte zuerst ein Team auswählen.",

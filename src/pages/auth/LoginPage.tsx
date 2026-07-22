@@ -169,7 +169,7 @@ export function LoginPage() {
               mode === 'pin' ? 'bg-accent text-ink' : 'text-fg-2 hover:text-fg-1'
             }`}
           >
-            PIN
+            {t('auth.pin.tabLabel')}
           </button>
           <button
             type="button"
@@ -178,7 +178,7 @@ export function LoginPage() {
               mode === 'admin' ? 'bg-accent text-ink' : 'text-fg-2 hover:text-fg-1'
             }`}
           >
-            Admin
+            {t('auth.pin.emailTab')}
           </button>
         </div>
 
@@ -312,7 +312,7 @@ export function LoginPage() {
                   required
                   autoComplete="email"
                   className="mt-2 block w-full border border-line-s bg-bg-2 px-3 py-2.5 text-sm text-fg-1 placeholder:text-fg-4 transition-colors focus:border-accent focus:outline-none"
-                  placeholder="admin@nexus-engineering.de"
+                  placeholder={t('auth.emailPlaceholder')}
                 />
               </div>
 
