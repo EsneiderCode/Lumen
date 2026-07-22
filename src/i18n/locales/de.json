@@ -206,6 +206,9 @@
     "detailsTitle": "Details: {{workType}}",
     "detailsSubtitle": "Arbeitstyp-spezifische Felder",
     "notesPlaceholder": "Interne Hinweise für das Team…",
+    "telegramGroupsTitle": "Telegram-Benachrichtigungen",
+    "telegramGroupsHint": "Meldungen zu diesem Auftrag (Zuweisung, Änderungen, Berichte, Löschung) gehen nur an die ausgewählten Gruppen. Ohne Auswahl gilt das Event-Mapping aus den Einstellungen.",
+    "telegramGroupsEmpty": "Keine aktiven Telegram-Gruppen. In den Einstellungen konfigurieren.",
     "saveChanges": "Änderungen speichern",
     "createOrder": "Auftrag erstellen",
     "noWorkType": "Dieses Katalogelement hat keinen zugeordneten Auftragstyp. Bitte ein anderes Element wählen.",
@@ -435,9 +438,6 @@
     "editProfile": "Profil bearbeiten",
     "cancelEdit": "Bearbeitung abbrechen",
     "pinHint": "PIN wird nur gesetzt, wenn das Feld ausgefüllt ist.",
-    "telegramGroupsTitle": "Telegram-Gruppen",
-    "telegramGroupsHint": "Benachrichtigungen zu diesem Benutzer gehen nur an die ausgewählten Gruppen. Ohne Auswahl gilt das Event-Mapping aus den Einstellungen.",
-    "telegramGroupsEmpty": "Keine aktiven Telegram-Gruppen. In den Einstellungen konfigurieren.",
     "name": "Name",
     "role": "Rolle",
     "roles": {
@@ -1104,7 +1104,7 @@
       },
       "mappings": {
         "title": "Ereigniszuordnungen",
-        "subtitle": "Weise jedem Systemereignis eine oder mehrere Gruppen zu.",
+        "subtitle": "Standard-Routing: gilt, wenn dem Auftrag keine Gruppen zugewiesen sind.",
         "eventLabel": "Ereignis",
         "noGroups": "Füge mindestens eine Gruppe hinzu, um Zuordnungen zu konfigurieren.",
         "events": {

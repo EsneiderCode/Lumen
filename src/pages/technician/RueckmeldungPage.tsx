@@ -385,6 +385,7 @@ export function RueckmeldungPage() {
         summary: notes,
         techNotes: techNotes.trim() || undefined,
         orderUrl: `${window.location.origin}/admin/orders/${id}`,
+        orderId: id,
       })
       navigate(`/tech/orders/${id}`)
     }

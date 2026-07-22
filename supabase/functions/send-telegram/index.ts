@@ -56,11 +56,18 @@ interface TelegramBody {
   /** report_submitted: technician notes */
   techNotes?: string
   /**
-   * Profile id of the user the event concerns (assigned technician, reporter).
-   * When set and the user has rows in user_telegram_groups, delivery targets
-   * ONLY those groups; otherwise event_group_mappings applies.
+   * Id of the work order the event concerns. When the order has rows in
+   * work_order_telegram_groups, delivery targets ONLY those groups;
+   * otherwise event_group_mappings applies.
    */
-  affectedUserId?: string
+  orderId?: string
+  /**
+   * Comma-separated telegram_groups ids resolved by the caller BEFORE the
+   * order was deleted (order_deleted only — the join rows cascade away with
+   * the order). Ignored for open events; ids are validated against
+   * telegram_groups, so delivery is always limited to registered groups.
+   */
+  groupIds?: string
 }
 
 interface GroupRow {
@@ -91,6 +98,8 @@ const MAX = {
   city:               200,
   summary:            500,
   techNotes:          1_000,
+  orderId:            64,
+  groupIds:           2_000,
 } as const
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -118,7 +127,8 @@ function readBody(value: unknown): TelegramBody {
     city:               typeof b.city               === 'string' ? b.city               : undefined,
     summary:            typeof b.summary            === 'string' ? b.summary            : undefined,
     techNotes:          typeof b.techNotes          === 'string' ? b.techNotes          : undefined,
-    affectedUserId:     typeof b.affectedUserId     === 'string' ? b.affectedUserId     : undefined,
+    orderId:            typeof b.orderId            === 'string' ? b.orderId            : undefined,
+    groupIds:           typeof b.groupIds           === 'string' ? b.groupIds           : undefined,
   }
 }
 
@@ -355,31 +365,57 @@ const EVENT_TYPE_FALLBACKS: Partial<Record<TelegramEventType, TelegramEventType>
   order_deleted: 'order_status_changed',
 }
 
-async function resolveGroups(
-  eventType: TelegramEventType,
-  affectedUserId: string | undefined,
+/** Resolves chat_ids for a set of telegram_groups ids, active groups only. */
+async function chatIdsForGroups(
+  groupIds: string[],
   supabaseUrl: string,
   serviceRoleKey: string,
 ): Promise<string[]> {
-  // User-scoped routing: if the event concerns a user with assigned groups,
-  // deliver only to those. Fall through to event mappings otherwise.
-  if (affectedUserId && UUID_RE.test(affectedUserId)) {
-    const memberships = await supabaseFetch<MappingRow[]>(
-      supabaseUrl,
-      serviceRoleKey,
-      `user_telegram_groups?select=telegram_group_id&profile_id=eq.${encodeURIComponent(affectedUserId)}`,
-      { method: 'GET' },
-    )
-    if (memberships.length) {
-      const ids = memberships.map((m) => m.telegram_group_id).join(',')
-      const groups = await supabaseFetch<GroupRow[]>(
+  if (!groupIds.length) return []
+  const groups = await supabaseFetch<GroupRow[]>(
+    supabaseUrl,
+    serviceRoleKey,
+    `telegram_groups?select=chat_id&id=in.(${groupIds.join(',')})&is_active=eq.true`,
+    { method: 'GET' },
+  )
+  return groups.map((g) => g.chat_id)
+}
+
+async function resolveGroups(
+  eventType: TelegramEventType,
+  orderId: string | undefined,
+  explicitGroupIds: string[],
+  supabaseUrl: string,
+  serviceRoleKey: string,
+): Promise<string[]> {
+  // Order-scoped routing: if the order has assigned groups, deliver only to
+  // those. Fall through to event mappings otherwise — including when the
+  // lookup itself fails (e.g. migration 041 not applied yet), so a routing
+  // problem never swallows the notification.
+  if (orderId && UUID_RE.test(orderId)) {
+    try {
+      const assignments = await supabaseFetch<MappingRow[]>(
         supabaseUrl,
         serviceRoleKey,
-        `telegram_groups?select=chat_id&id=in.(${ids})&is_active=eq.true`,
+        `work_order_telegram_groups?select=telegram_group_id&work_order_id=eq.${encodeURIComponent(orderId)}`,
         { method: 'GET' },
       )
-      if (groups.length) return groups.map((g) => g.chat_id)
+      const chatIds = await chatIdsForGroups(
+        assignments.map((m) => m.telegram_group_id),
+        supabaseUrl,
+        serviceRoleKey,
+      )
+      if (chatIds.length) return chatIds
+    } catch (error) {
+      console.error('[send-telegram] order group lookup failed', error)
     }
+  }
+
+  // order_deleted: the join rows cascade away with the order, so the caller
+  // resolves the group ids beforehand and sends them explicitly.
+  if (explicitGroupIds.length) {
+    const chatIds = await chatIdsForGroups(explicitGroupIds, supabaseUrl, serviceRoleKey)
+    if (chatIds.length) return chatIds
   }
 
   const lookupType = EVENT_TYPE_FALLBACKS[eventType] ?? eventType
@@ -428,13 +464,17 @@ Deno.serve(async (req) => {
     const text = buildMessage(body)
     if (!text) return json(400, { error: 'Invalid notification payload' })
 
-    // Open events (any authenticated user) derive the affected user from the
-    // JWT so a caller cannot reroute another user's notifications.
-    const affectedUserId = OPEN_EVENT_TYPES.has(body.type)
-      ? userIdFromJwt(req.headers.get('authorization') ?? '') ?? undefined
-      : body.affectedUserId
+    // Explicit group ids are only honored for admin-triggered events
+    // (order_deleted); open events must route via orderId or fallback.
+    const explicitGroupIds = OPEN_EVENT_TYPES.has(body.type)
+      ? []
+      : (trim(body.groupIds, MAX.groupIds) ?? '')
+          .split(',')
+          .map((v) => v.trim())
+          .filter((v) => UUID_RE.test(v))
 
-    const chatIds = await resolveGroups(body.type, affectedUserId, supabaseUrl, serviceRoleKey)
+    const orderId = trim(body.orderId, MAX.orderId)
+    const chatIds = await resolveGroups(body.type, orderId, explicitGroupIds, supabaseUrl, serviceRoleKey)
     if (!chatIds.length) {
       console.warn('[send-telegram] no active groups for event:', body.type)
       return json(200, { ok: true, sent: 0 })

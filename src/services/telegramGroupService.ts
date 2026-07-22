@@ -125,39 +125,42 @@ export async function setMapping(
   }
 }
 
-// ── User ↔ group membership ───────────────────────────────────────────────────
+// ── Work order ↔ group assignment ─────────────────────────────────────────────
 
-/** Returns the ids of the Telegram groups the given profile belongs to. */
-export async function fetchUserGroupIds(profileId: string): Promise<string[]> {
-  const { data, error } = await supabase
-    .from('user_telegram_groups')
+// Cast needed: database.types.ts is regenerated after migration 041 is applied.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const woTelegramGroups = () => (supabase as any).from('work_order_telegram_groups')
+
+/** Returns the ids of the Telegram groups assigned to the given work order. */
+export async function fetchOrderGroupIds(workOrderId: string): Promise<string[]> {
+  const { data, error } = await woTelegramGroups()
     .select('telegram_group_id')
-    .eq('profile_id', profileId)
+    .eq('work_order_id', workOrderId)
   if (error) throw error
-  return (data ?? []).map((r) => r.telegram_group_id)
+  return ((data ?? []) as Array<{ telegram_group_id: string }>).map(
+    (r) => r.telegram_group_id,
+  )
 }
 
 /**
- * Toggle a single user → group membership.
- * active=true  → insert (idempotent via prior delete)
- * active=false → delete the row entirely
+ * Replaces the set of Telegram groups assigned to a work order
+ * (delete all + insert the given selection).
  */
-export async function setUserGroup(
-  profileId: string,
-  groupId: string,
-  active: boolean,
+export async function setOrderGroups(
+  workOrderId: string,
+  groupIds: string[],
 ): Promise<void> {
-  const { error: deleteError } = await supabase
-    .from('user_telegram_groups')
+  const { error: deleteError } = await woTelegramGroups()
     .delete()
-    .eq('profile_id', profileId)
-    .eq('telegram_group_id', groupId)
+    .eq('work_order_id', workOrderId)
   if (deleteError) throw deleteError
-  if (!active) return
-  const { error } = await supabase.from('user_telegram_groups').insert({
-    profile_id: profileId,
-    telegram_group_id: groupId,
-  })
+  if (!groupIds.length) return
+  const { error } = await woTelegramGroups().insert(
+    groupIds.map((groupId) => ({
+      work_order_id: workOrderId,
+      telegram_group_id: groupId,
+    })),
+  )
   if (error) throw error
 }
 

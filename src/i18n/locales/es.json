@@ -206,6 +206,9 @@
     "detailsTitle": "Detalles: {{workType}}",
     "detailsSubtitle": "Campos específicos del tipo de trabajo",
     "notesPlaceholder": "Notas internas para el equipo…",
+    "telegramGroupsTitle": "Notificaciones Telegram",
+    "telegramGroupsHint": "Los avisos sobre esta orden (asignación, cambios, reportes, eliminación) se envían solo a los grupos seleccionados. Sin selección, se usa el mapeo de eventos de Ajustes.",
+    "telegramGroupsEmpty": "No hay grupos de Telegram activos. Configuralos en Ajustes.",
     "saveChanges": "Guardar cambios",
     "createOrder": "Crear orden",
     "noWorkType": "Este ítem del catálogo no tiene un tipo de trabajo asignado. Seleccioná otro ítem.",
@@ -435,9 +438,6 @@
     "editProfile": "Editar perfil",
     "cancelEdit": "Cancelar edición",
     "pinHint": "El PIN solo se cambia si completas ese campo.",
-    "telegramGroupsTitle": "Grupos de Telegram",
-    "telegramGroupsHint": "Los avisos sobre este usuario se envían solo a los grupos seleccionados. Sin selección, se usa el mapeo de eventos de Ajustes.",
-    "telegramGroupsEmpty": "No hay grupos de Telegram activos. Configuralos en Ajustes.",
     "name": "Nombre",
     "role": "Rol",
     "roles": {
@@ -1104,7 +1104,7 @@
       },
       "mappings": {
         "title": "Mapeo de eventos",
-        "subtitle": "Asigná cada evento del sistema a uno o varios grupos.",
+        "subtitle": "Ruteo por defecto: se usa cuando la orden no tiene grupos asignados.",
         "eventLabel": "Evento",
         "noGroups": "Agregá al menos un grupo para configurar los mapeos.",
         "events": {

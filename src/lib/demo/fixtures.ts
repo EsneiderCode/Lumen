@@ -993,16 +993,22 @@ export const initialFixtures = () => ({
     created_at: string
   }>,
 
-  user_telegram_groups: [
+  work_order_telegram_groups: [
     {
       id: 'bbbb0000-0000-0000-0000-000000000001',
-      profile_id: TECH_ID,
+      work_order_id: WO_1,
       telegram_group_id: 'aaaa0000-0000-0000-0000-000000000001',
+      created_at: LAST_WEEK,
+    },
+    {
+      id: 'bbbb0000-0000-0000-0000-000000000002',
+      work_order_id: WO_1,
+      telegram_group_id: 'aaaa0000-0000-0000-0000-000000000002',
       created_at: LAST_WEEK,
     },
   ] as Array<{
     id: string
-    profile_id: string
+    work_order_id: string
     telegram_group_id: string
     created_at: string
   }>,

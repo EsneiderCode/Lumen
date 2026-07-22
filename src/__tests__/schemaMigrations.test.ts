@@ -124,21 +124,25 @@ describe('database migrations cover billing workflow schema', () => {
     expect(supabaseConfig).toContain('verify_jwt = true')
   })
 
-  it('routes Telegram notifications through per-user group memberships', () => {
-    expect(migrationSql).toContain('create table public.user_telegram_groups')
-    expect(migrationSql).toContain('unique (profile_id, telegram_group_id)')
+  it('routes Telegram notifications through per-order group assignments', () => {
+    expect(migrationSql).toContain('create table public.work_order_telegram_groups')
+    expect(migrationSql).toContain('unique (work_order_id, telegram_group_id)')
     expect(migrationSql).toMatch(
-      /create\s+policy\s+"user_telegram_groups_manage_perm"[\s\S]*has_permission\('users\.edit'\)/,
+      /create\s+policy\s+"wo_telegram_groups_insert_perm"[\s\S]*has_permission\('work_orders\.edit'\)/,
     )
-    // Every user-scoped notify function forwards the affected user id so the
-    // edge function can target only that user's groups.
-    expect(notificationServiceSource).toContain('affecteduserid')
+    // Per-user routing (migration 038) is superseded and dropped.
+    expect(migrationSql).toContain('drop table if exists public.user_telegram_groups')
+    // Every order-scoped notify function forwards the order id so the edge
+    // function can target only that order's groups; deletion pre-resolves the
+    // group ids because the assignment rows cascade away with the order.
+    expect(notificationServiceSource).toContain('orderid')
+    expect(notificationServiceSource).toContain('groupids')
     const edgeFunctionSource = readFileSync(
       join(process.cwd(), 'supabase', 'functions', 'send-telegram', 'index.ts'),
       'utf8',
     ).toLowerCase()
-    expect(edgeFunctionSource).toContain('user_telegram_groups?select=telegram_group_id')
-    // Open events must derive the affected user from the JWT, not the body.
+    expect(edgeFunctionSource).toContain('work_order_telegram_groups?select=telegram_group_id')
+    // Open events must not honor caller-supplied explicit group ids.
     expect(edgeFunctionSource).toContain('open_event_types.has(body.type)')
   })
 

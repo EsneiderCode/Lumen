@@ -24,6 +24,12 @@ import { DocumentUploader } from '@/components/ui/DocumentUploader'
 import { uploadWorkOrderDocument } from '@/services/workOrderDocumentService'
 import type { DocumentType } from '@/types/work-order-documents'
 import { deriveOrderDefaultsFromProject } from '@/lib/orderFormDefaults'
+import {
+  fetchGroups,
+  fetchOrderGroupIds,
+  setOrderGroups,
+  type TelegramGroup,
+} from '@/services/telegramGroupService'
 
 // Catalog detail_form values for infrastructure work (trenches, splice
 // boxes, POP central sites) rather than street-address-based customer
@@ -122,6 +128,12 @@ export function WorkOrderFormPage() {
   const [errors, setErrors] = useState<Partial<Record<keyof FormValues, string>>>({})
   const [saveError, setSaveError] = useState<string | null>(null)
 
+  // Telegram notification groups — all events about this order are delivered
+  // only to the selected groups (event mappings from Settings apply when none
+  // are selected). Staged locally and saved after the order exists.
+  const [telegramGroups, setTelegramGroups] = useState<TelegramGroup[]>([])
+  const [selectedGroupIds, setSelectedGroupIds] = useState<Set<string>>(new Set())
+
   // Staged documents — collected locally on new orders, uploaded after
   // the order is created and we have an id to attach them to.
   const [stagedDocs, setStagedDocs] = useState<Record<DocumentType, File[]>>({
@@ -136,7 +148,18 @@ export function WorkOrderFormPage() {
     fetchClients().then(({ data }) => setClients(data))
     fetchOperators().then(({ data }) => setOperators(data))
     fetchProjects().then(({ data }) => setProjects(data))
+    fetchGroups()
+      .then((groups) => setTelegramGroups(groups.filter((g) => g.is_active)))
+      .catch(() => setTelegramGroups([]))
   }, [])
+
+  // Load existing group assignment for edit
+  useEffect(() => {
+    if (!isEdit || !id) return
+    fetchOrderGroupIds(id)
+      .then((ids) => setSelectedGroupIds(new Set(ids)))
+      .catch(() => {})
+  }, [id, isEdit])
 
   // Load service items scoped to the selected operator (global items
   // always included; operator-specific items merge in when operator is set).
@@ -256,6 +279,14 @@ export function WorkOrderFormPage() {
       const { data, error } = await createWorkOrder(payload, user.id)
       if (error || !data) { setSaveError(error ?? 'Fehler'); setIsSaving(false); return }
       orderId = data.id
+    }
+
+    // Save Telegram notification groups — non-critical: routing falls back to
+    // the Settings event mappings if this fails, so don't block the save.
+    if (orderId) {
+      await setOrderGroups(orderId, Array.from(selectedGroupIds)).catch((err) =>
+        console.warn('[workOrderForm] setOrderGroups failed', err),
+      )
     }
 
     // Upsert detail
@@ -683,6 +714,41 @@ export function WorkOrderFormPage() {
             placeholder={t('workOrder.notesPlaceholder')}
             className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent resize-none"
           />
+        </div>
+
+        {/* Telegram notification groups */}
+        <div className="rounded-l border border-line bg-bg-1 p-5">
+          <h3 className="font-display text-sm font-semibold text-fg-1">
+            {t('workOrder.telegramGroupsTitle')}
+          </h3>
+          <p className="mt-0.5 mb-4 text-xs text-fg-2">{t('workOrder.telegramGroupsHint')}</p>
+          {telegramGroups.length === 0 ? (
+            <p className="text-sm text-fg-2">{t('workOrder.telegramGroupsEmpty')}</p>
+          ) : (
+            <div className="space-y-1">
+              {telegramGroups.map((group) => (
+                <label key={group.id} className="flex cursor-pointer items-center gap-3 py-1">
+                  <input
+                    type="checkbox"
+                    checked={selectedGroupIds.has(group.id)}
+                    onChange={() =>
+                      setSelectedGroupIds((current) => {
+                        const next = new Set(current)
+                        if (next.has(group.id)) next.delete(group.id)
+                        else next.add(group.id)
+                        return next
+                      })
+                    }
+                    className="h-4 w-4 rounded-s border-line bg-bg-2"
+                  />
+                  <span className="text-sm text-fg-1">{group.name}</span>
+                  <span className="font-mono text-xs text-fg-3">
+                    {t(`settings.telegram.groups.purposes.${group.purpose}`)}
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Save error */}

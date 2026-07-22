@@ -16,6 +16,7 @@ import { STATUS_COLORS, TEAM_DOT, PRIORITY_COLORS } from '@/constants/styles'
 import { useAuth } from '@/hooks/useAuth'
 import { Can } from '@/components/ui/Can'
 import { notifyOrderDeleted } from '@/services/notificationService'
+import { fetchOrderGroupIds } from '@/services/telegramGroupService'
 
 const PAGE_SIZE = 25
 
@@ -77,6 +78,9 @@ export function WorkOrdersPage() {
 
   async function handleDelete(id: string) {
     const order = orders.find((o) => o.id === id)
+    // Resolve the order's notification groups BEFORE deleting — the
+    // assignment rows cascade away with the order.
+    const groupIds = await fetchOrderGroupIds(id).catch(() => [] as string[])
     const { error } = await deleteWorkOrder(id)
     if (error) {
       setError(error)
@@ -90,7 +94,7 @@ export function WorkOrdersPage() {
           workType: order.work_type ? t(`workType.${order.work_type}`) : undefined,
           address: order.address ?? undefined,
           adminName: user?.email ?? undefined,
-          affectedUserId: order.assigned_technician ?? undefined,
+          groupIds,
         })
       }
     }
