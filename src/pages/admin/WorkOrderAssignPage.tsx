@@ -178,6 +178,7 @@ export function WorkOrderAssignPage() {
           address: location,
           orderUrl: `${window.location.origin}/admin/orders/${id}`,
           reassignmentNote: isReassignment && reassignmentNote.trim() ? reassignmentNote.trim() : undefined,
+          affectedUserId: selectedTechnicianId || undefined,
         })
       }
       navigate('/admin/orders')

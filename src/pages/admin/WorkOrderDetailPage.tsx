@@ -316,12 +316,15 @@ export function WorkOrderDetailPage() {
           order.order_number,
           notes || undefined,
           user.email ?? undefined,
+          order.assigned_technician ?? undefined,
         )
       else if (toStatus !== 'returned')
         void notifyOrderStatusChanged(
           order.order_number,
           L.status(toStatus),
           user.email ?? undefined,
+          undefined,
+          order.assigned_technician ?? undefined,
         )
     }
     setIsTransitioning(false)
@@ -515,6 +518,7 @@ export function WorkOrderDetailPage() {
             order.order_number,
             reason,
             user?.email ?? undefined,
+            order.assigned_technician ?? undefined,
           )
         break
       }

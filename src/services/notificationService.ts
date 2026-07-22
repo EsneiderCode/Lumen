@@ -1,8 +1,10 @@
 /**
  * Notification service — Telegram integration via Supabase Edge Function.
  * Bot credentials stay server-side in TELEGRAM_BOT_TOKEN.
- * Target groups are resolved from the `telegram_groups` / `event_group_mappings`
- * tables configured in the admin dashboard.
+ * Target groups are resolved per event: if the event concerns a user
+ * (`affectedUserId`) with groups assigned in `user_telegram_groups`, only
+ * those groups are notified; otherwise the `telegram_groups` /
+ * `event_group_mappings` configuration from the admin dashboard applies.
  * All functions are fire-and-forget: failures are logged but never thrown.
  */
 
@@ -27,12 +29,14 @@ export async function notifyOrderReturnedForCorrection(
   orderNumber: string,
   reason: string,
   adminName?: string,
+  affectedUserId?: string,
 ): Promise<void> {
   await sendTelegram({
     type: 'order_returned_for_correction',
     orderNumber,
     reason,
     ...(adminName ? { adminName } : {}),
+    ...(affectedUserId ? { affectedUserId } : {}),
   })
 }
 
@@ -52,6 +56,7 @@ export async function notifyTaskAssigned(opts: {
   orderUrl: string
   adminName?: string
   reassignmentNote?: string
+  affectedUserId?: string
 }): Promise<void> {
   await sendTelegram({
     type: 'task_assigned',
@@ -66,6 +71,7 @@ export async function notifyTaskAssigned(opts: {
     orderUrl: opts.orderUrl,
     ...(opts.adminName ? { adminName: opts.adminName } : {}),
     ...(opts.reassignmentNote ? { reason: opts.reassignmentNote } : {}),
+    ...(opts.affectedUserId ? { affectedUserId: opts.affectedUserId } : {}),
   })
 }
 
@@ -78,6 +84,7 @@ export async function notifyOrderStatusChanged(
   newStatus: string,
   adminName?: string,
   reason?: string,
+  affectedUserId?: string,
 ): Promise<void> {
   await sendTelegram({
     type: 'order_status_changed',
@@ -85,6 +92,7 @@ export async function notifyOrderStatusChanged(
     newStatus,
     ...(adminName ? { adminName } : {}),
     ...(reason ? { reason } : {}),
+    ...(affectedUserId ? { affectedUserId } : {}),
   })
 }
 
@@ -96,12 +104,14 @@ export async function notifyOrderCancelled(
   orderNumber: string,
   reason?: string,
   adminName?: string,
+  affectedUserId?: string,
 ): Promise<void> {
   await sendTelegram({
     type: 'order_cancelled',
     orderNumber,
     ...(reason ? { reason } : {}),
     ...(adminName ? { adminName } : {}),
+    ...(affectedUserId ? { affectedUserId } : {}),
   })
 }
 
@@ -143,6 +153,7 @@ export async function notifyOrderDeleted(opts: {
   workType?: string
   address?: string
   adminName?: string
+  affectedUserId?: string
 }): Promise<void> {
   await sendTelegram({
     type: 'order_deleted',
@@ -152,5 +163,6 @@ export async function notifyOrderDeleted(opts: {
     workType: opts.workType ?? '',
     address: opts.address ?? '',
     ...(opts.adminName ? { adminName: opts.adminName } : {}),
+    ...(opts.affectedUserId ? { affectedUserId: opts.affectedUserId } : {}),
   })
 }

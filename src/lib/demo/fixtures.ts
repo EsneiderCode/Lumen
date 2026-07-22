@@ -943,6 +943,57 @@ export const initialFixtures = () => ({
 
   user_permissions: [] as Array<{ user_id: string; permission_id: string; created_at: string }>,
 
+  telegram_groups: [
+    {
+      id: 'aaaa0000-0000-0000-0000-000000000001',
+      chat_id: '-1001000000001',
+      name: 'Equipo Rot',
+      purpose: 'tareas',
+      is_active: true,
+      created_at: LAST_WEEK,
+      updated_at: LAST_WEEK,
+    },
+    {
+      id: 'aaaa0000-0000-0000-0000-000000000002',
+      chat_id: '-1001000000002',
+      name: 'Alertas Oficina',
+      purpose: 'alertas',
+      is_active: true,
+      created_at: LAST_WEEK,
+      updated_at: LAST_WEEK,
+    },
+  ] as Array<{
+    id: string
+    chat_id: string
+    name: string
+    purpose: string
+    is_active: boolean
+    created_at: string
+    updated_at: string
+  }>,
+
+  event_group_mappings: [] as Array<{
+    id: string
+    event_type: string
+    telegram_group_id: string
+    is_active: boolean
+    created_at: string
+  }>,
+
+  user_telegram_groups: [
+    {
+      id: 'bbbb0000-0000-0000-0000-000000000001',
+      profile_id: TECH_ID,
+      telegram_group_id: 'aaaa0000-0000-0000-0000-000000000001',
+      created_at: LAST_WEEK,
+    },
+  ] as Array<{
+    id: string
+    profile_id: string
+    telegram_group_id: string
+    created_at: string
+  }>,
+
   _session: { user: null, access_token: null } as DemoSession,
 })
 

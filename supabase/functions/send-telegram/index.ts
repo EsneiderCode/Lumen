@@ -55,6 +55,12 @@ interface TelegramBody {
   summary?: string
   /** report_submitted: technician notes */
   techNotes?: string
+  /**
+   * Profile id of the user the event concerns (assigned technician, reporter).
+   * When set and the user has rows in user_telegram_groups, delivery targets
+   * ONLY those groups; otherwise event_group_mappings applies.
+   */
+  affectedUserId?: string
 }
 
 interface GroupRow {
@@ -112,8 +118,11 @@ function readBody(value: unknown): TelegramBody {
     city:               typeof b.city               === 'string' ? b.city               : undefined,
     summary:            typeof b.summary            === 'string' ? b.summary            : undefined,
     techNotes:          typeof b.techNotes          === 'string' ? b.techNotes          : undefined,
+    affectedUserId:     typeof b.affectedUserId     === 'string' ? b.affectedUserId     : undefined,
   }
 }
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 function esc(v: string): string {
   return v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -344,9 +353,31 @@ const EVENT_TYPE_FALLBACKS: Partial<Record<TelegramEventType, TelegramEventType>
 
 async function resolveGroups(
   eventType: TelegramEventType,
+  affectedUserId: string | undefined,
   supabaseUrl: string,
   serviceRoleKey: string,
 ): Promise<string[]> {
+  // User-scoped routing: if the event concerns a user with assigned groups,
+  // deliver only to those. Fall through to event mappings otherwise.
+  if (affectedUserId && UUID_RE.test(affectedUserId)) {
+    const memberships = await supabaseFetch<MappingRow[]>(
+      supabaseUrl,
+      serviceRoleKey,
+      `user_telegram_groups?select=telegram_group_id&profile_id=eq.${encodeURIComponent(affectedUserId)}`,
+      { method: 'GET' },
+    )
+    if (memberships.length) {
+      const ids = memberships.map((m) => m.telegram_group_id).join(',')
+      const groups = await supabaseFetch<GroupRow[]>(
+        supabaseUrl,
+        serviceRoleKey,
+        `telegram_groups?select=chat_id&id=in.(${ids})&is_active=eq.true`,
+        { method: 'GET' },
+      )
+      if (groups.length) return groups.map((g) => g.chat_id)
+    }
+  }
+
   const lookupType = EVENT_TYPE_FALLBACKS[eventType] ?? eventType
   const mappings = await supabaseFetch<MappingRow[]>(
     supabaseUrl,
@@ -393,7 +424,13 @@ Deno.serve(async (req) => {
     const text = buildMessage(body)
     if (!text) return json(400, { error: 'Invalid notification payload' })
 
-    const chatIds = await resolveGroups(body.type, supabaseUrl, serviceRoleKey)
+    // Open events (any authenticated user) derive the affected user from the
+    // JWT so a caller cannot reroute another user's notifications.
+    const affectedUserId = OPEN_EVENT_TYPES.has(body.type)
+      ? userIdFromJwt(req.headers.get('authorization') ?? '') ?? undefined
+      : body.affectedUserId
+
+    const chatIds = await resolveGroups(body.type, affectedUserId, supabaseUrl, serviceRoleKey)
     if (!chatIds.length) {
       console.warn('[send-telegram] no active groups for event:', body.type)
       return json(200, { ok: true, sent: 0 })

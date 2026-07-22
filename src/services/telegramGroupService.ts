@@ -125,6 +125,42 @@ export async function setMapping(
   }
 }
 
+// ── User ↔ group membership ───────────────────────────────────────────────────
+
+/** Returns the ids of the Telegram groups the given profile belongs to. */
+export async function fetchUserGroupIds(profileId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('user_telegram_groups')
+    .select('telegram_group_id')
+    .eq('profile_id', profileId)
+  if (error) throw error
+  return (data ?? []).map((r) => r.telegram_group_id)
+}
+
+/**
+ * Toggle a single user → group membership.
+ * active=true  → insert (idempotent via prior delete)
+ * active=false → delete the row entirely
+ */
+export async function setUserGroup(
+  profileId: string,
+  groupId: string,
+  active: boolean,
+): Promise<void> {
+  const { error: deleteError } = await supabase
+    .from('user_telegram_groups')
+    .delete()
+    .eq('profile_id', profileId)
+    .eq('telegram_group_id', groupId)
+  if (deleteError) throw deleteError
+  if (!active) return
+  const { error } = await supabase.from('user_telegram_groups').insert({
+    profile_id: profileId,
+    telegram_group_id: groupId,
+  })
+  if (error) throw error
+}
+
 // ── Chat ID validation ────────────────────────────────────────────────────────
 
 export interface ValidateChatResult {

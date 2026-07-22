@@ -427,6 +427,9 @@
     "editProfile": "Profil bearbeiten",
     "cancelEdit": "Bearbeitung abbrechen",
     "pinHint": "PIN wird nur gesetzt, wenn das Feld ausgefüllt ist.",
+    "telegramGroupsTitle": "Telegram-Gruppen",
+    "telegramGroupsHint": "Benachrichtigungen zu diesem Benutzer gehen nur an die ausgewählten Gruppen. Ohne Auswahl gilt das Event-Mapping aus den Einstellungen.",
+    "telegramGroupsEmpty": "Keine aktiven Telegram-Gruppen. In den Einstellungen konfigurieren.",
     "name": "Name",
     "role": "Rolle",
     "roles": {

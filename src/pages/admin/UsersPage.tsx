@@ -12,6 +12,7 @@ import {
 } from '@/services/userService'
 import { ContractorDocumentsPanel } from '@/components/contractor/ContractorDocumentsPanel'
 import { UserAccessPanel } from '@/components/admin/UserAccessPanel'
+import { UserTelegramGroupsPanel } from '@/components/admin/UserTelegramGroupsPanel'
 import { Can } from '@/components/ui/Can'
 
 const EMPTY_FORM = {
@@ -286,6 +287,12 @@ export function UsersPage() {
       {isEditing && (
         <Can permission="roles.assign">
           <UserAccessPanel userId={form.id} />
+        </Can>
+      )}
+
+      {isEditing && (
+        <Can permission="users.edit">
+          <UserTelegramGroupsPanel userId={form.id} />
         </Can>
       )}
 

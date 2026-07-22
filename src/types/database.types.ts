@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.4"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       appointments: {
@@ -1141,6 +1166,42 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_telegram_groups: {
+        Row: {
+          created_at: string
+          id: string
+          profile_id: string
+          telegram_group_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          profile_id: string
+          telegram_group_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          profile_id?: string
+          telegram_group_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_telegram_groups_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_telegram_groups_telegram_group_id_fkey"
+            columns: ["telegram_group_id"]
+            isOneToOne: false
+            referencedRelation: "telegram_groups"
             referencedColumns: ["id"]
           },
         ]
@@ -2396,6 +2457,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       document_type: ["plano", "cartas_empalme", "diagrama_routing", "other"],

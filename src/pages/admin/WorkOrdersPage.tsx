@@ -90,6 +90,7 @@ export function WorkOrdersPage() {
           workType: order.work_type ? t(`workType.${order.work_type}`) : undefined,
           address: order.address ?? undefined,
           adminName: user?.email ?? undefined,
+          affectedUserId: order.assigned_technician ?? undefined,
         })
       }
     }

@@ -124,6 +124,24 @@ describe('database migrations cover billing workflow schema', () => {
     expect(supabaseConfig).toContain('verify_jwt = true')
   })
 
+  it('routes Telegram notifications through per-user group memberships', () => {
+    expect(migrationSql).toContain('create table public.user_telegram_groups')
+    expect(migrationSql).toContain('unique (profile_id, telegram_group_id)')
+    expect(migrationSql).toMatch(
+      /create\s+policy\s+"user_telegram_groups_manage_perm"[\s\S]*has_permission\('users\.edit'\)/,
+    )
+    // Every user-scoped notify function forwards the affected user id so the
+    // edge function can target only that user's groups.
+    expect(notificationServiceSource).toContain('affecteduserid')
+    const edgeFunctionSource = readFileSync(
+      join(process.cwd(), 'supabase', 'functions', 'send-telegram', 'index.ts'),
+      'utf8',
+    ).toLowerCase()
+    expect(edgeFunctionSource).toContain('user_telegram_groups?select=telegram_group_id')
+    // Open events must derive the affected user from the JWT, not the body.
+    expect(edgeFunctionSource).toContain('open_event_types.has(body.type)')
+  })
+
   it('keeps pricing admin-only outside certification/accounting screens', () => {
     expect(migrationSql).toContain('migration 014')
     expect(migrationSql).toContain('drop policy if exists "si_read_active"')
