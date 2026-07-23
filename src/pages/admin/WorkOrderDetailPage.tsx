@@ -311,12 +311,14 @@ export function WorkOrderDetailPage() {
       await refreshLifecycleEvidence(id)
       setModal({ type: null, inputValue: '', categoryValue: '' })
       // Skip 'returned' — notifyOrderReturnedForCorrection is called at the call site
+      const orderUrl = `${window.location.origin}/admin/orders/${id}`
       if (toStatus === 'cancelled')
         void notifyOrderCancelled(
           order.order_number,
           notes || undefined,
           user.email ?? undefined,
           id,
+          orderUrl,
         )
       else if (toStatus !== 'returned')
         void notifyOrderStatusChanged(
@@ -325,6 +327,7 @@ export function WorkOrderDetailPage() {
           user.email ?? undefined,
           undefined,
           id,
+          orderUrl,
         )
     }
     setIsTransitioning(false)
@@ -519,6 +522,7 @@ export function WorkOrderDetailPage() {
             reason,
             user?.email ?? undefined,
             id,
+            `${window.location.origin}/admin/orders/${id}`,
           )
         break
       }

@@ -30,6 +30,7 @@ export async function notifyOrderReturnedForCorrection(
   reason: string,
   adminName?: string,
   orderId?: string,
+  orderUrl?: string,
 ): Promise<void> {
   await sendTelegram({
     type: 'order_returned_for_correction',
@@ -37,6 +38,7 @@ export async function notifyOrderReturnedForCorrection(
     reason,
     ...(adminName ? { adminName } : {}),
     ...(orderId ? { orderId } : {}),
+    ...(orderUrl ? { orderUrl } : {}),
   })
 }
 
@@ -86,6 +88,7 @@ export async function notifyOrderStatusChanged(
   adminName?: string,
   reason?: string,
   orderId?: string,
+  orderUrl?: string,
 ): Promise<void> {
   await sendTelegram({
     type: 'order_status_changed',
@@ -94,6 +97,7 @@ export async function notifyOrderStatusChanged(
     ...(adminName ? { adminName } : {}),
     ...(reason ? { reason } : {}),
     ...(orderId ? { orderId } : {}),
+    ...(orderUrl ? { orderUrl } : {}),
   })
 }
 
@@ -106,6 +110,7 @@ export async function notifyOrderCancelled(
   reason?: string,
   adminName?: string,
   orderId?: string,
+  orderUrl?: string,
 ): Promise<void> {
   await sendTelegram({
     type: 'order_cancelled',
@@ -113,6 +118,7 @@ export async function notifyOrderCancelled(
     ...(reason ? { reason } : {}),
     ...(adminName ? { adminName } : {}),
     ...(orderId ? { orderId } : {}),
+    ...(orderUrl ? { orderUrl } : {}),
   })
 }
 

@@ -340,6 +340,344 @@ function buildMessage(body: TelegramBody): string | null {
   }
 }
 
+// ── Order card enrichment ─────────────────────────────────────────────────────
+// When the payload carries an orderId, the message is built server-side from
+// the live order: project/client/operator, address, priority, status, team
+// with its member list, notes, and attached documents. The payload-based
+// buildMessage above stays as fallback (order_deleted, lookup failures).
+
+const WORK_TYPE_LABELS: Record<string, string> = {
+  soplado: 'Soplado',
+  fusion_ap: 'Fusión AP',
+  fusion_dp: 'Fusión DP',
+  alta: 'Alta',
+  nt_installation: 'Instalación NT',
+  patchkabel: 'Patchkabel',
+  pop: 'Instalación POP',
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  created: 'Creada',
+  assigned: 'Asignada',
+  in_progress: 'En curso',
+  executed: 'Ejecutada',
+  rueckmeldung_pending: 'Rückmeldung pendiente',
+  rueckmeldung_sent: 'Rückmeldung enviada',
+  internally_certified: 'Certificada internamente',
+  sent_to_client: 'Enviada al cliente',
+  client_accepted: 'Aceptada por cliente',
+  client_rejected: 'Rechazada por cliente',
+  invoiced: 'Facturada',
+  paid: 'Pagada',
+  returned: 'Requiere corrección',
+  cancelled: 'Cancelada',
+}
+
+const PRIORITY_LABELS: Record<string, string> = {
+  normal: 'Normal',
+  alta: 'Alta',
+  urgente: 'Urgente',
+}
+
+// Field teams go by their German color names (Rot, Weiß, …).
+const TEAM_LABELS: Record<string, string> = {
+  rot: 'Rot',
+  gruen: 'Grün',
+  blau: 'Blau',
+  gelb: 'Gelb',
+  weiss: 'Weiß',
+  grau: 'Grau',
+  braun: 'Braun',
+  violett: 'Violett',
+  tuerkis: 'Türkis',
+  schwarz: 'Schwarz',
+  orange: 'Orange',
+  rosa: 'Rosa',
+}
+
+function label(map: Record<string, string>, value: string): string {
+  return map[value] ?? value
+}
+
+interface OrderCardRow {
+  id: string
+  order_number: string
+  work_type: string
+  status: string
+  priority: string
+  line: string
+  address: string | null
+  postal_code: string | null
+  city: string | null
+  assigned_date: string | null
+  internal_notes: string | null
+  assigned_team: string | null
+  assigned_technician: string | null
+  clients: { name: string; code: string } | null
+  projects: { name: string; code: string } | null
+  operators: { name: string; code: string } | null
+}
+
+interface TeamMemberRow {
+  id: string
+  full_name: string
+  role: string
+}
+
+interface DocumentRow {
+  file_name: string
+  storage_path: string
+  mime_type: string | null
+  size_bytes: number | null
+}
+
+interface OrderCard {
+  order: OrderCardRow
+  members: TeamMemberRow[]
+  responsibleName: string | null
+  documents: DocumentRow[]
+}
+
+async function fetchOrderCard(
+  orderId: string,
+  supabaseUrl: string,
+  serviceRoleKey: string,
+): Promise<OrderCard | null> {
+  try {
+    const rows = await supabaseFetch<OrderCardRow[]>(
+      supabaseUrl,
+      serviceRoleKey,
+      `work_orders?select=id,order_number,work_type,status,priority,line,address,postal_code,city,assigned_date,internal_notes,assigned_team,assigned_technician,clients(name,code),projects(name,code),operators(name,code)&id=eq.${encodeURIComponent(orderId)}&limit=1`,
+      { method: 'GET' },
+    )
+    const order = rows[0]
+    if (!order) return null
+
+    let members: TeamMemberRow[] = []
+    if (order.assigned_team) {
+      members = await supabaseFetch<TeamMemberRow[]>(
+        supabaseUrl,
+        serviceRoleKey,
+        `profiles?select=id,full_name,role&team=eq.${encodeURIComponent(order.assigned_team)}&is_active=eq.true&role=in.(technician,contractor)&order=full_name`,
+        { method: 'GET' },
+      )
+    }
+
+    let responsibleName =
+      members.find((m) => m.id === order.assigned_technician)?.full_name ?? null
+    if (!responsibleName && order.assigned_technician) {
+      const profiles = await supabaseFetch<TeamMemberRow[]>(
+        supabaseUrl,
+        serviceRoleKey,
+        `profiles?select=id,full_name,role&id=eq.${encodeURIComponent(order.assigned_technician)}&limit=1`,
+        { method: 'GET' },
+      )
+      responsibleName = profiles[0]?.full_name ?? null
+    }
+
+    const documents = await supabaseFetch<DocumentRow[]>(
+      supabaseUrl,
+      serviceRoleKey,
+      `work_order_documents?select=file_name,storage_path,mime_type,size_bytes&work_order_id=eq.${encodeURIComponent(orderId)}&order=uploaded_at.asc`,
+      { method: 'GET' },
+    )
+
+    return { order, members, responsibleName, documents }
+  } catch (error) {
+    console.error('[send-telegram] order card fetch failed', error)
+    return null
+  }
+}
+
+/** The shared order card: identifies the order fully, no matter the project. */
+function buildCardText(card: OrderCard): string {
+  const o = card.order
+  const lines: string[] = [`🔖 OS: <b>${esc(o.order_number)}</b>`]
+
+  if (o.projects) {
+    lines.push(`🏗 Proyecto: <b>${esc(`${o.projects.code} — ${o.projects.name}`)}</b>`)
+  }
+  const context = [
+    o.clients ? `Cliente: ${o.clients.name} (${o.clients.code})` : 'Orden directa (sin cliente)',
+    o.operators ? `Operador: ${o.operators.code}` : null,
+    o.line || null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+  lines.push(`🏢 ${esc(context)}`)
+
+  const fire = o.priority === 'urgente' ? ' 🔥' : ''
+  lines.push(
+    `🔧 Tipo: <b>${esc(label(WORK_TYPE_LABELS, o.work_type))}</b>` +
+      ` · Prioridad: <b>${esc(label(PRIORITY_LABELS, o.priority))}</b>${fire}`,
+  )
+  lines.push(`📌 Estado: <b>${esc(label(STATUS_LABELS, o.status))}</b>`)
+
+  const location = [o.address, [o.postal_code, o.city].filter(Boolean).join(' ')]
+    .filter(Boolean)
+    .join(', ')
+  if (location) lines.push(`📍 Dirección: ${esc(location)}`)
+  if (o.assigned_date) lines.push(`📅 Fecha asignada: <b>${esc(o.assigned_date)}</b>`)
+
+  if (o.assigned_team) {
+    lines.push('')
+    lines.push(`👷 Equipo: <b>${esc(label(TEAM_LABELS, o.assigned_team))}</b>`)
+    if (card.members.length) {
+      for (const m of card.members) {
+        const star = m.id === o.assigned_technician ? ' ⭐' : ''
+        const tag = m.role === 'contractor' ? ' (subcontrata)' : ''
+        lines.push(`   • ${esc(m.full_name)}${tag}${star}`)
+      }
+    } else {
+      lines.push('   • Sin miembros activos')
+    }
+    if (card.responsibleName) {
+      lines.push(`⭐ Responsable: <b>${esc(card.responsibleName)}</b>`)
+    }
+  } else if (card.responsibleName) {
+    lines.push('')
+    lines.push(`👤 Técnico responsable: <b>${esc(card.responsibleName)}</b>`)
+  }
+
+  const notes = trim(o.internal_notes ?? undefined, 800)
+  if (notes) {
+    lines.push('')
+    lines.push(`📝 <b>Notas:</b> ${esc(notes)}`)
+  }
+
+  if (card.documents.length) {
+    const names = trim(card.documents.map((d) => d.file_name).join(', '), 300)
+    lines.push('')
+    lines.push(`📎 Documentos (${card.documents.length}): ${esc(names ?? '')}`)
+  }
+
+  return lines.join('\n')
+}
+
+/** Event header + order card + event-specific details. */
+function buildRichMessage(body: TelegramBody, card: OrderCard): string | null {
+  const adminName = trim(body.adminName, MAX.adminName)
+  const who = adminName ? ` por <b>${esc(adminName)}</b>` : ''
+  const reason = trim(body.reason, MAX.reason)
+  const orderUrl = trim(body.orderUrl, MAX.orderUrl)
+
+  let header: string
+  const extra: string[] = []
+
+  switch (body.type) {
+    case 'task_assigned': {
+      const previousTeam = trim(body.previousTeam, MAX.previousTeam)
+      const previousTechnician = trim(body.previousTechnician, MAX.previousTechnician)
+      const isReassign = !!previousTeam || !!previousTechnician
+      header = isReassign ? '🔄 <b>Orden reasignada</b>' : '📋 <b>Nueva asignación</b>'
+      if (isReassign) {
+        const before = previousTeam
+          ? `<b>${esc(previousTeam)}</b>${previousTechnician ? ` (${esc(previousTechnician)})` : ''}`
+          : `<b>${esc(previousTechnician!)}</b>`
+        extra.push(`⬅️ Antes: ${before}`)
+        if (reason) extra.push(`📋 Motivo del cambio: ${esc(reason)}`)
+      }
+      if (adminName) extra.push(`👤 Asignada${who}`)
+      break
+    }
+
+    case 'order_status_changed':
+      header = '🔄 <b>Cambio en orden</b>'
+      if (adminName) extra.push(`👤 Actualizado${who}`)
+      if (reason) extra.push(`📋 <b>Detalle:</b> ${esc(reason)}`)
+      break
+
+    case 'order_cancelled':
+      header = '❌ <b>Orden cancelada</b>'
+      if (adminName) extra.push(`👤 Cancelada${who}`)
+      if (reason) extra.push(`📋 <b>Motivo:</b> ${esc(reason)}`)
+      break
+
+    case 'order_returned_for_correction':
+      header = '⚠️ <b>Orden devuelta para corrección</b>'
+      if (adminName) extra.push(`👤 Devuelta${who}`)
+      if (reason) extra.push(`📋 <b>Motivo:</b> ${esc(reason)}`)
+      break
+
+    case 'report_submitted': {
+      header = '📝 <b>Reporte registrado</b>'
+      const techName = trim(body.techName, MAX.techName)
+      const summary = trim(body.summary, MAX.summary)
+      const techNotes = trim(body.techNotes, MAX.techNotes)
+      if (techName) extra.push(`👤 Técnico: <b>${esc(techName)}</b>`)
+      if (summary) extra.push(`📋 <b>Resumen:</b> ${esc(summary)}`)
+      if (techNotes && techNotes !== summary) {
+        extra.push(`📌 <b>Notas del técnico:</b> ${esc(techNotes)}`)
+      }
+      break
+    }
+
+    // order_deleted keeps the payload-based message: the order is gone.
+    default:
+      return null
+  }
+
+  const parts = [header, '', buildCardText(card)]
+  if (extra.length) {
+    parts.push('')
+    parts.push(...extra)
+  }
+  if (orderUrl) parts.push(`\n🔗 <a href="${orderUrl}">Ver orden en LUMEN</a>`)
+  return parts.join('\n')
+}
+
+// ── Document delivery ─────────────────────────────────────────────────────────
+
+const MAX_DOCUMENTS = 10
+const MAX_DOCUMENT_BYTES = 45 * 1024 * 1024 // Telegram bot upload limit is 50 MB
+
+/**
+ * Sends the order's attached documents to every target chat, right after the
+ * notification message. Each file is downloaded once from Storage and uploaded
+ * to Telegram as multipart. Failures are logged per file and never abort the
+ * remaining ones.
+ */
+async function sendDocuments(
+  card: OrderCard,
+  chatIds: string[],
+  botToken: string,
+  supabaseUrl: string,
+  serviceRoleKey: string,
+): Promise<number> {
+  let sent = 0
+  for (const doc of card.documents.slice(0, MAX_DOCUMENTS)) {
+    if ((doc.size_bytes ?? 0) > MAX_DOCUMENT_BYTES) {
+      console.warn('[send-telegram] document too large, skipped', doc.storage_path)
+      continue
+    }
+    try {
+      const objectPath = doc.storage_path.split('/').map(encodeURIComponent).join('/')
+      const res = await fetch(
+        `${supabaseUrl}/storage/v1/object/work-order-documents/${objectPath}`,
+        { headers: { authorization: `Bearer ${serviceRoleKey}`, apikey: serviceRoleKey } },
+      )
+      if (!res.ok) throw new Error(`storage download failed (${res.status})`)
+      const blob = await res.blob()
+
+      for (const chatId of chatIds) {
+        const form = new FormData()
+        form.append('chat_id', chatId)
+        form.append('document', blob, doc.file_name)
+        form.append('caption', `📎 ${card.order.order_number} — ${doc.file_name}`)
+        const tg = await fetch(`https://api.telegram.org/bot${botToken}/sendDocument`, {
+          method: 'POST',
+          body: form,
+        })
+        if (tg.ok) sent += 1
+        else console.error('[send-telegram] sendDocument failed', await tg.text())
+      }
+    } catch (error) {
+      console.error('[send-telegram] document delivery failed', doc.storage_path, error)
+    }
+  }
+  return sent
+}
+
 // ── Chat validation ───────────────────────────────────────────────────────────
 
 async function handleValidateChat(body: TelegramBody, botToken: string): Promise<Response> {
@@ -461,7 +799,14 @@ Deno.serve(async (req) => {
     // ── notification send ────────────────────────────────────────────────────
     if (!body.type) return json(400, { error: 'Missing type' })
 
-    const text = buildMessage(body)
+    // Enrich from the live order when possible; fall back to the payload-only
+    // message (order_deleted, missing orderId, lookup failure).
+    const orderId = trim(body.orderId, MAX.orderId)
+    const card = orderId && UUID_RE.test(orderId) && body.type !== 'order_deleted'
+      ? await fetchOrderCard(orderId, supabaseUrl, serviceRoleKey)
+      : null
+
+    const text = (card ? buildRichMessage(body, card) : null) ?? buildMessage(body)
     if (!text) return json(400, { error: 'Invalid notification payload' })
 
     // Explicit group ids are only honored for admin-triggered events
@@ -473,7 +818,6 @@ Deno.serve(async (req) => {
           .map((v) => v.trim())
           .filter((v) => UUID_RE.test(v))
 
-    const orderId = trim(body.orderId, MAX.orderId)
     const chatIds = await resolveGroups(body.type, orderId, explicitGroupIds, supabaseUrl, serviceRoleKey)
     if (!chatIds.length) {
       console.warn('[send-telegram] no active groups for event:', body.type)
@@ -499,8 +843,15 @@ Deno.serve(async (req) => {
       )
     }
 
+    // Deliver the order's attached files after the card, so the team receives
+    // everything (plano, protocolos, …) in one go on assignment.
+    let documentsSent = 0
+    if (body.type === 'task_assigned' && card?.documents.length) {
+      documentsSent = await sendDocuments(card, chatIds, botToken, supabaseUrl, serviceRoleKey)
+    }
+
     const sent = results.length - failures.length
-    return json(200, { ok: true, sent, failed: failures.length })
+    return json(200, { ok: true, sent, failed: failures.length, documentsSent })
   } catch (error) {
     console.error('[send-telegram] unexpected error', error)
     return json(500, { error: error instanceof Error ? error.message : 'Unknown error' })

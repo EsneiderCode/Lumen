@@ -144,6 +144,11 @@ describe('database migrations cover billing workflow schema', () => {
     expect(edgeFunctionSource).toContain('work_order_telegram_groups?select=telegram_group_id')
     // Open events must not honor caller-supplied explicit group ids.
     expect(edgeFunctionSource).toContain('open_event_types.has(body.type)')
+    // Messages are enriched server-side from the live order (full card:
+    // project, address, team member list, notes) and attached documents are
+    // delivered to the chats on assignment.
+    expect(edgeFunctionSource).toContain('work_orders?select=')
+    expect(edgeFunctionSource).toContain('senddocument')
   })
 
   it('keeps pricing admin-only outside certification/accounting screens', () => {
