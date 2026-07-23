@@ -2395,6 +2395,10 @@ export type Database = {
           billing_reference: string | null
           city: string | null
           client_id: string | null
+          compliance_override: boolean
+          compliance_override_at: string | null
+          compliance_override_by: string | null
+          compliance_override_reason: string | null
           created_at: string
           created_by: string | null
           external_metadata: Json | null
@@ -2422,6 +2426,10 @@ export type Database = {
           billing_reference?: string | null
           city?: string | null
           client_id?: string | null
+          compliance_override?: boolean
+          compliance_override_at?: string | null
+          compliance_override_by?: string | null
+          compliance_override_reason?: string | null
           created_at?: string
           created_by?: string | null
           external_metadata?: Json | null
@@ -2449,6 +2457,10 @@ export type Database = {
           billing_reference?: string | null
           city?: string | null
           client_id?: string | null
+          compliance_override?: boolean
+          compliance_override_at?: string | null
+          compliance_override_by?: string | null
+          compliance_override_reason?: string | null
           created_at?: string
           created_by?: string | null
           external_metadata?: Json | null
@@ -2486,6 +2498,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_orders_compliance_override_by_fkey"
+            columns: ["compliance_override_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -2584,6 +2603,10 @@ export type Database = {
           billing_reference: string | null
           city: string | null
           client_id: string | null
+          compliance_override: boolean
+          compliance_override_at: string | null
+          compliance_override_by: string | null
+          compliance_override_reason: string | null
           created_at: string
           created_by: string | null
           external_metadata: Json | null
@@ -2635,6 +2658,10 @@ export type Database = {
           billing_reference: string | null
           city: string | null
           client_id: string | null
+          compliance_override: boolean
+          compliance_override_at: string | null
+          compliance_override_by: string | null
+          compliance_override_reason: string | null
           created_at: string
           created_by: string | null
           external_metadata: Json | null
@@ -2676,6 +2703,10 @@ export type Database = {
           billing_reference: string | null
           city: string | null
           client_id: string | null
+          compliance_override: boolean
+          compliance_override_at: string | null
+          compliance_override_by: string | null
+          compliance_override_reason: string | null
           created_at: string
           created_by: string | null
           external_metadata: Json | null
@@ -2753,6 +2784,10 @@ export type Database = {
           billing_reference: string | null
           city: string | null
           client_id: string | null
+          compliance_override: boolean
+          compliance_override_at: string | null
+          compliance_override_by: string | null
+          compliance_override_reason: string | null
           created_at: string
           created_by: string | null
           external_metadata: Json | null

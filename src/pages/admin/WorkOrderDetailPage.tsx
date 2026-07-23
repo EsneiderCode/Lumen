@@ -49,7 +49,9 @@ import {
 } from '@/services/notificationService'
 import { fetchServiceItems } from '@/services/serviceItemService'
 import { InvoicePreviewModal } from '@/components/admin/InvoicePreviewModal'
-import { fetchProfileCompliance } from '@/services/complianceService'
+import { fetchProfileCompliance, type ProfileComplianceResult } from '@/services/complianceService'
+import { ComplianceDot } from '@/components/compliance/ComplianceDot'
+import { complianceLevel } from '@/components/compliance/aptitudeLevel'
 
 // Catalog detail_form values for infra work — hide address, show
 // supporting-document uploaders. POP items live here too: they're
@@ -205,6 +207,10 @@ export function WorkOrderDetailPage() {
     hasEntity: boolean
     missingCodes: string[]
   } | null>(null)
+  // Full aptitude result for the assigned contractor — drives the header semáforo.
+  const [contractorCompliance, setContractorCompliance] = useState<ProfileComplianceResult | null>(
+    null,
+  )
 
   const externalMissingDocs = externalDocCompliance?.missingCodes ?? []
   const externalDocsBlocked = Boolean(externalDocCompliance && !externalDocCompliance.isCompliant)
@@ -260,6 +266,7 @@ export function WorkOrderDetailPage() {
                 hasEntity: compliance.hasEntity,
                 missingCodes: compliance.missingCodes,
               })
+              setContractorCompliance(compliance)
             }
           }
 
@@ -608,10 +615,27 @@ export function WorkOrderDetailPage() {
               <span className={`badge badge-dot ${STATUS_COLORS[order.status]}`}>
                 {L.status(order.status)}
               </span>
+              {contractorCompliance && (
+                <span className="inline-flex items-center gap-1.5 text-xs text-fg-2">
+                  <ComplianceDot result={contractorCompliance} />
+                  {contractorCompliance.hasEntity
+                    ? t(`compliance.aptitude.${complianceLevel(contractorCompliance)}`)
+                    : t('compliance.aptitude.noRecord')}
+                </span>
+              )}
             </div>
             <p className="text-sm text-fg-2">
               {L.workType(order.work_type)} · Linie {order.line}
             </p>
+            {(order as { compliance_override?: boolean }).compliance_override && (
+              <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-warn">
+                {t('compliance.aptitude.overrideNotice', {
+                  reason:
+                    (order as { compliance_override_reason?: string | null })
+                      .compliance_override_reason ?? '—',
+                })}
+              </p>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">

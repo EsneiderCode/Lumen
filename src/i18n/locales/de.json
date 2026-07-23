@@ -483,7 +483,11 @@
     "reassignSubmit": "Neu zuweisen",
     "currentAssignment": "Aktuelle Zuordnung",
     "complianceBlocked": "Zuweisung blockiert: Compliance-Unterlagen des Nachunternehmers unvollständig, nicht genehmigt oder abgelaufen.",
-    "noComplianceRecord": "Zuweisung blockiert: Der Nachunternehmer hat keinen Compliance-Datensatz. Legen Sie ihn im Compliance-Modul an."
+    "noComplianceRecord": "Zuweisung blockiert: Der Nachunternehmer hat keinen Compliance-Datensatz. Legen Sie ihn im Compliance-Modul an.",
+    "overrideLabel": "Zuweisung erzwingen (Override)",
+    "overrideHint": "Sie weisen trotz Compliance-Sperre auf eigene Verantwortung zu. Wer, wann und warum wird protokolliert.",
+    "overrideReasonPlaceholder": "Grund für den Override (Pflichtfeld)",
+    "overrideSubmit": "Zuweisung erzwingen"
   },
   "appointments": {
     "pageTitle": "Termine",
@@ -1279,6 +1283,13 @@
     },
     "certBlockedWithList": "Externe Zertifizierung blockiert: Compliance-Unterlagen unvollständig, nicht genehmigt oder abgelaufen ({{docs}}).",
     "certBlockedNoRecord": "Externe Zertifizierung blockiert: Der Nachunternehmer hat keinen Compliance-Datensatz. Legen Sie ihn im Compliance-Modul an.",
-    "manageInModule": "Dokumente im Compliance-Modul verwalten"
+    "manageInModule": "Dokumente im Compliance-Modul verwalten",
+    "aptitude": {
+      "green": "Geeignet",
+      "yellow": "Geeignet mit Hinweisen",
+      "red": "Nicht geeignet",
+      "noRecord": "Kein Datensatz",
+      "overrideNotice": "Mit Compliance-Override zugewiesen · {{reason}}"
+    }
   }
 }

@@ -483,7 +483,11 @@
     "reassignSubmit": "Reasignar",
     "currentAssignment": "Asignación actual",
     "complianceBlocked": "Asignación bloqueada: la documentación de compliance del subcontratista está incompleta, no aprobada o vencida.",
-    "noComplianceRecord": "Asignación bloqueada: el subcontratista no tiene expediente de compliance. Dalo de alta en el módulo de cumplimiento."
+    "noComplianceRecord": "Asignación bloqueada: el subcontratista no tiene expediente de compliance. Dalo de alta en el módulo de cumplimiento.",
+    "overrideLabel": "Forzar asignación (override)",
+    "overrideHint": "Asignas bajo tu responsabilidad pese al bloqueo de compliance. Queda registrado quién, cuándo y por qué.",
+    "overrideReasonPlaceholder": "Motivo del override (obligatorio)",
+    "overrideSubmit": "Forzar asignación"
   },
   "appointments": {
     "pageTitle": "Citas",
@@ -1279,6 +1283,13 @@
     },
     "certBlockedWithList": "Certificación externa bloqueada: documentación de compliance incompleta, no aprobada o vencida ({{docs}}).",
     "certBlockedNoRecord": "Certificación externa bloqueada: el subcontratista no tiene expediente de compliance. Dalo de alta en el módulo de cumplimiento.",
-    "manageInModule": "Gestionar documentación en el módulo de cumplimiento"
+    "manageInModule": "Gestionar documentación en el módulo de cumplimiento",
+    "aptitude": {
+      "green": "Apto",
+      "yellow": "Apto con avisos",
+      "red": "No apto",
+      "noRecord": "Sin expediente",
+      "overrideNotice": "Asignado con override de compliance · {{reason}}"
+    }
   }
 }

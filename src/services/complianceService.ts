@@ -547,3 +547,85 @@ export async function fetchProfileCompliance(
     error: null,
   }
 }
+
+/** Stable map key for a (contractor, obra) aptitude result. */
+export function assignmentKey(profileId: string, projectId: string | null): string {
+  return `${profileId}:${projectId ?? ''}`
+}
+
+function redCodes(aptitude: AptitudeResult): string[] {
+  return [
+    ...new Set(
+      aptitude.problems
+        .filter((problem) => problem.severity === 'red')
+        .map((problem) => problem.document_type ?? problem.reason),
+    ),
+  ]
+}
+
+/**
+ * Batched twin of {@link fetchProfileCompliance} for the per-project semáforo on
+ * the work-order board: computes aptitude for many (contractor, obra) pairs with
+ * three round-trips total (requirements + entities + items) instead of N.
+ * Mirrors the single-profile contract exactly, including its limitation of not
+ * capping a company_worker by its parent (the DB gate remains authoritative).
+ * Keyed by {@link assignmentKey}; each distinct pair is computed once.
+ */
+export async function fetchComplianceForAssignments(
+  pairs: { profileId: string; projectId: string | null }[],
+): Promise<{ data: Map<string, ProfileComplianceResult>; error: string | null }> {
+  const result = new Map<string, ProfileComplianceResult>()
+  const profileIds = [...new Set(pairs.map((pair) => pair.profileId))]
+  if (profileIds.length === 0) return { data: result, error: null }
+
+  const [{ data: requirements, error: reqError }, entitiesRes] = await Promise.all([
+    fetchRequirements(),
+    supabase.from('compliance_entities').select('*').in('profile_id', profileIds).eq('is_active', true),
+  ])
+  if (reqError) return { data: result, error: reqError }
+  if (entitiesRes.error) return { data: result, error: msg(entitiesRes.error) }
+
+  const entities = (entitiesRes.data ?? []) as unknown as ComplianceEntityRecord[]
+  const entityByProfile = new Map<string, ComplianceEntityRecord>()
+  for (const entity of entities) {
+    if (entity.profile_id) entityByProfile.set(entity.profile_id, entity)
+  }
+
+  const entityIds = entities.map((entity) => entity.id)
+  const itemsByEntity = new Map<string, EntityDocument[]>()
+  if (entityIds.length > 0) {
+    const { data: itemRows, error: itemsError } = await supabase
+      .from('entity_documents')
+      .select('*')
+      .in('entity_id', entityIds)
+    if (itemsError) return { data: result, error: msg(itemsError) }
+    for (const row of (itemRows ?? []) as unknown as EntityDocument[]) {
+      const list = itemsByEntity.get(row.entity_id) ?? []
+      list.push(row)
+      itemsByEntity.set(row.entity_id, list)
+    }
+  }
+
+  for (const { profileId, projectId } of pairs) {
+    const key = assignmentKey(profileId, projectId)
+    if (result.has(key)) continue
+    const entity = entityByProfile.get(profileId)
+    if (!entity) {
+      result.set(key, { hasEntity: false, aptitude: null, missingCodes: [], isBlocked: true })
+      continue
+    }
+    const aptitude = computeAptitude({
+      entity,
+      requirements,
+      items: itemsByEntity.get(entity.id) ?? [],
+      projectId,
+    })
+    result.set(key, {
+      hasEntity: true,
+      aptitude,
+      missingCodes: redCodes(aptitude),
+      isBlocked: aptitude.level === 'red',
+    })
+  }
+  return { data: result, error: null }
+}

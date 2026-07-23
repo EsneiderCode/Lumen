@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/hooks/useAuth'
+import { usePermissions } from '@/hooks/usePermissions'
 import {
   assignWorkOrder,
   fetchTechnicians,
@@ -34,6 +35,8 @@ export function WorkOrderAssignPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { can } = usePermissions()
+  const canOverride = can('compliance.override_assignment')
 
   const [order, setOrder] = useState<AssignableOrder | null>(null)
   const [technicians, setTechnicians] = useState<TechnicianProfile[]>([])
@@ -44,6 +47,8 @@ export function WorkOrderAssignPage() {
   )
   const [compliance, setCompliance] = useState<ProfileComplianceResult | null>(null)
   const [isCheckingDocuments, setIsCheckingDocuments] = useState(false)
+  const [overrideEnabled, setOverrideEnabled] = useState(false)
+  const [overrideReason, setOverrideReason] = useState('')
   const [reassignmentNote, setReassignmentNote] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -99,6 +104,8 @@ export function WorkOrderAssignPage() {
     async function checkCompliance(person: TechnicianProfile) {
       setIsCheckingDocuments(true)
       setCompliance(null)
+      setOverrideEnabled(false)
+      setOverrideReason('')
       const { data } = await fetchProfileCompliance(person.id, order?.project_id ?? null)
       if (cancelled) return
       setError(null)
@@ -131,6 +138,8 @@ export function WorkOrderAssignPage() {
     if (!keepsTechnician) {
       setSelectedTechnicianId('')
       setCompliance(null)
+      setOverrideEnabled(false)
+      setOverrideReason('')
       setIsCheckingDocuments(false)
     }
   }
@@ -140,14 +149,23 @@ export function WorkOrderAssignPage() {
     setSelectedTechnicianId(profileId)
     if (!person || person.role !== 'contractor') {
       setCompliance(null)
+      setOverrideEnabled(false)
+      setOverrideReason('')
       setIsCheckingDocuments(false)
     }
   }
 
+  // A blocked contractor can still be assigned when a permitted admin supplies a
+  // justified override; that mirrors the DB gate in migration 047.
+  const overrideActive = Boolean(
+    canOverride && compliance?.isBlocked && overrideEnabled && overrideReason.trim(),
+  )
+  const effectiveBlocked = Boolean(compliance?.isBlocked) && !overrideActive
+
   async function handleAssign(e: React.FormEvent) {
     e.preventDefault()
     // At least one target is required: a team, a specific technician, or both.
-    if (!id || !user || (!selectedTeam && !selectedTechnicianId) || compliance?.isBlocked || isCheckingDocuments) return
+    if (!id || !user || (!selectedTeam && !selectedTechnicianId) || effectiveBlocked || isCheckingDocuments) return
 
     setIsSaving(true)
     setError(null)
@@ -159,6 +177,7 @@ export function WorkOrderAssignPage() {
       user.id,
       selectedTechnicianId || null,
       isReassignment && reassignmentNote.trim() ? reassignmentNote.trim() : null,
+      overrideActive ? { reason: overrideReason.trim(), by: user.id } : null,
     )
 
     if (error) {
@@ -376,6 +395,32 @@ export function WorkOrderAssignPage() {
           </div>
         )}
 
+        {compliance?.isBlocked && canOverride && (
+          <div className="mt-3 rounded-s border border-warn/40 bg-warn/10 px-4 py-3 text-sm text-fg-1">
+            <label className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                checked={overrideEnabled}
+                onChange={(e) => setOverrideEnabled(e.target.checked)}
+                className="mt-0.5 accent-accent"
+              />
+              <span>
+                <span className="font-medium text-warn">{t('assignment.overrideLabel')}</span>
+                <span className="mt-0.5 block text-xs text-fg-3">{t('assignment.overrideHint')}</span>
+              </span>
+            </label>
+            {overrideEnabled && (
+              <textarea
+                value={overrideReason}
+                onChange={(e) => setOverrideReason(e.target.value)}
+                rows={2}
+                placeholder={t('assignment.overrideReasonPlaceholder')}
+                className="mt-2 w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none"
+              />
+            )}
+          </div>
+        )}
+
         {/* Error */}
         {error && (
           <div className="mt-4 rounded-s border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
@@ -394,10 +439,10 @@ export function WorkOrderAssignPage() {
           </button>
           <button
             type="submit"
-            disabled={(!selectedTeam && !selectedTechnicianId) || isSaving || isCheckingDocuments || Boolean(compliance?.isBlocked)}
+            disabled={(!selectedTeam && !selectedTechnicianId) || isSaving || isCheckingDocuments || effectiveBlocked}
             className="flex-1 rounded-s bg-accent px-4 py-2.5 text-sm font-semibold text-ink hover:bg-accent disabled:opacity-50 transition-colors"
           >
-            {isSaving ? t('assignment.assigning') : isReassignment ? t('assignment.reassignSubmit') : t('assignment.assignSubmit')}
+            {isSaving ? t('assignment.assigning') : overrideActive ? t('assignment.overrideSubmit') : isReassignment ? t('assignment.reassignSubmit') : t('assignment.assignSubmit')}
           </button>
         </div>
       </form>

@@ -1,7 +1,12 @@
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/types/database.types'
 import type { WorkOrderStatus, WorkType, TeamColor, UserRole } from '@/types/enums'
-import { fetchProfileCompliance } from '@/services/complianceService'
+import {
+  assignmentKey,
+  fetchComplianceForAssignments,
+  fetchProfileCompliance,
+  type ProfileComplianceResult,
+} from '@/services/complianceService'
 import {
   isDirectWorkOrder,
   toFailureResult,
@@ -431,6 +436,12 @@ export async function assignWorkOrder(
   changedBy: string,
   technicianId: string | null = null,
   reassignmentNote: string | null = null,
+  /**
+   * Audited compliance override (Fase 3). When set, a red/no-entity contractor
+   * is force-assigned and the reason/actor are stamped on the order; the DB gate
+   * (migration 047) only honours the override when a non-empty reason is present.
+   */
+  complianceOverride: { reason: string; by: string } | null = null,
 ): Promise<{
   data: WorkOrderRow | null
   error: string | null
@@ -444,31 +455,87 @@ export async function assignWorkOrder(
 
   const fromStatus = current?.status ?? null
 
+  // Always write the four override columns so a stale flag from a prior
+  // (overridden) assignment never lingers on a now-compliant reassignment.
+  const overrideColumns = complianceOverride
+    ? {
+        compliance_override: true,
+        compliance_override_reason: complianceOverride.reason,
+        compliance_override_by: complianceOverride.by,
+        compliance_override_at: new Date().toISOString(),
+      }
+    : {
+        compliance_override: false,
+        compliance_override_reason: null,
+        compliance_override_by: null,
+        compliance_override_at: null,
+      }
+
+  const payload: Record<string, unknown> = {
+    assigned_team: team,
+    assigned_technician: technicianId,
+    assigned_date: assignedDate,
+    status: 'assigned',
+    updated_at: new Date().toISOString(),
+    ...overrideColumns,
+  }
+
   const { data, error } = await supabase
     .from('work_orders')
-    .update({
-      assigned_team: team,
-      assigned_technician: technicianId,
-      assigned_date: assignedDate,
-      status: 'assigned',
-      updated_at: new Date().toISOString(),
-    })
+    .update(payload as never)
     .eq('id', id)
     .select()
     .single()
 
   if (error) return { data: null, error: error.message }
 
+  const overrideNote = complianceOverride
+    ? ` · Compliance-Override: ${complianceOverride.reason}`
+    : ''
+
   await supabase.from('work_order_state_history').insert({
     work_order_id: id,
     from_status: fromStatus,
     to_status: 'assigned',
     changed_by: changedBy,
-    notes: `Zugewiesen an ${team ? `Team ${team}` : 'Techniker (direkt)'}${team && technicianId ? ' · Techniker zugewiesen' : ''}${reassignmentNote ? ` · Grund: ${reassignmentNote}` : ''}`,
+    notes: `Zugewiesen an ${team ? `Team ${team}` : 'Techniker (direkt)'}${team && technicianId ? ' · Techniker zugewiesen' : ''}${reassignmentNote ? ` · Grund: ${reassignmentNote}` : ''}${overrideNote}`,
   })
 
   return { data, error: null }
 }
+
+/**
+ * Per-obra compliance semáforo for a list of orders (Fase 3). Resolves which
+ * assignees are contractors — only they are gated — then batch-computes aptitude
+ * for each (contractor, obra) pair. Returns a map keyed by {@link assignmentKey};
+ * orders assigned to a team, an internal technician, or nobody are absent.
+ */
+export async function fetchOrderComplianceMap(
+  orders: { assigned_technician: string | null; project_id: string | null }[],
+): Promise<Map<string, ProfileComplianceResult>> {
+  const techIds = [
+    ...new Set(orders.map((o) => o.assigned_technician).filter((x): x is string => Boolean(x))),
+  ]
+  if (techIds.length === 0) return new Map()
+
+  const { data: profs } = await supabase.from('profiles').select('id, role').in('id', techIds)
+  const contractorIds = new Set(
+    ((profs ?? []) as { id: string; role: UserRole }[])
+      .filter((p) => p.role === 'contractor')
+      .map((p) => p.id),
+  )
+  if (contractorIds.size === 0) return new Map()
+
+  const pairs = orders
+    .filter((o) => o.assigned_technician && contractorIds.has(o.assigned_technician))
+    .map((o) => ({ profileId: o.assigned_technician as string, projectId: o.project_id ?? null }))
+  if (pairs.length === 0) return new Map()
+
+  const { data } = await fetchComplianceForAssignments(pairs)
+  return data
+}
+
+export { assignmentKey }
 
 // ── Detail tables ─────────────────────────────────────────────
 

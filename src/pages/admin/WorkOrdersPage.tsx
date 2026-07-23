@@ -6,9 +6,13 @@ import {
   fetchClients,
   fetchProjects,
   deleteWorkOrder,
+  fetchOrderComplianceMap,
   type WorkOrderFilters,
   type WorkOrderWithRelations,
 } from '@/services/workOrderService'
+import { assignmentKey, type ProfileComplianceResult } from '@/services/complianceService'
+import { ComplianceDot } from '@/components/compliance/ComplianceDot'
+import { usePermissions } from '@/hooks/usePermissions'
 import type { WorkOrderStatus, WorkType, TeamColor } from '@/types/enums'
 import { useLabels, STATUS_GROUPS } from '@/i18n/labels'
 import { useTranslation } from 'react-i18next'
@@ -34,6 +38,11 @@ export function WorkOrdersPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const { can } = usePermissions()
+  const showCompliance = can('compliance.view_project_board')
+  const [complianceMap, setComplianceMap] = useState<Map<string, ProfileComplianceResult>>(
+    new Map(),
+  )
 
   const [filters, setFilters] = useState<WorkOrderFilters>(() => {
     const group = searchParams.get('statusGroup') as keyof typeof STATUS_GROUPS | null
@@ -75,6 +84,23 @@ export function WorkOrdersPage() {
     fetchClients().then(({ data }) => setClients(data))
     fetchProjects().then(({ data }) => setProjects(data))
   }, [])
+
+  // Per-obra compliance semáforo for contractor-assigned orders on the page.
+  useEffect(() => {
+    if (!showCompliance || orders.length === 0) {
+      setComplianceMap(new Map())
+      return
+    }
+    let cancelled = false
+    void fetchOrderComplianceMap(
+      orders.map((o) => ({ assigned_technician: o.assigned_technician, project_id: o.project_id })),
+    ).then((map) => {
+      if (!cancelled) setComplianceMap(map)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [orders, showCompliance])
 
   async function handleDelete(id: string) {
     const order = orders.find((o) => o.id === id)
@@ -345,8 +371,23 @@ export function WorkOrdersPage() {
                     className={`hover:bg-bg-0/50 transition-colors ${order.status === 'rueckmeldung_sent' ? 'bg-warn/10' : ''}`}
                   >
                     <td className="px-4 py-3">
-                      <span className="font-mono font-semibold text-accent text-xs">
-                        {order.order_number}
+                      <span className="inline-flex items-center gap-2">
+                        {showCompliance &&
+                          order.assigned_technician &&
+                          complianceMap.get(
+                            assignmentKey(order.assigned_technician, order.project_id ?? null),
+                          ) && (
+                            <ComplianceDot
+                              result={
+                                complianceMap.get(
+                                  assignmentKey(order.assigned_technician, order.project_id ?? null),
+                                )!
+                              }
+                            />
+                          )}
+                        <span className="font-mono font-semibold text-accent text-xs">
+                          {order.order_number}
+                        </span>
                       </span>
                     </td>
                     <td className="px-4 py-3 text-fg-1">

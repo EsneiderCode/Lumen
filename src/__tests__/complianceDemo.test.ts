@@ -13,14 +13,19 @@ const { supabase } = await import('@/lib/supabase')
 import { resetStore } from '@/lib/demo/store'
 import {
   approveDocument,
+  assignmentKey,
   fetchChecklist,
+  fetchComplianceForAssignments,
   fetchEntityByProfileId,
   fetchProfileCompliance,
   fetchRequirements,
   fetchReviewQueue,
 } from '@/services/complianceService'
+import { fetchOrderComplianceMap } from '@/services/workOrderService'
 
 const CONTRACTOR_ID = '00000000-0000-0000-0000-000000000003'
+const TECH_ID = '00000000-0000-0000-0000-000000000002'
+const PROJECT_HXT = '20000000-0000-0000-0000-000000000001'
 const COMPANY_ENTITY = 'ce000000-0000-0000-0000-000000000001'
 const SS_ITEM_IN_REVIEW = 'ed000000-0000-0000-0000-000000000003'
 
@@ -153,5 +158,28 @@ describe('demo compliance — aptitude pre-flight mirrors the DB gate', () => {
     const { data } = await fetchProfileCompliance('00000000-0000-0000-0000-000000000002')
     expect(data.hasEntity).toBe(false)
     expect(data.isBlocked).toBe(true)
+  })
+})
+
+describe('demo compliance — per-obra semáforo (Fase 3)', () => {
+  it('batches aptitude per (contractor, obra) pair with a stable key', async () => {
+    const { data, error } = await fetchComplianceForAssignments([
+      { profileId: CONTRACTOR_ID, projectId: PROJECT_HXT },
+    ])
+    expect(error).toBeNull()
+    const result = data.get(assignmentKey(CONTRACTOR_ID, PROJECT_HXT))
+    expect(result?.hasEntity).toBe(true)
+    expect(result?.isBlocked).toBe(true)
+    expect(result?.missingCodes).toContain('ss_clearance_national')
+  })
+
+  it('order map covers only contractor assignees, skipping teams and internal techs', async () => {
+    const map = await fetchOrderComplianceMap([
+      { assigned_technician: CONTRACTOR_ID, project_id: PROJECT_HXT },
+      { assigned_technician: TECH_ID, project_id: PROJECT_HXT },
+      { assigned_technician: null, project_id: PROJECT_HXT },
+    ])
+    expect(map.has(assignmentKey(CONTRACTOR_ID, PROJECT_HXT))).toBe(true)
+    expect(map.has(assignmentKey(TECH_ID, PROJECT_HXT))).toBe(false)
   })
 })

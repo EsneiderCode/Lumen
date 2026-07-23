@@ -352,6 +352,22 @@ describe('database migrations cover billing workflow schema', () => {
     )
   })
 
+  it('adds an audited override to the contractor-assignment gate (047)', () => {
+    expect(migrationSql).toContain('depends on: 046_compliance_retire_legacy_gates.sql')
+    // the four override/audit columns land on work_orders
+    expect(migrationSql).toMatch(
+      /alter\s+table\s+public\.work_orders[\s\S]*compliance_override[\s\S]*compliance_override_reason[\s\S]*compliance_override_by[\s\S]*compliance_override_at/,
+    )
+    // the gate still consults the aptitude engine…
+    expect(migrationSql).toMatch(
+      /block_non_compliant_contractor_assignment[\s\S]*compute_entity_aptitude/,
+    )
+    // …but a red result is force-allowed only with a non-empty justified override
+    expect(migrationSql).toMatch(
+      /new\.compliance_override[\s\S]*btrim\(new\.compliance_override_reason\)\s*<>\s*''/,
+    )
+  })
+
   it('rewrites admin-gated RLS policies to permission checks (035)', () => {
     expect(migrationSql).toContain('depends on: 034_rbac_core.sql')
     // the old role-literal admin gates must be dropped…
