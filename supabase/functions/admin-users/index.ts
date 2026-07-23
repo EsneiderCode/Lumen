@@ -2,9 +2,17 @@ import { CORS_HEADERS, env, json, selectOne, supabaseFetch, userIdFromJwt } from
 import { normalizeLoginCode } from '../_shared/pin.ts'
 
 type UserRole = 'admin' | 'technician' | 'contractor' | 'scheduler'
-type TeamColor = 'rot' | 'gruen' | 'blau' | 'gelb'
+type TeamColor =
+  | 'rot' | 'gruen' | 'blau' | 'gelb'
+  | 'weiss' | 'grau' | 'braun' | 'violett'
+  | 'tuerkis' | 'schwarz' | 'orange' | 'rosa'
 
 const VALID_ROLES: UserRole[] = ['admin', 'technician', 'contractor', 'scheduler']
+const VALID_TEAMS: TeamColor[] = [
+  'rot', 'gruen', 'blau', 'gelb',
+  'weiss', 'grau', 'braun', 'violett',
+  'tuerkis', 'schwarz', 'orange', 'rosa',
+]
 
 interface ProfileRow {
   id: string
@@ -46,7 +54,7 @@ function readPayload(value: unknown): UserPayload {
     fullName: typeof raw.fullName === 'string' ? raw.fullName : undefined,
     password: typeof raw.password === 'string' ? raw.password : undefined,
     role: VALID_ROLES.includes(String(raw.role) as UserRole) ? raw.role as UserRole : undefined,
-    team: ['rot', 'gruen', 'blau', 'gelb'].includes(String(raw.team)) ? raw.team as TeamColor : raw.team === null ? null : undefined,
+    team: VALID_TEAMS.includes(String(raw.team) as TeamColor) ? raw.team as TeamColor : raw.team === null ? null : undefined,
     isActive: typeof raw.isActive === 'boolean' ? raw.isActive : undefined,
   }
 }
