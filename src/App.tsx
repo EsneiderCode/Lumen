@@ -30,7 +30,7 @@ const ProjectsPage       = lazy(() => import('@/pages/admin/ProjectsPage').then(
 const ProjectDetailPage  = lazy(() => import('@/pages/admin/ProjectDetailPage').then(m => ({ default: m.ProjectDetailPage })))
 const UsersPage          = lazy(() => import('@/pages/admin/UsersPage').then(m => ({ default: m.UsersPage })))
 const PersonnelPage      = lazy(() => import('@/pages/admin/PersonnelPage').then(m => ({ default: m.PersonnelPage })))
-const SubcontractorOnboardingPage = lazy(() => import('@/pages/admin/SubcontractorOnboardingPage').then(m => ({ default: m.SubcontractorOnboardingPage })))
+const CompliancePage     = lazy(() => import('@/pages/admin/CompliancePage').then(m => ({ default: m.CompliancePage })))
 const MaterialsPage      = lazy(() => import('@/pages/admin/MaterialsPage').then(m => ({ default: m.MaterialsPage })))
 const CollaboratorCyclesPage = lazy(() => import('@/pages/admin/CollaboratorCyclesPage').then(m => ({ default: m.CollaboratorCyclesPage })))
 const SettingsPage       = lazy(() => import('@/pages/admin/SettingsPage').then(m => ({ default: m.SettingsPage })))
@@ -95,7 +95,7 @@ function App() {
                 {adminRoute(ROUTES.ADMIN.PROJECTS_DETAIL, <ProjectDetailPage />)}
                 {adminRoute(ROUTES.ADMIN.PERSONNEL, <UsersPage />)}
                 {adminRoute(ROUTES.ADMIN.EMPLOYEES, <PersonnelPage />)}
-                {adminRoute(ROUTES.ADMIN.ONBOARDING, <SubcontractorOnboardingPage />)}
+                {adminRoute(ROUTES.ADMIN.COMPLIANCE, <CompliancePage />)}
                 {adminRoute(ROUTES.ADMIN.MATERIALS, <MaterialsPage />)}
                 {adminRoute(ROUTES.ADMIN.CYCLES, <CollaboratorCyclesPage />)}
                 {adminRoute(ROUTES.ADMIN.ROLES, <RolesPage />)}

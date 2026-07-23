@@ -8,11 +8,7 @@ import {
   fetchWorkOrder,
   type TechnicianProfile,
 } from '@/services/workOrderService'
-import { fetchContractorDocuments } from '@/services/contractorDocumentService'
-import {
-  buildPersonAssignmentFailureReasons,
-  type WorkOrderActionReason,
-} from '@/services/workOrderBusinessRules'
+import { fetchProfileCompliance, type ProfileComplianceResult } from '@/services/complianceService'
 import { notifyTaskAssigned } from '@/services/notificationService'
 import type { TeamColor, WorkType } from '@/types/enums'
 import { useLabels } from '@/i18n/labels'
@@ -23,6 +19,7 @@ type AssignableOrder = {
   work_type: string
   address: string | null
   city: string | null
+  project_id: string | null
   assigned_team: string | null
   assigned_technician: string | null
   assigned_date: string | null
@@ -45,7 +42,7 @@ export function WorkOrderAssignPage() {
   const [assignedDate, setAssignedDate] = useState<string>(
     new Date().toISOString().split('T')[0],
   )
-  const [assignmentReasons, setAssignmentReasons] = useState<WorkOrderActionReason[]>([])
+  const [compliance, setCompliance] = useState<ProfileComplianceResult | null>(null)
   const [isCheckingDocuments, setIsCheckingDocuments] = useState(false)
   const [reassignmentNote, setReassignmentNote] = useState('')
   const [isLoading, setIsLoading] = useState(true)
@@ -99,21 +96,13 @@ export function WorkOrderAssignPage() {
   useEffect(() => {
     let cancelled = false
 
-    async function checkContractorDocuments(person: TechnicianProfile) {
+    async function checkCompliance(person: TechnicianProfile) {
       setIsCheckingDocuments(true)
-      setAssignmentReasons([])
-      const { data, error: documentError } = await fetchContractorDocuments(person.id)
+      setCompliance(null)
+      const { data } = await fetchProfileCompliance(person.id, order?.project_id ?? null)
       if (cancelled) return
-
-      if (documentError) {
-        setError(null)
-        setAssignmentReasons([{ code: 'server_error', message: documentError }])
-      } else {
-        setError(null)
-        setAssignmentReasons(
-          buildPersonAssignmentFailureReasons(person, data, assignedDate || null),
-        )
-      }
+      setError(null)
+      setCompliance(data)
       setIsCheckingDocuments(false)
     }
 
@@ -123,11 +112,11 @@ export function WorkOrderAssignPage() {
       }
     }
 
-    void checkContractorDocuments(selectedPerson)
+    void checkCompliance(selectedPerson)
     return () => {
       cancelled = true
     }
-  }, [assignedDate, selectedPerson])
+  }, [selectedPerson, order?.project_id])
 
   function handleTeamSelect(team: TeamColor) {
     // Clicking the selected team again deselects it (team is optional now).
@@ -141,7 +130,7 @@ export function WorkOrderAssignPage() {
       )
     if (!keepsTechnician) {
       setSelectedTechnicianId('')
-      setAssignmentReasons([])
+      setCompliance(null)
       setIsCheckingDocuments(false)
     }
   }
@@ -150,7 +139,7 @@ export function WorkOrderAssignPage() {
     const person = availableTechnicians.find((profile) => profile.id === profileId)
     setSelectedTechnicianId(profileId)
     if (!person || person.role !== 'contractor') {
-      setAssignmentReasons([])
+      setCompliance(null)
       setIsCheckingDocuments(false)
     }
   }
@@ -158,7 +147,7 @@ export function WorkOrderAssignPage() {
   async function handleAssign(e: React.FormEvent) {
     e.preventDefault()
     // At least one target is required: a team, a specific technician, or both.
-    if (!id || !user || (!selectedTeam && !selectedTechnicianId) || assignmentReasons.length > 0 || isCheckingDocuments) return
+    if (!id || !user || (!selectedTeam && !selectedTechnicianId) || compliance?.isBlocked || isCheckingDocuments) return
 
     setIsSaving(true)
     setError(null)
@@ -368,15 +357,22 @@ export function WorkOrderAssignPage() {
           </div>
         )}
 
-        {assignmentReasons.length > 0 && (
+        {compliance?.isBlocked && (
           <div className="mt-4 rounded-s border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
-            <ul className="list-disc space-y-1 pl-4">
-              {assignmentReasons.map((reason) => (
-                <li key={reason.requirementId ?? reason.documentType ?? reason.code}>
-                  {reason.message}
-                </li>
-              ))}
-            </ul>
+            {!compliance.hasEntity ? (
+              <p>{t('assignment.noComplianceRecord')}</p>
+            ) : (
+              <>
+                <p className="mb-1">{t('assignment.complianceBlocked')}</p>
+                {compliance.missingCodes.length > 0 && (
+                  <ul className="list-disc space-y-1 pl-4">
+                    {compliance.missingCodes.map((code) => (
+                      <li key={code}>{t(`compliance.codes.${code}`, { defaultValue: code })}</li>
+                    ))}
+                  </ul>
+                )}
+              </>
+            )}
           </div>
         )}
 
@@ -398,7 +394,7 @@ export function WorkOrderAssignPage() {
           </button>
           <button
             type="submit"
-            disabled={(!selectedTeam && !selectedTechnicianId) || isSaving || isCheckingDocuments || assignmentReasons.length > 0}
+            disabled={(!selectedTeam && !selectedTechnicianId) || isSaving || isCheckingDocuments || Boolean(compliance?.isBlocked)}
             className="flex-1 rounded-s bg-accent px-4 py-2.5 text-sm font-semibold text-ink hover:bg-accent disabled:opacity-50 transition-colors"
           >
             {isSaving ? t('assignment.assigning') : isReassignment ? t('assignment.reassignSubmit') : t('assignment.assignSubmit')}

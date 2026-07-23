@@ -12,6 +12,7 @@ import {
   CalendarDays,
   CalendarClock,
   ShieldCheck,
+  FileCheck2,
   Settings,
   Wrench,
   Briefcase,
@@ -56,6 +57,7 @@ const NAV_SECTIONS: NavSection[] = [
     labelKey: 'nav.organization',
     items: [
       { labelKey: 'nav.personnel', path: ROUTES.ADMIN.PERSONNEL, icon: Users },
+      { labelKey: 'nav.compliance', path: ROUTES.ADMIN.COMPLIANCE, icon: FileCheck2 },
       { labelKey: 'nav.employees', path: ROUTES.ADMIN.EMPLOYEES, icon: UserRound },
       { labelKey: 'nav.materials', path: ROUTES.ADMIN.MATERIALS, icon: Package },
       { labelKey: 'nav.cycles',    path: ROUTES.ADMIN.CYCLES,    icon: CalendarDays },

@@ -49,8 +49,7 @@ import {
 } from '@/services/notificationService'
 import { fetchServiceItems } from '@/services/serviceItemService'
 import { InvoicePreviewModal } from '@/components/admin/InvoicePreviewModal'
-import { fetchContractorDocumentCompliance } from '@/services/contractorDocumentService'
-import type { ContractorDocumentType } from '@/types/contractor-documents'
+import { fetchProfileCompliance } from '@/services/complianceService'
 
 // Catalog detail_form values for infra work — hide address, show
 // supporting-document uploaders. POP items live here too: they're
@@ -203,13 +202,14 @@ export function WorkOrderDetailPage() {
   const [isCertifyingExternal, setIsCertifyingExternal] = useState(false)
   const [externalDocCompliance, setExternalDocCompliance] = useState<{
     isCompliant: boolean
-    missingTypes: ContractorDocumentType[]
+    hasEntity: boolean
+    missingCodes: string[]
   } | null>(null)
 
-  const externalMissingDocs = externalDocCompliance?.missingTypes ?? []
+  const externalMissingDocs = externalDocCompliance?.missingCodes ?? []
   const externalDocsBlocked = Boolean(externalDocCompliance && !externalDocCompliance.isCompliant)
   const externalMissingDocLabels = externalMissingDocs
-    .map((type) => t(`contractorDocs.types.${type}`))
+    .map((code) => t(`compliance.codes.${code}`, { defaultValue: code }))
     .join(', ')
 
   useEffect(() => {
@@ -251,12 +251,14 @@ export function WorkOrderDetailPage() {
             const resolvedCollabType = getCollaboratorType(role)
             setCollabType(resolvedCollabType)
             if (resolvedCollabType === 'external') {
-              const { data: compliance } = await fetchContractorDocumentCompliance(
+              const { data: compliance } = await fetchProfileCompliance(
                 orderData.assigned_technician,
+                orderData.project_id,
               )
               setExternalDocCompliance({
-                isCompliant: compliance.isCompliant,
-                missingTypes: compliance.missingTypes,
+                isCompliant: !compliance.isBlocked,
+                hasEntity: compliance.hasEntity,
+                missingCodes: compliance.missingCodes,
               })
             }
           }
@@ -863,9 +865,9 @@ export function WorkOrderDetailPage() {
                   {hasExternalCert
                     ? 'Zertifizierung an externen Mitarbeiter bereits ausgestellt.'
                     : externalDocsBlocked
-                      ? t('contractorDocs.certificationBlockedWithList', {
-                          docs: externalMissingDocLabels,
-                        })
+                      ? externalDocCompliance?.hasEntity
+                        ? t('compliance.certBlockedWithList', { docs: externalMissingDocLabels })
+                        : t('compliance.certBlockedNoRecord')
                       : 'Ausstellen, sobald die Leistung des Subunternehmers abgenommen ist — gibt die Auszahlung frei.'}
                 </p>
               </div>
@@ -1515,18 +1517,24 @@ export function WorkOrderDetailPage() {
                     if (!user) return
                     setIsCertifyingExternal(true)
                     if (order.assigned_technician) {
-                      const { data: compliance } = await fetchContractorDocumentCompliance(
+                      const { data: compliance } = await fetchProfileCompliance(
                         order.assigned_technician,
+                        order.project_id,
                       )
                       setExternalDocCompliance({
-                        isCompliant: compliance.isCompliant,
-                        missingTypes: compliance.missingTypes,
+                        isCompliant: !compliance.isBlocked,
+                        hasEntity: compliance.hasEntity,
+                        missingCodes: compliance.missingCodes,
                       })
-                      if (!compliance.isCompliant) {
-                        const docs = compliance.missingTypes
-                          .map((type) => t(`contractorDocs.types.${type}`))
+                      if (compliance.isBlocked) {
+                        const docs = compliance.missingCodes
+                          .map((code) => t(`compliance.codes.${code}`, { defaultValue: code }))
                           .join(', ')
-                        setError(t('contractorDocs.certificationBlockedWithList', { docs }))
+                        setError(
+                          compliance.hasEntity
+                            ? t('compliance.certBlockedWithList', { docs })
+                            : t('compliance.certBlockedNoRecord'),
+                        )
                         setIsCertifyingExternal(false)
                         setExternalCertOpen(false)
                         return

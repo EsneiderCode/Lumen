@@ -32,7 +32,13 @@ export const MODULE_REGISTRY = [
     module: 'employees',
     actions: ['view', 'create', 'edit', 'deactivate', 'manage_vacations', 'generate_payroll'],
   },
-  { module: 'onboarding', actions: ['view', 'edit', 'generate_pdf', 'review_documents'] },
+  {
+    module: 'compliance',
+    actions: [
+      'view', 'review', 'configure_matrix', 'manage_entities', 'assign',
+      'override_assignment', 'view_project_board', 'export_dossier',
+    ],
+  },
   {
     module: 'materials',
     actions: ['view', 'create', 'edit', 'deactivate', 'import', 'register_consumption'],
@@ -82,8 +88,8 @@ export const ROUTE_PERMISSIONS: Record<string, PermissionKey> = {
   [ROUTES.ADMIN.PROJECTS]: 'projects.view',
   [ROUTES.ADMIN.PROJECTS_DETAIL]: 'projects.view',
   [ROUTES.ADMIN.PERSONNEL]: 'users.view',
+  [ROUTES.ADMIN.COMPLIANCE]: 'compliance.view',
   [ROUTES.ADMIN.EMPLOYEES]: 'employees.view',
-  [ROUTES.ADMIN.ONBOARDING]: 'onboarding.view',
   [ROUTES.ADMIN.MATERIALS]: 'materials.view',
   [ROUTES.ADMIN.CYCLES]: 'cycles.view',
   [ROUTES.ADMIN.SETTINGS]: 'settings.view',
@@ -100,6 +106,7 @@ const ADMIN_LANDING_CANDIDATES: string[] = [
   ROUTES.ADMIN.SERVICE_ITEMS,
   ROUTES.ADMIN.PROJECTS,
   ROUTES.ADMIN.PERSONNEL,
+  ROUTES.ADMIN.COMPLIANCE,
   ROUTES.ADMIN.ROLES,
   ROUTES.ADMIN.EMPLOYEES,
   ROUTES.ADMIN.MATERIALS,

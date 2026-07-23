@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.4"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       appointments: {
@@ -290,6 +265,91 @@ export type Database = {
           },
         ]
       }
+      compliance_entities: {
+        Row: {
+          address: string | null
+          attributes: Json
+          contact_email: string | null
+          contact_phone: string | null
+          country_code: string
+          created_at: string
+          display_name: string
+          employee_id: string | null
+          id: string
+          is_active: boolean
+          kind: Database["public"]["Enums"]["compliance_entity_kind"]
+          legal_ids: Json
+          nationality_country: string | null
+          notes: string | null
+          parent_entity_id: string | null
+          profile_id: string | null
+          scheinselbst_check: Json | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          attributes?: Json
+          contact_email?: string | null
+          contact_phone?: string | null
+          country_code?: string
+          created_at?: string
+          display_name: string
+          employee_id?: string | null
+          id?: string
+          is_active?: boolean
+          kind: Database["public"]["Enums"]["compliance_entity_kind"]
+          legal_ids?: Json
+          nationality_country?: string | null
+          notes?: string | null
+          parent_entity_id?: string | null
+          profile_id?: string | null
+          scheinselbst_check?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          attributes?: Json
+          contact_email?: string | null
+          contact_phone?: string | null
+          country_code?: string
+          created_at?: string
+          display_name?: string
+          employee_id?: string | null
+          id?: string
+          is_active?: boolean
+          kind?: Database["public"]["Enums"]["compliance_entity_kind"]
+          legal_ids?: Json
+          nationality_country?: string | null
+          notes?: string | null
+          parent_entity_id?: string | null
+          profile_id?: string | null
+          scheinselbst_check?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_entities_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: true
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compliance_entities_parent_entity_id_fkey"
+            columns: ["parent_entity_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "compliance_entities_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contractor_documents: {
         Row: {
           contractor_id: string
@@ -372,6 +432,257 @@ export type Database = {
           },
         ]
       }
+      document_access_log: {
+        Row: {
+          accessed_by: string
+          action: string
+          created_at: string
+          id: string
+          version_id: string
+        }
+        Insert: {
+          accessed_by: string
+          action: string
+          created_at?: string
+          id?: string
+          version_id: string
+        }
+        Update: {
+          accessed_by?: string
+          action?: string
+          created_at?: string
+          id?: string
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_access_log_accessed_by_fkey"
+            columns: ["accessed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_access_log_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "document_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_requirements: {
+        Row: {
+          applies_to: Database["public"]["Enums"]["compliance_entity_kind"]
+          conditions: Json
+          created_at: string
+          document_type_id: string
+          id: string
+          is_active: boolean
+          is_mandatory: boolean
+          min_amount: number | null
+          min_amount_currency: string
+          notes: string | null
+          notify_days: number[]
+          on_missing_action: string | null
+          origin: Database["public"]["Enums"]["requirement_origin"]
+          requires_coverage_confirmation: boolean
+          scope: Database["public"]["Enums"]["requirement_scope"]
+          updated_at: string
+          validity_days: number | null
+          validity_rule: Database["public"]["Enums"]["document_validity_rule"]
+        }
+        Insert: {
+          applies_to: Database["public"]["Enums"]["compliance_entity_kind"]
+          conditions?: Json
+          created_at?: string
+          document_type_id: string
+          id?: string
+          is_active?: boolean
+          is_mandatory?: boolean
+          min_amount?: number | null
+          min_amount_currency?: string
+          notes?: string | null
+          notify_days?: number[]
+          on_missing_action?: string | null
+          origin?: Database["public"]["Enums"]["requirement_origin"]
+          requires_coverage_confirmation?: boolean
+          scope?: Database["public"]["Enums"]["requirement_scope"]
+          updated_at?: string
+          validity_days?: number | null
+          validity_rule: Database["public"]["Enums"]["document_validity_rule"]
+        }
+        Update: {
+          applies_to?: Database["public"]["Enums"]["compliance_entity_kind"]
+          conditions?: Json
+          created_at?: string
+          document_type_id?: string
+          id?: string
+          is_active?: boolean
+          is_mandatory?: boolean
+          min_amount?: number | null
+          min_amount_currency?: string
+          notes?: string | null
+          notify_days?: number[]
+          on_missing_action?: string | null
+          origin?: Database["public"]["Enums"]["requirement_origin"]
+          requires_coverage_confirmation?: boolean
+          scope?: Database["public"]["Enums"]["requirement_scope"]
+          updated_at?: string
+          validity_days?: number | null
+          validity_rule?: Database["public"]["Enums"]["document_validity_rule"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_requirements_document_type_id_fkey"
+            columns: ["document_type_id"]
+            isOneToOne: false
+            referencedRelation: "document_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_reviews: {
+        Row: {
+          action: string
+          approved_metadata: Json | null
+          created_at: string
+          id: string
+          rejection_reasons: string[] | null
+          rejection_text: string | null
+          reviewer_id: string
+          version_id: string
+        }
+        Insert: {
+          action: string
+          approved_metadata?: Json | null
+          created_at?: string
+          id?: string
+          rejection_reasons?: string[] | null
+          rejection_text?: string | null
+          reviewer_id: string
+          version_id: string
+        }
+        Update: {
+          action?: string
+          approved_metadata?: Json | null
+          created_at?: string
+          id?: string
+          rejection_reasons?: string[] | null
+          rejection_text?: string | null
+          reviewer_id?: string
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_reviews_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "document_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_types: {
+        Row: {
+          code: string
+          created_at: string
+          description_i18n: Json | null
+          id: string
+          is_active: boolean
+          metadata_schema: Json
+          name_i18n: Json
+          template_storage_path: string | null
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description_i18n?: Json | null
+          id?: string
+          is_active?: boolean
+          metadata_schema?: Json
+          name_i18n: Json
+          template_storage_path?: string | null
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description_i18n?: Json | null
+          id?: string
+          is_active?: boolean
+          metadata_schema?: Json
+          name_i18n?: Json
+          template_storage_path?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      document_versions: {
+        Row: {
+          entity_document_id: string
+          file_name: string
+          id: string
+          mime_type: string | null
+          size_bytes: number | null
+          storage_bucket: string
+          storage_path: string
+          submitted_metadata: Json
+          uploaded_at: string
+          uploaded_by: string
+          version_number: number
+        }
+        Insert: {
+          entity_document_id: string
+          file_name: string
+          id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          storage_bucket?: string
+          storage_path: string
+          submitted_metadata?: Json
+          uploaded_at?: string
+          uploaded_by: string
+          version_number: number
+        }
+        Update: {
+          entity_document_id?: string
+          file_name?: string
+          id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          storage_bucket?: string
+          storage_path?: string
+          submitted_metadata?: Json
+          uploaded_at?: string
+          uploaded_by?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_versions_entity_document_id_fkey"
+            columns: ["entity_document_id"]
+            isOneToOne: false
+            referencedRelation: "entity_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_versions_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employees: {
         Row: {
           created_at: string
@@ -436,6 +747,93 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entity_documents: {
+        Row: {
+          approved_amount: number | null
+          approved_expires_at: string | null
+          approved_issued_at: string | null
+          approved_metadata: Json | null
+          coverage_confirmed: boolean
+          created_at: string
+          current_version_id: string | null
+          document_type_id: string
+          entity_id: string
+          id: string
+          project_id: string | null
+          requirement_id: string | null
+          status: Database["public"]["Enums"]["entity_document_status"]
+          updated_at: string
+        }
+        Insert: {
+          approved_amount?: number | null
+          approved_expires_at?: string | null
+          approved_issued_at?: string | null
+          approved_metadata?: Json | null
+          coverage_confirmed?: boolean
+          created_at?: string
+          current_version_id?: string | null
+          document_type_id: string
+          entity_id: string
+          id?: string
+          project_id?: string | null
+          requirement_id?: string | null
+          status?: Database["public"]["Enums"]["entity_document_status"]
+          updated_at?: string
+        }
+        Update: {
+          approved_amount?: number | null
+          approved_expires_at?: string | null
+          approved_issued_at?: string | null
+          approved_metadata?: Json | null
+          coverage_confirmed?: boolean
+          created_at?: string
+          current_version_id?: string | null
+          document_type_id?: string
+          entity_id?: string
+          id?: string
+          project_id?: string | null
+          requirement_id?: string | null
+          status?: Database["public"]["Enums"]["entity_document_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entity_documents_current_version_fk"
+            columns: ["current_version_id"]
+            isOneToOne: false
+            referencedRelation: "document_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entity_documents_document_type_id_fkey"
+            columns: ["document_type_id"]
+            isOneToOne: false
+            referencedRelation: "document_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entity_documents_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entity_documents_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entity_documents_requirement_id_fkey"
+            columns: ["requirement_id"]
+            isOneToOne: false
+            referencedRelation: "document_requirements"
             referencedColumns: ["id"]
           },
         ]
@@ -702,6 +1100,80 @@ export type Database = {
             columns: ["scheduler_operator"]
             isOneToOne: false
             referencedRelation: "operators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_assignments: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          end_date: string
+          entity_id: string
+          id: string
+          override: boolean
+          override_by: string | null
+          override_reason: string | null
+          project_id: string
+          start_date: string
+          status: Database["public"]["Enums"]["compliance_assignment_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          end_date: string
+          entity_id: string
+          id?: string
+          override?: boolean
+          override_by?: string | null
+          override_reason?: string | null
+          project_id: string
+          start_date: string
+          status?: Database["public"]["Enums"]["compliance_assignment_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          end_date?: string
+          entity_id?: string
+          id?: string
+          override?: boolean
+          override_by?: string | null
+          override_reason?: string | null
+          project_id?: string
+          start_date?: string
+          status?: Database["public"]["Enums"]["compliance_assignment_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_assignments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_assignments_entity_id_fkey"
+            columns: ["entity_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_assignments_override_by_fkey"
+            columns: ["override_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_assignments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -2136,6 +2608,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      applicable_requirement_ids: {
+        Args: { p_entity_id: string }
+        Returns: string[]
+      }
       assert_work_order_rueckmeldung_complete: {
         Args: { p_work_order_id: string }
         Returns: undefined
@@ -2224,6 +2700,13 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      compute_entity_aptitude: {
+        Args: { p_entity_id: string; p_project_id?: string }
+        Returns: {
+          level: string
+          missing: Json
+        }[]
+      }
       contractor_document_compliance_failures: {
         Args: { p_assignment_date?: string; p_contractor_id: string }
         Returns: {
@@ -2238,6 +2721,10 @@ export type Database = {
             Returns: boolean
           }
       contractor_required_document_types: { Args: never; Returns: string[] }
+      country_origin_bucket: {
+        Args: { p_country: string }
+        Returns: Database["public"]["Enums"]["requirement_origin"]
+      }
       employee_vacation_days_used: {
         Args: { p_employee_id: string; p_year: number }
         Returns: number
@@ -2290,6 +2777,15 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      owns_compliance_entity: {
+        Args: { p_entity_id: string }
+        Returns: boolean
+      }
+      owns_compliance_entity_path: {
+        Args: { p_folder: string }
+        Returns: boolean
+      }
+      run_compliance_expiry_sweep: { Args: never; Returns: number }
       sync_permissions: { Args: { perms: Json }; Returns: Json }
       user_has_permission: {
         Args: { perm: string; uid: string }
@@ -2297,8 +2793,33 @@ export type Database = {
       }
     }
     Enums: {
+      compliance_assignment_status:
+        | "draft"
+        | "confirmed"
+        | "ended"
+        | "cancelled"
+      compliance_entity_kind:
+        | "company"
+        | "company_worker"
+        | "freelancer"
+        | "internal_employee"
       document_type: "plano" | "cartas_empalme" | "diagrama_routing" | "other"
+      document_validity_rule:
+        | "expiry_required"
+        | "days_from_issue"
+        | "must_cover_assignment"
+        | "no_expiry"
+      entity_document_status:
+        | "pending"
+        | "in_review"
+        | "approved"
+        | "rejected"
+        | "expiring"
+        | "expired"
+        | "not_applicable"
       priority_level: "normal" | "alta" | "urgente"
+      requirement_origin: "DE" | "ES" | "EU_OTHER" | "NON_EU" | "ALL"
+      requirement_scope: "entity" | "per_project"
       team_color:
         | "rot"
         | "gruen"
@@ -2469,13 +2990,39 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
+      compliance_assignment_status: [
+        "draft",
+        "confirmed",
+        "ended",
+        "cancelled",
+      ],
+      compliance_entity_kind: [
+        "company",
+        "company_worker",
+        "freelancer",
+        "internal_employee",
+      ],
       document_type: ["plano", "cartas_empalme", "diagrama_routing", "other"],
+      document_validity_rule: [
+        "expiry_required",
+        "days_from_issue",
+        "must_cover_assignment",
+        "no_expiry",
+      ],
+      entity_document_status: [
+        "pending",
+        "in_review",
+        "approved",
+        "rejected",
+        "expiring",
+        "expired",
+        "not_applicable",
+      ],
       priority_level: ["normal", "alta", "urgente"],
+      requirement_origin: ["DE", "ES", "EU_OTHER", "NON_EU", "ALL"],
+      requirement_scope: ["entity", "per_project"],
       team_color: [
         "rot",
         "gruen",

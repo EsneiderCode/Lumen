@@ -481,92 +481,9 @@
     "reassignNote": "Motivo de la reasignación",
     "reassignNotePlaceholder": "¿Por qué se reasigna esta orden?",
     "reassignSubmit": "Reasignar",
-    "currentAssignment": "Asignación actual"
-  },
-  "contractorDocs": {
-    "title": "Documentos del contratista",
-    "pageTitle": "Documentos",
-    "pageSubtitle": "Documentación requerida para certificación y pago",
-    "subtitle": "{{valid}}/{{total}} documentos válidos",
-    "compliant": "Completo",
-    "incomplete": "Incompleto",
-    "expires": "vence",
-    "noFile": "Sin archivo cargado",
-    "expired": "Vencido",
-    "expiringSoon": "Vence pronto",
-    "missing": "Falta",
-    "issuedAt": "Emitido",
-    "expiresAt": "Vence",
-    "uploadReplacement": "Cargar PDF o foto",
-    "reviewNotes": "Nota de revisión",
-    "reject": "Rechazar",
-    "approve": "Aprobar",
-    "certificationBlocked": "Certificación externa bloqueada por documentación incompleta.",
-    "certificationBlockedWithList": "Certificación externa bloqueada. Faltan o no están aprobados: {{docs}}.",
-    "types": {
-      "a1_bescheinigung": "Certificado A1 (por trabajador)",
-      "unbedenklichkeit_finanzamt": "Certificado de exención fiscal § 48b",
-      "mindestlohn_meldung_gzd": "Registro salario mínimo (GZD)",
-      "unbedenklichkeit_sozialkasse": "SOKA-BAU: exención / precalificación",
-      "ust_id_reverse_charge": "NIF-IVA — inversión sujeto pasivo § 13b",
-      "gewerbeanmeldung": "Alta de actividad / registro mercantil",
-      "haftpflichtversicherung": "Seguro de responsabilidad civil",
-      "id_passport": "Documento de identidad + cualificación",
-      "zusatzvereinbarung_mindestlohn": "Anexo de salario mínimo (DE/ES)",
-      "subcontractor_agreement": "Contrato de subcontrata + cláusulas"
-    },
-    "status": {
-      "pending_review": "Pendiente de revisión",
-      "approved": "Aprobado",
-      "rejected": "Rechazado"
-    }
-  },
-  "onboarding": {
-    "title": "Onboarding de subcontratista",
-    "subtitle": "Lista de verificación de cumplimiento (UMTELKOMD)",
-    "linkLabel": "Onboarding",
-    "back": "Volver a Personal",
-    "save": "Guardar",
-    "saving": "Guardando…",
-    "savedAt": "Guardado a las {{time}}.",
-    "exportPdf": "Exportar PDF",
-    "complianceHint": "Completar y entregar con todos los soportes ANTES de iniciar la obra o del primer pago. Todos los documentos en alemán y disponibles físicamente en la obra (control FKS).",
-    "addWorker": "Añadir trabajador",
-    "removeWorker": "Eliminar trabajador",
-    "noWorkers": "Aún no hay trabajadores registrados.",
-    "sections": {
-      "company": "Datos del subcontratista",
-      "documents": "Documentos obligatorios",
-      "workers": "Trabajadores desplazados (A1)",
-      "verification": "Verificación y confirmación"
-    },
-    "fields": {
-      "companyName": "RAZÓN SOCIAL",
-      "ustIdEs": "NIF-IVA / USt-IdNr. (ES)",
-      "address": "DIRECCIÓN",
-      "taxNumberDe": "N.º FISCAL ALEMÁN",
-      "contactPerson": "PERSONA DE CONTACTO",
-      "email": "CORREO",
-      "phone": "TELÉFONO",
-      "projectSite": "PROYECTO / OBRA",
-      "deploymentPeriod": "PERÍODO DE TRABAJO",
-      "deploymentPeriodPlaceholder": "p. ej. 01.08.2026 – 31.12.2026",
-      "placeDate": "LUGAR, FECHA",
-      "verifiedBy": "VERIFICADO POR (NOMBRE)",
-      "notes": "NOTAS"
-    },
-    "a1Hint": "Los certificados A1 se gestionan por trabajador en la sección 3.",
-    "worker": {
-      "name": "NOMBRE",
-      "a1ValidUntil": "A1 VÁLIDO HASTA",
-      "idNumber": "N.º DOCUMENTO",
-      "a1File": "CERTIFICADO A1"
-    },
-    "checks": {
-      "checked48b": "§ 48b: validez comprobada online en el portal EIBE del BZSt (n.º de seguridad + sello).",
-      "withholdBauabzug": "Sin certificado § 48b vigente: retener y girar el 15 % de Bauabzugsteuer.",
-      "ustIdConfirmed": "NIF-IVA confirmado en el BZSt / inversión aplicada (factura sin IVA)."
-    }
+    "currentAssignment": "Asignación actual",
+    "complianceBlocked": "Asignación bloqueada: la documentación de compliance del subcontratista está incompleta, no aprobada o vencida.",
+    "noComplianceRecord": "Asignación bloqueada: el subcontratista no tiene expediente de compliance. Dalo de alta en el módulo de cumplimiento."
   },
   "appointments": {
     "pageTitle": "Citas",
@@ -704,7 +621,8 @@
     "portalTech": "Portal colaborador interno",
     "portalContractor": "Portal colaborador externo",
     "portalScheduler": "Portal de citas",
-    "adminPanel": "Panel de administración"
+    "adminPanel": "Panel de administración",
+    "compliance": "Cumplimiento"
   },
   "breadcrumb": {
     "admin": "Operaciones",
@@ -1235,5 +1153,132 @@
         "access": "Portal de planificación"
       }
     }
+  },
+  "compliance": {
+    "pageTitle": "Cumplimiento documental",
+    "pageSubtitle": "Documentación de subcontratistas y autónomos, revisión y aptitud por obra",
+    "tabs": {
+      "inbox": "Bandeja de revisión",
+      "entities": "Empresas y autónomos"
+    },
+    "entitiesEmpty": "No hay empresas ni autónomos registrados todavía.",
+    "entityColumn": "Entidad",
+    "kindColumn": "Tipo",
+    "project": "Obra",
+    "perProject": "por obra",
+    "noFile": "Sin archivo cargado",
+    "validUntil": "válido hasta",
+    "uploadFile": "Cargar documento",
+    "uploadReplacement": "Sustituir documento",
+    "versionHistory": "Historial de versiones",
+    "rejectedBecause": "Rechazado por",
+    "progress": "{{done}}/{{total}} obligatorios válidos",
+    "complete": "Completo",
+    "incomplete": "Incompleto",
+    "emptyChecklist": "No hay documentos requeridos para esta entidad.",
+    "entityDocuments": "Documentos · {{name}}",
+    "metadataRequired": "Faltan datos obligatorios: {{fields}}",
+    "kinds": {
+      "company": "Empresa subcontratista",
+      "company_worker": "Trabajador de empresa",
+      "freelancer": "Autónomo",
+      "internal_employee": "Empleado interno"
+    },
+    "status": {
+      "pending": "Pendiente",
+      "in_review": "En revisión",
+      "approved": "Aprobado",
+      "rejected": "Rechazado",
+      "expiring": "Vence pronto",
+      "expired": "Vencido",
+      "not_applicable": "No aplica"
+    },
+    "fields": {
+      "issued_at": "Fecha de emisión",
+      "expires_at": "Fecha de vencimiento",
+      "amount": "Importe (€)"
+    },
+    "conditions": {
+      "hires_workers": "Desplaza trabajadores a Alemania",
+      "regulated_trade": "Actividad artesanal regulada (Handwerk)",
+      "short_stay": "Estancia corta (< 24 meses)"
+    },
+    "rejectionReasons": {
+      "ilegible": "Ilegible",
+      "caducado": "Caducado",
+      "importe_insuficiente": "Importe insuficiente",
+      "no_cubre_alemania": "No cubre Alemania",
+      "formato_incorrecto": "Formato incorrecto",
+      "fechas_no_cubren_obra": "Las fechas no cubren la obra",
+      "otro": "Otro"
+    },
+    "errors": {
+      "file_too_large": "El archivo supera el tamaño máximo (15 MB).",
+      "file_type_not_allowed": "Tipo de archivo no permitido (solo PDF, JPG o PNG)."
+    },
+    "portal": {
+      "pageTitle": "Mi documentación",
+      "pageSubtitle": "Sube y mantén al día la documentación requerida para trabajar",
+      "noEntity": "Todavía no hay un expediente de cumplimiento asociado a tu cuenta. Contacta con Administración."
+    },
+    "workers": {
+      "title": "Trabajadores desplazados",
+      "subtitle": "Cada trabajador tiene su propia documentación (A1, ID, etc.)",
+      "add": "Añadir trabajador",
+      "edit": "Editar trabajador",
+      "empty": "No hay trabajadores registrados.",
+      "name": "Nombre",
+      "nameRequired": "El nombre es obligatorio.",
+      "active": "Activo"
+    },
+    "entity": {
+      "country": "País",
+      "nationality": "Nacionalidad"
+    },
+    "review": {
+      "approve": "Aprobar",
+      "reject": "Rechazar",
+      "approveHint": "Confirma o corrige los datos declarados antes de aprobar.",
+      "declared": "declarado",
+      "coverageConfirmed": "Confirmo que el documento cubre el periodo de la obra",
+      "minAmount": "Importe mínimo",
+      "approveConfirm": "Confirmar aprobación",
+      "rejectHint": "Selecciona una o varias causas y añade una explicación.",
+      "textPlaceholder": "Explica al tercero qué debe corregir…",
+      "rejectConfirm": "Confirmar rechazo",
+      "reasonsRequired": "Selecciona al menos una causa de rechazo.",
+      "textRequired": "La explicación es obligatoria.",
+      "emptyQueue": "No hay documentos pendientes de revisión."
+    },
+    "wizard": {
+      "title": "Alta guiada",
+      "step": "Paso {{step}} de {{total}}",
+      "name": "Nombre / razón social",
+      "nameRequired": "El nombre es obligatorio.",
+      "countryRequired": "Introduce un código de país válido de 2 letras (p. ej. ES).",
+      "phone": "Teléfono",
+      "address": "Dirección",
+      "conditionsHint": "Marca las condiciones aplicables para calcular la documentación requerida.",
+      "previewHint": "Se requerirán {{count}} documentos según las condiciones seleccionadas.",
+      "createAccount": "Crear cuenta de acceso al portal",
+      "accountHint": "Se creará un usuario contractor con el correo {{email}}.",
+      "accountFieldsRequired": "El correo y la contraseña temporal son obligatorios para crear la cuenta.",
+      "tempPassword": "Contraseña temporal",
+      "create": "Crear y generar checklist"
+    },
+    "codes": {
+      "subcontractor_agreement": "Contrato de subcontratación",
+      "rc_insurance": "Seguro de responsabilidad civil",
+      "ss_clearance_national": "Corriente de pago Seguridad Social",
+      "business_registration": "Registro mercantil / alta",
+      "a1_certificate": "Certificado A1",
+      "id_document": "Documento de identidad",
+      "employment_contract": "Contrato de trabajo",
+      "company_not_apt": "La empresa no está apta",
+      "company_has_warnings": "La empresa tiene avisos"
+    },
+    "certBlockedWithList": "Certificación externa bloqueada: documentación de compliance incompleta, no aprobada o vencida ({{docs}}).",
+    "certBlockedNoRecord": "Certificación externa bloqueada: el subcontratista no tiene expediente de compliance. Dalo de alta en el módulo de cumplimiento.",
+    "manageInModule": "Gestionar documentación en el módulo de cumplimiento"
   }
 }

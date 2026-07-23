@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { Eye, EyeOff, KeyRound, Plus, Save, Trash2, UserRound, X } from 'lucide-react'
+import { Eye, EyeOff, FileCheck2, KeyRound, Plus, Save, Trash2, UserRound, X } from 'lucide-react'
 import type { TeamColor, UserRole } from '@/types/enums'
 import { TEAM_COLOR_KEYS } from '@/i18n/labels'
 import {
@@ -11,7 +12,7 @@ import {
   type OperationalUser,
   type OperationalUserPayload,
 } from '@/services/userService'
-import { ContractorDocumentsPanel } from '@/components/contractor/ContractorDocumentsPanel'
+import { ROUTES } from '@/config/routes'
 import { UserAccessPanel } from '@/components/admin/UserAccessPanel'
 import { Can } from '@/components/ui/Can'
 
@@ -280,7 +281,13 @@ export function UsersPage() {
       </form>
 
       {isEditing && form.role === 'contractor' && (
-        <ContractorDocumentsPanel contractorId={form.id} canReview />
+        <Link
+          to={ROUTES.ADMIN.COMPLIANCE}
+          className="flex items-center gap-2 rounded-l border border-line bg-bg-1 px-4 py-3 text-sm text-fg-2 transition-colors hover:border-accent hover:text-accent"
+        >
+          <FileCheck2 size={15} strokeWidth={1.5} />
+          {t('compliance.manageInModule')}
+        </Link>
       )}
 
       {isEditing && (

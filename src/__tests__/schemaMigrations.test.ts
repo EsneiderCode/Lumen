@@ -289,6 +289,69 @@ describe('database migrations cover billing workflow schema', () => {
     expect(migrationSql).toContain("'portal', 'scheduler.access'")
   })
 
+  it('adds the compliance module core schema (042–044)', () => {
+    expect(migrationSql).toContain('depends on: 044_compliance_seed_matrix.sql')
+    // catalog + matrix + unified entities + versioned documents
+    expect(migrationSql).toContain('create table public.document_types')
+    expect(migrationSql).toContain('create table public.document_requirements')
+    expect(migrationSql).toContain('create table public.compliance_entities')
+    expect(migrationSql).toContain('create table public.entity_documents')
+    expect(migrationSql).toContain('create table public.document_versions')
+    expect(migrationSql).toContain('create table public.document_reviews')
+    expect(migrationSql).toContain('create table public.document_access_log')
+    expect(migrationSql).toContain('create table public.project_assignments')
+    // aptitude engine mirrors src/services/complianceRequirementEngine.ts
+    expect(migrationSql).toMatch(/create\s+or\s+replace\s+function\s+public\.country_origin_bucket/)
+    expect(migrationSql).toMatch(/create\s+or\s+replace\s+function\s+public\.applicable_requirement_ids/)
+    expect(migrationSql).toMatch(/create\s+or\s+replace\s+function\s+public\.compute_entity_aptitude/)
+    expect(migrationSql).toContain('project_assignments_enforce_aptitude')
+    expect(migrationSql).toContain('run_compliance_expiry_sweep')
+    // JSONB containment drives conditional requirements (hires_workers etc.)
+    expect(migrationSql).toContain('r.conditions <@ e.attributes')
+    expect(migrationSql).toContain('"hires_workers": true')
+    // seed covers the key document types of the initial matrix
+    expect(migrationSql).toContain("'a1_certificate'")
+    expect(migrationSql).toContain("'soka_bau_clearance'")
+    expect(migrationSql).toContain("'freistellung_48b'")
+    expect(migrationSql).toContain("'zoll_meldeportal_notification'")
+    expect(migrationSql).toContain("'work_permit_vander_elst'")
+    expect(migrationSql).toContain('notify_billing_withholding')
+    // expiry jobs run on Berlin time
+    expect(migrationSql).toContain("at time zone 'europe/berlin'")
+  })
+
+  it('migrates legacy contractor data and rewires the external cert gate (045)', () => {
+    expect(migrationSql).toContain('045 — migrate legacy contractor data')
+    // legacy docs land in the new model with history preserved
+    expect(migrationSql).toMatch(/'a1_bescheinigung',\s*'a1_certificate'/)
+    expect(migrationSql).toContain("'contractor-documents'")
+    // the cert gate now consults the aptitude engine (legacy check transitional)
+    expect(migrationSql).toMatch(
+      /block_external_cert_without_valid_docs[\s\S]*compute_entity_aptitude/,
+    )
+    expect(migrationSql).toContain('deprecated: superseded by entity_documents')
+  })
+
+  it('retires the legacy contractor-document gates in favour of the aptitude engine (046)', () => {
+    expect(migrationSql).toContain('depends on: 045_compliance_legacy_migration.sql')
+    // both gates now consult compute_entity_aptitude() and nothing else
+    expect(migrationSql).toMatch(
+      /block_external_cert_without_valid_docs[\s\S]*compute_entity_aptitude/,
+    )
+    expect(migrationSql).toMatch(
+      /block_non_compliant_contractor_assignment[\s\S]*compute_entity_aptitude/,
+    )
+    // a contractor with no compliance entity is now blocked outright
+    expect(migrationSql).toContain('contractor has no compliance record')
+    // legacy helper is marked deprecated
+    expect(migrationSql).toContain('deprecated (046)')
+    // the dead 'onboarding' RBAC permission module is dropped (admin-protect
+    // trigger disabled for the cascade, then re-enabled)
+    expect(migrationSql).toMatch(
+      /disable trigger role_permissions_protect_admin[\s\S]*delete from public\.permissions where module = 'onboarding'[\s\S]*enable trigger role_permissions_protect_admin/,
+    )
+  })
+
   it('rewrites admin-gated RLS policies to permission checks (035)', () => {
     expect(migrationSql).toContain('depends on: 034_rbac_core.sql')
     // the old role-literal admin gates must be dropped…

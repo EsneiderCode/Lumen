@@ -653,187 +653,7 @@ export const initialFixtures = () => ({
       created_at: LAST_WEEK,
     },
   ],
-
-  contractor_documents: [
-    {
-      id: 'cd000000-0000-0000-0000-000000000001',
-      contractor_id: CONTRACTOR_ID,
-      document_type: 'gewerbeanmeldung',
-      status: 'approved',
-      file_name: 'gewerbeanmeldung.pdf',
-      storage_path: `${CONTRACTOR_ID}/gewerbeanmeldung/gewerbeanmeldung.pdf`,
-      mime_type: 'application/pdf',
-      size_bytes: 120000,
-      issued_at: '2026-01-15',
-      expires_at: null,
-      uploaded_by: CONTRACTOR_ID,
-      uploaded_at: LAST_WEEK,
-      reviewed_by: ADMIN_ID,
-      reviewed_at: LAST_WEEK,
-      review_notes: null,
-      created_at: LAST_WEEK,
-      updated_at: LAST_WEEK,
-    },
-    {
-      id: 'cd000000-0000-0000-0000-000000000002',
-      contractor_id: CONTRACTOR_ID,
-      document_type: 'haftpflichtversicherung',
-      status: 'approved',
-      file_name: 'haftpflichtversicherung.pdf',
-      storage_path: `${CONTRACTOR_ID}/haftpflichtversicherung/haftpflichtversicherung.pdf`,
-      mime_type: 'application/pdf',
-      size_bytes: 130000,
-      issued_at: '2026-01-01',
-      expires_at: '2027-01-01',
-      uploaded_by: CONTRACTOR_ID,
-      uploaded_at: LAST_WEEK,
-      reviewed_by: ADMIN_ID,
-      reviewed_at: LAST_WEEK,
-      review_notes: null,
-      created_at: LAST_WEEK,
-      updated_at: LAST_WEEK,
-    },
-    {
-      id: 'cd000000-0000-0000-0000-000000000003',
-      contractor_id: CONTRACTOR_ID,
-      document_type: 'unbedenklichkeit_finanzamt',
-      status: 'approved',
-      file_name: 'finanzamt.pdf',
-      storage_path: `${CONTRACTOR_ID}/unbedenklichkeit_finanzamt/finanzamt.pdf`,
-      mime_type: 'application/pdf',
-      size_bytes: 110000,
-      issued_at: '2026-04-01',
-      expires_at: '2026-05-25',
-      uploaded_by: CONTRACTOR_ID,
-      uploaded_at: LAST_WEEK,
-      reviewed_by: ADMIN_ID,
-      reviewed_at: LAST_WEEK,
-      review_notes: 'Demo: vence pronto',
-      created_at: LAST_WEEK,
-      updated_at: LAST_WEEK,
-    },
-    {
-      id: 'cd000000-0000-0000-0000-000000000004',
-      contractor_id: CONTRACTOR_ID,
-      document_type: 'id_passport',
-      status: 'approved',
-      file_name: 'ausweis.jpg',
-      storage_path: `${CONTRACTOR_ID}/id_passport/ausweis.jpg`,
-      mime_type: 'image/jpeg',
-      size_bytes: 90000,
-      issued_at: '2024-03-10',
-      expires_at: '2030-03-10',
-      uploaded_by: CONTRACTOR_ID,
-      uploaded_at: LAST_WEEK,
-      reviewed_by: ADMIN_ID,
-      reviewed_at: LAST_WEEK,
-      review_notes: null,
-      created_at: LAST_WEEK,
-      updated_at: LAST_WEEK,
-    },
-    {
-      id: 'cd000000-0000-0000-0000-000000000005',
-      contractor_id: CONTRACTOR_ID,
-      document_type: 'subcontractor_agreement',
-      status: 'approved',
-      file_name: 'subcontractor-agreement.pdf',
-      storage_path: `${CONTRACTOR_ID}/subcontractor_agreement/subcontractor-agreement.pdf`,
-      mime_type: 'application/pdf',
-      size_bytes: 160000,
-      issued_at: '2026-01-15',
-      expires_at: null,
-      uploaded_by: ADMIN_ID,
-      uploaded_at: LAST_WEEK,
-      reviewed_by: ADMIN_ID,
-      reviewed_at: LAST_WEEK,
-      review_notes: null,
-      created_at: LAST_WEEK,
-      updated_at: LAST_WEEK,
-    },
-    // Per-worker A1 certificates — linked from subcontractor_onboarding.a1_workers.
-    {
-      id: 'cd000000-0000-0000-0000-000000000006',
-      contractor_id: CONTRACTOR_ID,
-      document_type: 'a1_bescheinigung',
-      status: 'approved',
-      file_name: 'a1-carlos-mendez.pdf',
-      storage_path: `${CONTRACTOR_ID}/a1_bescheinigung/a1-carlos-mendez.pdf`,
-      mime_type: 'application/pdf',
-      size_bytes: 95000,
-      issued_at: '2026-02-01',
-      expires_at: '2027-01-31',
-      uploaded_by: ADMIN_ID,
-      uploaded_at: LAST_WEEK,
-      reviewed_by: ADMIN_ID,
-      reviewed_at: LAST_WEEK,
-      review_notes: null,
-      created_at: LAST_WEEK,
-      updated_at: LAST_WEEK,
-    },
-    {
-      id: 'cd000000-0000-0000-0000-000000000007',
-      contractor_id: CONTRACTOR_ID,
-      document_type: 'a1_bescheinigung',
-      status: 'pending_review',
-      file_name: 'a1-luis-fernandez.pdf',
-      storage_path: `${CONTRACTOR_ID}/a1_bescheinigung/a1-luis-fernandez.pdf`,
-      mime_type: 'application/pdf',
-      size_bytes: 92000,
-      issued_at: '2026-05-01',
-      expires_at: '2026-11-30',
-      uploaded_by: CONTRACTOR_ID,
-      uploaded_at: NOW,
-      reviewed_by: null,
-      reviewed_at: null,
-      review_notes: null,
-      created_at: NOW,
-      updated_at: NOW,
-    },
-  ],
-
   pin_trusted_devices: [],
-
-  // UMTELKOMD Subunternehmer-Onboarding — one seeded compliance record for the
-  // demo contractor (company data + A1 roster + verification block).
-  subcontractor_onboarding: [
-    {
-      id: 'sc000000-0000-0000-0000-000000000001',
-      contractor_id: CONTRACTOR_ID,
-      company_name: 'Fibra Ibérica S.L.',
-      ust_id_es: 'ESB12345678',
-      address: 'Calle Mayor 12, 28013 Madrid',
-      tax_number_de: '27/123/45678',
-      contact_person: 'Carlos Méndez',
-      contact_email: 'carlos@fibra-iberica.es',
-      contact_phone: '+34 600 123 456',
-      project_site: 'HXT — Rot',
-      deployment_period: '01.08.2026 – 31.12.2026',
-      a1_workers: [
-        {
-          name: 'Carlos Méndez',
-          a1_valid_until: '2027-01-31',
-          id_number: 'ESP-9981234',
-          a1_document_id: 'cd000000-0000-0000-0000-000000000006',
-        },
-        {
-          name: 'Luis Fernández',
-          a1_valid_until: '2026-11-30',
-          id_number: 'ESP-9985678',
-          a1_document_id: 'cd000000-0000-0000-0000-000000000007',
-        },
-      ],
-      checked_48b: true,
-      withhold_bauabzug: false,
-      ust_id_confirmed: true,
-      place_date: 'Berlin, 01.07.2026',
-      verified_by: 'Alejandro Herrera',
-      notes: null,
-      created_by: ADMIN_ID,
-      created_at: LAST_WEEK,
-      updated_at: LAST_WEEK,
-    },
-  ],
-
   // Plan 009 — collaborator cycle calendar.
   // One PUBLISHED cycle (visible to contractor@demo.lumen) with all 4 milestones
   // and 2 attached orders, plus one DRAFT cycle (must NOT be visible to the
@@ -1012,6 +832,79 @@ export const initialFixtures = () => ({
     telegram_group_id: string
     created_at: string
   }>,
+
+  // ── Compliance module (migrations 042–046) ────────────────────────────────
+  // Minimal but representative slice of the requirement matrix so the new
+  // compliance portal + review inbox work offline. The demo contractor is
+  // modelled as a Spanish subcontractor company with two posted workers.
+  document_types: [
+    { id: 'd7000000-0000-0000-0000-000000000001', code: 'subcontractor_agreement', name_i18n: { es: 'Contrato de subcontratación firmado', de: 'Unterschriebener Nachunternehmervertrag', en: 'Signed subcontractor agreement' }, description_i18n: null, metadata_schema: [], template_storage_path: null, is_active: true, created_at: LAST_WEEK, updated_at: LAST_WEEK },
+    { id: 'd7000000-0000-0000-0000-000000000002', code: 'rc_insurance', name_i18n: { es: 'Seguro de responsabilidad civil', de: 'Betriebshaftpflichtversicherung', en: 'Liability insurance' }, description_i18n: null, metadata_schema: [{ key: 'amount', type: 'number' }], template_storage_path: null, is_active: true, created_at: LAST_WEEK, updated_at: LAST_WEEK },
+    { id: 'd7000000-0000-0000-0000-000000000003', code: 'ss_clearance_national', name_i18n: { es: 'Certificado de corriente de pago de la Seguridad Social', de: 'Unbedenklichkeitsbescheinigung der Sozialversicherung', en: 'Social security clearance certificate' }, description_i18n: null, metadata_schema: [], template_storage_path: null, is_active: true, created_at: LAST_WEEK, updated_at: LAST_WEEK },
+    { id: 'd7000000-0000-0000-0000-000000000004', code: 'business_registration', name_i18n: { es: 'Registro mercantil / alta de actividad', de: 'Handelsregisterauszug bzw. Gewerbeanmeldung', en: 'Business / commercial registration' }, description_i18n: null, metadata_schema: [], template_storage_path: null, is_active: true, created_at: LAST_WEEK, updated_at: LAST_WEEK },
+    { id: 'd7000000-0000-0000-0000-000000000005', code: 'a1_certificate', name_i18n: { es: 'Certificado A1', de: 'A1-Bescheinigung', en: 'A1 certificate' }, description_i18n: null, metadata_schema: [], template_storage_path: null, is_active: true, created_at: LAST_WEEK, updated_at: LAST_WEEK },
+    { id: 'd7000000-0000-0000-0000-000000000006', code: 'id_document', name_i18n: { es: 'Documento de identidad / pasaporte', de: 'Ausweis / Reisepass', en: 'ID document / passport' }, description_i18n: null, metadata_schema: [], template_storage_path: null, is_active: true, created_at: LAST_WEEK, updated_at: LAST_WEEK },
+    { id: 'd7000000-0000-0000-0000-000000000007', code: 'employment_contract', name_i18n: { es: 'Contrato de trabajo', de: 'Arbeitsvertrag', en: 'Employment contract' }, description_i18n: null, metadata_schema: [], template_storage_path: null, is_active: true, created_at: LAST_WEEK, updated_at: LAST_WEEK },
+  ],
+
+  document_requirements: [
+    { id: 'd8000000-0000-0000-0000-000000000001', document_type_id: 'd7000000-0000-0000-0000-000000000001', applies_to: 'company', origin: 'ALL', scope: 'entity', is_mandatory: true, conditions: {}, validity_rule: 'no_expiry', validity_days: null, min_amount: null, min_amount_currency: 'EUR', requires_coverage_confirmation: false, notify_days: [30], on_missing_action: null, notes: null, is_active: true, created_at: LAST_WEEK, updated_at: LAST_WEEK },
+    { id: 'd8000000-0000-0000-0000-000000000002', document_type_id: 'd7000000-0000-0000-0000-000000000002', applies_to: 'company', origin: 'ALL', scope: 'entity', is_mandatory: true, conditions: {}, validity_rule: 'expiry_required', validity_days: null, min_amount: 500000, min_amount_currency: 'EUR', requires_coverage_confirmation: false, notify_days: [30], on_missing_action: null, notes: null, is_active: true, created_at: LAST_WEEK, updated_at: LAST_WEEK },
+    { id: 'd8000000-0000-0000-0000-000000000003', document_type_id: 'd7000000-0000-0000-0000-000000000003', applies_to: 'company', origin: 'ES', scope: 'entity', is_mandatory: true, conditions: {}, validity_rule: 'days_from_issue', validity_days: 90, min_amount: null, min_amount_currency: 'EUR', requires_coverage_confirmation: false, notify_days: [30], on_missing_action: null, notes: null, is_active: true, created_at: LAST_WEEK, updated_at: LAST_WEEK },
+    { id: 'd8000000-0000-0000-0000-000000000004', document_type_id: 'd7000000-0000-0000-0000-000000000004', applies_to: 'company', origin: 'ALL', scope: 'entity', is_mandatory: true, conditions: {}, validity_rule: 'no_expiry', validity_days: null, min_amount: null, min_amount_currency: 'EUR', requires_coverage_confirmation: false, notify_days: [30], on_missing_action: null, notes: null, is_active: true, created_at: LAST_WEEK, updated_at: LAST_WEEK },
+    { id: 'd8000000-0000-0000-0000-000000000005', document_type_id: 'd7000000-0000-0000-0000-000000000005', applies_to: 'company_worker', origin: 'ALL', scope: 'entity', is_mandatory: true, conditions: {}, validity_rule: 'expiry_required', validity_days: null, min_amount: null, min_amount_currency: 'EUR', requires_coverage_confirmation: false, notify_days: [30], on_missing_action: null, notes: null, is_active: true, created_at: LAST_WEEK, updated_at: LAST_WEEK },
+    { id: 'd8000000-0000-0000-0000-000000000006', document_type_id: 'd7000000-0000-0000-0000-000000000006', applies_to: 'company_worker', origin: 'ALL', scope: 'entity', is_mandatory: true, conditions: {}, validity_rule: 'no_expiry', validity_days: null, min_amount: null, min_amount_currency: 'EUR', requires_coverage_confirmation: false, notify_days: [], on_missing_action: null, notes: null, is_active: true, created_at: LAST_WEEK, updated_at: LAST_WEEK },
+    { id: 'd8000000-0000-0000-0000-000000000007', document_type_id: 'd7000000-0000-0000-0000-000000000007', applies_to: 'internal_employee', origin: 'ALL', scope: 'entity', is_mandatory: true, conditions: {}, validity_rule: 'no_expiry', validity_days: null, min_amount: null, min_amount_currency: 'EUR', requires_coverage_confirmation: false, notify_days: [], on_missing_action: null, notes: null, is_active: true, created_at: LAST_WEEK, updated_at: LAST_WEEK },
+    { id: 'd8000000-0000-0000-0000-000000000008', document_type_id: 'd7000000-0000-0000-0000-000000000006', applies_to: 'internal_employee', origin: 'ALL', scope: 'entity', is_mandatory: true, conditions: {}, validity_rule: 'no_expiry', validity_days: null, min_amount: null, min_amount_currency: 'EUR', requires_coverage_confirmation: false, notify_days: [], on_missing_action: null, notes: null, is_active: true, created_at: LAST_WEEK, updated_at: LAST_WEEK },
+  ],
+
+  compliance_entities: [
+    { id: 'ce000000-0000-0000-0000-000000000001', kind: 'company', parent_entity_id: null, profile_id: CONTRACTOR_ID, employee_id: null, display_name: 'Fibra Ibérica S.L.', country_code: 'ES', nationality_country: null, attributes: { hires_workers: true }, legal_ids: { ust_id_es: 'ESB12345678', tax_number_de: '27/123/45678' }, contact_email: 'carlos@fibra-iberica.es', contact_phone: '+34 600 123 456', address: 'Calle Mayor 12, 28013 Madrid', scheinselbst_check: null, notes: null, is_active: true, created_at: LAST_WEEK, updated_at: LAST_WEEK },
+    { id: 'ce000000-0000-0000-0000-000000000002', kind: 'company_worker', parent_entity_id: 'ce000000-0000-0000-0000-000000000001', profile_id: null, employee_id: null, display_name: 'Carlos Méndez', country_code: 'ES', nationality_country: 'ES', attributes: {}, legal_ids: { id_number: 'ESP-9981234' }, contact_email: null, contact_phone: null, address: null, scheinselbst_check: null, notes: null, is_active: true, created_at: LAST_WEEK, updated_at: LAST_WEEK },
+    { id: 'ce000000-0000-0000-0000-000000000003', kind: 'company_worker', parent_entity_id: 'ce000000-0000-0000-0000-000000000001', profile_id: null, employee_id: null, display_name: 'Luis Fernández', country_code: 'ES', nationality_country: 'ES', attributes: {}, legal_ids: { id_number: 'ESP-9985678' }, contact_email: null, contact_phone: null, address: null, scheinselbst_check: null, notes: null, is_active: true, created_at: LAST_WEEK, updated_at: LAST_WEEK },
+    { id: 'ce000000-0000-0000-0000-000000000004', kind: 'internal_employee', parent_entity_id: null, profile_id: null, employee_id: EMPLOYEE_TECH, display_name: 'Max Mustermann', country_code: 'DE', nationality_country: 'DE', attributes: {}, legal_ids: {}, contact_email: null, contact_phone: null, address: null, scheinselbst_check: null, notes: null, is_active: true, created_at: LAST_WEEK, updated_at: LAST_WEEK },
+  ],
+
+  document_versions: [
+    { id: 'dv000000-0000-0000-0000-000000000001', entity_document_id: 'ed000000-0000-0000-0000-000000000001', version_number: 1, file_name: 'contrato-subcontratacion.pdf', storage_bucket: 'compliance-documents', storage_path: 'ce000000-0000-0000-0000-000000000001/ed1/contrato.pdf', mime_type: 'application/pdf', size_bytes: 84000, submitted_metadata: {}, uploaded_by: CONTRACTOR_ID, uploaded_at: LAST_WEEK },
+    { id: 'dv000000-0000-0000-0000-000000000002', entity_document_id: 'ed000000-0000-0000-0000-000000000002', version_number: 1, file_name: 'seguro-rc.pdf', storage_bucket: 'compliance-documents', storage_path: 'ce000000-0000-0000-0000-000000000001/ed2/rc.pdf', mime_type: 'application/pdf', size_bytes: 120000, submitted_metadata: { amount: 1000000, expires_at: '2027-06-30' }, uploaded_by: CONTRACTOR_ID, uploaded_at: LAST_WEEK },
+    { id: 'dv000000-0000-0000-0000-000000000003', entity_document_id: 'ed000000-0000-0000-0000-000000000003', version_number: 1, file_name: 'ss-corriente.pdf', storage_bucket: 'compliance-documents', storage_path: 'ce000000-0000-0000-0000-000000000001/ed3/ss.pdf', mime_type: 'application/pdf', size_bytes: 64000, submitted_metadata: { issued_at: '2026-04-20' }, uploaded_by: CONTRACTOR_ID, uploaded_at: YESTERDAY },
+    { id: 'dv000000-0000-0000-0000-000000000004', entity_document_id: 'ed000000-0000-0000-0000-000000000004', version_number: 1, file_name: 'registro-mercantil.pdf', storage_bucket: 'compliance-documents', storage_path: 'ce000000-0000-0000-0000-000000000001/ed4/reg.pdf', mime_type: 'application/pdf', size_bytes: 72000, submitted_metadata: {}, uploaded_by: CONTRACTOR_ID, uploaded_at: LAST_WEEK },
+    { id: 'dv000000-0000-0000-0000-000000000005', entity_document_id: 'ed000000-0000-0000-0000-000000000005', version_number: 1, file_name: 'a1-carlos.pdf', storage_bucket: 'compliance-documents', storage_path: 'ce000000-0000-0000-0000-000000000002/ed5/a1.pdf', mime_type: 'application/pdf', size_bytes: 55000, submitted_metadata: { expires_at: '2027-01-31' }, uploaded_by: CONTRACTOR_ID, uploaded_at: LAST_WEEK },
+    { id: 'dv000000-0000-0000-0000-000000000006', entity_document_id: 'ed000000-0000-0000-0000-000000000006', version_number: 1, file_name: 'dni-carlos.pdf', storage_bucket: 'compliance-documents', storage_path: 'ce000000-0000-0000-0000-000000000002/ed6/dni.pdf', mime_type: 'application/pdf', size_bytes: 40000, submitted_metadata: {}, uploaded_by: CONTRACTOR_ID, uploaded_at: LAST_WEEK },
+    { id: 'dv000000-0000-0000-0000-000000000007', entity_document_id: 'ed000000-0000-0000-0000-000000000007', version_number: 1, file_name: 'a1-luis.pdf', storage_bucket: 'compliance-documents', storage_path: 'ce000000-0000-0000-0000-000000000003/ed7/a1.pdf', mime_type: 'application/pdf', size_bytes: 51000, submitted_metadata: { expires_at: '2026-03-15' }, uploaded_by: CONTRACTOR_ID, uploaded_at: LAST_WEEK },
+    { id: 'dv000000-0000-0000-0000-000000000008', entity_document_id: 'ed000000-0000-0000-0000-000000000009', version_number: 1, file_name: 'arbeitsvertrag-max.pdf', storage_bucket: 'compliance-documents', storage_path: 'ce000000-0000-0000-0000-000000000004/ed9/vertrag.pdf', mime_type: 'application/pdf', size_bytes: 61000, submitted_metadata: {}, uploaded_by: ADMIN_ID, uploaded_at: LAST_WEEK },
+  ],
+
+  entity_documents: [
+    { id: 'ed000000-0000-0000-0000-000000000001', entity_id: 'ce000000-0000-0000-0000-000000000001', requirement_id: 'd8000000-0000-0000-0000-000000000001', document_type_id: 'd7000000-0000-0000-0000-000000000001', project_id: null, status: 'approved', current_version_id: 'dv000000-0000-0000-0000-000000000001', approved_issued_at: null, approved_expires_at: null, approved_amount: null, approved_metadata: {}, coverage_confirmed: false, created_at: LAST_WEEK, updated_at: LAST_WEEK },
+    { id: 'ed000000-0000-0000-0000-000000000002', entity_id: 'ce000000-0000-0000-0000-000000000001', requirement_id: 'd8000000-0000-0000-0000-000000000002', document_type_id: 'd7000000-0000-0000-0000-000000000002', project_id: null, status: 'approved', current_version_id: 'dv000000-0000-0000-0000-000000000002', approved_issued_at: '2026-01-01', approved_expires_at: '2027-06-30', approved_amount: 1000000, approved_metadata: { amount: 1000000 }, coverage_confirmed: false, created_at: LAST_WEEK, updated_at: LAST_WEEK },
+    { id: 'ed000000-0000-0000-0000-000000000003', entity_id: 'ce000000-0000-0000-0000-000000000001', requirement_id: 'd8000000-0000-0000-0000-000000000003', document_type_id: 'd7000000-0000-0000-0000-000000000003', project_id: null, status: 'in_review', current_version_id: 'dv000000-0000-0000-0000-000000000003', approved_issued_at: null, approved_expires_at: null, approved_amount: null, approved_metadata: null, coverage_confirmed: false, created_at: YESTERDAY, updated_at: YESTERDAY },
+    { id: 'ed000000-0000-0000-0000-000000000004', entity_id: 'ce000000-0000-0000-0000-000000000001', requirement_id: 'd8000000-0000-0000-0000-000000000004', document_type_id: 'd7000000-0000-0000-0000-000000000004', project_id: null, status: 'approved', current_version_id: 'dv000000-0000-0000-0000-000000000004', approved_issued_at: null, approved_expires_at: null, approved_amount: null, approved_metadata: {}, coverage_confirmed: false, created_at: LAST_WEEK, updated_at: LAST_WEEK },
+    { id: 'ed000000-0000-0000-0000-000000000005', entity_id: 'ce000000-0000-0000-0000-000000000002', requirement_id: 'd8000000-0000-0000-0000-000000000005', document_type_id: 'd7000000-0000-0000-0000-000000000005', project_id: null, status: 'approved', current_version_id: 'dv000000-0000-0000-0000-000000000005', approved_issued_at: null, approved_expires_at: '2027-01-31', approved_amount: null, approved_metadata: {}, coverage_confirmed: false, created_at: LAST_WEEK, updated_at: LAST_WEEK },
+    { id: 'ed000000-0000-0000-0000-000000000006', entity_id: 'ce000000-0000-0000-0000-000000000002', requirement_id: 'd8000000-0000-0000-0000-000000000006', document_type_id: 'd7000000-0000-0000-0000-000000000006', project_id: null, status: 'approved', current_version_id: 'dv000000-0000-0000-0000-000000000006', approved_issued_at: null, approved_expires_at: null, approved_amount: null, approved_metadata: {}, coverage_confirmed: false, created_at: LAST_WEEK, updated_at: LAST_WEEK },
+    { id: 'ed000000-0000-0000-0000-000000000007', entity_id: 'ce000000-0000-0000-0000-000000000003', requirement_id: 'd8000000-0000-0000-0000-000000000005', document_type_id: 'd7000000-0000-0000-0000-000000000005', project_id: null, status: 'rejected', current_version_id: 'dv000000-0000-0000-0000-000000000007', approved_issued_at: null, approved_expires_at: null, approved_amount: null, approved_metadata: null, coverage_confirmed: false, created_at: LAST_WEEK, updated_at: YESTERDAY },
+    { id: 'ed000000-0000-0000-0000-000000000008', entity_id: 'ce000000-0000-0000-0000-000000000003', requirement_id: 'd8000000-0000-0000-0000-000000000006', document_type_id: 'd7000000-0000-0000-0000-000000000006', project_id: null, status: 'pending', current_version_id: null, approved_issued_at: null, approved_expires_at: null, approved_amount: null, approved_metadata: null, coverage_confirmed: false, created_at: LAST_WEEK, updated_at: LAST_WEEK },
+    { id: 'ed000000-0000-0000-0000-000000000009', entity_id: 'ce000000-0000-0000-0000-000000000004', requirement_id: 'd8000000-0000-0000-0000-000000000007', document_type_id: 'd7000000-0000-0000-0000-000000000007', project_id: null, status: 'approved', current_version_id: 'dv000000-0000-0000-0000-000000000008', approved_issued_at: null, approved_expires_at: null, approved_amount: null, approved_metadata: {}, coverage_confirmed: false, created_at: LAST_WEEK, updated_at: LAST_WEEK },
+    { id: 'ed000000-0000-0000-0000-000000000010', entity_id: 'ce000000-0000-0000-0000-000000000004', requirement_id: 'd8000000-0000-0000-0000-000000000008', document_type_id: 'd7000000-0000-0000-0000-000000000006', project_id: null, status: 'pending', current_version_id: null, approved_issued_at: null, approved_expires_at: null, approved_amount: null, approved_metadata: null, coverage_confirmed: false, created_at: LAST_WEEK, updated_at: LAST_WEEK },
+  ],
+
+  document_reviews: [
+    { id: 'dr000000-0000-0000-0000-000000000001', version_id: 'dv000000-0000-0000-0000-000000000002', reviewer_id: ADMIN_ID, action: 'approved', approved_metadata: { amount: 1000000, expires_at: '2027-06-30' }, rejection_reasons: null, rejection_text: null, created_at: LAST_WEEK },
+    { id: 'dr000000-0000-0000-0000-000000000002', version_id: 'dv000000-0000-0000-0000-000000000007', reviewer_id: ADMIN_ID, action: 'rejected', approved_metadata: null, rejection_reasons: ['caducado', 'fechas_no_cubren_obra'], rejection_text: 'El A1 caducó el 15.03.2026 y no cubre el periodo de la obra. Sube uno vigente.', created_at: YESTERDAY },
+  ],
+
+  document_access_log: [] as Array<{
+    id: string
+    version_id: string
+    accessed_by: string
+    action: string
+    created_at: string
+  }>,
+
+  project_assignments: [
+    { id: 'pa000000-0000-0000-0000-000000000001', entity_id: 'ce000000-0000-0000-0000-000000000001', project_id: PROJECT_HXT, start_date: '2026-04-01', end_date: '2026-12-31', status: 'confirmed', override: false, override_by: null, override_reason: null, created_by: ADMIN_ID, created_at: LAST_WEEK, updated_at: LAST_WEEK },
+  ],
 
   _session: { user: null, access_token: null } as DemoSession,
 })

@@ -12,11 +12,12 @@
 
 import { getStore, saveStore, demoUuid } from './store'
 import { DEMO_PASSWORD, DEMO_TECH_PIN, SYSTEM_ROLE_IDS, type DemoStore } from './fixtures'
-import {
-  buildContractorDocumentFailureReasons,
-  reasonsToMessage,
-} from '@/services/workOrderBusinessRules'
-import type { ContractorDocument } from '@/types/contractor-documents'
+import { computeAptitude } from '@/services/complianceRequirementEngine'
+import type {
+  ComplianceEntity,
+  DocumentRequirement,
+  EntityDocument,
+} from '@/types/compliance'
 
 type Row = Record<string, unknown>
 type FilterOp = 'eq' | 'gte' | 'lte' | 'is' | 'in'
@@ -361,7 +362,6 @@ async function execute(
       id: r.id ?? demoUuid(),
       created_at: r.created_at ?? now,
       updated_at: r.updated_at ?? now,
-      ...(table === 'contractor_documents' ? { uploaded_at: r.uploaded_at ?? now } : {}),
     }))
     ;(store[table] as unknown as Row[]).push(...inserted)
     saveStore(store)
@@ -632,6 +632,36 @@ function syncUserRoleFromProfile(store: DemoStore, userId: string, role: string)
   }
 }
 
+// Mirrors compute_entity_aptitude() / the 046 assignment gate for the demo:
+// a contractor is blockable when they have no active compliance entity or their
+// aptitude for the obra is red. Returns a message when blocked, else null.
+function contractorComplianceBlock(
+  store: DemoStore,
+  profileId: string,
+  projectId: string | null,
+): string | null {
+  const entity = store.compliance_entities.find(
+    (row) => row.profile_id === profileId && row.is_active,
+  ) as unknown as ComplianceEntity | undefined
+  if (!entity) {
+    return 'contractor assignment blocked: contractor has no compliance record — onboard them in the compliance module'
+  }
+
+  const codeById = new Map(store.document_types.map((type) => [type.id, String(type.code)]))
+  const requirements = (store.document_requirements as unknown as DocumentRequirement[]).map(
+    (req) => ({ ...req, document_type_code: codeById.get(req.document_type_id) ?? '' }),
+  )
+  const items = store.entity_documents.filter(
+    (item) => item.entity_id === entity.id,
+  ) as unknown as EntityDocument[]
+
+  const aptitude = computeAptitude({ entity, requirements, items, projectId })
+  if (aptitude.level === 'red') {
+    return 'contractor assignment blocked: contractor documents are incomplete, unapproved, or expired'
+  }
+  return null
+}
+
 function makeRpc() {
   return async (fn: string, params: Record<string, unknown> = {}) => {
     if (fn === 'get_my_permissions') {
@@ -710,20 +740,8 @@ function makeRpc() {
 
       const assignee = store.profiles.find((profile) => profile.id === assigneeId)
       if (assignee?.role === 'contractor') {
-        const docs = store.contractor_documents.filter((doc) => doc.contractor_id === assigneeId)
-        const reasons = buildContractorDocumentFailureReasons(
-          docs as ContractorDocument[],
-          assignedDate,
-        )
-        if (reasons.length > 0) {
-          const message = reasons
-            .map(
-              (reason) =>
-                `${reason.requirementId ?? reason.documentType ?? reason.code}: ${reason.message}`,
-            )
-            .join('; ')
-          return { data: null, error: { message: message || reasonsToMessage(reasons) } }
-        }
+        const block = contractorComplianceBlock(store, assigneeId, order.project_id as string | null)
+        if (block) return { data: null, error: { message: block } }
       }
 
       const fromStatus = order.status
@@ -839,6 +857,69 @@ function makeFunctions() {
   return {
     async invoke(functionName: string, options: { method?: string; body?: Row } = {}) {
       const store = getStore()
+
+      if (functionName === 'compliance-upload') {
+        const form = options.body as unknown as FormData
+        const entityDocumentId = String(form.get('entity_document_id') ?? '')
+        const directApprove = form.get('direct_approve') === 'true'
+        const file = form.get('file') as File | null
+        let metadata: Row = {}
+        try {
+          metadata = JSON.parse(String(form.get('metadata') ?? '{}')) as Row
+        } catch {
+          metadata = {}
+        }
+        const item = store.entity_documents.find((row) => row.id === entityDocumentId)
+        if (!item) return { data: null, error: { message: 'Checklist item not found' } }
+        const userId = store._session.user?.id ?? ''
+
+        const versionNumber =
+          store.document_versions
+            .filter((v) => v.entity_document_id === entityDocumentId)
+            .reduce((max, v) => Math.max(max, Number(v.version_number)), 0) + 1
+        const version = {
+          id: demoUuid(),
+          entity_document_id: entityDocumentId,
+          version_number: versionNumber,
+          file_name: file?.name ?? `document-v${versionNumber}.pdf`,
+          storage_bucket: 'compliance-documents',
+          storage_path: `${item.entity_id}/${entityDocumentId}/v${versionNumber}`,
+          mime_type: file?.type ?? 'application/pdf',
+          size_bytes: file?.size ?? 0,
+          submitted_metadata: metadata,
+          uploaded_by: userId,
+          uploaded_at: new Date().toISOString(),
+        }
+        ;(store.document_versions as unknown as Row[]).push(version)
+
+        Object.assign(item, {
+          current_version_id: version.id,
+          status: directApprove ? 'approved' : 'in_review',
+          updated_at: new Date().toISOString(),
+          ...(directApprove
+            ? {
+                approved_issued_at: (metadata.issued_at as string | null) ?? null,
+                approved_expires_at: (metadata.expires_at as string | null) ?? null,
+                approved_amount: (metadata.amount as number | null) ?? null,
+                approved_metadata: metadata,
+              }
+            : {}),
+        })
+        if (directApprove) {
+          ;(store.document_reviews as unknown as Row[]).push({
+            id: demoUuid(),
+            version_id: version.id,
+            reviewer_id: userId,
+            action: 'approved',
+            approved_metadata: metadata,
+            rejection_reasons: null,
+            rejection_text: null,
+            created_at: new Date().toISOString(),
+          })
+        }
+        saveStore(store)
+        return { data: { version }, error: null }
+      }
 
       if (functionName === 'pin-login') {
         const loginCode = String(options.body?.loginCode ?? '').toLowerCase()

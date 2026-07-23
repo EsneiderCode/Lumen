@@ -459,7 +459,6 @@ describe('getCollaboratorType', () => {
 
 function setupSupabaseForAssignment(args: {
   profileRole: 'admin' | 'technician' | 'contractor'
-  contractorDocuments?: Array<Record<string, unknown>>
   rpcResult?: { data: unknown; error: { message: string } | null }
 }) {
   mockSupabase.rpc = vi.fn().mockResolvedValue(
@@ -474,15 +473,6 @@ function setupSupabaseForAssignment(args: {
         select: () => ({
           eq: () => ({
             single: () => Promise.resolve({ data: { role: args.profileRole }, error: null }),
-          }),
-        }),
-      }
-    }
-    if (table === 'contractor_documents') {
-      return {
-        select: () => ({
-          eq: () => ({
-            order: () => Promise.resolve({ data: args.contractorDocuments ?? [], error: null }),
           }),
         }),
       }

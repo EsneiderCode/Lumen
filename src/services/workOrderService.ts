@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/types/database.types'
 import type { WorkOrderStatus, WorkType, TeamColor, UserRole } from '@/types/enums'
-import { fetchContractorDocumentCompliance } from '@/services/contractorDocumentService'
+import { fetchProfileCompliance } from '@/services/complianceService'
 import {
   isDirectWorkOrder,
   toFailureResult,
@@ -998,7 +998,7 @@ export async function insertCertificationAudit(
   if (certType === 'external') {
     const { data: order, error: orderError } = await supabase
       .from('work_orders')
-      .select('assigned_technician')
+      .select('assigned_technician, project_id')
       .eq('id', workOrderId)
       .single()
 
@@ -1016,13 +1016,18 @@ export async function insertCertificationAudit(
       return { error: 'External certification requires a contractor assignee' }
     }
 
-    const { data: compliance, error: complianceError } = await fetchContractorDocumentCompliance(
+    // Pre-flight mirror of the DB gate (migration 046): the contractor's
+    // compliance entity must be apt (non-red) for this obra.
+    const { data: compliance, error: complianceError } = await fetchProfileCompliance(
       order.assigned_technician,
+      order.project_id,
     )
     if (complianceError) return { error: complianceError }
-    if (!compliance.isCompliant) {
+    if (compliance.isBlocked) {
       return {
-        error: `External certification blocked: contractor documents missing or invalid (${compliance.missingTypes.join(', ')})`,
+        error: compliance.hasEntity
+          ? `External certification blocked: contractor compliance incomplete, unapproved, or expired (${compliance.missingCodes.join(', ')})`
+          : 'External certification blocked: contractor has no compliance record — onboard them in the compliance module',
       }
     }
   }

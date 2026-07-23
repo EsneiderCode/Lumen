@@ -13,6 +13,9 @@ import {
 import { fetchTechnicians, type TechnicianProfile } from '@/services/workOrderService'
 import { PayrollSlipModal } from '@/components/admin/PayrollSlipModal'
 import { VacationModal } from '@/components/admin/VacationModal'
+import { ComplianceEntityPanel } from '@/components/compliance/ComplianceEntityPanel'
+import { fetchEntityByEmployeeId, type ComplianceEntityRecord } from '@/services/complianceService'
+import { ROUTES } from '@/config/routes'
 import type { TeamColor as TeamColorType } from '@/types/enums'
 import { TEAM_COLOR_KEYS } from '@/i18n/labels'
 
@@ -78,6 +81,18 @@ function EmployeeModal({ employee, technicians, onClose, onSaved }: EmployeeModa
   )
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [complianceEntity, setComplianceEntity] = useState<ComplianceEntityRecord | null>(null)
+
+  useEffect(() => {
+    if (!isEdit) return
+    let cancelled = false
+    void fetchEntityByEmployeeId(employee.id).then(({ data }) => {
+      if (!cancelled) setComplianceEntity(data)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [isEdit, employee])
 
   const set = (key: keyof EmployeePayload, value: unknown) =>
     setForm((f) => ({ ...f, [key]: value }))
@@ -224,6 +239,12 @@ function EmployeeModal({ employee, technicians, onClose, onSaved }: EmployeeModa
             <button type="submit" disabled={saving} className="rounded-s bg-accent px-4 py-2 font-sans text-sm text-fg-1 transition-opacity disabled:opacity-50">{saving ? 'Speichern…' : 'Speichern'}</button>
           </div>
         </form>
+
+        {isEdit && complianceEntity && (
+          <div className="border-t border-line p-5">
+            <ComplianceEntityPanel entity={complianceEntity} directApprove manageWorkers={false} />
+          </div>
+        )}
       </div>
     </div>
   )
@@ -303,8 +324,8 @@ function ContractorRow({ contractor }: { contractor: TechnicianProfile }) {
       <td className="px-4 py-3"><span className="rounded-full border border-ok/40 bg-ok/10 px-2 py-0.5 font-mono text-xs text-ok">AKTIV</span></td>
       <td className="px-4 py-3 text-right">
         <div className="flex items-center justify-end gap-3">
-          <Link to={`/admin/onboarding/${contractor.id}`} className="inline-flex items-center gap-1 font-sans text-xs text-accent hover:underline">
-            <ClipboardCheck size={13} strokeWidth={1.5} />{t('onboarding.linkLabel')}
+          <Link to={ROUTES.ADMIN.COMPLIANCE} className="inline-flex items-center gap-1 font-sans text-xs text-accent hover:underline">
+            <ClipboardCheck size={13} strokeWidth={1.5} />{t('compliance.pageTitle')}
           </Link>
           <Link to="/admin/personnel" className="font-sans text-xs text-fg-2 hover:text-fg-1">{t('personnel.manageInUsers')}</Link>
         </div>

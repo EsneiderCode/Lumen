@@ -481,92 +481,9 @@
     "reassignNote": "Grund der Neuzuweisung",
     "reassignNotePlaceholder": "Warum wird dieser Auftrag neu zugewiesen?",
     "reassignSubmit": "Neu zuweisen",
-    "currentAssignment": "Aktuelle Zuordnung"
-  },
-  "contractorDocs": {
-    "title": "Contractor-Dokumente",
-    "pageTitle": "Dokumente",
-    "pageSubtitle": "Pflichtdokumente für Zertifizierung und Auszahlung",
-    "subtitle": "{{valid}}/{{total}} Dokumente gültig",
-    "compliant": "Vollständig",
-    "incomplete": "Unvollständig",
-    "expires": "läuft ab",
-    "noFile": "Keine Datei hochgeladen",
-    "expired": "Abgelaufen",
-    "expiringSoon": "Läuft bald ab",
-    "missing": "Fehlt",
-    "issuedAt": "Ausgestellt",
-    "expiresAt": "Gültig bis",
-    "uploadReplacement": "PDF oder Foto hochladen",
-    "reviewNotes": "Prüfnotiz",
-    "reject": "Ablehnen",
-    "approve": "Freigeben",
-    "certificationBlocked": "Externe Zertifizierung durch unvollständige Dokumente blockiert.",
-    "certificationBlockedWithList": "Externe Zertifizierung blockiert. Fehlt oder nicht freigegeben: {{docs}}.",
-    "types": {
-      "a1_bescheinigung": "A1-Bescheinigung (pro Mitarbeiter)",
-      "unbedenklichkeit_finanzamt": "Freistellungsbescheinigung § 48b EStG",
-      "mindestlohn_meldung_gzd": "Meldung Mindestlohn / AEntG (GZD)",
-      "unbedenklichkeit_sozialkasse": "SOKA-BAU: Enthaftung / Präqualifikation",
-      "ust_id_reverse_charge": "USt-IdNr. — Reverse Charge § 13b UStG",
-      "gewerbeanmeldung": "Gewerbeanmeldung / Handelsregister",
-      "haftpflichtversicherung": "Betriebshaftpflicht (Nachweis)",
-      "id_passport": "Ausweis + Qualifikation (pro Mitarbeiter)",
-      "zusatzvereinbarung_mindestlohn": "Zusatzvereinbarung Mindestlohn (DE/ES)",
-      "subcontractor_agreement": "Nachunternehmervertrag + Klauseln"
-    },
-    "status": {
-      "pending_review": "In Prüfung",
-      "approved": "Freigegeben",
-      "rejected": "Abgelehnt"
-    }
-  },
-  "onboarding": {
-    "title": "Subunternehmer-Onboarding",
-    "subtitle": "Compliance-Checkliste (UMTELKOMD)",
-    "linkLabel": "Onboarding",
-    "back": "Zurück zum Personal",
-    "save": "Speichern",
-    "saving": "Speichern…",
-    "savedAt": "Gespeichert um {{time}}.",
-    "exportPdf": "PDF exportieren",
-    "complianceHint": "Auszufüllen und mit allen Nachweisen VOR Arbeitsbeginn / Erstzahlung. Alle Dokumente in deutscher Sprache und physisch auf der Baustelle bereitzuhalten (FKS-Kontrolle).",
-    "addWorker": "Mitarbeiter hinzufügen",
-    "removeWorker": "Mitarbeiter entfernen",
-    "noWorkers": "Noch keine Mitarbeiter erfasst.",
-    "sections": {
-      "company": "Angaben zum Subunternehmer",
-      "documents": "Pflichtdokumente",
-      "workers": "Eingesetzte Mitarbeiter (A1)",
-      "verification": "Prüfung & Bestätigung"
-    },
-    "fields": {
-      "companyName": "FIRMENNAME",
-      "ustIdEs": "USt-IdNr. (ES) / NIF-IVA",
-      "address": "ANSCHRIFT",
-      "taxNumberDe": "STEUERNUMMER (DE)",
-      "contactPerson": "ANSPRECHPARTNER",
-      "email": "E-MAIL",
-      "phone": "TELEFON",
-      "projectSite": "PROJEKT / BAUSTELLE",
-      "deploymentPeriod": "EINSATZZEITRAUM",
-      "deploymentPeriodPlaceholder": "z. B. 01.08.2026 – 31.12.2026",
-      "placeDate": "ORT, DATUM",
-      "verifiedBy": "GEPRÜFT DURCH (NAME)",
-      "notes": "NOTIZEN"
-    },
-    "a1Hint": "A1-Bescheinigungen werden pro Mitarbeiter in Abschnitt 3 verwaltet.",
-    "worker": {
-      "name": "NAME",
-      "a1ValidUntil": "A1 GÜLTIG BIS",
-      "idNumber": "AUSWEIS-NR.",
-      "a1File": "A1-BESCHEINIGUNG"
-    },
-    "checks": {
-      "checked48b": "§ 48b: Gültigkeit im EIBE-Portal des BZSt online geprüft (Sicherheitsnummer + Dienstsiegel).",
-      "withholdBauabzug": "Ohne gültige § 48b-Bescheinigung: 15 % Bauabzugsteuer einbehalten und abführen.",
-      "ustIdConfirmed": "USt-IdNr. beim BZSt bestätigt / Reverse Charge angewandt (Netto-Rechnung)."
-    }
+    "currentAssignment": "Aktuelle Zuordnung",
+    "complianceBlocked": "Zuweisung blockiert: Compliance-Unterlagen des Nachunternehmers unvollständig, nicht genehmigt oder abgelaufen.",
+    "noComplianceRecord": "Zuweisung blockiert: Der Nachunternehmer hat keinen Compliance-Datensatz. Legen Sie ihn im Compliance-Modul an."
   },
   "appointments": {
     "pageTitle": "Termine",
@@ -704,7 +621,8 @@
     "portalTech": "Portal Interne Mitarbeiter",
     "portalContractor": "Portal Externe Mitarbeiter",
     "portalScheduler": "Termin-Portal",
-    "adminPanel": "Admin-Panel"
+    "adminPanel": "Admin-Panel",
+    "compliance": "Compliance"
   },
   "breadcrumb": {
     "admin": "Operations",
@@ -1235,5 +1153,132 @@
         "access": "Terminplanungs-Portal"
       }
     }
+  },
+  "compliance": {
+    "pageTitle": "Dokumenten-Compliance",
+    "pageSubtitle": "Nachunternehmer- und Freelancer-Dokumente, Prüfung und Eignung je Baustelle",
+    "tabs": {
+      "inbox": "Prüf-Eingang",
+      "entities": "Firmen & Freelancer"
+    },
+    "entitiesEmpty": "Noch keine Firmen oder Freelancer erfasst.",
+    "entityColumn": "Entität",
+    "kindColumn": "Typ",
+    "project": "Baustelle",
+    "perProject": "je Baustelle",
+    "noFile": "Keine Datei hochgeladen",
+    "validUntil": "gültig bis",
+    "uploadFile": "Dokument hochladen",
+    "uploadReplacement": "Dokument ersetzen",
+    "versionHistory": "Versionsverlauf",
+    "rejectedBecause": "Abgelehnt wegen",
+    "progress": "{{done}}/{{total}} Pflichtdokumente gültig",
+    "complete": "Vollständig",
+    "incomplete": "Unvollständig",
+    "emptyChecklist": "Für diese Entität sind keine Dokumente erforderlich.",
+    "entityDocuments": "Dokumente · {{name}}",
+    "metadataRequired": "Pflichtangaben fehlen: {{fields}}",
+    "kinds": {
+      "company": "Nachunternehmer (Firma)",
+      "company_worker": "Firmenmitarbeiter",
+      "freelancer": "Freelancer",
+      "internal_employee": "Interner Mitarbeiter"
+    },
+    "status": {
+      "pending": "Offen",
+      "in_review": "In Prüfung",
+      "approved": "Genehmigt",
+      "rejected": "Abgelehnt",
+      "expiring": "Läuft bald ab",
+      "expired": "Abgelaufen",
+      "not_applicable": "Nicht zutreffend"
+    },
+    "fields": {
+      "issued_at": "Ausstellungsdatum",
+      "expires_at": "Ablaufdatum",
+      "amount": "Betrag (€)"
+    },
+    "conditions": {
+      "hires_workers": "Entsendet Arbeitnehmer nach Deutschland",
+      "regulated_trade": "Zulassungspflichtiges Handwerk",
+      "short_stay": "Kurzer Aufenthalt (< 24 Monate)"
+    },
+    "rejectionReasons": {
+      "ilegible": "Unleserlich",
+      "caducado": "Abgelaufen",
+      "importe_insuficiente": "Betrag unzureichend",
+      "no_cubre_alemania": "Deckt Deutschland nicht ab",
+      "formato_incorrecto": "Falsches Format",
+      "fechas_no_cubren_obra": "Zeitraum deckt Baustelle nicht ab",
+      "otro": "Sonstiges"
+    },
+    "errors": {
+      "file_too_large": "Die Datei überschreitet die maximale Größe (15 MB).",
+      "file_type_not_allowed": "Dateityp nicht erlaubt (nur PDF, JPG oder PNG)."
+    },
+    "portal": {
+      "pageTitle": "Meine Dokumente",
+      "pageSubtitle": "Lade die für den Einsatz erforderlichen Dokumente hoch und halte sie aktuell",
+      "noEntity": "Ihrem Konto ist noch kein Compliance-Datensatz zugeordnet. Bitte kontaktieren Sie die Verwaltung."
+    },
+    "workers": {
+      "title": "Entsandte Arbeitnehmer",
+      "subtitle": "Jeder Arbeitnehmer hat eigene Dokumente (A1, Ausweis usw.)",
+      "add": "Arbeitnehmer hinzufügen",
+      "edit": "Arbeitnehmer bearbeiten",
+      "empty": "Keine Arbeitnehmer erfasst.",
+      "name": "Name",
+      "nameRequired": "Name ist erforderlich.",
+      "active": "Aktiv"
+    },
+    "entity": {
+      "country": "Land",
+      "nationality": "Staatsangehörigkeit"
+    },
+    "review": {
+      "approve": "Genehmigen",
+      "reject": "Ablehnen",
+      "approveHint": "Bestätigen oder korrigieren Sie die angegebenen Daten vor der Genehmigung.",
+      "declared": "angegeben",
+      "coverageConfirmed": "Ich bestätige, dass das Dokument den Baustellenzeitraum abdeckt",
+      "minAmount": "Mindestbetrag",
+      "approveConfirm": "Genehmigung bestätigen",
+      "rejectHint": "Wählen Sie eine oder mehrere Ursachen und fügen Sie eine Erklärung hinzu.",
+      "textPlaceholder": "Erklären Sie dem Dritten, was zu korrigieren ist…",
+      "rejectConfirm": "Ablehnung bestätigen",
+      "reasonsRequired": "Wählen Sie mindestens eine Ablehnungsursache.",
+      "textRequired": "Die Erklärung ist erforderlich.",
+      "emptyQueue": "Keine Dokumente zur Prüfung offen."
+    },
+    "wizard": {
+      "title": "Geführte Anlage",
+      "step": "Schritt {{step}} von {{total}}",
+      "name": "Name / Firmenname",
+      "nameRequired": "Name ist erforderlich.",
+      "countryRequired": "Geben Sie einen gültigen 2-stelligen Ländercode ein (z. B. ES).",
+      "phone": "Telefon",
+      "address": "Adresse",
+      "conditionsHint": "Markieren Sie die zutreffenden Bedingungen zur Ermittlung der erforderlichen Dokumente.",
+      "previewHint": "Aufgrund der gewählten Bedingungen sind {{count}} Dokumente erforderlich.",
+      "createAccount": "Portal-Zugang anlegen",
+      "accountHint": "Es wird ein Contractor-Benutzer mit der E-Mail {{email}} angelegt.",
+      "accountFieldsRequired": "E-Mail und temporäres Passwort sind für die Kontoerstellung erforderlich.",
+      "tempPassword": "Temporäres Passwort",
+      "create": "Anlegen und Checkliste erzeugen"
+    },
+    "codes": {
+      "subcontractor_agreement": "Nachunternehmervertrag",
+      "rc_insurance": "Betriebshaftpflichtversicherung",
+      "ss_clearance_national": "Unbedenklichkeitsbescheinigung SV",
+      "business_registration": "Handelsregister / Gewerbeanmeldung",
+      "a1_certificate": "A1-Bescheinigung",
+      "id_document": "Ausweisdokument",
+      "employment_contract": "Arbeitsvertrag",
+      "company_not_apt": "Firma nicht geeignet",
+      "company_has_warnings": "Firma hat Warnungen"
+    },
+    "certBlockedWithList": "Externe Zertifizierung blockiert: Compliance-Unterlagen unvollständig, nicht genehmigt oder abgelaufen ({{docs}}).",
+    "certBlockedNoRecord": "Externe Zertifizierung blockiert: Der Nachunternehmer hat keinen Compliance-Datensatz. Legen Sie ihn im Compliance-Modul an.",
+    "manageInModule": "Dokumente im Compliance-Modul verwalten"
   }
 }

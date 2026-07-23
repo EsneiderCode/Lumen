@@ -16,6 +16,9 @@ describe('demo business-rule RPC parity', () => {
   it('blocks assignment to non-compliant demo contractors without mutating the work order', async () => {
     const client = createDemoSupabaseClient()
 
+    // The demo contractor's company entity has a mandatory doc still in review,
+    // so its aptitude is red — the aptitude gate (migration 046) blocks the
+    // assignment, mirroring compute_entity_aptitude() server-side.
     const result = await client.rpc('assign_work_order_checked', {
       p_work_order_id: CREATED_WO_ID,
       p_team: 'gelb',
@@ -26,7 +29,7 @@ describe('demo business-rule RPC parity', () => {
     })
 
     expect(result.data).toBeNull()
-    expect(result.error?.message).toMatch(/unbedenklichkeit_sozialkasse/)
+    expect(result.error?.message).toMatch(/incomplete, unapproved, or expired/)
     const unchanged = getStore().work_orders.find((order) => order.id === CREATED_WO_ID)
     expect(unchanged?.assigned_technician).toBeNull()
     expect(unchanged?.status).toBe('created')
