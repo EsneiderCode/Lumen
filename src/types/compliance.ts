@@ -179,3 +179,40 @@ export interface ChecklistReconciliation {
   /** Existing item ids whose requirement no longer applies (approved ones are kept untouched). */
   toMarkNotApplicable: string[]
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Scheinselbstständigkeit — bogus self-employment risk assessment (Fase 6a)
+//
+// Informative decision-support checklist for freelancers (§11 of the spec),
+// persisted in compliance_entities.scheinselbst_check. This is NOT a binding
+// § 7a SGB IV Statusfeststellung — it only flags risk for a human to review.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Yes/no risk markers derived from § 7 SGB IV integration/dependence criteria. */
+export const SCHEINSELBST_INDICATORS = [
+  'single_client',
+  'client_instructions',
+  'integrated_org',
+  'no_entrepreneurial_risk',
+  'fixed_hours',
+  'client_equipment',
+  'no_own_employees',
+  'no_market_presence',
+  'reporting_duty',
+  'same_as_employees',
+] as const
+
+export type ScheinselbstIndicator = (typeof SCHEINSELBST_INDICATORS)[number]
+
+export type ScheinselbstRiskLevel = 'low' | 'medium' | 'high'
+
+/** Snapshot stored in compliance_entities.scheinselbst_check. */
+export interface ScheinselbstCheck {
+  answers: Partial<Record<ScheinselbstIndicator, boolean>>
+  note: string | null
+  score: number
+  max_score: number
+  level: ScheinselbstRiskLevel
+  assessed_by: string | null
+  assessed_at: string
+}

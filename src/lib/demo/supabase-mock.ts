@@ -921,6 +921,30 @@ function makeFunctions() {
         return { data: { version }, error: null }
       }
 
+      if (functionName === 'send-email') {
+        // Compliance review-result email — no real delivery in demo mode.
+        return { data: { ok: true, sent: true }, error: null }
+      }
+
+      if (functionName === 'compliance-ocr') {
+        // Canned OCR text so the field-extraction pre-fill works offline (Fase 6c).
+        const text = [
+          'Haftpflichtversicherung — Police Nr. 4711',
+          'Ausgestellt am 15.01.2026',
+          'Gültig bis 15.01.2027',
+          'Deckungssumme: 5.000.000,00 EUR',
+        ].join('\n')
+        return { data: { text }, error: null }
+      }
+
+      if (functionName === 'compliance-notify') {
+        // Daily digest fan-out is cron-only in production; a no-op stub here.
+        return {
+          data: { ok: true, transitions: 0, entityEmails: 0, adminEmails: 0, telegram: false },
+          error: null,
+        }
+      }
+
       if (functionName === 'pin-login') {
         const loginCode = String(options.body?.loginCode ?? '').toLowerCase()
         const pin = String(options.body?.pin ?? '')

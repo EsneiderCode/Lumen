@@ -1158,12 +1158,25 @@
       }
     }
   },
+  "notifications": {
+    "title": "Benachrichtigungen",
+    "empty": "Keine Benachrichtigungen.",
+    "markAllRead": "Alle als gelesen markieren",
+    "body": {
+      "doc_expiring": "{{doc}} von {{entity}} läuft in {{days}} Tag(en) ab",
+      "doc_expired": "{{doc}} von {{entity}} ist abgelaufen",
+      "doc_approved": "{{doc}} von {{entity}} genehmigt",
+      "doc_rejected": "{{doc}} von {{entity}} abgelehnt"
+    }
+  },
   "compliance": {
     "pageTitle": "Dokumenten-Compliance",
     "pageSubtitle": "Nachunternehmer- und Freelancer-Dokumente, Prüfung und Eignung je Baustelle",
     "tabs": {
       "inbox": "Prüf-Eingang",
-      "entities": "Firmen & Freelancer"
+      "entities": "Firmen & Freelancer",
+      "reports": "Berichte",
+      "matrix": "Matrix"
     },
     "entitiesEmpty": "Noch keine Firmen oder Freelancer erfasst.",
     "entityColumn": "Entität",
@@ -1172,13 +1185,24 @@
     "perProject": "je Baustelle",
     "noFile": "Keine Datei hochgeladen",
     "validUntil": "gültig bis",
+    "downloadTemplate": "Vorlage",
+    "templateAvailable": "Blankovorlage herunterladen",
     "uploadFile": "Dokument hochladen",
     "uploadReplacement": "Dokument ersetzen",
+    "uploadConfirm": "Hochladen",
+    "ocr": {
+      "button": "Per OCR ausfüllen",
+      "hint": "Daten und Betrag aus dem Dokument extrahieren und das Formular vorausfüllen. Werte vor dem Hochladen immer prüfen.",
+      "scanning": "Wird gescannt…",
+      "failed": "Dokument konnte nicht gelesen werden. Bitte Daten manuell eingeben."
+    },
     "versionHistory": "Versionsverlauf",
     "rejectedBecause": "Abgelehnt wegen",
     "progress": "{{done}}/{{total}} Pflichtdokumente gültig",
     "complete": "Vollständig",
     "incomplete": "Unvollständig",
+    "withholding15": "15% einbehalten (§48b)",
+    "withholding15Hint": "Ohne gültige Freistellungsbescheinigung §48b muss die Buchhaltung 15% Bauabzugsteuer einbehalten.",
     "emptyChecklist": "Für diese Entität sind keine Dokumente erforderlich.",
     "entityDocuments": "Dokumente · {{name}}",
     "metadataRequired": "Pflichtangaben fehlen: {{fields}}",
@@ -1205,7 +1229,8 @@
     "conditions": {
       "hires_workers": "Entsendet Arbeitnehmer nach Deutschland",
       "regulated_trade": "Zulassungspflichtiges Handwerk",
-      "short_stay": "Kurzer Aufenthalt (< 24 Monate)"
+      "short_stay": "Kurzer Aufenthalt (< 24 Monate)",
+      "non_eu_national": "Drittstaatsangehörige(r)"
     },
     "rejectionReasons": {
       "ilegible": "Unleserlich",
@@ -1290,6 +1315,149 @@
       "red": "Nicht geeignet",
       "noRecord": "Kein Datensatz",
       "overrideNotice": "Mit Compliance-Override zugewiesen · {{reason}}"
+    },
+    "dossier": {
+      "button": "Dossier PDF",
+      "hint": "Prüfungsdossier als PDF erzeugen (Dokumente, Status, Eignung)",
+      "generating": "Wird erzeugt…",
+      "error": "Dossier konnte nicht erzeugt werden",
+      "title": "Compliance-Dossier",
+      "generatedAt": "Erstellt",
+      "footer": "LUMEN · Compliance-Dossier",
+      "entitySection": "Einheit",
+      "documentsSection": "Dokumente",
+      "workersSection": "Entsandte Arbeitnehmer",
+      "noDocuments": "Keine anwendbaren Dokumente.",
+      "noWorkers": "Keine Arbeitnehmer erfasst.",
+      "name": "Name",
+      "kind": "Typ",
+      "phone": "Telefon",
+      "address": "Adresse",
+      "colDocument": "Dokument",
+      "colStatus": "Status",
+      "colIssued": "Ausgestellt",
+      "colExpires": "Gültig bis",
+      "colAmount": "Betrag"
+    },
+    "scheinselbst": {
+      "title": "Scheinselbstständigkeit",
+      "subtitle": "Informative Bewertung von Anzeichen einer Scheinselbstständigkeit.",
+      "disclaimer": "Nur zur Orientierung. Ersetzt kein Statusfeststellungsverfahren (§ 7a SGB IV) der Deutschen Rentenversicherung.",
+      "note": "Anmerkungen",
+      "assess": "Bewerten",
+      "reassess": "Neu bewerten",
+      "notAssessed": "Nicht bewertet",
+      "assessedAt": "Bewertet am {{date}}",
+      "levels": {
+        "low": "Geringes Risiko",
+        "medium": "Mittleres Risiko",
+        "high": "Hohes Risiko"
+      },
+      "indicators": {
+        "single_client": "Arbeitet im Wesentlichen ausschließlich für uns (nur ein Auftraggeber).",
+        "client_instructions": "Unterliegt unseren Weisungen zu Art, Zeit und Ort der Tätigkeit.",
+        "integrated_org": "Ist in unsere Arbeitsorganisation eingegliedert (Teams, Hierarchie, Abläufe).",
+        "no_entrepreneurial_risk": "Trägt kein eigenes unternehmerisches Risiko und keinen Kapitaleinsatz.",
+        "fixed_hours": "Hat von uns festgelegte, feste Arbeitszeiten.",
+        "client_equipment": "Nutzt unsere Betriebsmittel (Werkzeug, Fahrzeug, Material).",
+        "no_own_employees": "Hat keine eigenen Arbeitnehmer.",
+        "no_market_presence": "Hat keinen eigenen Marktauftritt (Betriebsstätte, Werbung, weitere Kunden).",
+        "reporting_duty": "Hat Berichtspflichten wie ein Arbeitnehmer.",
+        "same_as_employees": "Verrichtet dieselben Tätigkeiten wie unsere Arbeitnehmer."
+      }
+    },
+    "erase": {
+      "button": "Daten löschen (DSGVO)",
+      "hint": "Identifizierende personenbezogene Daten dieser Entität anonymisieren (Recht auf Löschung).",
+      "title": "Löschung personenbezogener Daten",
+      "warning": "Die identifizierenden Daten von „{{name}}“ (Kontakt, Steuer-IDs, Name) werden unwiderruflich anonymisiert. Die Zuweisungshistorie und gesetzlich aufzubewahrende Dokumente bleiben erhalten. Diese Aktion kann nicht rückgängig gemacht werden.",
+      "keyword": "LÖSCHEN",
+      "confirmLabel": "Zum Bestätigen {{keyword}} eingeben",
+      "confirm": "Endgültig löschen"
+    },
+    "reports": {
+      "title": "Compliance-Bericht",
+      "footer": "LUMEN · Compliance-Bericht",
+      "generatedAt": "Erstellt",
+      "refresh": "Aktualisieren",
+      "exportExcel": "Excel",
+      "exportPdf": "PDF",
+      "summarySection": "Übersicht",
+      "kpiEntities": "Entitäten",
+      "kpiExpiringSoon": "Bald fällig",
+      "kpiExpired": "Abgelaufen",
+      "expiringSection": "Dokumente fällig in {{days}} Tagen",
+      "portfolioSection": "Eignungsportfolio",
+      "expiringSheet": "Fällige Dokumente",
+      "portfolioSheet": "Eignungsportfolio",
+      "noExpiring": "Keine bald fälligen oder abgelaufenen Dokumente.",
+      "expiredBy": "vor {{days}} T. abgelaufen",
+      "colEntity": "Entität",
+      "colParent": "Firma",
+      "colDaysLeft": "Tage",
+      "colAptitude": "Eignung",
+      "colProblems": "Probleme",
+      "colWorkers": "Arbeitnehmer",
+      "colExpiring": "Fällig"
+    },
+    "matrix": {
+      "types": "Dokumenttypen",
+      "requirements": "Anforderungen",
+      "newType": "Neuer Typ",
+      "editType": "Typ bearbeiten",
+      "newRequirement": "Neue Anforderung",
+      "editRequirement": "Anforderung bearbeiten",
+      "code": "Code",
+      "codeInvalid": "Code nur Kleinbuchstaben, Zahlen und _",
+      "name": "Name",
+      "nameRequired": "Name (DE und ES) erforderlich",
+      "nameDe": "Name (DE)",
+      "nameEs": "Name (ES)",
+      "nameEn": "Name (EN)",
+      "descDe": "Beschreibung (DE)",
+      "descEs": "Beschreibung (ES)",
+      "active": "Aktiv",
+      "inactive": "Inaktiv",
+      "documentType": "Dokumenttyp",
+      "docTypeRequired": "Dokumenttyp erforderlich",
+      "appliesTo": "Gilt für",
+      "origin": "Herkunft",
+      "scope": "Geltungsbereich",
+      "validityRule": "Gültigkeitsregel",
+      "validityDays": "Gültige Tage",
+      "minAmount": "Mindestbetrag (€)",
+      "notifyDays": "Erinnerung (Tage)",
+      "onMissingAction": "Aktion bei Fehlen",
+      "conditions": "Bedingungen",
+      "mandatory": "Pflicht",
+      "requiresCoverage": "Zeitraumbestätigung nötig",
+      "template": "Vorlage (PDF)",
+      "templateHint": "Blankoformular, das Dritte herunterladen und ausfüllen. Nur PDF.",
+      "templateUpload": "Vorlage hochladen",
+      "templateReplace": "Ersetzen",
+      "templateDownload": "Ansehen",
+      "templateRemove": "Entfernen",
+      "origins": {
+        "ALL": "Alle",
+        "DE": "Deutschland",
+        "ES": "Spanien",
+        "EU_OTHER": "EU/EWR",
+        "NON_EU": "Drittstaat"
+      },
+      "scopes": {
+        "entity": "Entität",
+        "per_project": "Pro Baustelle"
+      },
+      "validityRules": {
+        "no_expiry": "Kein Ablauf",
+        "expiry_required": "Ablaufdatum nötig",
+        "days_from_issue": "Tage ab Ausstellung",
+        "must_cover_assignment": "Muss Einsatz abdecken"
+      },
+      "missingActions": {
+        "none": "Keine",
+        "notify_billing_withholding": "15% Steuerabzug (§48b)"
+      }
     }
   }
 }

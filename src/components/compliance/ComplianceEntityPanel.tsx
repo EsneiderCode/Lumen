@@ -1,13 +1,31 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ChevronDown, ChevronUp, Plus, UserRound } from 'lucide-react'
+import { ChevronDown, ChevronUp, FileDown, Plus, ShieldAlert, Trash2, UserRound } from 'lucide-react'
 import { ComplianceChecklist } from './ComplianceChecklist'
 import {
   createEntity,
+  eraseEntityPersonalData,
+  fetchEntityDossier,
   fetchWorkers,
+  saveScheinselbstCheck,
   updateEntity,
 } from '@/services/complianceService'
 import type { ComplianceEntityRecord, EntityPayload } from '@/services/complianceService'
+import { scoreScheinselbst } from '@/services/complianceHelpers'
+import { SCHEINSELBST_INDICATORS } from '@/types/compliance'
+import type {
+  ScheinselbstCheck,
+  ScheinselbstIndicator,
+  ScheinselbstRiskLevel,
+} from '@/types/compliance'
+import { useAuth } from '@/hooks/useAuth'
+import { generateComplianceDossierPdf } from '@/services/pdfService'
+
+const RISK_CHIP: Record<ScheinselbstRiskLevel, string> = {
+  low: 'border-ok/40 bg-ok/10 text-ok',
+  medium: 'border-warn/40 bg-warn/10 text-warn',
+  high: 'border-err/40 bg-err/10 text-err',
+}
 
 interface WorkerModalProps {
   parent: ComplianceEntityRecord
@@ -146,22 +164,239 @@ function WorkerModal({ parent, worker, onClose, onSaved }: WorkerModalProps) {
   )
 }
 
+interface ScheinselbstModalProps {
+  entity: ComplianceEntityRecord
+  current: ScheinselbstCheck | null
+  onClose: () => void
+  onSaved: (check: ScheinselbstCheck) => void
+}
+
+/** Informative anti-Scheinselbstständigkeit checklist — decision-support only. */
+function ScheinselbstModal({ entity, current, onClose, onSaved }: ScheinselbstModalProps) {
+  const { t } = useTranslation()
+  const { user } = useAuth()
+  const [answers, setAnswers] = useState<Partial<Record<ScheinselbstIndicator, boolean>>>(
+    current?.answers ?? {},
+  )
+  const [note, setNote] = useState(current?.note ?? '')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const preview = useMemo(() => scoreScheinselbst(answers), [answers])
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setSaving(true)
+    setError(null)
+    const { data, error: saveError } = await saveScheinselbstCheck(entity.id, {
+      answers,
+      note: note.trim() || null,
+      assessedBy: user?.id ?? null,
+    })
+    setSaving(false)
+    if (saveError || !data?.scheinselbst_check) {
+      setError(saveError ?? 'save_failed')
+      return
+    }
+    onSaved(data.scheinselbst_check)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-0/80 p-4">
+      <div className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-l border border-line bg-bg-1">
+        <div className="flex items-center justify-between border-b border-line px-5 py-4">
+          <h2 className="font-sans text-sm font-medium text-fg-1">
+            {t('compliance.scheinselbst.title')} · {entity.display_name}
+          </h2>
+          <button onClick={onClose} className="text-fg-2 transition-colors hover:text-fg-1" aria-label={t('common.close')}>
+            ✕
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="flex-1 space-y-4 overflow-y-auto p-5">
+          <p className="rounded-s border border-warn/30 bg-warn/10 px-3 py-2 text-xs text-warn">
+            {t('compliance.scheinselbst.disclaimer')}
+          </p>
+          {error && (
+            <p className="rounded-s border border-err/30 bg-err/10 px-3 py-2 text-xs text-err">{error}</p>
+          )}
+          <div className="space-y-2">
+            {SCHEINSELBST_INDICATORS.map((indicator) => (
+              <label key={indicator} className="flex items-start gap-2 text-sm text-fg-2">
+                <input
+                  type="checkbox"
+                  checked={Boolean(answers[indicator])}
+                  onChange={(e) =>
+                    setAnswers((prev) => ({ ...prev, [indicator]: e.target.checked }))
+                  }
+                  className="mt-0.5 accent-accent"
+                />
+                {t(`compliance.scheinselbst.indicators.${indicator}`)}
+              </label>
+            ))}
+          </div>
+          <div>
+            <label className="mb-1 block font-mono text-xs text-fg-2">
+              {t('compliance.scheinselbst.note').toUpperCase()}
+            </label>
+            <textarea
+              rows={2}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              className="w-full rounded-s border border-line bg-bg-2 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none"
+            />
+          </div>
+          <div className="flex items-center justify-between border-t border-line pt-3">
+            <span className={`rounded-full border px-2 py-0.5 font-mono text-xs ${RISK_CHIP[preview.level]}`}>
+              {t(`compliance.scheinselbst.levels.${preview.level}`)} · {preview.score}/{preview.maxScore}
+            </span>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-s border border-line px-4 py-2 text-sm text-fg-2 transition-colors hover:text-fg-1"
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                className="rounded-s bg-accent px-4 py-2 text-sm font-semibold text-fg-1 transition-opacity hover:opacity-90 disabled:opacity-50"
+              >
+                {saving ? t('common.saving') : t('common.save')}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+interface EraseModalProps {
+  entity: ComplianceEntityRecord
+  onClose: () => void
+  onErased: () => void
+}
+
+/** GDPR right-to-erasure confirmation — irreversible scrub of identifying PII. */
+function EraseModal({ entity, onClose, onErased }: EraseModalProps) {
+  const { t } = useTranslation()
+  const { user } = useAuth()
+  const [confirmText, setConfirmText] = useState('')
+  const [working, setWorking] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const keyword = t('compliance.erase.keyword')
+
+  async function handleErase() {
+    setWorking(true)
+    setError(null)
+    const { error: eraseError } = await eraseEntityPersonalData(entity.id, user?.id ?? null)
+    setWorking(false)
+    if (eraseError) {
+      setError(eraseError)
+      return
+    }
+    onErased()
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-0/80 p-4">
+      <div className="w-full max-w-md rounded-l border border-err/40 bg-bg-1">
+        <div className="flex items-center justify-between border-b border-line px-5 py-4">
+          <h2 className="flex items-center gap-1.5 font-sans text-sm font-medium text-err">
+            <Trash2 size={14} strokeWidth={1.5} />
+            {t('compliance.erase.title')}
+          </h2>
+          <button onClick={onClose} className="text-fg-2 transition-colors hover:text-fg-1" aria-label={t('common.close')}>
+            ✕
+          </button>
+        </div>
+        <div className="space-y-4 p-5">
+          <p className="text-sm text-fg-2">{t('compliance.erase.warning', { name: entity.display_name })}</p>
+          {error && (
+            <p className="rounded-s border border-err/30 bg-err/10 px-3 py-2 text-xs text-err">{error}</p>
+          )}
+          <div>
+            <label className="mb-1 block font-mono text-xs text-fg-2">
+              {t('compliance.erase.confirmLabel', { keyword })}
+            </label>
+            <input
+              type="text"
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              className="w-full rounded-s border border-line bg-bg-2 px-3 py-2 font-mono text-sm text-fg-1 focus:border-err focus:outline-none"
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-s border border-line px-4 py-2 text-sm text-fg-2 transition-colors hover:text-fg-1"
+            >
+              {t('common.cancel')}
+            </button>
+            <button
+              type="button"
+              disabled={working || confirmText.trim() !== keyword}
+              onClick={() => void handleErase()}
+              className="rounded-s border border-err/50 bg-err/10 px-4 py-2 text-sm font-semibold text-err transition-colors hover:border-err disabled:opacity-40"
+            >
+              {working ? t('common.saving') : t('compliance.erase.confirm')}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 interface Props {
   entity: ComplianceEntityRecord
   /** Admin one-step upload+approve (internal personnel). */
   directApprove?: boolean
   /** Show + manage the worker roster (companies). */
   manageWorkers?: boolean
+  /** Admin-only anti-Scheinselbstständigkeit assessment (freelancers). */
+  riskAssessment?: boolean
+  /** Admin-only GDPR erasure of identifying PII (inactive entities). */
+  allowErasure?: boolean
   onChanged?: () => void
 }
 
-export function ComplianceEntityPanel({ entity, directApprove = false, manageWorkers = true, onChanged }: Props) {
-  const { t } = useTranslation()
+export function ComplianceEntityPanel({
+  entity,
+  directApprove = false,
+  manageWorkers = true,
+  riskAssessment = false,
+  allowErasure = false,
+  onChanged,
+}: Props) {
+  const { t, i18n } = useTranslation()
   const [workers, setWorkers] = useState<ComplianceEntityRecord[]>([])
   const [expandedWorkerId, setExpandedWorkerId] = useState<string | null>(null)
   const [workerModal, setWorkerModal] = useState<{ worker: ComplianceEntityRecord | null } | null>(null)
+  const [dossierState, setDossierState] = useState<'idle' | 'working' | 'error'>('idle')
+  // Freshly-saved assessments, keyed by entity id, overlay the prop value so a
+  // re-assessment shows immediately without waiting for the parent to reload.
+  const [savedChecks, setSavedChecks] = useState<Record<string, ScheinselbstCheck>>({})
+  const [showSchein, setShowSchein] = useState(false)
+  const [showErase, setShowErase] = useState(false)
+  const scheinCheck = savedChecks[entity.id] ?? entity.scheinselbst_check
 
   const isCompany = entity.kind === 'company'
+  const showRisk = riskAssessment && entity.kind === 'freelancer'
+  const canErase = allowErasure && !entity.is_active && !entity.attributes?.erased
+
+  async function handleDossier() {
+    setDossierState('working')
+    const { data, error } = await fetchEntityDossier(entity)
+    if (error || !data) {
+      setDossierState('error')
+      return
+    }
+    generateComplianceDossierPdf(data, { t, locale: i18n.language.slice(0, 2) })
+    setDossierState('idle')
+  }
 
   const loadWorkers = useCallback(async () => {
     if (!isCompany) return
@@ -177,19 +412,84 @@ export function ComplianceEntityPanel({ entity, directApprove = false, manageWor
   return (
     <div className="space-y-5">
       <div className="rounded-l border border-line bg-bg-1 p-4">
-        <div className="mb-3 border-b border-line pb-3">
-          <h3 className="font-display text-sm font-semibold text-fg-1">
-            {t('compliance.entityDocuments', { name: entity.display_name })}
-          </h3>
-          <p className="mt-1 font-mono text-xs text-fg-3">
-            {t(`compliance.kinds.${entity.kind}`)} · {entity.country_code}
-            {entity.nationality_country && entity.nationality_country !== entity.country_code
-              ? ` · ${t('compliance.entity.nationality')}: ${entity.nationality_country}`
-              : ''}
-          </p>
+        <div className="mb-3 flex flex-wrap items-start justify-between gap-2 border-b border-line pb-3">
+          <div className="min-w-0">
+            <h3 className="font-display text-sm font-semibold text-fg-1">
+              {t('compliance.entityDocuments', { name: entity.display_name })}
+            </h3>
+            <p className="mt-1 font-mono text-xs text-fg-3">
+              {t(`compliance.kinds.${entity.kind}`)} · {entity.country_code}
+              {entity.nationality_country && entity.nationality_country !== entity.country_code
+                ? ` · ${t('compliance.entity.nationality')}: ${entity.nationality_country}`
+                : ''}
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            {canErase && (
+              <button
+                type="button"
+                onClick={() => setShowErase(true)}
+                className="inline-flex items-center gap-1 rounded-s border border-err/40 px-3 py-1.5 text-xs text-err transition-colors hover:border-err"
+                title={t('compliance.erase.hint')}
+              >
+                <Trash2 size={13} strokeWidth={1.5} />
+                {t('compliance.erase.button')}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => void handleDossier()}
+              disabled={dossierState === 'working'}
+              className="inline-flex items-center gap-1 rounded-s border border-line px-3 py-1.5 text-xs text-fg-2 transition-colors hover:border-accent hover:text-accent disabled:opacity-50"
+              title={t('compliance.dossier.hint')}
+            >
+              <FileDown size={13} strokeWidth={1.5} />
+              {dossierState === 'working' ? t('compliance.dossier.generating') : t('compliance.dossier.button')}
+            </button>
+          </div>
         </div>
+        {dossierState === 'error' && (
+          <p className="mb-3 rounded-s border border-err/30 bg-err/10 px-3 py-2 text-xs text-err">
+            {t('compliance.dossier.error')}
+          </p>
+        )}
         <ComplianceChecklist entity={entity} directApprove={directApprove} onChanged={onChanged} />
       </div>
+
+      {showRisk && (
+        <div className="rounded-l border border-line bg-bg-1 p-4">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div className="min-w-0">
+              <h3 className="flex items-center gap-1.5 font-display text-sm font-semibold text-fg-1">
+                <ShieldAlert size={14} strokeWidth={1.5} className="text-fg-2" />
+                {t('compliance.scheinselbst.title')}
+              </h3>
+              <p className="mt-1 text-xs text-fg-2">{t('compliance.scheinselbst.subtitle')}</p>
+              {scheinCheck ? (
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <span className={`rounded-full border px-2 py-0.5 font-mono text-xs ${RISK_CHIP[scheinCheck.level]}`}>
+                    {t(`compliance.scheinselbst.levels.${scheinCheck.level}`)} · {scheinCheck.score}/{scheinCheck.max_score}
+                  </span>
+                  <span className="font-mono text-[10px] text-fg-3">
+                    {t('compliance.scheinselbst.assessedAt', {
+                      date: new Date(scheinCheck.assessed_at).toLocaleDateString(i18n.language),
+                    })}
+                  </span>
+                </div>
+              ) : (
+                <p className="mt-2 font-mono text-xs text-fg-3">{t('compliance.scheinselbst.notAssessed')}</p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowSchein(true)}
+              className="inline-flex shrink-0 items-center gap-1 rounded-s border border-line px-3 py-1.5 text-xs text-fg-2 transition-colors hover:border-accent hover:text-accent"
+            >
+              {scheinCheck ? t('compliance.scheinselbst.reassess') : t('compliance.scheinselbst.assess')}
+            </button>
+          </div>
+        </div>
+      )}
 
       {isCompany && manageWorkers && (
         <div className="rounded-l border border-line bg-bg-1 p-4">
@@ -260,6 +560,30 @@ export function ComplianceEntityPanel({ entity, directApprove = false, manageWor
           onSaved={() => {
             setWorkerModal(null)
             void loadWorkers()
+            onChanged?.()
+          }}
+        />
+      )}
+
+      {showSchein && (
+        <ScheinselbstModal
+          entity={entity}
+          current={scheinCheck}
+          onClose={() => setShowSchein(false)}
+          onSaved={(check) => {
+            setSavedChecks((prev) => ({ ...prev, [entity.id]: check }))
+            setShowSchein(false)
+            onChanged?.()
+          }}
+        />
+      )}
+
+      {showErase && (
+        <EraseModal
+          entity={entity}
+          onClose={() => setShowErase(false)}
+          onErased={() => {
+            setShowErase(false)
             onChanged?.()
           }}
         />

@@ -14,17 +14,37 @@ import { resetStore } from '@/lib/demo/store'
 import {
   approveDocument,
   assignmentKey,
+  createDocumentType,
+  createRequirement,
+  eraseEntityPersonalData,
+  extractDocumentFields,
   fetchChecklist,
   fetchComplianceForAssignments,
+  fetchDocumentTypes,
+  fetchEntities,
   fetchEntityByProfileId,
+  fetchEntityDossier,
   fetchProfileCompliance,
   fetchRequirements,
   fetchReviewQueue,
+  getTemplateSignedUrl,
+  saveScheinselbstCheck,
+  updateRequirement,
+  uploadTemplate,
 } from '@/services/complianceService'
+import { fetchComplianceReports } from '@/services/complianceReportsService'
 import { fetchOrderComplianceMap } from '@/services/workOrderService'
+import { billingWithholding } from '@/services/complianceHelpers'
+import {
+  fetchNotifications,
+  fetchUnreadCount,
+  markAllRead,
+  markRead,
+} from '@/services/notificationInboxService'
 
 const CONTRACTOR_ID = '00000000-0000-0000-0000-000000000003'
 const TECH_ID = '00000000-0000-0000-0000-000000000002'
+const ADMIN_ID = '00000000-0000-0000-0000-000000000001'
 const PROJECT_HXT = '20000000-0000-0000-0000-000000000001'
 const COMPANY_ENTITY = 'ce000000-0000-0000-0000-000000000001'
 const SS_ITEM_IN_REVIEW = 'ed000000-0000-0000-0000-000000000003'
@@ -181,5 +201,254 @@ describe('demo compliance — per-obra semáforo (Fase 3)', () => {
     ])
     expect(map.has(assignmentKey(CONTRACTOR_ID, PROJECT_HXT))).toBe(true)
     expect(map.has(assignmentKey(TECH_ID, PROJECT_HXT))).toBe(false)
+  })
+})
+
+describe('demo compliance — §48b withholding chip (Fase 4)', () => {
+  it('flags 15% withholding while the Freistellung §48b is not approved', async () => {
+    const { data: requirements } = await fetchRequirements()
+    const { data: rows } = await fetchChecklist(COMPANY_ENTITY, requirements)
+    const freistellung = rows.find((row) => row.documentType.code === 'freistellung_48b')
+    expect(freistellung?.item.status).toBe('pending')
+    expect(billingWithholding(rows)).toBe(true)
+  })
+})
+
+describe('demo compliance — in-app notification inbox (Fase 4)', () => {
+  it('returns the seeded unread notifications for the admin', async () => {
+    expect(await fetchUnreadCount(ADMIN_ID)).toBe(2)
+    const { data, error } = await fetchNotifications(ADMIN_ID)
+    expect(error).toBeNull()
+    expect(data.length).toBe(2)
+    expect(data.map((n) => n.category)).toEqual(
+      expect.arrayContaining(['doc_rejected', 'doc_expiring']),
+    )
+  })
+
+  it('marking one read drops the unread count', async () => {
+    const { data } = await fetchNotifications(ADMIN_ID)
+    await markRead(data[0].id)
+    expect(await fetchUnreadCount(ADMIN_ID)).toBe(1)
+  })
+
+  it('mark-all-read clears the unread count', async () => {
+    await markAllRead(ADMIN_ID)
+    expect(await fetchUnreadCount(ADMIN_ID)).toBe(0)
+  })
+})
+
+describe('demo compliance — inspection dossier assembly (Fase 5)', () => {
+  it('assembles the company section, aptitude and each posted worker', async () => {
+    const { data: entity } = await fetchEntityByProfileId(CONTRACTOR_ID)
+    expect(entity).not.toBeNull()
+    const { data: dossier, error } = await fetchEntityDossier(entity!)
+    expect(error).toBeNull()
+    expect(dossier).not.toBeNull()
+
+    expect(dossier!.main.entity.id).toBe(COMPANY_ENTITY)
+    expect(dossier!.main.items.length).toBeGreaterThan(0)
+    expect(['green', 'yellow', 'red']).toContain(dossier!.main.aptitude.level)
+
+    // Both seeded posted workers, each with its own checklist + aptitude.
+    expect(dossier!.workers.map((w) => w.entity.display_name)).toEqual(
+      expect.arrayContaining(['Carlos Méndez', 'Luis Fernández']),
+    )
+    for (const worker of dossier!.workers) {
+      expect(worker.entity.kind).toBe('company_worker')
+      expect(['green', 'yellow', 'red']).toContain(worker.aptitude.level)
+    }
+  })
+})
+
+describe('demo compliance — aggregate reports (Fase 5b)', () => {
+  it('lists the expired worker A1 attributed to its parent company', async () => {
+    const { data, error } = await fetchComplianceReports()
+    expect(error).toBeNull()
+    expect(data).not.toBeNull()
+
+    const expired = data!.expiring.find((row) => row.status === 'expired')
+    expect(expired).toBeDefined()
+    expect(expired!.daysLeft).toBeLessThan(0)
+    expect(expired!.parentName).toBe('Fibra Ibérica S.L.')
+    expect(data!.summary.expired).toBeGreaterThanOrEqual(1)
+  })
+
+  it('builds the aptitude portfolio for top-level entities only', async () => {
+    const { data } = await fetchComplianceReports()
+    const names = data!.portfolio.map((row) => row.entity.display_name)
+    expect(names).toContain('Fibra Ibérica S.L.')
+    // Posted workers never appear as their own portfolio row.
+    expect(names).not.toContain('Carlos Méndez')
+    expect(data!.summary.entities).toBe(data!.portfolio.length)
+  })
+})
+
+describe('demo compliance — matrix configurator CRUD (Fase 5c)', () => {
+  it('creates a document type and a linked requirement', async () => {
+    const { data: type, error: typeError } = await createDocumentType({
+      code: 'test_doc',
+      name_i18n: { es: 'Prueba', de: 'Test' },
+      description_i18n: null,
+    })
+    expect(typeError).toBeNull()
+    expect(type?.id).toBeTruthy()
+
+    const { data: req, error: reqError } = await createRequirement({
+      document_type_id: type!.id,
+      applies_to: 'company',
+      origin: 'ALL',
+      scope: 'entity',
+      is_mandatory: true,
+      conditions: {},
+      validity_rule: 'no_expiry',
+      validity_days: null,
+      min_amount: null,
+      requires_coverage_confirmation: false,
+      notify_days: [30],
+      on_missing_action: null,
+    })
+    expect(reqError).toBeNull()
+    const { data: all } = await fetchRequirements(true)
+    expect(all.some((r) => r.id === req!.id)).toBe(true)
+  })
+
+  it('deactivating a requirement hides it from the active fetch only', async () => {
+    const { data: type } = await createDocumentType({
+      code: 'test_doc2',
+      name_i18n: { es: 'Prueba 2', de: 'Test 2' },
+      description_i18n: null,
+    })
+    const { data: req } = await createRequirement({
+      document_type_id: type!.id,
+      applies_to: 'freelancer',
+      origin: 'DE',
+      scope: 'entity',
+      is_mandatory: false,
+      conditions: { regulated_trade: true },
+      validity_rule: 'no_expiry',
+      validity_days: null,
+      min_amount: null,
+      requires_coverage_confirmation: false,
+      notify_days: [30],
+      on_missing_action: null,
+    })
+    await updateRequirement(req!.id, { is_active: false })
+
+    const { data: active } = await fetchRequirements(false)
+    expect(active.some((r) => r.id === req!.id)).toBe(false)
+    const { data: all } = await fetchRequirements(true)
+    expect(all.some((r) => r.id === req!.id)).toBe(true)
+  })
+})
+
+describe('demo compliance — document type templates (Fase 5d)', () => {
+  it('uploads a PDF template and records its path on the document type', async () => {
+    const { data: type } = await createDocumentType({
+      code: 'tpl_doc',
+      name_i18n: { es: 'Con plantilla', de: 'Mit Vorlage' },
+      description_i18n: null,
+    })
+    const file = new File([new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d])], 'formular.pdf', { type: 'application/pdf' })
+    const { data: path, error } = await uploadTemplate(
+      { id: type!.id, code: type!.code, template_storage_path: null },
+      file,
+    )
+    expect(error).toBeNull()
+    expect(path).toMatch(/^templates\/tpl_doc\//)
+
+    const { data: types } = await fetchDocumentTypes(true)
+    expect(types.find((d) => d.id === type!.id)?.template_storage_path).toBe(path)
+
+    const { data: url } = await getTemplateSignedUrl(path!)
+    expect(url).toBeTruthy()
+  })
+
+  it('rejects a non-PDF template by magic bytes', async () => {
+    const { data: type } = await createDocumentType({
+      code: 'tpl_doc2',
+      name_i18n: { es: 'X', de: 'X' },
+      description_i18n: null,
+    })
+    const jpeg = new File([new Uint8Array([0xff, 0xd8, 0xff])], 'form.jpg', { type: 'image/jpeg' })
+    const { error } = await uploadTemplate({ id: type!.id, code: type!.code }, jpeg)
+    expect(error).toBe('file_type_not_allowed')
+  })
+})
+
+describe('demo compliance — Scheinselbstständigkeit risk assessment (Fase 6a)', () => {
+  it('reads the seeded freelancer as high risk', async () => {
+    const { data: entities } = await fetchEntities({ includeInactive: true })
+    const freelancer = entities.find((entity) => entity.kind === 'freelancer')
+    expect(freelancer).toBeDefined()
+    expect(freelancer!.scheinselbst_check?.level).toBe('high')
+    expect(freelancer!.scheinselbst_check?.score).toBe(9)
+  })
+
+  it('re-assessing recomputes the score/level and persists the snapshot', async () => {
+    const { data: entities } = await fetchEntities({ includeInactive: true })
+    const freelancer = entities.find((entity) => entity.kind === 'freelancer')!
+
+    const { data: updated, error } = await saveScheinselbstCheck(freelancer.id, {
+      answers: { no_own_employees: true },
+      note: 'Solo un indicio menor.',
+      assessedBy: ADMIN_ID,
+    })
+    expect(error).toBeNull()
+    expect(updated!.scheinselbst_check?.level).toBe('low')
+    expect(updated!.scheinselbst_check?.score).toBe(1)
+    expect(updated!.scheinselbst_check?.assessed_by).toBe(ADMIN_ID)
+
+    // Snapshot survives a re-fetch (persisted, not just returned).
+    const { data: after } = await fetchEntities({ includeInactive: true })
+    const reread = after.find((entity) => entity.id === freelancer.id)
+    expect(reread!.scheinselbst_check?.level).toBe('low')
+  })
+})
+
+describe('demo compliance — GDPR right-to-erasure (Fase 6b)', () => {
+  it('scrubs identifying PII and deactivates the entity', async () => {
+    const { data: entities } = await fetchEntities({ includeInactive: true })
+    const freelancer = entities.find((entity) => entity.kind === 'freelancer')!
+    expect(freelancer.contact_email).toBeTruthy()
+
+    const { data: erased, error } = await eraseEntityPersonalData(freelancer.id, ADMIN_ID)
+    expect(error).toBeNull()
+    expect(erased!.contact_email).toBeNull()
+    expect(erased!.contact_phone).toBeNull()
+    expect(erased!.address).toBeNull()
+    expect(erased!.legal_ids).toEqual({})
+    expect(erased!.scheinselbst_check).toBeNull()
+    expect(erased!.is_active).toBe(false)
+    expect(erased!.attributes.erased).toBe(true)
+    expect(erased!.attributes.erased_by).toBe(ADMIN_ID)
+    expect(erased!.display_name).toBe('[RGPD]')
+
+    // Erasure persists — the shell stays, but the PII is gone.
+    const { data: after } = await fetchEntities({ includeInactive: true })
+    const reread = after.find((entity) => entity.id === freelancer.id)
+    expect(reread!.contact_email).toBeNull()
+    expect(reread!.attributes.erased).toBe(true)
+  })
+})
+
+describe('demo compliance — OCR field extraction (Fase 6c)', () => {
+  it('extracts issue/expiry dates and the coverage amount from the OCR text', async () => {
+    const pdf = new File([new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d])], 'police.pdf', {
+      type: 'application/pdf',
+    })
+    const { data, error } = await extractDocumentFields(pdf)
+    expect(error).toBeNull()
+    expect(data!.rawText).toContain('Deckungssumme')
+    expect(data!.fields).toEqual({
+      issued_at: '2026-01-15',
+      expires_at: '2027-01-15',
+      amount: 5000000,
+    })
+  })
+
+  it('rejects a non-PDF/JPEG/PNG file before calling the OCR function', async () => {
+    const bogus = new File([new Uint8Array([0x00, 0x01, 0x02])], 'x.bin')
+    const { error } = await extractDocumentFields(bogus)
+    expect(error).toBe('file_type_not_allowed')
   })
 })

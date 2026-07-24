@@ -18,3 +18,17 @@ verify_jwt = true
 
 [functions.compliance-upload]
 verify_jwt = true
+
+[functions.send-email]
+verify_jwt = true
+
+# OCR bridge: returns raw text from an uploaded document for form pre-fill.
+# Any authenticated uploader may call it; parsing is client-side (Fase 6c).
+[functions.compliance-ocr]
+verify_jwt = true
+
+# Triggered by pg_cron via pg_net with the service role key. The gateway verifies
+# the JWT signature; the handler additionally requires the service_role claim
+# (checks the claim, not an exact key match, so it survives key rotations).
+[functions.compliance-notify]
+verify_jwt = true

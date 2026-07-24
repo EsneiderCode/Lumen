@@ -4,6 +4,9 @@ import {
   documentTypeName,
   metadataFieldsFor,
   missingMetadataFields,
+  parseAmountToken,
+  parseDocumentFields,
+  scoreScheinselbst,
   sniffFileKind,
   sortChecklist,
 } from '@/services/complianceHelpers'
@@ -198,5 +201,99 @@ describe('checklistProgress', () => {
       view('pending', { requirement: requirement({ is_mandatory: false }) }),
     ]
     expect(checklistProgress(rows)).toEqual({ done: 2, total: 3 })
+  })
+})
+
+describe('scoreScheinselbst — bogus self-employment risk scoring', () => {
+  it('scores no markers as low risk with the full max score', () => {
+    const result = scoreScheinselbst({})
+    expect(result).toEqual({ score: 0, maxScore: 14, flaggedCount: 0, level: 'low' })
+  })
+
+  it('weights the four strong markers double', () => {
+    const result = scoreScheinselbst({ single_client: true, no_own_employees: true })
+    expect(result.score).toBe(3) // 2 + 1
+    expect(result.flaggedCount).toBe(2)
+    expect(result.level).toBe('low') // 3/14 ≈ 0.21
+  })
+
+  it('reaches medium risk between 30% and 60%', () => {
+    const result = scoreScheinselbst({ single_client: true, integrated_org: true })
+    expect(result.score).toBe(4) // 2 + 2 → 4/14 ≈ 0.29 → still low
+    expect(result.level).toBe('low')
+    const medium = scoreScheinselbst({ single_client: true, integrated_org: true, fixed_hours: true })
+    expect(medium.score).toBe(5) // 5/14 ≈ 0.36
+    expect(medium.level).toBe('medium')
+  })
+
+  it('flags high risk at or above 60% of the weighted score', () => {
+    const result = scoreScheinselbst({
+      single_client: true,
+      client_instructions: true,
+      integrated_org: true,
+      no_entrepreneurial_risk: true,
+      fixed_hours: true,
+    })
+    expect(result.score).toBe(9) // 8 + 1 → 9/14 ≈ 0.64
+    expect(result.level).toBe('high')
+  })
+})
+
+describe('parseAmountToken — German/Spanish/English number formats', () => {
+  it('parses German grouping with decimal comma', () => {
+    expect(parseAmountToken('5.000.000,00')).toBe(5000000)
+    expect(parseAmountToken('1.234,56')).toBe(1234.56)
+    expect(parseAmountToken('500,00')).toBe(500)
+  })
+
+  it('parses English grouping with decimal point', () => {
+    expect(parseAmountToken('1,234.56')).toBe(1234.56)
+  })
+
+  it('treats a bare dot with 1–2 trailing digits as decimal, else thousands', () => {
+    expect(parseAmountToken('1234.56')).toBe(1234.56)
+    expect(parseAmountToken('1.000.000')).toBe(1000000)
+  })
+
+  it('returns null for non-numeric input', () => {
+    expect(parseAmountToken('abc')).toBeNull()
+  })
+})
+
+describe('parseDocumentFields — OCR field extraction', () => {
+  it('extracts labelled issue/expiry dates and a coverage amount (German)', () => {
+    const text = [
+      'Haftpflichtversicherung',
+      'Ausgestellt am 15.01.2026',
+      'Gültig bis 15.01.2027',
+      'Deckungssumme: 5.000.000,00 EUR',
+    ].join('\n')
+    expect(parseDocumentFields(text)).toEqual({
+      issued_at: '2026-01-15',
+      expires_at: '2027-01-15',
+      amount: 5000000,
+    })
+  })
+
+  it('reads Spanish labels and ISO dates', () => {
+    const text = 'Válido hasta 2027-06-30\nImporte: 1.500,00 €'
+    const result = parseDocumentFields(text)
+    expect(result.expires_at).toBe('2027-06-30')
+    expect(result.amount).toBe(1500)
+  })
+
+  it('falls back to earliest/latest when dates are unlabelled', () => {
+    const result = parseDocumentFields('01.02.2025 ... 01.02.2028')
+    expect(result.issued_at).toBe('2025-02-01')
+    expect(result.expires_at).toBe('2028-02-01')
+  })
+
+  it('does not mistake a date for an amount', () => {
+    // No amount label/currency → amount stays null even though the date has digits.
+    expect(parseDocumentFields('Gültig bis 31.12.2026').amount).toBeNull()
+  })
+
+  it('returns all nulls for empty text', () => {
+    expect(parseDocumentFields('')).toEqual({ issued_at: null, expires_at: null, amount: null })
   })
 })

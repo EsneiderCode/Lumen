@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Building2, Check, ChevronRight, Inbox, Plus, UserRound, X } from 'lucide-react'
+import { BarChart3, Building2, Check, ChevronRight, Inbox, Plus, Settings2, UserRound, X } from 'lucide-react'
 import {
   approveDocument,
   createEntity,
@@ -24,6 +24,9 @@ import {
 } from '@/services/complianceHelpers'
 import { applicableRequirements } from '@/services/complianceRequirementEngine'
 import { ComplianceEntityPanel } from '@/components/compliance/ComplianceEntityPanel'
+import { ComplianceReports } from '@/components/compliance/ComplianceReports'
+import { ComplianceMatrixConfig } from '@/components/compliance/ComplianceMatrixConfig'
+import { usePermissions } from '@/hooks/usePermissions'
 import { createOperationalUser } from '@/services/userService'
 import { useAuth } from '@/hooks/useAuth'
 import { REJECTION_REASONS } from '@/types/compliance'
@@ -98,6 +101,12 @@ function ReviewModal({ entry, requirement, onClose, onDone }: ReviewModalProps) 
       reviewerId: user.id,
       approved,
       coverageConfirmed,
+      notify: {
+        to: entry.entity.contact_email,
+        entityName: entry.entity.display_name,
+        docName: documentTypeName(entry.documentType, i18n.language),
+        locale: i18n.language.slice(0, 2),
+      },
     })
     setWorking(false)
     if (approveError) {
@@ -125,6 +134,12 @@ function ReviewModal({ entry, requirement, onClose, onDone }: ReviewModalProps) 
       reviewerId: user.id,
       reasons,
       text: rejectionText,
+      notify: {
+        to: entry.entity.contact_email,
+        entityName: entry.entity.display_name,
+        docName: documentTypeName(entry.documentType, i18n.language),
+        locale: i18n.language.slice(0, 2),
+      },
     })
     setWorking(false)
     if (rejectError) {
@@ -586,7 +601,9 @@ function OnboardingWizard({ requirements, documentTypes, onClose, onCreated }: W
 
 export function CompliancePage() {
   const { t, i18n } = useTranslation()
-  const [activeTab, setActiveTab] = useState<'inbox' | 'entities'>('inbox')
+  const { can } = usePermissions()
+  const canConfigureMatrix = can('compliance.configure_matrix')
+  const [activeTab, setActiveTab] = useState<'inbox' | 'entities' | 'reports' | 'matrix'>('inbox')
   const [queue, setQueue] = useState<ReviewQueueEntry[]>([])
   const [entities, setEntities] = useState<ComplianceEntityRecord[]>([])
   const [requirements, setRequirements] = useState<DocumentRequirement[]>([])
@@ -626,7 +643,7 @@ export function CompliancePage() {
   )
   const selectedEntity = entities.find((entity) => entity.id === selectedEntityId) ?? null
 
-  const tabClass = (tab: 'inbox' | 'entities') =>
+  const tabClass = (tab: 'inbox' | 'entities' | 'reports' | 'matrix') =>
     activeTab === tab
       ? 'rounded-s border border-accent bg-accent/10 px-3 py-2 font-sans text-sm text-accent transition-colors'
       : 'rounded-s border border-line px-3 py-2 font-sans text-sm text-fg-2 transition-colors hover:text-fg-1'
@@ -660,6 +677,16 @@ export function CompliancePage() {
         <button type="button" onClick={() => setActiveTab('entities')} className={tabClass('entities')}>
           {t('compliance.tabs.entities')}
         </button>
+        <button type="button" onClick={() => setActiveTab('reports')} className={tabClass('reports')}>
+          <BarChart3 size={13} strokeWidth={1.5} className="mr-1 inline" />
+          {t('compliance.tabs.reports')}
+        </button>
+        {canConfigureMatrix && (
+          <button type="button" onClick={() => setActiveTab('matrix')} className={tabClass('matrix')}>
+            <Settings2 size={13} strokeWidth={1.5} className="mr-1 inline" />
+            {t('compliance.tabs.matrix')}
+          </button>
+        )}
       </div>
 
       {error && (
@@ -703,6 +730,10 @@ export function CompliancePage() {
             </ul>
           )}
         </div>
+      ) : activeTab === 'reports' ? (
+        <ComplianceReports />
+      ) : activeTab === 'matrix' ? (
+        canConfigureMatrix ? <ComplianceMatrixConfig /> : null
       ) : (
         <div className="space-y-4">
           <div className="rounded-l border border-line">
@@ -748,7 +779,13 @@ export function CompliancePage() {
           </div>
 
           {selectedEntity && (
-            <ComplianceEntityPanel entity={selectedEntity} directApprove onChanged={() => void load()} />
+            <ComplianceEntityPanel
+              entity={selectedEntity}
+              directApprove
+              riskAssessment
+              allowErasure={canConfigureMatrix}
+              onChanged={() => void load()}
+            />
           )}
         </div>
       )}

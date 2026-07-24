@@ -368,6 +368,72 @@ describe('database migrations cover billing workflow schema', () => {
     )
   })
 
+  it('adds the compliance notifications inbox + sweep fan-out (048)', () => {
+    expect(migrationSql).toContain('depends on: 047_compliance_assignment_override.sql')
+    // extensions for scheduling + outbound HTTP
+    expect(migrationSql).toContain('create extension if not exists pg_cron')
+    expect(migrationSql).toContain('create extension if not exists pg_net')
+    // in-app inbox table + idempotent dedupe index + RLS
+    expect(migrationSql).toContain('create table if not exists public.notifications')
+    expect(migrationSql).toContain('idx_notifications_dedupe')
+    expect(migrationSql).toMatch(
+      /create\s+policy\s+"notifications_own_select"[\s\S]*recipient_id\s*=\s*auth\.uid\(\)/,
+    )
+    // the sweep now returns rows and writes notifications for compliance.review holders
+    expect(migrationSql).toMatch(
+      /create\s+function\s+public\.run_compliance_expiry_sweep\(\)[\s\S]*returns\s+table/,
+    )
+    expect(migrationSql).toMatch(
+      /insert\s+into\s+public\.notifications[\s\S]*user_has_permission\(pr\.id,\s*'compliance\.review'\)/,
+    )
+    // review → owner notification trigger
+    expect(migrationSql).toContain('document_reviews_notify_owner')
+    // daily schedule invoking the compliance-notify Edge Function
+    expect(migrationSql).toMatch(/cron\.schedule\(\s*'lumen-compliance-daily'/)
+    expect(migrationSql).toContain('/functions/v1/compliance-notify')
+  })
+
+  it('registers the compliance email + notify Edge Functions (048)', () => {
+    expect(supabaseConfig).toContain('[functions.send-email]')
+    expect(supabaseConfig).toMatch(/\[functions\.compliance-notify\][\s\S]*verify_jwt\s*=\s*true/)
+  })
+
+  it('adds template storage policies readable by the whole workforce (049)', () => {
+    expect(migrationSql).toContain('depends on: 048_compliance_notifications.sql')
+    // any authenticated user may read blank templates under templates/
+    expect(migrationSql).toMatch(
+      /create\s+policy\s+"storage_compliance_templates_read"[\s\S]*\(storage\.foldername\(name\)\)\[1\]\s*=\s*'templates'/,
+    )
+    // writes are gated to matrix configurators
+    expect(migrationSql).toMatch(
+      /storage_compliance_templates_insert[\s\S]*has_permission\('compliance\.configure_matrix'\)/,
+    )
+    expect(migrationSql).toContain('storage_compliance_templates_delete')
+  })
+
+  it('adds the GDPR retention sweep + monthly cron (050)', () => {
+    expect(migrationSql).toContain('depends on: 049_compliance_document_templates.sql')
+    // retention sweep purges the access log, SECURITY DEFINER (no DELETE RLS)
+    expect(migrationSql).toMatch(
+      /create\s+or\s+replace\s+function\s+public\.run_compliance_retention_sweep\(retain_days\s+integer/,
+    )
+    expect(migrationSql).toMatch(
+      /delete\s+from\s+public\.document_access_log[\s\S]*created_at\s*<\s*now\(\)/,
+    )
+    expect(migrationSql).toContain('security definer')
+    // not callable by app roles
+    expect(migrationSql).toMatch(
+      /revoke\s+all\s+on\s+function\s+public\.run_compliance_retention_sweep\(integer\)\s+from\s+public,\s*anon,\s*authenticated/,
+    )
+    // scheduled monthly as a pure SQL call (no Edge Function)
+    expect(migrationSql).toMatch(/cron\.schedule\(\s*'lumen-compliance-retention'/)
+    expect(migrationSql).toContain('select public.run_compliance_retention_sweep();')
+  })
+
+  it('registers the compliance-ocr Edge Function (6c)', () => {
+    expect(supabaseConfig).toMatch(/\[functions\.compliance-ocr\][\s\S]*verify_jwt\s*=\s*true/)
+  })
+
   it('rewrites admin-gated RLS policies to permission checks (035)', () => {
     expect(migrationSql).toContain('depends on: 034_rbac_core.sql')
     // the old role-literal admin gates must be dropped…

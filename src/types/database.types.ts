@@ -956,6 +956,47 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          category: string
+          created_at: string
+          dedupe_key: string
+          id: string
+          level: string
+          payload: Json
+          read_at: string | null
+          recipient_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          dedupe_key: string
+          id?: string
+          level?: string
+          payload?: Json
+          read_at?: string | null
+          recipient_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          dedupe_key?: string
+          id?: string
+          level?: string
+          payload?: Json
+          read_at?: string | null
+          recipient_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       operators: {
         Row: {
           code: string
@@ -2820,7 +2861,21 @@ export type Database = {
         Args: { p_folder: string }
         Returns: boolean
       }
-      run_compliance_expiry_sweep: { Args: never; Returns: number }
+      run_compliance_expiry_sweep: {
+        Args: never
+        Returns: {
+          days_remaining: number
+          document_type_code: string
+          document_type_name: Json
+          entity_contact_email: string
+          entity_display_name: string
+          entity_document_id: string
+          entity_id: string
+          entity_profile_id: string
+          expires_on: string
+          new_status: string
+        }[]
+      }
       sync_permissions: { Args: { perms: Json }; Returns: Json }
       user_has_permission: {
         Args: { perm: string; uid: string }

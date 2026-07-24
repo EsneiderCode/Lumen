@@ -11,7 +11,13 @@ import {
   countryOriginBucket,
   reconcileChecklist,
 } from '@/services/complianceRequirementEngine'
-import { MAX_UPLOAD_BYTES, sniffFileKind } from '@/services/complianceHelpers'
+import {
+  MAX_UPLOAD_BYTES,
+  parseDocumentFields,
+  scoreScheinselbst,
+  sniffFileKind,
+} from '@/services/complianceHelpers'
+import type { OcrDocumentFields } from '@/services/complianceHelpers'
 import type {
   AptitudeResult,
   ChecklistItemView,
@@ -21,10 +27,15 @@ import type {
   DocumentRequirement,
   DocumentReview,
   DocumentType,
+  DocumentValidityRule,
   DocumentVersion,
   EntityAttributes,
   EntityDocument,
   RejectionReason,
+  RequirementOrigin,
+  RequirementScope,
+  ScheinselbstCheck,
+  ScheinselbstIndicator,
 } from '@/types/compliance'
 
 type Row = Record<string, unknown>
@@ -42,20 +53,20 @@ function msg(error: unknown): string | null {
 // Catalog + matrix
 // ─────────────────────────────────────────────────────────────────────────────
 
-export async function fetchDocumentTypes() {
-  const { data, error } = await supabase
-    .from('document_types')
-    .select('*')
-    .eq('is_active', true)
+export async function fetchDocumentTypes(includeInactive = false) {
+  let query = supabase.from('document_types').select('*')
+  if (!includeInactive) query = query.eq('is_active', true)
+  const { data, error } = await query
   return { data: (data ?? []) as unknown as DocumentType[], error: msg(error) }
 }
 
 /** Active matrix rules with the document type code denormalized for the engine. */
-export async function fetchRequirements() {
-  const { data, error } = await supabase
+export async function fetchRequirements(includeInactive = false) {
+  let query = supabase
     .from('document_requirements')
     .select('*, document_types:document_type_id(code)')
-    .eq('is_active', true)
+  if (!includeInactive) query = query.eq('is_active', true)
+  const { data, error } = await query
   const rows = ((data ?? []) as Row[]).map((row) => {
     const joined = row.document_types as { code?: string } | null
     return {
@@ -68,6 +79,130 @@ export async function fetchRequirements() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Matrix configurator CRUD (Fase 5c) — gated by RLS on compliance.configure_matrix
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface DocumentTypePayload {
+  code: string
+  name_i18n: Record<string, string>
+  description_i18n: Record<string, string> | null
+  metadata_schema?: Array<{ key: string; type: string }>
+  template_storage_path?: string | null
+  is_active?: boolean
+}
+
+export interface RequirementPayload {
+  document_type_id: string
+  applies_to: ComplianceEntityKind
+  origin: RequirementOrigin
+  scope: RequirementScope
+  is_mandatory: boolean
+  conditions: EntityAttributes
+  validity_rule: DocumentValidityRule
+  validity_days: number | null
+  min_amount: number | null
+  requires_coverage_confirmation: boolean
+  notify_days: number[]
+  on_missing_action: string | null
+  is_active?: boolean
+}
+
+export async function createDocumentType(payload: DocumentTypePayload) {
+  const { data, error } = await supabase
+    .from('document_types')
+    .insert({
+      metadata_schema: [],
+      template_storage_path: null,
+      is_active: true,
+      ...payload,
+    } as never)
+    .select('*')
+    .single()
+  return { data: (data as unknown as DocumentType) ?? null, error: msg(error) }
+}
+
+export async function updateDocumentType(id: string, payload: Partial<DocumentTypePayload>) {
+  const { data, error } = await supabase
+    .from('document_types')
+    .update(payload as never)
+    .eq('id', id)
+    .select('*')
+    .single()
+  return { data: (data as unknown as DocumentType) ?? null, error: msg(error) }
+}
+
+export async function createRequirement(payload: RequirementPayload) {
+  const { data, error } = await supabase
+    .from('document_requirements')
+    .insert({ is_active: true, ...payload } as never)
+    .select('*')
+    .single()
+  return { data: (data as unknown as DocumentRequirement) ?? null, error: msg(error) }
+}
+
+export async function updateRequirement(id: string, payload: Partial<RequirementPayload>) {
+  const { data, error } = await supabase
+    .from('document_requirements')
+    .update(payload as never)
+    .eq('id', id)
+    .select('*')
+    .single()
+  return { data: (data as unknown as DocumentRequirement) ?? null, error: msg(error) }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Document type templates (Fase 5d) — blank official forms in compliance-documents
+// under templates/<code>/<file>; read by any authenticated user (migration 049),
+// write gated by compliance.configure_matrix RLS.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const TEMPLATE_BUCKET = 'compliance-documents'
+
+/**
+ * Uploads (or replaces) the PDF template of a document type and records its path
+ * on document_types.template_storage_path. PDF-only, size-capped, validated by
+ * magic bytes client-side (server RLS still enforces who may write).
+ */
+export async function uploadTemplate(
+  docType: { id: string; code: string; template_storage_path?: string | null },
+  file: File,
+): Promise<{ data: string | null; error: string | null }> {
+  if (file.size > MAX_UPLOAD_BYTES) return { data: null, error: 'file_too_large' }
+  const head = new Uint8Array(await file.slice(0, 8).arrayBuffer())
+  if (sniffFileKind(head) !== 'pdf') return { data: null, error: 'file_type_not_allowed' }
+
+  const safeName = file.name.replace(/[^\w.-]+/g, '_')
+  const path = `templates/${docType.code}/${Date.now()}_${safeName}`
+  const { error: uploadError } = await supabase.storage
+    .from(TEMPLATE_BUCKET)
+    .upload(path, file, { upsert: true, contentType: 'application/pdf' })
+  if (uploadError) return { data: null, error: msg(uploadError) }
+
+  const { error: updateError } = await updateDocumentType(docType.id, { template_storage_path: path })
+  if (updateError) return { data: null, error: updateError }
+
+  // Best-effort cleanup of the previous file (never blocks the happy path).
+  if (docType.template_storage_path && docType.template_storage_path !== path) {
+    void supabase.storage.from(TEMPLATE_BUCKET).remove([docType.template_storage_path])
+  }
+  return { data: path, error: null }
+}
+
+export async function getTemplateSignedUrl(path: string) {
+  const { data, error } = await supabase.storage.from(TEMPLATE_BUCKET).createSignedUrl(path, 3600)
+  if (error || !data?.signedUrl) return { data: null, error: msg(error) ?? 'no_signed_url' }
+  return { data: data.signedUrl, error: null }
+}
+
+export async function removeTemplate(docType: { id: string; template_storage_path: string | null }) {
+  if (docType.template_storage_path) {
+    void supabase.storage.from(TEMPLATE_BUCKET).remove([docType.template_storage_path])
+  }
+  const { error } = await updateDocumentType(docType.id, { template_storage_path: null })
+  return { error }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Entities
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -76,6 +211,7 @@ export interface ComplianceEntityRecord extends ComplianceEntity {
   contact_phone: string | null
   address: string | null
   legal_ids: Record<string, string>
+  scheinselbst_check: ScheinselbstCheck | null
   notes: string | null
   created_at: string
 }
@@ -189,6 +325,68 @@ export async function updateEntity(id: string, payload: EntityPayload) {
     .select()
     .single()
   return { data: data as unknown as ComplianceEntityRecord | null, error: msg(error) }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Scheinselbstständigkeit risk assessment (Fase 6a) — freelancers only.
+// Informative decision-support persisted on compliance_entities.scheinselbst_check.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface ScheinselbstCheckInput {
+  answers: Partial<Record<ScheinselbstIndicator, boolean>>
+  note: string | null
+  assessedBy: string | null
+}
+
+/** Scores the checklist and stores the resulting snapshot on the entity. */
+export async function saveScheinselbstCheck(entityId: string, input: ScheinselbstCheckInput) {
+  const { score, maxScore, level } = scoreScheinselbst(input.answers)
+  const check: ScheinselbstCheck = {
+    answers: input.answers,
+    note: input.note?.trim() || null,
+    score,
+    max_score: maxScore,
+    level,
+    assessed_by: input.assessedBy,
+    assessed_at: new Date().toISOString(),
+  }
+  const { data, error } = await supabase
+    .from('compliance_entities')
+    .update({ scheinselbst_check: check } as never)
+    .eq('id', entityId)
+    .select()
+    .single()
+  return { data: (data as unknown as ComplianceEntityRecord) ?? null, error: msg(error) }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GDPR right-to-erasure (Fase 6b) — scrub a single entity's identifying PII.
+// Admin action on an inactive entity whose legal retention period has lapsed;
+// runs under the existing compliance RLS (admins may UPDATE compliance_entities).
+// The compliance shell is kept (deactivated + pseudonymised) so the audit trail
+// of past assignments stays referentially intact.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function eraseEntityPersonalData(entityId: string, erasedBy: string | null) {
+  const erasedAt = new Date().toISOString()
+  const { data, error } = await supabase
+    .from('compliance_entities')
+    .update({
+      display_name: '[RGPD]',
+      nationality_country: null,
+      contact_email: null,
+      contact_phone: null,
+      address: null,
+      legal_ids: {},
+      notes: null,
+      scheinselbst_check: null,
+      attributes: { erased: true, erased_at: erasedAt, erased_by: erasedBy },
+      is_active: false,
+    } as never)
+    .eq('id', entityId)
+    .select()
+    .single()
+  return { data: (data as unknown as ComplianceEntityRecord) ?? null, error: msg(error) }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -340,6 +538,35 @@ export async function uploadDocument(args: UploadDocumentArgs) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// OCR field extraction (Fase 6c) — pre-fills the upload form. The compliance-ocr
+// Edge Function returns raw text only; parsing is the shared pure helper so it is
+// deterministic and unit-tested. Best-effort: a human always confirms the values.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface OcrExtraction {
+  fields: OcrDocumentFields
+  rawText: string
+}
+
+export async function extractDocumentFields(
+  file: File,
+): Promise<{ data: OcrExtraction | null; error: string | null }> {
+  if (file.size > MAX_UPLOAD_BYTES) return { data: null, error: 'file_too_large' }
+  const head = new Uint8Array(await file.slice(0, 8).arrayBuffer())
+  if (!sniffFileKind(head)) return { data: null, error: 'file_type_not_allowed' }
+
+  const form = new FormData()
+  form.append('file', file, file.name)
+  const { data, error } = await supabase.functions.invoke<{ text: string }>('compliance-ocr', {
+    method: 'POST',
+    body: form,
+  })
+  if (error) return { data: null, error: msg(error) }
+  const rawText = data?.text ?? ''
+  return { data: { fields: parseDocumentFields(rawText), rawText }, error: null }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Review (admin inbox)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -381,12 +608,50 @@ export async function fetchReviewQueue(): Promise<{
   return { data: entries, error: msg(error) }
 }
 
+/** Optional real-time email to the entity owner after a review decision. */
+export interface ReviewNotify {
+  to: string | null
+  entityName: string
+  docName: string
+  locale?: string
+}
+
+/**
+ * Best-effort review-result email via the send-email Edge Function. The in-app
+ * notification is written by the DB trigger (migration 048); this only adds the
+ * email channel. Never throws — a failed send must not break the review flow.
+ */
+async function sendReviewEmail(
+  action: 'approved' | 'rejected',
+  notify: ReviewNotify | undefined,
+  rejectionText?: string,
+): Promise<void> {
+  if (!notify?.to) return
+  try {
+    await supabase.functions.invoke('send-email', {
+      body: {
+        type: 'doc_review_result',
+        to: notify.to,
+        entityName: notify.entityName,
+        docName: notify.docName,
+        action,
+        locale: notify.locale ?? 'es',
+        ...(action === 'rejected' && rejectionText ? { rejectionText } : {}),
+      },
+    })
+  } catch {
+    // Non-critical — the in-app notification already covers the owner.
+  }
+}
+
 export interface ApproveDocumentArgs {
   itemId: string
   versionId: string
   reviewerId: string
   approved: DocumentMetadataInput
   coverageConfirmed?: boolean
+  /** When set, emails the entity owner that the document was approved. */
+  notify?: ReviewNotify
 }
 
 /** Approve correcting metadata: the reviewer-confirmed values become approved_*. */
@@ -415,7 +680,10 @@ export async function approveDocument(args: ApproveDocumentArgs) {
     action: 'approved',
     approved_metadata: approvedMetadata,
   })
-  return { error: msg(reviewError) }
+  if (reviewError) return { error: msg(reviewError) }
+
+  await sendReviewEmail('approved', args.notify)
+  return { error: null }
 }
 
 export interface RejectDocumentArgs {
@@ -424,6 +692,8 @@ export interface RejectDocumentArgs {
   reviewerId: string
   reasons: RejectionReason[]
   text: string
+  /** When set, emails the entity owner that the document was rejected. */
+  notify?: ReviewNotify
 }
 
 /** Reject with typed causes; the free-text explanation is mandatory. */
@@ -444,7 +714,10 @@ export async function rejectDocument(args: RejectDocumentArgs) {
     rejection_reasons: args.reasons,
     rejection_text: args.text.trim(),
   })
-  return { error: msg(reviewError) }
+  if (reviewError) return { error: msg(reviewError) }
+
+  await sendReviewEmail('rejected', args.notify, args.text.trim())
+  return { error: null }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -628,4 +901,78 @@ export async function fetchComplianceForAssignments(
     })
   }
   return { data: result, error: null }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Inspection dossier (Fase 5) — read-only snapshot assembled for the PDF export
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** One entity's compliance snapshot: its checklist + computed aptitude. */
+export interface DossierSection {
+  entity: ComplianceEntityRecord
+  aptitude: AptitudeResult
+  items: ChecklistItemView[]
+}
+
+/**
+ * Full inspection dossier for an entity. For companies it also embeds each
+ * posted worker's section, with the company aptitude passed as `parentAptitude`
+ * so a worker cannot read greener than the company that fields it — mirroring
+ * the DB gate.
+ */
+export interface EntityDossier {
+  main: DossierSection
+  workers: DossierSection[]
+  generatedAt: string
+}
+
+/**
+ * Assembles the {@link EntityDossier} for the entity (entity-scope aptitude,
+ * projectId null). Reuses fetchChecklist / fetchWorkers / computeAptitude so it
+ * stays consistent with the panels and the enforcement gates.
+ */
+export async function fetchEntityDossier(
+  entity: ComplianceEntityRecord,
+  requirements?: DocumentRequirement[],
+): Promise<{ data: EntityDossier | null; error: string | null }> {
+  let matrix = requirements
+  if (!matrix) {
+    const { data, error } = await fetchRequirements()
+    if (error) return { data: null, error }
+    matrix = data
+  }
+
+  const { data: items, error: itemsError } = await fetchChecklist(entity.id, matrix)
+  if (itemsError) return { data: null, error: itemsError }
+
+  const aptitude = computeAptitude({
+    entity,
+    requirements: matrix,
+    items: items.map((view) => view.item),
+    projectId: null,
+  })
+  const main: DossierSection = { entity, aptitude, items }
+
+  const workers: DossierSection[] = []
+  if (entity.kind === 'company') {
+    const { data: roster, error: workersError } = await fetchWorkers(entity.id)
+    if (workersError) return { data: null, error: workersError }
+    for (const worker of roster) {
+      const { data: workerItems, error: workerError } = await fetchChecklist(worker.id, matrix)
+      if (workerError) return { data: null, error: workerError }
+      workers.push({
+        entity: worker,
+        aptitude: computeAptitude({
+          entity: worker,
+          requirements: matrix,
+          items: workerItems.map((view) => view.item),
+          projectId: null,
+          parentAptitude: aptitude,
+        }),
+        items: workerItems,
+      })
+    }
+  }
+
+  return { data: { main, workers, generatedAt: new Date().toISOString() }, error: null }
 }

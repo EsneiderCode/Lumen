@@ -1,6 +1,7 @@
 import { Menu, Search } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Breadcrumb } from './Breadcrumb'
+import { NotificationBell } from './NotificationBell'
 import { LanguageSelector } from '@/components/ui/LanguageSelector'
 import { useAuth } from '@/hooks/useAuth'
 import { useInstallPrompt } from '@/hooks/useInstallPrompt'
@@ -49,6 +50,8 @@ export function Topbar({ onOpenSidebar }: TopbarProps) {
           {t('nav.installApp')}
         </button>
       )}
+
+      <NotificationBell />
 
       <LanguageSelector />
 

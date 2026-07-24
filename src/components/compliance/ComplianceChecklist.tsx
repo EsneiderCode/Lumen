@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Check, Clock, Download, FileText, History, Upload, XCircle } from 'lucide-react'
+import { Check, Clock, Download, FileDown, FileText, History, ScanLine, Upload, X, XCircle } from 'lucide-react'
 import {
+  extractDocumentFields,
   fetchChecklist,
   fetchRequirements,
   fetchVersionHistory,
+  getTemplateSignedUrl,
   getVersionSignedUrl,
   materializeChecklist,
   uploadDocument,
@@ -12,6 +14,7 @@ import {
 import type { ComplianceEntityRecord } from '@/services/complianceService'
 import {
   ACCEPTED_UPLOAD_MIME,
+  billingWithholding,
   checklistProgress,
   documentTypeName,
   metadataFieldsFor,
@@ -84,10 +87,31 @@ function ChecklistRow({ view, directApprove, onUploaded }: RowProps) {
   const [error, setError] = useState<string | null>(null)
   const [showHistory, setShowHistory] = useState(false)
   const [history, setHistory] = useState<DocumentVersion[] | null>(null)
+  const [stagedFile, setStagedFile] = useState<File | null>(null)
+  const [ocrState, setOcrState] = useState<'idle' | 'working' | 'error'>('idle')
 
   const fields = useMemo(() => metadataFieldsFor(documentType, requirement), [documentType, requirement])
   const inactive = item.status === 'not_applicable'
   const canUpload = !inactive
+  // Slots with date/amount fields benefit from OCR pre-fill → staged two-step
+  // upload; field-less slots keep the original one-click upload.
+  const staged = fields.length > 0
+
+  async function handleOcr(file: File) {
+    setOcrState('working')
+    setError(null)
+    const { data, error: ocrError } = await extractDocumentFields(file)
+    if (ocrError || !data) {
+      setOcrState('error')
+      return
+    }
+    setMetadata((prev) => ({
+      issued_at: data.fields.issued_at ?? prev.issued_at,
+      expires_at: data.fields.expires_at ?? prev.expires_at,
+      amount: data.fields.amount ?? prev.amount,
+    }))
+    setOcrState('idle')
+  }
 
   async function handleUpload(file: File | null) {
     if (!file) return
@@ -114,12 +138,24 @@ function ChecklistRow({ view, directApprove, onUploaded }: RowProps) {
       return
     }
     setMetadata({ issued_at: null, expires_at: null, amount: null })
+    setStagedFile(null)
+    setOcrState('idle')
     onUploaded()
   }
 
   async function handleDownload(version: DocumentVersion) {
     if (!user) return
     const { data: url, error: urlError } = await getVersionSignedUrl(version, user.id)
+    if (urlError || !url) {
+      setError(urlError ?? 'no_signed_url')
+      return
+    }
+    window.open(url, '_blank', 'noreferrer')
+  }
+
+  async function handleTemplateDownload() {
+    if (!documentType.template_storage_path) return
+    const { data: url, error: urlError } = await getTemplateSignedUrl(documentType.template_storage_path)
     if (urlError || !url) {
       setError(urlError ?? 'no_signed_url')
       return
@@ -157,6 +193,17 @@ function ChecklistRow({ view, directApprove, onUploaded }: RowProps) {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <StatusChip status={item.status} />
+          {documentType.template_storage_path && (
+            <button
+              type="button"
+              onClick={() => void handleTemplateDownload()}
+              className="inline-flex items-center gap-1 rounded-s border border-line px-2 py-1 text-xs text-fg-2 transition-colors hover:border-accent hover:text-accent"
+              title={t('compliance.templateAvailable')}
+            >
+              <FileDown size={13} strokeWidth={1.5} />
+              {t('compliance.downloadTemplate')}
+            </button>
+          )}
           {currentVersion && (
             <button
               type="button"
@@ -246,19 +293,71 @@ function ChecklistRow({ view, directApprove, onUploaded }: RowProps) {
               <Upload size={11} strokeWidth={1.5} className="mr-1 inline" />
               {currentVersion ? t('compliance.uploadReplacement') : t('compliance.uploadFile')}
             </span>
-            <span className="flex items-center gap-2">
+            {!staged ? (
+              <span className="flex items-center gap-2">
+                <input
+                  type="file"
+                  accept={ACCEPTED_UPLOAD_MIME}
+                  disabled={isUploading}
+                  onChange={(e) => {
+                    void handleUpload(e.target.files?.[0] ?? null)
+                    e.target.value = ''
+                  }}
+                  className="min-w-0 flex-1 text-xs text-fg-2 file:mr-2 file:rounded-s file:border file:border-line file:bg-bg-1 file:px-2 file:py-1 file:text-xs file:text-fg-1"
+                />
+                {isUploading && <span className="nx-loader-sm" aria-label="[LOADING]" />}
+              </span>
+            ) : stagedFile ? (
+              <span className="flex flex-wrap items-center gap-2">
+                <span className="min-w-0 flex-1 truncate font-mono text-xs text-fg-2">{stagedFile.name}</span>
+                <button
+                  type="button"
+                  disabled={ocrState === 'working' || isUploading}
+                  onClick={() => void handleOcr(stagedFile)}
+                  className="inline-flex items-center gap-1 rounded-s border border-line px-2 py-1 text-xs text-fg-2 transition-colors hover:border-accent hover:text-accent disabled:opacity-50"
+                  title={t('compliance.ocr.hint')}
+                >
+                  <ScanLine size={13} strokeWidth={1.5} />
+                  {ocrState === 'working' ? t('compliance.ocr.scanning') : t('compliance.ocr.button')}
+                </button>
+                <button
+                  type="button"
+                  disabled={isUploading}
+                  onClick={() => void handleUpload(stagedFile)}
+                  className="inline-flex items-center gap-1 rounded-s bg-accent px-2 py-1 text-xs font-semibold text-fg-1 transition-opacity hover:opacity-90 disabled:opacity-50"
+                >
+                  {isUploading ? t('common.saving') : t('compliance.uploadConfirm')}
+                </button>
+                <button
+                  type="button"
+                  disabled={isUploading}
+                  onClick={() => {
+                    setStagedFile(null)
+                    setOcrState('idle')
+                  }}
+                  className="text-fg-3 transition-colors hover:text-fg-1"
+                  aria-label={t('common.cancel')}
+                >
+                  <X size={14} strokeWidth={1.5} />
+                </button>
+              </span>
+            ) : (
               <input
                 type="file"
                 accept={ACCEPTED_UPLOAD_MIME}
-                disabled={isUploading}
                 onChange={(e) => {
-                  void handleUpload(e.target.files?.[0] ?? null)
+                  const file = e.target.files?.[0] ?? null
+                  setStagedFile(file)
+                  setOcrState('idle')
+                  setError(null)
                   e.target.value = ''
                 }}
                 className="min-w-0 flex-1 text-xs text-fg-2 file:mr-2 file:rounded-s file:border file:border-line file:bg-bg-1 file:px-2 file:py-1 file:text-xs file:text-fg-1"
               />
-              {isUploading && <span className="nx-loader-sm" aria-label="[LOADING]" />}
-            </span>
+            )}
+            {ocrState === 'error' && (
+              <span className="mt-1 block text-[10px] text-warn">{t('compliance.ocr.failed')}</span>
+            )}
           </label>
         </div>
       )}
@@ -301,6 +400,7 @@ export function ComplianceChecklist({ entity, directApprove = false, onChanged }
   }, [entity.id])
 
   const progress = checklistProgress(views)
+  const withholding = billingWithholding(views)
 
   if (isLoading) {
     return (
@@ -316,13 +416,23 @@ export function ComplianceChecklist({ entity, directApprove = false, onChanged }
         <p className="text-xs text-fg-2">
           {t('compliance.progress', { done: progress.done, total: progress.total })}
         </p>
-        <span
-          className={`rounded-full border px-2 py-0.5 text-xs ${
-            progress.done === progress.total ? 'border-ok/40 text-ok' : 'border-warn/40 text-warn'
-          }`}
-        >
-          {progress.done === progress.total ? t('compliance.complete') : t('compliance.incomplete')}
-        </span>
+        <div className="flex items-center gap-2">
+          {withholding && (
+            <span
+              className="rounded-full border border-warn/40 px-2 py-0.5 text-xs text-warn"
+              title={t('compliance.withholding15Hint')}
+            >
+              {t('compliance.withholding15')}
+            </span>
+          )}
+          <span
+            className={`rounded-full border px-2 py-0.5 text-xs ${
+              progress.done === progress.total ? 'border-ok/40 text-ok' : 'border-warn/40 text-warn'
+            }`}
+          >
+            {progress.done === progress.total ? t('compliance.complete') : t('compliance.incomplete')}
+          </span>
+        </div>
       </div>
 
       {error && (

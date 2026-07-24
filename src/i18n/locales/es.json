@@ -1158,12 +1158,25 @@
       }
     }
   },
+  "notifications": {
+    "title": "Notificaciones",
+    "empty": "No tienes notificaciones.",
+    "markAllRead": "Marcar todo leído",
+    "body": {
+      "doc_expiring": "{{doc}} de {{entity}} caduca en {{days}} día(s)",
+      "doc_expired": "{{doc}} de {{entity}} ha caducado",
+      "doc_approved": "{{doc}} de {{entity}} aprobado",
+      "doc_rejected": "{{doc}} de {{entity}} rechazado"
+    }
+  },
   "compliance": {
     "pageTitle": "Cumplimiento documental",
     "pageSubtitle": "Documentación de subcontratistas y autónomos, revisión y aptitud por obra",
     "tabs": {
       "inbox": "Bandeja de revisión",
-      "entities": "Empresas y autónomos"
+      "entities": "Empresas y autónomos",
+      "reports": "Informes",
+      "matrix": "Matriz"
     },
     "entitiesEmpty": "No hay empresas ni autónomos registrados todavía.",
     "entityColumn": "Entidad",
@@ -1172,13 +1185,24 @@
     "perProject": "por obra",
     "noFile": "Sin archivo cargado",
     "validUntil": "válido hasta",
+    "downloadTemplate": "Plantilla",
+    "templateAvailable": "Descargar plantilla en blanco",
     "uploadFile": "Cargar documento",
     "uploadReplacement": "Sustituir documento",
+    "uploadConfirm": "Subir",
+    "ocr": {
+      "button": "Rellenar por OCR",
+      "hint": "Extraer fechas e importe del documento y rellenar el formulario. Revisa siempre los valores antes de subir.",
+      "scanning": "Escaneando…",
+      "failed": "No se pudo leer el documento. Rellena los datos manualmente."
+    },
     "versionHistory": "Historial de versiones",
     "rejectedBecause": "Rechazado por",
     "progress": "{{done}}/{{total}} obligatorios válidos",
     "complete": "Completo",
     "incomplete": "Incompleto",
+    "withholding15": "Retener 15% (§48b)",
+    "withholding15Hint": "Sin la Freistellungsbescheinigung §48b válida, facturación debe retener el 15% de Bauabzugsteuer.",
     "emptyChecklist": "No hay documentos requeridos para esta entidad.",
     "entityDocuments": "Documentos · {{name}}",
     "metadataRequired": "Faltan datos obligatorios: {{fields}}",
@@ -1205,7 +1229,8 @@
     "conditions": {
       "hires_workers": "Desplaza trabajadores a Alemania",
       "regulated_trade": "Actividad artesanal regulada (Handwerk)",
-      "short_stay": "Estancia corta (< 24 meses)"
+      "short_stay": "Estancia corta (< 24 meses)",
+      "non_eu_national": "Nacional de tercer país"
     },
     "rejectionReasons": {
       "ilegible": "Ilegible",
@@ -1290,6 +1315,149 @@
       "red": "No apto",
       "noRecord": "Sin expediente",
       "overrideNotice": "Asignado con override de compliance · {{reason}}"
+    },
+    "dossier": {
+      "button": "Dossier PDF",
+      "hint": "Generar dossier de inspección en PDF (documentos, estado, aptitud)",
+      "generating": "Generando…",
+      "error": "No se pudo generar el dossier",
+      "title": "Dossier de cumplimiento",
+      "generatedAt": "Generado",
+      "footer": "LUMEN · Dossier de cumplimiento",
+      "entitySection": "Entidad",
+      "documentsSection": "Documentos",
+      "workersSection": "Trabajadores desplazados",
+      "noDocuments": "Sin documentos aplicables.",
+      "noWorkers": "Sin trabajadores registrados.",
+      "name": "Nombre",
+      "kind": "Tipo",
+      "phone": "Teléfono",
+      "address": "Dirección",
+      "colDocument": "Documento",
+      "colStatus": "Estado",
+      "colIssued": "Emisión",
+      "colExpires": "Caduca",
+      "colAmount": "Importe"
+    },
+    "scheinselbst": {
+      "title": "Falsa autonomía",
+      "subtitle": "Evaluación informativa de indicios de Scheinselbstständigkeit.",
+      "disclaimer": "Solo orientativo. No sustituye una Statusfeststellung (§ 7a SGB IV) de la Deutsche Rentenversicherung.",
+      "note": "Observaciones",
+      "assess": "Evaluar",
+      "reassess": "Reevaluar",
+      "notAssessed": "Sin evaluar",
+      "assessedAt": "Evaluado el {{date}}",
+      "levels": {
+        "low": "Riesgo bajo",
+        "medium": "Riesgo medio",
+        "high": "Riesgo alto"
+      },
+      "indicators": {
+        "single_client": "Trabaja de forma esencialmente exclusiva para nosotros (un solo cliente).",
+        "client_instructions": "Está sujeto a nuestras instrucciones sobre cómo, cuándo y dónde trabajar.",
+        "integrated_org": "Está integrado en nuestra organización (equipos, jerarquía, procesos).",
+        "no_entrepreneurial_risk": "No asume riesgo empresarial propio ni inversión de capital.",
+        "fixed_hours": "Tiene horario de trabajo fijado por nosotros.",
+        "client_equipment": "Usa nuestros medios de trabajo (herramientas, vehículo, material).",
+        "no_own_employees": "No tiene empleados propios.",
+        "no_market_presence": "No tiene presencia de mercado propia (local, publicidad, otros clientes).",
+        "reporting_duty": "Tiene obligación de reportar como un empleado.",
+        "same_as_employees": "Realiza las mismas tareas que nuestros empleados."
+      }
+    },
+    "erase": {
+      "button": "Borrar datos (RGPD)",
+      "hint": "Anonimizar los datos personales identificativos de esta entidad (derecho al olvido).",
+      "title": "Borrado de datos personales",
+      "warning": "Se anonimizarán de forma irreversible los datos identificativos de «{{name}}» (contacto, identificadores fiscales, nombre). El histórico de asignaciones y los documentos conservados por obligación legal se mantienen. Esta acción no se puede deshacer.",
+      "keyword": "BORRAR",
+      "confirmLabel": "Escribe {{keyword}} para confirmar",
+      "confirm": "Borrar definitivamente"
+    },
+    "reports": {
+      "title": "Informe de cumplimiento",
+      "footer": "LUMEN · Informe de cumplimiento",
+      "generatedAt": "Generado",
+      "refresh": "Actualizar",
+      "exportExcel": "Excel",
+      "exportPdf": "PDF",
+      "summarySection": "Resumen",
+      "kpiEntities": "Entidades",
+      "kpiExpiringSoon": "Por caducar",
+      "kpiExpired": "Caducados",
+      "expiringSection": "Documentos que caducan en {{days}} días",
+      "portfolioSection": "Cartera de aptitud",
+      "expiringSheet": "Documentos por caducar",
+      "portfolioSheet": "Cartera de aptitud",
+      "noExpiring": "No hay documentos por caducar ni caducados.",
+      "expiredBy": "caducó hace {{days}} d.",
+      "colEntity": "Entidad",
+      "colParent": "Empresa",
+      "colDaysLeft": "Días",
+      "colAptitude": "Aptitud",
+      "colProblems": "Problemas",
+      "colWorkers": "Trabajadores",
+      "colExpiring": "Por caducar"
+    },
+    "matrix": {
+      "types": "Tipos de documento",
+      "requirements": "Requisitos",
+      "newType": "Nuevo tipo",
+      "editType": "Editar tipo",
+      "newRequirement": "Nuevo requisito",
+      "editRequirement": "Editar requisito",
+      "code": "Código",
+      "codeInvalid": "El código solo admite minúsculas, números y _",
+      "name": "Nombre",
+      "nameRequired": "Nombre (DE y ES) obligatorio",
+      "nameDe": "Nombre (DE)",
+      "nameEs": "Nombre (ES)",
+      "nameEn": "Nombre (EN)",
+      "descDe": "Descripción (DE)",
+      "descEs": "Descripción (ES)",
+      "active": "Activo",
+      "inactive": "Inactivo",
+      "documentType": "Tipo de documento",
+      "docTypeRequired": "Tipo de documento obligatorio",
+      "appliesTo": "Aplica a",
+      "origin": "Origen",
+      "scope": "Ámbito",
+      "validityRule": "Regla de validez",
+      "validityDays": "Días de validez",
+      "minAmount": "Importe mínimo (€)",
+      "notifyDays": "Aviso (días)",
+      "onMissingAction": "Acción si falta",
+      "conditions": "Condiciones",
+      "mandatory": "Obligatorio",
+      "requiresCoverage": "Requiere confirmar cobertura",
+      "template": "Plantilla (PDF)",
+      "templateHint": "Formulario en blanco que el tercero descarga y rellena. Solo PDF.",
+      "templateUpload": "Subir plantilla",
+      "templateReplace": "Reemplazar",
+      "templateDownload": "Ver",
+      "templateRemove": "Quitar",
+      "origins": {
+        "ALL": "Todos",
+        "DE": "Alemania",
+        "ES": "España",
+        "EU_OTHER": "UE/EEE",
+        "NON_EU": "Tercer país"
+      },
+      "scopes": {
+        "entity": "Entidad",
+        "per_project": "Por obra"
+      },
+      "validityRules": {
+        "no_expiry": "Sin caducidad",
+        "expiry_required": "Requiere caducidad",
+        "days_from_issue": "Días desde emisión",
+        "must_cover_assignment": "Debe cubrir la obra"
+      },
+      "missingActions": {
+        "none": "Ninguna",
+        "notify_billing_withholding": "Retención 15% (§48b)"
+      }
     }
   }
 }
