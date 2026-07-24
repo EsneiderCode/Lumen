@@ -310,8 +310,15 @@ textarea:focus-visible {
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* NOTE: `backwards` (not `forwards`) is deliberate. A lingering `forwards`
+   fill leaves `transform: translateY(0)` on the element, and any non-`none`
+   transform makes this element the containing block for `position: fixed`
+   descendants — which breaks full-screen modal overlays rendered inside the
+   page (they anchor to this box instead of the viewport and get clipped).
+   `backwards` still applies the pre-animation frame (no start flash) but
+   resets `transform` to `none` once the entry animation finishes. */
 .page-fade-in {
-  animation: pageFadeIn 150ms cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+  animation: pageFadeIn 150ms cubic-bezier(0.25, 0.1, 0.25, 1) backwards;
 }
 
 .card-lift {
