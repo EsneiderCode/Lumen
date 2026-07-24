@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ChevronDown, ChevronUp, FileDown, Plus, ShieldAlert, Trash2, UserRound } from 'lucide-react'
+import { ChevronDown, ChevronUp, FileDown, Pencil, Plus, ShieldAlert, Trash2, UserRound } from 'lucide-react'
 import { ComplianceChecklist } from './ComplianceChecklist'
 import {
   createEntity,
@@ -350,6 +350,153 @@ function EraseModal({ entity, onClose, onErased }: EraseModalProps) {
   )
 }
 
+interface EntityModalProps {
+  entity: ComplianceEntityRecord
+  onClose: () => void
+  onSaved: () => void
+}
+
+/** Edit a top-level entity (company/freelancer/employee), incl. active toggle.
+ *  Deactivating an entity is the gate that unlocks GDPR erasure. */
+function EntityModal({ entity, onClose, onSaved }: EntityModalProps) {
+  const { t } = useTranslation()
+  const isFreelancer = entity.kind === 'freelancer'
+  const [name, setName] = useState(entity.display_name)
+  const [country, setCountry] = useState(entity.country_code)
+  const [nationality, setNationality] = useState(entity.nationality_country ?? '')
+  const [email, setEmail] = useState(entity.contact_email ?? '')
+  const [phone, setPhone] = useState(entity.contact_phone ?? '')
+  const [address, setAddress] = useState(entity.address ?? '')
+  const [isActive, setIsActive] = useState(entity.is_active)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const inputClass =
+    'w-full rounded-s border border-line bg-bg-2 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none'
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!name.trim()) {
+      setError(t('compliance.workers.nameRequired'))
+      return
+    }
+    setSaving(true)
+    setError(null)
+    const payload: EntityPayload = {
+      kind: entity.kind,
+      display_name: name,
+      country_code: country || entity.country_code,
+      nationality_country: isFreelancer ? nationality || null : entity.nationality_country,
+      attributes: entity.attributes ?? {},
+      contact_email: email || null,
+      contact_phone: phone || null,
+      address: address || null,
+      is_active: isActive,
+    }
+    const { error: saveError } = await updateEntity(entity.id, payload)
+    setSaving(false)
+    if (saveError) {
+      setError(saveError)
+      return
+    }
+    onSaved()
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-0/80 p-4">
+      <div className="w-full max-w-md rounded-l border border-line bg-bg-1">
+        <div className="flex items-center justify-between border-b border-line px-5 py-4">
+          <h2 className="font-sans text-sm font-medium text-fg-1">{t('compliance.entity.edit')}</h2>
+          <button onClick={onClose} className="text-fg-2 transition-colors hover:text-fg-1" aria-label={t('common.close')}>
+            ✕
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-4 p-5">
+          {error && (
+            <p className="rounded-s border border-err/30 bg-err/10 px-3 py-2 text-xs text-err">{error}</p>
+          )}
+          <div>
+            <label className="mb-1 block font-mono text-xs text-fg-2">{t('compliance.workers.name').toUpperCase()} *</label>
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)} className={inputClass} required />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block font-mono text-xs text-fg-2">{t('compliance.entity.country').toUpperCase()}</label>
+              <input
+                type="text"
+                value={country}
+                maxLength={2}
+                onChange={(e) => setCountry(e.target.value.toUpperCase())}
+                placeholder="ES"
+                className={`${inputClass} font-mono`}
+              />
+            </div>
+            {isFreelancer && (
+              <div>
+                <label className="mb-1 block font-mono text-xs text-fg-2">{t('compliance.entity.nationality').toUpperCase()}</label>
+                <input
+                  type="text"
+                  value={nationality}
+                  maxLength={2}
+                  onChange={(e) => setNationality(e.target.value.toUpperCase())}
+                  placeholder="ES"
+                  className={`${inputClass} font-mono`}
+                />
+              </div>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block font-mono text-xs text-fg-2">{t('compliance.entity.email').toUpperCase()}</label>
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} />
+            </div>
+            <div>
+              <label className="mb-1 block font-mono text-xs text-fg-2">{t('compliance.entity.phone').toUpperCase()}</label>
+              <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className={inputClass} />
+            </div>
+          </div>
+          <div>
+            <label className="mb-1 block font-mono text-xs text-fg-2">{t('compliance.entity.address').toUpperCase()}</label>
+            <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} className={inputClass} />
+          </div>
+          <div>
+            <label className="flex items-center gap-2 text-sm text-fg-2">
+              <input
+                type="checkbox"
+                checked={isActive}
+                onChange={(e) => setIsActive(e.target.checked)}
+                className="accent-accent"
+              />
+              {t('compliance.entity.active')}
+            </label>
+            {!isActive && (
+              <p className="mt-1.5 font-mono text-[10px] leading-relaxed text-fg-3">
+                {t('compliance.entity.deactivateHint')}
+              </p>
+            )}
+          </div>
+          <div className="flex justify-end gap-2 pt-1">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-s border border-line px-4 py-2 text-sm text-fg-2 transition-colors hover:text-fg-1"
+            >
+              {t('common.cancel')}
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="rounded-s bg-accent px-4 py-2 text-sm font-semibold text-fg-1 transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              {saving ? t('common.saving') : t('common.save')}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 interface Props {
   entity: ComplianceEntityRecord
   /** Admin one-step upload+approve (internal personnel). */
@@ -360,6 +507,8 @@ interface Props {
   riskAssessment?: boolean
   /** Admin-only GDPR erasure of identifying PII (inactive entities). */
   allowErasure?: boolean
+  /** Admin-only edit + activate/deactivate of the top-level entity. */
+  allowEdit?: boolean
   onChanged?: () => void
 }
 
@@ -369,6 +518,7 @@ export function ComplianceEntityPanel({
   manageWorkers = true,
   riskAssessment = false,
   allowErasure = false,
+  allowEdit = false,
   onChanged,
 }: Props) {
   const { t, i18n } = useTranslation()
@@ -381,6 +531,7 @@ export function ComplianceEntityPanel({
   const [savedChecks, setSavedChecks] = useState<Record<string, ScheinselbstCheck>>({})
   const [showSchein, setShowSchein] = useState(false)
   const [showErase, setShowErase] = useState(false)
+  const [showEdit, setShowEdit] = useState(false)
   const scheinCheck = savedChecks[entity.id] ?? entity.scheinselbst_check
 
   const isCompany = entity.kind === 'company'
@@ -414,8 +565,13 @@ export function ComplianceEntityPanel({
       <div className="rounded-l border border-line bg-bg-1 p-4">
         <div className="mb-3 flex flex-wrap items-start justify-between gap-2 border-b border-line pb-3">
           <div className="min-w-0">
-            <h3 className="font-display text-sm font-semibold text-fg-1">
+            <h3 className="flex flex-wrap items-center gap-2 font-display text-sm font-semibold text-fg-1">
               {t('compliance.entityDocuments', { name: entity.display_name })}
+              {!entity.is_active && (
+                <span className="rounded-full border border-line px-2 py-0.5 font-mono text-[10px] font-normal text-fg-3">
+                  INAKTIV
+                </span>
+              )}
             </h3>
             <p className="mt-1 font-mono text-xs text-fg-3">
               {t(`compliance.kinds.${entity.kind}`)} · {entity.country_code}
@@ -425,6 +581,16 @@ export function ComplianceEntityPanel({
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
+            {allowEdit && !entity.attributes?.erased && (
+              <button
+                type="button"
+                onClick={() => setShowEdit(true)}
+                className="inline-flex items-center gap-1 rounded-s border border-line px-3 py-1.5 text-xs text-fg-2 transition-colors hover:border-accent hover:text-accent"
+              >
+                <Pencil size={13} strokeWidth={1.5} />
+                {t('common.edit')}
+              </button>
+            )}
             {canErase && (
               <button
                 type="button"
@@ -584,6 +750,17 @@ export function ComplianceEntityPanel({
           onClose={() => setShowErase(false)}
           onErased={() => {
             setShowErase(false)
+            onChanged?.()
+          }}
+        />
+      )}
+
+      {showEdit && (
+        <EntityModal
+          entity={entity}
+          onClose={() => setShowEdit(false)}
+          onSaved={() => {
+            setShowEdit(false)
             onChanged?.()
           }}
         />

@@ -1262,7 +1262,13 @@
     },
     "entity": {
       "country": "Land",
-      "nationality": "Staatsangehörigkeit"
+      "nationality": "Staatsangehörigkeit",
+      "edit": "Entität bearbeiten",
+      "active": "Aktiv",
+      "deactivateHint": "Deaktivierte Entitäten können nicht mehr zugewiesen werden. Erst danach ist die DSGVO-Löschung möglich.",
+      "email": "E-Mail",
+      "phone": "Telefon",
+      "address": "Adresse"
     },
     "review": {
       "approve": "Genehmigen",

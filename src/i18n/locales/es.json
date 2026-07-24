@@ -1262,7 +1262,13 @@
     },
     "entity": {
       "country": "País",
-      "nationality": "Nacionalidad"
+      "nationality": "Nacionalidad",
+      "edit": "Editar entidad",
+      "active": "Activa",
+      "deactivateHint": "Las entidades inactivas ya no se pueden asignar. Solo entonces es posible el borrado RGPD.",
+      "email": "E-mail",
+      "phone": "Teléfono",
+      "address": "Dirección"
     },
     "review": {
       "approve": "Aprobar",

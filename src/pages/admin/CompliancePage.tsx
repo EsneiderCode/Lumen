@@ -784,6 +784,7 @@ export function CompliancePage() {
               directApprove
               riskAssessment
               allowErasure={canConfigureMatrix}
+              allowEdit={canConfigureMatrix}
               onChanged={() => void load()}
             />
           )}
