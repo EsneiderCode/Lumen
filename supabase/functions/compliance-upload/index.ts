@@ -246,17 +246,24 @@ Deno.serve(async (req) => {
       )
     }
 
-    // RGPD access trail for the upload itself.
-    await supabaseFetch<void>(
-      supabaseUrl,
-      serviceRoleKey,
-      'document_access_log',
-      {
-        method: 'POST',
-        headers: { prefer: 'return=minimal' },
-        body: JSON.stringify({ version_id: version.id, accessed_by: userId, action: 'upload' }),
-      },
-    )
+    // RGPD access trail for the upload itself. Best-effort: the file, its version
+    // and the slot status are already persisted above, so an audit-log failure must
+    // never fail the request (which would report a false error while the upload stuck)
+    // nor leave the slot in a half-written state.
+    try {
+      await supabaseFetch<void>(
+        supabaseUrl,
+        serviceRoleKey,
+        'document_access_log',
+        {
+          method: 'POST',
+          headers: { prefer: 'return=minimal' },
+          body: JSON.stringify({ version_id: version.id, accessed_by: userId, action: 'upload' }),
+        },
+      )
+    } catch (logError) {
+      console.error('[compliance-upload] access-log insert failed (non-fatal)', logError)
+    }
 
     return json(201, { version })
   } catch (error) {

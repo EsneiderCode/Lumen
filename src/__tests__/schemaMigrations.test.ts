@@ -430,6 +430,17 @@ describe('database migrations cover billing workflow schema', () => {
     expect(migrationSql).toContain('select public.run_compliance_retention_sweep();')
   })
 
+  it("widens document_access_log.action to allow 'upload' (051)", () => {
+    expect(migrationSql).toContain('depends on: 050_compliance_retention.sql')
+    // the old two-value constraint is dropped and re-added with 'upload'
+    expect(migrationSql).toMatch(
+      /drop\s+constraint\s+if\s+exists\s+document_access_log_action_check/,
+    )
+    expect(migrationSql).toMatch(
+      /add\s+constraint\s+document_access_log_action_check[\s\S]*check\s*\(action\s+in\s*\(\s*'view',\s*'download',\s*'upload'\s*\)\)/,
+    )
+  })
+
   it('registers the compliance-ocr Edge Function (6c)', () => {
     expect(supabaseConfig).toMatch(/\[functions\.compliance-ocr\][\s\S]*verify_jwt\s*=\s*true/)
   })

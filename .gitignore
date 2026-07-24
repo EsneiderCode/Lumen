@@ -38,3 +38,6 @@ docs/
 .pi/
 .pi-lens/
 .gstack/
+
+# Playwright MCP debug artifacts
+.playwright-mcp/
