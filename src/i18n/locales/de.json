@@ -1248,7 +1248,11 @@
     "portal": {
       "pageTitle": "Meine Dokumente",
       "pageSubtitle": "Lade die für den Einsatz erforderlichen Dokumente hoch und halte sie aktuell",
-      "noEntity": "Ihrem Konto ist noch kein Compliance-Datensatz zugeordnet. Bitte kontaktieren Sie die Verwaltung."
+      "noEntity": "Ihrem Konto ist noch kein Compliance-Datensatz zugeordnet. Bitte kontaktieren Sie die Verwaltung.",
+      "docStatusTitle": "Dokumentenstatus",
+      "viewDocuments": "Meine Dokumente verwalten →",
+      "openIssues": "{{count}} Dokument(e) mit Mängeln",
+      "allValid": "Alle Pflichtdokumente gültig"
     },
     "workers": {
       "title": "Entsandte Arbeitnehmer",
@@ -1265,6 +1269,7 @@
       "nationality": "Staatsangehörigkeit",
       "edit": "Entität bearbeiten",
       "active": "Aktiv",
+      "inactive": "Inaktiv",
       "deactivateHint": "Deaktivierte Entitäten können nicht mehr zugewiesen werden. Erst danach ist die DSGVO-Löschung möglich.",
       "email": "E-Mail",
       "phone": "Telefon",
@@ -1404,7 +1409,8 @@
       "colAptitude": "Eignung",
       "colProblems": "Probleme",
       "colWorkers": "Arbeitnehmer",
-      "colExpiring": "Fällig"
+      "colExpiring": "Fällig",
+      "fileLabel": "Bericht"
     },
     "matrix": {
       "types": "Dokumenttypen",

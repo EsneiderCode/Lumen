@@ -89,5 +89,5 @@ export async function exportComplianceReportsXlsx(
   portSheet.getRow(1).font = { bold: true }
 
   const stamp = reports.generatedAt.slice(0, 10)
-  await downloadWorkbook(workbook, `LUMEN_Compliance-Informe_${stamp}.xlsx`)
+  await downloadWorkbook(workbook, `LUMEN_Compliance-${t('compliance.reports.fileLabel')}_${stamp}.xlsx`)
 }

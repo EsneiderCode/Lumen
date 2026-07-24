@@ -1,7 +1,12 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { useAuth } from '@/hooks/useAuth'
 import { fetchContractorWorkOrders } from '@/services/workOrderService'
+import { fetchProfileCompliance } from '@/services/complianceService'
+import type { ProfileComplianceResult } from '@/services/complianceService'
+import { complianceLevel } from '@/components/compliance/aptitudeLevel'
+import type { ComplianceLevel } from '@/components/compliance/aptitudeLevel'
 import type { WorkOrderStatus } from '@/types/enums'
 import { ROUTES } from '@/config/routes'
 
@@ -10,11 +15,20 @@ const ACTIVE_STATUSES: WorkOrderStatus[] = [
 ]
 const DONE_STATUSES: WorkOrderStatus[] = ['paid', 'invoiced', 'client_accepted']
 
+const LEVEL_BADGE: Record<ComplianceLevel, string> = {
+  green: 'badge-ok',
+  yellow: 'badge-warn',
+  red: 'badge-err',
+}
+
 export function ContractorDashboard() {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const navigate = useNavigate()
   const [activeCount, setActiveCount] = useState<number | null>(null)
   const [doneCount, setDoneCount] = useState<number | null>(null)
+  const [compliance, setCompliance] = useState<ProfileComplianceResult | null>(null)
+  const [complianceLoading, setComplianceLoading] = useState(true)
 
   const today = new Date().toLocaleDateString('de-DE', {
     weekday: 'long',
@@ -28,6 +42,14 @@ export function ContractorDashboard() {
     fetchContractorWorkOrders(user.id, user.team ?? null).then(({ data }) => {
       setActiveCount(data.filter((o) => ACTIVE_STATUSES.includes(o.status as WorkOrderStatus)).length)
       setDoneCount(data.filter((o) => DONE_STATUSES.includes(o.status as WorkOrderStatus)).length)
+    })
+  }, [user?.id])
+
+  useEffect(() => {
+    if (!user) return
+    fetchProfileCompliance(user.id).then(({ data }) => {
+      setCompliance(data)
+      setComplianceLoading(false)
     })
   }, [user?.id])
 
@@ -75,29 +97,39 @@ export function ContractorDashboard() {
         </button>
       </div>
 
-      {/* Document status */}
+      {/* Document status — real compliance summary from the module */}
       <div className="panel mb-4">
         <div className="phead">
-          <h3 className="title">Dokumentenstatus</h3>
+          <h3 className="title">{t('compliance.portal.docStatusTitle')}</h3>
           <span className="m">PAYMENT GATE</span>
         </div>
         <div className="pbody">
-        <div className="space-y-2">
-          {[
-            'Gewerbeanmeldung',
-            'Haftpflichtversicherung',
-            'Unbedenklichkeitsbescheinigung',
-            'Personalausweis',
-          ].map((doc) => (
-            <div
-              key={doc}
-              className="flex items-center justify-between rounded-s border border-line bg-bg-0 px-3 py-2"
-            >
-              <span className="text-sm text-fg-1">{doc}</span>
-              <span className="badge badge-neutral">Ausstehend</span>
+          {complianceLoading ? (
+            <p className="text-sm text-fg-3">[LOADING]</p>
+          ) : !compliance?.hasEntity ? (
+            <p className="text-sm text-fg-2">{t('compliance.portal.noEntity')}</p>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <span className={`badge ${LEVEL_BADGE[complianceLevel(compliance)]}`}>
+                  {t(`compliance.aptitude.${complianceLevel(compliance)}`)}
+                </span>
+                <span className="text-sm text-fg-2">
+                  {compliance.missingCodes.length > 0
+                    ? t('compliance.portal.openIssues', { count: compliance.missingCodes.length })
+                    : t('compliance.portal.allValid')}
+                </span>
+              </div>
+              <button
+                onClick={() => navigate(ROUTES.CONTRACTOR.DOCUMENTS)}
+                className="nx-card-button w-full border-line p-3 text-center"
+              >
+                <p className="text-sm font-semibold text-accent">
+                  {t('compliance.portal.viewDocuments')}
+                </p>
+              </button>
             </div>
-          ))}
-        </div>
+          )}
         </div>
       </div>
 

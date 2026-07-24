@@ -766,9 +766,9 @@ export function CompliancePage() {
                       <td className="px-4 py-3 font-mono text-xs text-fg-2">{entity.country_code}</td>
                       <td className="px-4 py-3">
                         {entity.is_active ? (
-                          <span className="rounded-full border border-ok/40 bg-ok/10 px-2 py-0.5 font-mono text-xs text-ok">AKTIV</span>
+                          <span className="rounded-full border border-ok/40 bg-ok/10 px-2 py-0.5 font-mono text-xs uppercase text-ok">{t('compliance.entity.active')}</span>
                         ) : (
-                          <span className="rounded-full border border-line px-2 py-0.5 font-mono text-xs text-fg-2">INAKTIV</span>
+                          <span className="rounded-full border border-line px-2 py-0.5 font-mono text-xs uppercase text-fg-2">{t('compliance.entity.inactive')}</span>
                         )}
                       </td>
                     </tr>

@@ -568,8 +568,8 @@ export function ComplianceEntityPanel({
             <h3 className="flex flex-wrap items-center gap-2 font-display text-sm font-semibold text-fg-1">
               {t('compliance.entityDocuments', { name: entity.display_name })}
               {!entity.is_active && (
-                <span className="rounded-full border border-line px-2 py-0.5 font-mono text-[10px] font-normal text-fg-3">
-                  INAKTIV
+                <span className="rounded-full border border-line px-2 py-0.5 font-mono text-[10px] font-normal uppercase text-fg-3">
+                  {t('compliance.entity.inactive')}
                 </span>
               )}
             </h3>

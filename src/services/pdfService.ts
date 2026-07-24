@@ -834,5 +834,5 @@ export function generateComplianceReportsPdf(reports: ComplianceReports, opts: D
     )
   }
 
-  doc.save(`LUMEN_Compliance-Informe_${reports.generatedAt.slice(0, 10)}.pdf`)
+  doc.save(`LUMEN_Compliance-${t('compliance.reports.fileLabel')}_${reports.generatedAt.slice(0, 10)}.pdf`)
 }

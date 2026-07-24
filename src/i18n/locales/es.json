@@ -1248,7 +1248,11 @@
     "portal": {
       "pageTitle": "Mi documentación",
       "pageSubtitle": "Sube y mantén al día la documentación requerida para trabajar",
-      "noEntity": "Todavía no hay un expediente de cumplimiento asociado a tu cuenta. Contacta con Administración."
+      "noEntity": "Todavía no hay un expediente de cumplimiento asociado a tu cuenta. Contacta con Administración.",
+      "docStatusTitle": "Estado de documentos",
+      "viewDocuments": "Gestionar mis documentos →",
+      "openIssues": "{{count}} documento(s) con incidencias",
+      "allValid": "Todos los documentos obligatorios válidos"
     },
     "workers": {
       "title": "Trabajadores desplazados",
@@ -1265,6 +1269,7 @@
       "nationality": "Nacionalidad",
       "edit": "Editar entidad",
       "active": "Activa",
+      "inactive": "Inactiva",
       "deactivateHint": "Las entidades inactivas ya no se pueden asignar. Solo entonces es posible el borrado RGPD.",
       "email": "E-mail",
       "phone": "Teléfono",
@@ -1404,7 +1409,8 @@
       "colAptitude": "Aptitud",
       "colProblems": "Problemas",
       "colWorkers": "Trabajadores",
-      "colExpiring": "Por caducar"
+      "colExpiring": "Por caducar",
+      "fileLabel": "Informe"
     },
     "matrix": {
       "types": "Tipos de documento",
