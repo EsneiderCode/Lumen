@@ -61,14 +61,14 @@ export function ContractorOrdersPage() {
         if (error) setError(error)
         else setOrders(data)
       } catch {
-        if (!cancelled) setError('Verbindungsfehler. Bitte erneut versuchen.')
+        if (!cancelled) setError(t('errors.networkError'))
       } finally {
         if (!cancelled) setIsLoading(false)
       }
     }
     void load()
     return () => { cancelled = true }
-  }, [user?.id])
+  }, [user?.id, t])
 
   const filtered = search.trim()
     ? orders.filter((o) =>

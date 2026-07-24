@@ -1252,7 +1252,14 @@
       "docStatusTitle": "Estado de documentos",
       "viewDocuments": "Gestionar mis documentos →",
       "openIssues": "{{count}} documento(s) con incidencias",
-      "allValid": "Todos los documentos obligatorios válidos"
+      "allValid": "Todos los documentos obligatorios válidos",
+      "dashboardKicker": "PORTAL SUBCONTRATISTA",
+      "welcome": "Bienvenido, {{name}}",
+      "roleBadge": "Subcontratista",
+      "activeOrders": "Órdenes activas",
+      "settled": "Liquidado",
+      "paymentGate": "AUTORIZACIÓN DE PAGO",
+      "viewAllOrders": "Ver todas las órdenes →"
     },
     "workers": {
       "title": "Trabajadores desplazados",

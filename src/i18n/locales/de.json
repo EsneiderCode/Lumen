@@ -1252,7 +1252,14 @@
       "docStatusTitle": "Dokumentenstatus",
       "viewDocuments": "Meine Dokumente verwalten →",
       "openIssues": "{{count}} Dokument(e) mit Mängeln",
-      "allValid": "Alle Pflichtdokumente gültig"
+      "allValid": "Alle Pflichtdokumente gültig",
+      "dashboardKicker": "SUBUNTERNEHMER-PORTAL",
+      "welcome": "Willkommen, {{name}}",
+      "roleBadge": "Subunternehmer",
+      "activeOrders": "Aktive Aufträge",
+      "settled": "Abgerechnet",
+      "paymentGate": "ZAHLUNGSFREIGABE",
+      "viewAllOrders": "Alle Aufträge anzeigen →"
     },
     "workers": {
       "title": "Entsandte Arbeitnehmer",

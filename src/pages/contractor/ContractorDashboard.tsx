@@ -22,7 +22,7 @@ const LEVEL_BADGE: Record<ComplianceLevel, string> = {
 }
 
 export function ContractorDashboard() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { user } = useAuth()
   const navigate = useNavigate()
   const [activeCount, setActiveCount] = useState<number | null>(null)
@@ -30,7 +30,7 @@ export function ContractorDashboard() {
   const [compliance, setCompliance] = useState<ProfileComplianceResult | null>(null)
   const [complianceLoading, setComplianceLoading] = useState(true)
 
-  const today = new Date().toLocaleDateString('de-DE', {
+  const today = new Date().toLocaleDateString(i18n.language === 'es' ? 'es-ES' : 'de-DE', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -60,14 +60,14 @@ export function ContractorDashboard() {
         <div className="pbody">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="nx-label mb-2">CONTRACTOR DASHBOARD</p>
+            <p className="nx-label mb-2">{t('compliance.portal.dashboardKicker')}</p>
             <h2 className="font-display text-lg font-semibold text-fg-1">
-              Willkommen, {user?.fullName}
+              {t('compliance.portal.welcome', { name: user?.fullName })}
             </h2>
             <p className="mt-0.5 text-sm text-fg-2">{today}</p>
           </div>
           <span className="badge badge-info">
-            Subunternehmer
+            {t('compliance.portal.roleBadge')}
           </span>
         </div>
         </div>
@@ -83,7 +83,7 @@ export function ContractorDashboard() {
           <p className="font-display text-2xl font-bold text-fg-1">
             {activeCount === null ? '—' : activeCount}
           </p>
-          <p className="nx-label mt-1">Aktive Aufträge</p>
+          <p className="nx-label mt-1">{t('compliance.portal.activeOrders')}</p>
         </button>
         <button
           onClick={() => navigate(ROUTES.CONTRACTOR.ORDERS)}
@@ -93,7 +93,7 @@ export function ContractorDashboard() {
           <p className="font-display text-2xl font-bold text-fg-1">
             {doneCount === null ? '—' : doneCount}
           </p>
-          <p className="nx-label mt-1">Abgerechnet</p>
+          <p className="nx-label mt-1">{t('compliance.portal.settled')}</p>
         </button>
       </div>
 
@@ -101,7 +101,7 @@ export function ContractorDashboard() {
       <div className="panel mb-4">
         <div className="phead">
           <h3 className="title">{t('compliance.portal.docStatusTitle')}</h3>
-          <span className="m">PAYMENT GATE</span>
+          <span className="m">{t('compliance.portal.paymentGate')}</span>
         </div>
         <div className="pbody">
           {complianceLoading ? (
@@ -138,7 +138,7 @@ export function ContractorDashboard() {
         onClick={() => navigate(ROUTES.CONTRACTOR.ORDERS)}
         className="nx-card-button border-accent/30 bg-accent/5 p-4 text-center"
       >
-        <p className="text-sm font-semibold text-accent">Alle Aufträge anzeigen →</p>
+        <p className="text-sm font-semibold text-accent">{t('compliance.portal.viewAllOrders')}</p>
       </button>
     </div>
   )
