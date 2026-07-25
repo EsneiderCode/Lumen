@@ -343,6 +343,55 @@ interface MockBuilder {
   catch: (onRejected: (reason: unknown) => unknown) => Promise<unknown>
 }
 
+/**
+ * Emulates the ON DELETE CASCADE chain that hangs off compliance_entities in
+ * migration 042 (workers → checklist items → versions → reviews/access log,
+ * plus project assignments). Without it, deleting a company in demo mode would
+ * leave its whole document tree orphaned in localStorage.
+ */
+function cascadeComplianceEntities(store: DemoStore, deleted: Row[]) {
+  if (deleted.length === 0) return
+
+  const entityIds = new Set(deleted.map((row) => String(row.id)))
+
+  const workers = (store.compliance_entities as unknown as Row[]).filter((row) =>
+    entityIds.has(String(row.parent_entity_id)),
+  )
+  if (workers.length > 0) {
+    ;(store.compliance_entities as unknown) = (store.compliance_entities as unknown as Row[]).filter(
+      (row) => !entityIds.has(String(row.parent_entity_id)),
+    )
+    for (const worker of workers) entityIds.add(String(worker.id))
+  }
+
+  const docIds = new Set(
+    (store.entity_documents as unknown as Row[])
+      .filter((row) => entityIds.has(String(row.entity_id)))
+      .map((row) => String(row.id)),
+  )
+  const versionIds = new Set(
+    (store.document_versions as unknown as Row[])
+      .filter((row) => docIds.has(String(row.entity_document_id)))
+      .map((row) => String(row.id)),
+  )
+
+  ;(store.entity_documents as unknown) = (store.entity_documents as unknown as Row[]).filter(
+    (row) => !docIds.has(String(row.id)),
+  )
+  ;(store.document_versions as unknown) = (store.document_versions as unknown as Row[]).filter(
+    (row) => !versionIds.has(String(row.id)),
+  )
+  ;(store.document_reviews as unknown) = (store.document_reviews as unknown as Row[]).filter(
+    (row) => !versionIds.has(String(row.version_id)),
+  )
+  ;(store.document_access_log as unknown) = (store.document_access_log as unknown as Row[]).filter(
+    (row) => !versionIds.has(String(row.version_id)),
+  )
+  ;(store.project_assignments as unknown) = (store.project_assignments as unknown as Row[]).filter(
+    (row) => !entityIds.has(String(row.entity_id)),
+  )
+}
+
 async function execute(
   state: BuilderState,
   kind: 'list' | 'single' | 'maybe' = 'list',
@@ -389,15 +438,17 @@ async function execute(
   if (state.mode === 'delete') {
     const list = store[table] as unknown as Row[]
     const survivors: Row[] = []
+    const removed: Row[] = []
     for (const row of list) {
       const match = state.filters.every((f) => applyFilter([row], f).length > 0)
       if (match) {
-        continue
+        removed.push(row)
       } else {
         survivors.push(row)
       }
     }
     ;(store[table] as unknown) = survivors
+    if (table === 'compliance_entities') cascadeComplianceEntities(store, removed)
     saveStore(store)
     return { data: null, error: null }
   }

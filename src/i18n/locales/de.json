@@ -1394,6 +1394,21 @@
       "confirmLabel": "Zum Bestätigen {{keyword}} eingeben",
       "confirm": "Endgültig löschen"
     },
+    "delete": {
+      "button": "Löschen",
+      "hint": "Diese Firma bzw. diesen Selbstständigen vollständig löschen: Mitarbeiter, Dokumente, Dateien und Historie.",
+      "title": "Unwiderruflich löschen",
+      "warning": "„{{name}}“ wird mit allem Zugehörigen gelöscht. Anders als bei der DSGVO-Anonymisierung bleibt nichts im System zurück, und die Aktion lässt sich nicht rückgängig machen.",
+      "impactWorkers": "Zugeordnete Mitarbeiter: {{count}}",
+      "impactDocuments": "Dokumente der Akte: {{count}}",
+      "impactFiles": "Gespeicherte Dateien: {{count}}",
+      "impactAssignments": "Baustellen-Zuweisungen: {{count}}",
+      "keepsLogin": "Ein vorhandener Portal-Zugang wird nicht gelöscht — das erfolgt unter Personal / Benutzer.",
+      "confirmLabel": "Zum Bestätigen „{{name}}“ eingeben",
+      "confirm": "Unwiderruflich löschen",
+      "working": "Wird gelöscht…",
+      "unsupportedKind": "Hier lassen sich nur Firmen und Selbstständige löschen. Mitarbeiter werden mit ihrer Firma gelöscht, internes Personal im Personalmodul."
+    },
     "reports": {
       "title": "Compliance-Bericht",
       "footer": "LUMEN · Compliance-Bericht",

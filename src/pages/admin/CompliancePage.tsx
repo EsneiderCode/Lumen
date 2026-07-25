@@ -792,6 +792,8 @@ export function CompliancePage() {
               manageWorkers={canManageEntities}
               allowErasure={canManageEntities}
               allowEdit={canManageEntities}
+              allowDelete={canManageEntities}
+              onDeleted={() => setSelectedEntityId(null)}
               onChanged={() => void load()}
             />
           )}

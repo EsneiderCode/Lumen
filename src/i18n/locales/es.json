@@ -1394,6 +1394,21 @@
       "confirmLabel": "Escribe {{keyword}} para confirmar",
       "confirm": "Borrar definitivamente"
     },
+    "delete": {
+      "button": "Eliminar",
+      "hint": "Eliminar por completo esta empresa o autónomo: trabajadores, documentos, archivos e historial.",
+      "title": "Eliminar definitivamente",
+      "warning": "Se eliminará «{{name}}» y todo lo que cuelga de ella. A diferencia del borrado RGPD, aquí no queda ningún rastro en el sistema y no se puede deshacer.",
+      "impactWorkers": "Trabajadores asociados: {{count}}",
+      "impactDocuments": "Documentos del expediente: {{count}}",
+      "impactFiles": "Archivos almacenados: {{count}}",
+      "impactAssignments": "Asignaciones a obra: {{count}}",
+      "keepsLogin": "El usuario de acceso al portal, si lo tiene, no se elimina: gestionalo en Personal / Usuarios.",
+      "confirmLabel": "Escribe «{{name}}» para confirmar",
+      "confirm": "Eliminar definitivamente",
+      "working": "Eliminando…",
+      "unsupportedKind": "Desde aquí solo se pueden eliminar empresas y autónomos. Los trabajadores se eliminan con su empresa y el personal interno desde el módulo de Personal."
+    },
     "reports": {
       "title": "Informe de cumplimiento",
       "footer": "LUMEN · Informe de cumplimiento",

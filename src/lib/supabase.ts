@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import i18n from 'i18next'
+import i18n from '@/i18n'
 import type { Database } from '@/types/database.types'
 import { createDemoSupabaseClient } from './demo/supabase-mock'
 import { clearPinSession, getPinSessionStatus, notifyPinSessionExpired } from '@/services/pinSession'

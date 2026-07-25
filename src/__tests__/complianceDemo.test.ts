@@ -16,13 +16,16 @@ import {
   assignmentKey,
   createDocumentType,
   createRequirement,
+  deleteEntity,
   eraseEntityPersonalData,
   extractDocumentFields,
+  fetchAssignedProjectIds,
   fetchChecklist,
   fetchComplianceForAssignments,
   fetchDocumentTypes,
   fetchEntities,
   fetchEntityByProfileId,
+  fetchEntityDeletionImpact,
   fetchEntityDossier,
   fetchProfileCompliance,
   fetchRequirements,
@@ -428,6 +431,42 @@ describe('demo compliance — GDPR right-to-erasure (Fase 6b)', () => {
     const reread = after.find((entity) => entity.id === freelancer.id)
     expect(reread!.contact_email).toBeNull()
     expect(reread!.attributes.erased).toBe(true)
+  })
+})
+
+describe('demo compliance — hard delete of a company/freelancer', () => {
+  it('reports what the deletion will take with it', async () => {
+    const { data: impact, error } = await fetchEntityDeletionImpact(COMPANY_ENTITY)
+    expect(error).toBeNull()
+    expect(impact).toEqual({ workers: 2, documents: 9, files: 7, assignments: 1 })
+  })
+
+  it('removes the entity, its workers, checklist, versions and assignments', async () => {
+    const company = { id: COMPANY_ENTITY, kind: 'company' as const }
+    const { error } = await deleteEntity(company)
+    expect(error).toBeNull()
+
+    const { data: entities } = await fetchEntities({ includeInactive: true })
+    expect(entities.some((entity) => entity.id === COMPANY_ENTITY)).toBe(false)
+    // The two company_worker rows hung off it via parent_entity_id.
+    expect(entities.some((entity) => entity.parent_entity_id === COMPANY_ENTITY)).toBe(false)
+
+    const { data: queue } = await fetchReviewQueue()
+    expect(queue.some((entry) => entry.entity.id === COMPANY_ENTITY)).toBe(false)
+
+    const { data: assignments } = await fetchAssignedProjectIds(COMPANY_ENTITY)
+    expect(assignments).toEqual([])
+  })
+
+  it('refuses kinds that are not top-level third parties', async () => {
+    const { data: entities } = await fetchEntities({ includeInactive: true })
+    const worker = entities.find((entity) => entity.kind === 'company_worker')!
+
+    const { error } = await deleteEntity(worker)
+    expect(error).toBeTruthy()
+
+    const { data: after } = await fetchEntities({ includeInactive: true })
+    expect(after.some((entity) => entity.id === worker.id)).toBe(true)
   })
 })
 

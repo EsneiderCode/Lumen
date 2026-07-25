@@ -5,7 +5,7 @@
 // validates what is materialized. Uploads go through the `compliance-upload`
 // Edge Function, which re-validates file signature and size server-side.
 
-import i18n from 'i18next'
+import i18n from '@/i18n'
 import { supabase } from '@/lib/supabase'
 import {
   computeAptitude,
@@ -332,6 +332,115 @@ export async function updateEntity(id: string, payload: EntityPayload) {
     .select()
     .single()
   return { data: data as unknown as ComplianceEntityRecord | null, error: msg(error) }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Hard delete of a top-level entity (company / freelancer)
+//
+// Deactivating keeps the audit trail; deleting wipes the third party for good.
+// The DB does the row side on its own: every dependent table (workers via
+// parent_entity_id, checklist items, versions, reviews, access log, project
+// assignments) hangs off compliance_entities with ON DELETE CASCADE. Storage
+// is NOT covered by that cascade, so the files have to go first — otherwise
+// they stay in the bucket with nothing left pointing at them, which is exactly
+// what GDPR erasure must not leave behind.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface EntityDeletionImpact {
+  workers: number
+  documents: number
+  files: number
+  assignments: number
+}
+
+/** Ids of the entity plus its workers — the whole subtree that will disappear. */
+async function fetchEntityTreeIds(entityId: string) {
+  const { data, error } = await supabase
+    .from('compliance_entities')
+    .select('id')
+    .eq('parent_entity_id', entityId)
+  if (error) return { data: [] as string[], workerCount: 0, error: msg(error) }
+  const workerIds = ((data ?? []) as Row[]).map((row) => String(row.id))
+  return { data: [entityId, ...workerIds], workerCount: workerIds.length, error: null }
+}
+
+async function fetchStoredFiles(entityIds: string[]) {
+  const { data: docs, error: docsError } = await supabase
+    .from('entity_documents')
+    .select('id')
+    .in('entity_id', entityIds)
+  if (docsError) return { documents: 0, files: [] as Row[], error: msg(docsError) }
+
+  const docIds = ((docs ?? []) as Row[]).map((row) => String(row.id))
+  if (docIds.length === 0) return { documents: 0, files: [] as Row[], error: null }
+
+  const { data: versions, error: versionsError } = await supabase
+    .from('document_versions')
+    .select('storage_bucket, storage_path')
+    .in('entity_document_id', docIds)
+  if (versionsError) return { documents: docIds.length, files: [] as Row[], error: msg(versionsError) }
+
+  return { documents: docIds.length, files: (versions ?? []) as Row[], error: null }
+}
+
+/** What the user is about to destroy — shown in the confirmation dialog. */
+export async function fetchEntityDeletionImpact(entityId: string) {
+  const tree = await fetchEntityTreeIds(entityId)
+  if (tree.error) return { data: null, error: tree.error }
+
+  const stored = await fetchStoredFiles(tree.data)
+  if (stored.error) return { data: null, error: stored.error }
+
+  const { data: assignments, error: assignmentsError } = await supabase
+    .from('project_assignments')
+    .select('id')
+    .in('entity_id', tree.data)
+  if (assignmentsError) return { data: null, error: msg(assignmentsError) }
+
+  const impact: EntityDeletionImpact = {
+    workers: tree.workerCount,
+    documents: stored.documents,
+    files: stored.files.length,
+    assignments: (assignments ?? []).length,
+  }
+  return { data: impact, error: null }
+}
+
+/**
+ * Irreversibly delete a company or freelancer: stored files first, then the
+ * entity row (the cascade takes the rest of the tree with it).
+ *
+ * Workers and internal employees are rejected on purpose — workers go with
+ * their company, and internal_employee rows are mirrored from `employees` by
+ * trigger, so deleting one here would just be recreated on the next edit.
+ */
+export async function deleteEntity(entity: Pick<ComplianceEntityRecord, 'id' | 'kind'>) {
+  if (entity.kind !== 'company' && entity.kind !== 'freelancer') {
+    return { error: i18n.t('compliance.delete.unsupportedKind') }
+  }
+
+  const tree = await fetchEntityTreeIds(entity.id)
+  if (tree.error) return { error: tree.error }
+
+  const stored = await fetchStoredFiles(tree.data)
+  if (stored.error) return { error: stored.error }
+
+  const byBucket = new Map<string, string[]>()
+  for (const file of stored.files) {
+    const bucket = String(file.storage_bucket ?? 'compliance-documents')
+    const paths = byBucket.get(bucket) ?? []
+    paths.push(String(file.storage_path))
+    byBucket.set(bucket, paths)
+  }
+  for (const [bucket, paths] of byBucket) {
+    const { error } = await supabase.storage.from(bucket).remove(paths)
+    // Stop here: the rows are still intact, so the admin can retry once the
+    // storage error is understood, instead of being left with orphan files.
+    if (error) return { error: msg(error) }
+  }
+
+  const { error } = await supabase.from('compliance_entities').delete().eq('id', entity.id)
+  return { error: msg(error) }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -4,13 +4,19 @@ import { ChevronDown, ChevronUp, FileDown, Pencil, Plus, ShieldAlert, Trash2, Us
 import { ComplianceChecklist } from './ComplianceChecklist'
 import {
   createEntity,
+  deleteEntity,
   eraseEntityPersonalData,
+  fetchEntityDeletionImpact,
   fetchEntityDossier,
   fetchWorkers,
   saveScheinselbstCheck,
   updateEntity,
 } from '@/services/complianceService'
-import type { ComplianceEntityRecord, EntityPayload } from '@/services/complianceService'
+import type {
+  ComplianceEntityRecord,
+  EntityDeletionImpact,
+  EntityPayload,
+} from '@/services/complianceService'
 import { scoreScheinselbst } from '@/services/complianceHelpers'
 import { SCHEINSELBST_INDICATORS } from '@/types/compliance'
 import type {
@@ -350,6 +356,108 @@ function EraseModal({ entity, onClose, onErased }: EraseModalProps) {
   )
 }
 
+interface DeleteModalProps {
+  entity: ComplianceEntityRecord
+  onClose: () => void
+  onDeleted: () => void
+}
+
+/** Irreversible removal of a company/freelancer: the whole tree plus its files.
+ *  Unlike the GDPR scrub this leaves nothing behind, so the exact name must be
+ *  typed and the real impact is shown before the button unlocks. */
+function DeleteEntityModal({ entity, onClose, onDeleted }: DeleteModalProps) {
+  const { t } = useTranslation()
+  const [confirmText, setConfirmText] = useState('')
+  const [impact, setImpact] = useState<EntityDeletionImpact | null>(null)
+  const [working, setWorking] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      const { data, error: impactError } = await fetchEntityDeletionImpact(entity.id)
+      if (cancelled) return
+      setImpact(data)
+      if (impactError) setError(impactError)
+    }
+    void load()
+    return () => {
+      cancelled = true
+    }
+  }, [entity.id])
+
+  async function handleDelete() {
+    setWorking(true)
+    setError(null)
+    const { error: deleteError } = await deleteEntity(entity)
+    setWorking(false)
+    if (deleteError) {
+      setError(deleteError)
+      return
+    }
+    onDeleted()
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-0/80 p-4">
+      <div className="w-full max-w-md rounded-l border border-err/40 bg-bg-1">
+        <div className="flex items-center justify-between border-b border-line px-5 py-4">
+          <h2 className="flex items-center gap-1.5 font-sans text-sm font-medium text-err">
+            <Trash2 size={14} strokeWidth={1.5} />
+            {t('compliance.delete.title')}
+          </h2>
+          <button onClick={onClose} className="text-fg-2 transition-colors hover:text-fg-1" aria-label={t('common.close')}>
+            ✕
+          </button>
+        </div>
+        <div className="space-y-4 p-5">
+          <p className="text-sm text-fg-2">{t('compliance.delete.warning', { name: entity.display_name })}</p>
+          {impact && (
+            <ul className="space-y-1 rounded-s border border-line bg-bg-2 px-3 py-2 font-mono text-xs text-fg-2">
+              <li>{t('compliance.delete.impactWorkers', { count: impact.workers })}</li>
+              <li>{t('compliance.delete.impactDocuments', { count: impact.documents })}</li>
+              <li>{t('compliance.delete.impactFiles', { count: impact.files })}</li>
+              <li>{t('compliance.delete.impactAssignments', { count: impact.assignments })}</li>
+            </ul>
+          )}
+          <p className="text-xs text-fg-3">{t('compliance.delete.keepsLogin')}</p>
+          {error && (
+            <p className="rounded-s border border-err/30 bg-err/10 px-3 py-2 text-xs text-err">{error}</p>
+          )}
+          <div>
+            <label className="mb-1 block font-mono text-xs text-fg-2">
+              {t('compliance.delete.confirmLabel', { name: entity.display_name })}
+            </label>
+            <input
+              type="text"
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              className="w-full rounded-s border border-line bg-bg-2 px-3 py-2 text-sm text-fg-1 focus:border-err focus:outline-none"
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-s border border-line px-4 py-2 text-sm text-fg-2 transition-colors hover:text-fg-1"
+            >
+              {t('common.cancel')}
+            </button>
+            <button
+              type="button"
+              disabled={working || confirmText.trim() !== entity.display_name.trim()}
+              onClick={() => void handleDelete()}
+              className="rounded-s border border-err/50 bg-err/10 px-4 py-2 text-sm font-semibold text-err transition-colors hover:border-err disabled:opacity-40"
+            >
+              {working ? t('compliance.delete.working') : t('compliance.delete.confirm')}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 interface EntityModalProps {
   entity: ComplianceEntityRecord
   onClose: () => void
@@ -509,6 +617,10 @@ interface Props {
   allowErasure?: boolean
   /** Admin-only edit + activate/deactivate of the top-level entity. */
   allowEdit?: boolean
+  /** Admin-only irreversible deletion of a company/freelancer and its tree. */
+  allowDelete?: boolean
+  /** Called after a successful hard delete — the entity no longer exists. */
+  onDeleted?: () => void
   onChanged?: () => void
 }
 
@@ -519,6 +631,8 @@ export function ComplianceEntityPanel({
   riskAssessment = false,
   allowErasure = false,
   allowEdit = false,
+  allowDelete = false,
+  onDeleted,
   onChanged,
 }: Props) {
   const { t, i18n } = useTranslation()
@@ -532,11 +646,15 @@ export function ComplianceEntityPanel({
   const [showSchein, setShowSchein] = useState(false)
   const [showErase, setShowErase] = useState(false)
   const [showEdit, setShowEdit] = useState(false)
+  const [showDelete, setShowDelete] = useState(false)
   const scheinCheck = savedChecks[entity.id] ?? entity.scheinselbst_check
 
   const isCompany = entity.kind === 'company'
   const showRisk = riskAssessment && entity.kind === 'freelancer'
   const canErase = allowErasure && !entity.is_active && !entity.attributes?.erased
+  // Workers are removed with their company; internal employees are mirrored
+  // from `employees` by trigger and must be deleted there.
+  const canDelete = allowDelete && (entity.kind === 'company' || entity.kind === 'freelancer')
 
   async function handleDossier() {
     setDossierState('working')
@@ -589,6 +707,17 @@ export function ComplianceEntityPanel({
               >
                 <Pencil size={13} strokeWidth={1.5} />
                 {t('common.edit')}
+              </button>
+            )}
+            {canDelete && (
+              <button
+                type="button"
+                onClick={() => setShowDelete(true)}
+                className="inline-flex items-center gap-1 rounded-s border border-err/40 px-3 py-1.5 text-xs text-err transition-colors hover:border-err"
+                title={t('compliance.delete.hint')}
+              >
+                <Trash2 size={13} strokeWidth={1.5} />
+                {t('compliance.delete.button')}
               </button>
             )}
             {canErase && (
@@ -761,6 +890,18 @@ export function ComplianceEntityPanel({
           onClose={() => setShowEdit(false)}
           onSaved={() => {
             setShowEdit(false)
+            onChanged?.()
+          }}
+        />
+      )}
+
+      {showDelete && (
+        <DeleteEntityModal
+          entity={entity}
+          onClose={() => setShowDelete(false)}
+          onDeleted={() => {
+            setShowDelete(false)
+            onDeleted?.()
             onChanged?.()
           }}
         />
