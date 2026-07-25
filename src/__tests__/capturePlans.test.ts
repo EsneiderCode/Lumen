@@ -12,7 +12,11 @@ import {
 } from '@/constants/capture-plans'
 import { SOPLADO_RA_PLAN } from '@/constants/capture-plans-soplado-ra'
 import { DETAIL_FIELDS } from '@/constants/detail-fields'
-import { captureExamplePaths, evaluateCapturePlan } from '@/services/capturePlanEngine'
+import {
+  captureExamplePaths,
+  describeMissingNodes,
+  evaluateCapturePlan,
+} from '@/services/capturePlanEngine'
 import type {
   CaptureAnswers,
   CapturePhotoSlot,
@@ -28,6 +32,10 @@ const migration052 = readFileSync(
 )
 const migration053 = readFileSync(
   join(process.cwd(), 'supabase', 'migrations', '053_capture_plan_soplado_ra.sql'),
+  'utf8',
+)
+const migration054 = readFileSync(
+  join(process.cwd(), 'supabase', 'migrations', '054_capture_plan_gate.sql'),
   'utf8',
 )
 
@@ -387,6 +395,55 @@ describe('evaluating the Soplado de RA plan', () => {
         ?.slots.find((slot) => slot.slotKey === 'safety_signage')?.visible,
     ).toBe(false)
   })
+
+  // These exact strings were compared against capture_plan_missing_nodes() run
+  // on Postgres 15 with the plan JSON of migration 053: client and gate must
+  // tell the admin the same thing, down to the numbering of the trench.
+  it('describes what is missing in the same words as the SQL gate', () => {
+    const answers: CaptureAnswers = {
+      ...baseAnswers(),
+      catas: [{ id: 'c1', values: { left_open: false, depth_cm: 60 } }],
+    }
+    const result = evaluateCapturePlan(
+      SOPLADO_RA_PLAN,
+      [
+        ...mandatoryPhotos().slice(0, 3),
+        { id: 'c1-0', section_key: 'catas', slot_key: 'before_open', item_id: 'c1' },
+      ],
+      answers,
+    )
+
+    expect(describeMissingNodes(result)).toEqual([
+      'Fotos mandatory.balloon_pop (1)',
+      'Fotos catas[1].during_open (1)',
+      'Fotos catas[1].closed (1)',
+    ])
+  })
+
+  it('numbers repeater items from one, as the technician sees them', () => {
+    const answers: CaptureAnswers = {
+      ...baseAnswers(),
+      catas: [
+        { id: 'c1', values: { left_open: false, depth_cm: 60 } },
+        { id: 'c2', values: { left_open: false } },
+      ],
+    }
+    const trenchPhotos = (itemId: string): CapturedPhotoRef[] =>
+      ['before_open', 'during_open', 'closed'].map((slotKey) => ({
+        id: `${itemId}-${slotKey}`,
+        section_key: 'catas',
+        slot_key: slotKey,
+        item_id: itemId,
+      }))
+
+    const result = evaluateCapturePlan(
+      SOPLADO_RA_PLAN,
+      [...mandatoryPhotos(), ...trenchPhotos('c1'), ...trenchPhotos('c2')],
+      answers,
+    )
+
+    expect(describeMissingNodes(result)).toEqual(['Angabe catas[2].depth_cm'])
+  })
 })
 
 describe('migration 053 seeds exactly the Soplado de RA plan', () => {
@@ -453,5 +510,82 @@ describe('migration 052 structure', () => {
     expect(sql).toContain('alter table public.capture_plans enable row level security')
     expect(sql).toContain('alter table public.work_order_capture_reports enable row level security')
     expect(sql).toContain("has_permission('settings.manage_capture_plans')")
+  })
+})
+
+// The gate cannot be executed from vitest — there is no Postgres here. What the
+// suite can guarantee is that it still IS the plan gate: that it reads the plan,
+// that the pre-plan rules survive only as the fallback, and that its evaluation
+// primitives are the ones the engine documents.
+describe('migration 054 makes the certification gate read the plan', () => {
+  const sql = migration054.toLowerCase()
+  const gateStart = sql.indexOf(
+    'create or replace function public.assert_work_order_rueckmeldung_complete(',
+  )
+  const gate = sql.slice(gateStart)
+
+  it('declares every migration it builds on', () => {
+    for (const dependency of [
+      '016_mvp_business_logic_hardening.sql',
+      '052_capture_plans.sql',
+      '053_capture_plan_soplado_ra.sql',
+    ]) {
+      expect(sql).toMatch(new RegExp(`--[\\s\\S]*depends on:[\\s\\S]*${dependency.replace('.', '\\.')}`))
+    }
+  })
+
+  it('replaces the gate and keeps the 016 rules as an explicit fallback', () => {
+    expect(gateStart).toBeGreaterThan(-1)
+    expect(sql).toContain(
+      'create or replace function public.assert_work_order_rueckmeldung_complete_legacy(',
+    )
+    expect(gate).toContain('assert_work_order_rueckmeldung_complete_legacy(p_work_order_id)')
+  })
+
+  it('resolves the plan through the helpers 052 added', () => {
+    expect(gate).toContain('public.work_order_capture_plan_key(p_work_order_id)')
+    expect(gate).toContain('public.current_capture_plan(v_plan_key)')
+    expect(gate).toContain('public.capture_plan_missing_nodes(')
+  })
+
+  it('no longer demands the three photo buckets outside the fallback', () => {
+    expect(gate).not.toContain("array['before', 'during', 'after']")
+    // …which is exactly where the old rule now lives, and nowhere else.
+    expect(sql.match(/array\['before', 'during', 'after'\]/g)).toHaveLength(1)
+  })
+
+  it('evaluates the pinned plan version, not whatever is current', () => {
+    expect(gate).toMatch(/where key = v_report\.plan_key and version = v_report\.plan_version/)
+  })
+
+  it('treats an unknown plan key as an error, never as a pass', () => {
+    expect(gate).toMatch(/erfassungsplan[\s\S]*raise exception|raise exception[\s\S]*erfassungsplan/)
+    expect(sql).toContain("using errcode = 'check_violation'")
+  })
+
+  it('ports the engine’s field rules, including the ones easy to get wrong', () => {
+    const filled = sql.slice(sql.indexOf('create or replace function public.capture_field_filled'))
+    // number: > 0 unless the field declares its own min (0 is a real answer there)
+    expect(filled).toContain('return v_num >= v_min')
+    expect(filled).toContain('return v_num > 0')
+    // checkbox must be checked, yesno only has to be answered
+    expect(filled).toContain("return p_value = 'true'::jsonb")
+    expect(filled).toContain("return jsonb_typeof(p_value) = 'boolean'")
+    // geopoint needs both coordinates
+    expect(filled).toMatch(/jsonb_typeof\(p_value->'lat'\) = 'number'/)
+    expect(filled).toMatch(/jsonb_typeof\(p_value->'lng'\) = 'number'/)
+  })
+
+  it('keeps counting photos that predate the plans', () => {
+    const missing = sql.slice(sql.indexOf('create or replace function public.capture_plan_missing_nodes'))
+    expect(missing).toContain('v_legacy_target')
+    expect(missing).toContain('section_key is null or slot_key is null')
+  })
+
+  it('reports the same node paths the client does', () => {
+    const missing = sql.slice(sql.indexOf('create or replace function public.capture_plan_missing_nodes'))
+    expect(missing).toContain("'fotos %s.%s (%s)'")
+    expect(missing).toContain("'angabe %s.%s'")
+    expect(missing).toContain("'einträge %s (%s)'")
   })
 })

@@ -5,6 +5,10 @@ import {
   normalizeReportedServiceItems,
   buildBillingDraftsFromReportedItems,
 } from '@/services/workOrderService'
+import { clearCapturePlanCache } from '@/services/capturePlanService'
+import { DEFAULT_CAPTURE_PLANS } from '@/constants/capture-plans'
+import { SOPLADO_RA_PLAN } from '@/constants/capture-plans-soplado-ra'
+import type { CapturePlan } from '@/types/capture-plan'
 import type { WorkType } from '@/types/enums'
 
 // ── workTypeToDetailTable ───────────────────────────────────────────────────
@@ -212,14 +216,58 @@ describe('fetchWorkOrders — success path', () => {
 import { validateTransitionPrerequisites } from '@/services/workOrderService'
 
 interface PrereqScenario {
-  order?: { work_type: string; client_id: string | null } | null
+  order?: {
+    work_type: string
+    client_id: string | null
+    capture_plan_key?: string | null
+  } | null
   detail?: Record<string, unknown> | null
   photoTypes?: string[]
+  /** Slot-stamped photos, for orders captured under a plan. */
+  photos?: Array<Record<string, unknown>>
   audits?: Array<{ cert_type: string }>
+  /** Absent = the order predates the capture plans and falls back to the legacy rules. */
+  report?: {
+    plan_key: string
+    plan_version: number
+    answers: Record<string, unknown>
+  } | null
+  /** Plans reachable in the catalog; absent keys resolve to the compiled defaults. */
+  plans?: CapturePlan[]
 }
 
 function setupSupabaseFor(scenarios: PrereqScenario) {
+  // fetchCapturePlan keeps an in-process cache; without this a plan from an
+  // earlier scenario would answer for the next one.
+  clearCapturePlanCache()
   mockSupabase.from = vi.fn((table: string) => {
+    if (table === 'work_order_capture_reports') {
+      const rows = scenarios.report ? [scenarios.report] : []
+      return {
+        select: () => ({
+          eq: () => ({ limit: () => Promise.resolve({ data: rows, error: null }) }),
+        }),
+      }
+    }
+    if (table === 'capture_plans') {
+      const rows = (scenarios.plans ?? []).map((plan) => ({
+        definition: plan,
+        version: plan.version,
+      }))
+      // Both lookups the service makes: pinned (key + version) and current
+      // (key + is_active, newest first). The stub ignores the filters and hands
+      // back the scenario's plans — a scenario never declares two of them.
+      return {
+        select: () => ({
+          eq: () => ({
+            eq: () => ({
+              limit: () => Promise.resolve({ data: rows, error: null }),
+              order: () => ({ limit: () => Promise.resolve({ data: rows, error: null }) }),
+            }),
+          }),
+        }),
+      }
+    }
     if (table === 'work_orders') {
       return {
         select: () => ({
@@ -247,7 +295,8 @@ function setupSupabaseFor(scenarios: PrereqScenario) {
       }
     }
     if (table === 'work_order_photos') {
-      const photos = (scenarios.photoTypes ?? []).map((t) => ({ photo_type: t }))
+      const photos =
+        scenarios.photos ?? (scenarios.photoTypes ?? []).map((t) => ({ photo_type: t }))
       return {
         select: () => ({
           eq: () => Promise.resolve({ data: photos, error: null }),
@@ -385,6 +434,137 @@ describe('validateTransitionPrerequisites — internally_certified', () => {
     })
     const result = await validateTransitionPrerequisites('id-1', 'internally_certified')
     expect(result).toMatch(/nicht unterstützt/i)
+  })
+})
+
+// ── The capture-plan gate (mirror of migration 054) ─────────────────────────
+
+/** Photos stamped with their slot, the shape uploadCapturePhoto writes. */
+const slotPhoto = (sectionKey: string, slotKey: string, itemId: string | null = null) => ({
+  id: `${sectionKey}-${slotKey}-${itemId ?? 'top'}`,
+  photo_type: 'during',
+  section_key: sectionKey,
+  slot_key: slotKey,
+  item_id: itemId,
+})
+
+const SOPLADO_RA_PHOTOS = [
+  slotPhoto('mandatory', 'fiber_dp'),
+  slotPhoto('mandatory', 'fiber_dp_gasblock'),
+  slotPhoto('mandatory', 'fiber_pop_label'),
+  slotPhoto('mandatory', 'balloon_pop'),
+]
+
+const SOPLADO_RA_ANSWERS = {
+  details: { meters: 120, section: 'POP-DP12', tube_diameter: '7/4', result: 'OK' },
+  checklist: { duct_as_planned: true },
+}
+
+describe('validateTransitionPrerequisites — capture plan gate', () => {
+  it('falls back to the legacy rules when the order has no capture report', async () => {
+    setupSupabaseFor({
+      order: { work_type: 'alta', client_id: 'client-1' },
+      detail: COMPLETE_ALTA_DETAIL,
+      photoTypes: ALL_PHOTOS,
+      report: null,
+    })
+    expect(await validateTransitionPrerequisites('id-1', 'internally_certified')).toBeNull()
+  })
+
+  it('accepts a Soplado de RA order that satisfies its plan', async () => {
+    setupSupabaseFor({
+      order: { work_type: 'soplado', client_id: 'client-1', capture_plan_key: 'soplado_ra' },
+      plans: [SOPLADO_RA_PLAN],
+      report: { plan_key: 'soplado_ra', plan_version: SOPLADO_RA_PLAN.version, answers: SOPLADO_RA_ANSWERS },
+      photos: SOPLADO_RA_PHOTOS,
+    })
+    expect(await validateTransitionPrerequisites('id-1', 'internally_certified')).toBeNull()
+  })
+
+  it('names the mandatory photo the plan is still missing', async () => {
+    setupSupabaseFor({
+      order: { work_type: 'soplado', client_id: 'client-1', capture_plan_key: 'soplado_ra' },
+      plans: [SOPLADO_RA_PLAN],
+      report: { plan_key: 'soplado_ra', plan_version: SOPLADO_RA_PLAN.version, answers: SOPLADO_RA_ANSWERS },
+      photos: SOPLADO_RA_PHOTOS.slice(0, 3),
+    })
+    const result = await validateTransitionPrerequisites('id-1', 'internally_certified')
+    expect(result).toMatch(/Rückmeldung unvollständig \(soplado_ra\)/)
+    expect(result).toContain('Fotos mandatory.balloon_pop (1)')
+  })
+
+  it('names the field a conditional checklist answer just made mandatory', async () => {
+    setupSupabaseFor({
+      order: { work_type: 'soplado', client_id: 'client-1', capture_plan_key: 'soplado_ra' },
+      plans: [SOPLADO_RA_PLAN],
+      report: {
+        plan_key: 'soplado_ra',
+        plan_version: SOPLADO_RA_PLAN.version,
+        answers: { ...SOPLADO_RA_ANSWERS, checklist: { duct_as_planned: false } },
+      },
+      photos: SOPLADO_RA_PHOTOS,
+    })
+    const result = await validateTransitionPrerequisites('id-1', 'internally_certified')
+    expect(result).toContain('Angabe checklist.trunk_used')
+    expect(result).toContain('Angabe checklist.duct_used')
+    expect(result).toContain('Angabe checklist.change_reason')
+  })
+
+  it('numbers the trench whose photos are missing', async () => {
+    setupSupabaseFor({
+      order: { work_type: 'soplado', client_id: 'client-1', capture_plan_key: 'soplado_ra' },
+      plans: [SOPLADO_RA_PLAN],
+      report: {
+        plan_key: 'soplado_ra',
+        plan_version: SOPLADO_RA_PLAN.version,
+        answers: {
+          ...SOPLADO_RA_ANSWERS,
+          catas: [{ id: 'c1', values: { left_open: false, depth_cm: 60 } }],
+        },
+      },
+      photos: [...SOPLADO_RA_PHOTOS, slotPhoto('catas', 'before_open', 'c1')],
+    })
+    const result = await validateTransitionPrerequisites('id-1', 'internally_certified')
+    expect(result).toContain('Fotos catas[1].during_open (1)')
+    expect(result).toContain('Fotos catas[1].closed (1)')
+    expect(result).not.toContain('catas[1].before_open')
+  })
+
+  it('caps the list so the admin gets a sentence, not a wall', async () => {
+    setupSupabaseFor({
+      order: { work_type: 'soplado', client_id: 'client-1', capture_plan_key: 'soplado_ra' },
+      plans: [SOPLADO_RA_PLAN],
+      report: { plan_key: 'soplado_ra', plan_version: SOPLADO_RA_PLAN.version, answers: {} },
+      photos: [],
+    })
+    const result = await validateTransitionPrerequisites('id-1', 'internally_certified')
+    expect(result).toMatch(/… \(\+\d+\)$/)
+    expect((result ?? '').split('; ')).toHaveLength(7)
+  })
+
+  it('still counts photos uploaded before the plans existed', async () => {
+    setupSupabaseFor({
+      order: { work_type: 'alta', client_id: 'client-1' },
+      plans: [DEFAULT_CAPTURE_PLANS.alta],
+      report: {
+        plan_key: 'alta',
+        plan_version: DEFAULT_CAPTURE_PLANS.alta.version,
+        answers: { details: COMPLETE_ALTA_DETAIL },
+      },
+      photos: ALL_PHOTOS.map((type) => ({ id: type, photo_type: type })),
+    })
+    expect(await validateTransitionPrerequisites('id-1', 'internally_certified')).toBeNull()
+  })
+
+  it('refuses to guess when the plan the order points at does not exist', async () => {
+    setupSupabaseFor({
+      order: { work_type: 'soplado', client_id: 'client-1', capture_plan_key: 'ghost_plan' },
+      plans: [],
+      report: { plan_key: 'ghost_plan', plan_version: 1, answers: {} },
+      photos: [],
+    })
+    const result = await validateTransitionPrerequisites('id-1', 'internally_certified')
+    expect(result).toMatch(/Erfassungsplan "ghost_plan" nicht gefunden/)
   })
 })
 

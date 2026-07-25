@@ -22,6 +22,7 @@ import {
 import { DEFAULT_CAPTURE_PLANS } from '@/constants/capture-plans'
 import { SOPLADO_RA_PLAN } from '@/constants/capture-plans-soplado-ra'
 import { evaluateCapturePlan } from '@/services/capturePlanEngine'
+import { validateTransitionPrerequisites } from '@/services/workOrderService'
 
 const TECH_ID = '00000000-0000-0000-0000-000000000002'
 
@@ -137,5 +138,63 @@ describe('capture reports in demo mode', () => {
 
     expect(evaluation.missingPhotoCount).toBe(0)
     expect(evaluation.canSubmit).toBe(true)
+  })
+})
+
+// Phase 5: the certification gate is SQL, which demo mode cannot run. What it
+// can run is the client-side twin, and that is what an admin actually hits
+// before the RPC — so a demo without credentials still shows the real rule.
+describe('the certification gate in demo mode', () => {
+  /** The seeded alta order sitting in rueckmeldung_sent — the one an admin certifies. */
+  const workOrderId = '50000000-0000-0000-0000-000000000003'
+  const completeAlta = {
+    details: { access_type: 'Keller', equipment_installed: 'NT-1234', client_signature: true },
+  }
+
+  it('judges an order with no capture report by the pre-plan rules', async () => {
+    expect((await fetchCaptureReport(workOrderId)).data).toBeNull()
+    expect(await validateTransitionPrerequisites(workOrderId, 'internally_certified')).toBeNull()
+  })
+
+  it('accepts the order once its plan is satisfied', async () => {
+    await saveCaptureReport({
+      workOrderId,
+      plan: DEFAULT_CAPTURE_PLANS.alta,
+      answers: completeAlta,
+      userId: TECH_ID,
+      submitted: true,
+    })
+
+    expect(await validateTransitionPrerequisites(workOrderId, 'internally_certified')).toBeNull()
+  })
+
+  it('names what the plan is still missing', async () => {
+    await saveCaptureReport({
+      workOrderId,
+      plan: DEFAULT_CAPTURE_PLANS.alta,
+      answers: { details: { access_type: 'Keller' } },
+      userId: TECH_ID,
+      submitted: true,
+    })
+
+    const result = await validateTransitionPrerequisites(workOrderId, 'internally_certified')
+    expect(result).toContain('Rückmeldung unvollständig (alta)')
+    expect(result).toContain('Angabe details.equipment_installed')
+    expect(result).toContain('Angabe details.client_signature')
+  })
+
+  // The report is pinned to the plan it was captured under, but the order's own
+  // capture_plan_key is what the gate resolves: moving an order to another plan
+  // re-judges it under the new one.
+  it('follows the plan key the order carries, not the one it was captured under', async () => {
+    await saveCaptureReport({
+      workOrderId,
+      plan: SOPLADO_RA_PLAN,
+      answers: completeAlta,
+      userId: TECH_ID,
+      submitted: true,
+    })
+
+    expect(await validateTransitionPrerequisites(workOrderId, 'internally_certified')).toBeNull()
   })
 })

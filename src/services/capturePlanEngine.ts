@@ -290,6 +290,31 @@ function evaluateField(
   }
 }
 
+/**
+ * What the Rückmeldung still owes its plan, in plan order, one line per node:
+ * `Fotos catas[2].closed (1)`, `Angabe details.meters`, `Einträge catas (1)`.
+ *
+ * These are the exact tokens `capture_plan_missing_nodes()` builds in migration
+ * 054, so the admin reads the same sentence whether the client-side check or the
+ * certification gate rejected the order.
+ */
+export function describeMissingNodes(evaluation: CapturePlanEvaluation): string[] {
+  const itemIndex = new Map<string, number>()
+  for (const section of evaluation.sections) {
+    for (const item of section.items) {
+      itemIndex.set(`${section.key}:${item.itemId}`, item.index + 1)
+    }
+  }
+
+  return evaluation.missing.map((node) => {
+    const index = node.itemId ? itemIndex.get(`${node.sectionKey}:${node.itemId}`) : undefined
+    const path = index === undefined ? node.sectionKey : `${node.sectionKey}[${index}]`
+    if (node.kind === 'photos') return `Fotos ${path}.${node.slotKey} (${node.count})`
+    if (node.kind === 'field') return `Angabe ${path}.${node.fieldKey}`
+    return `Einträge ${node.sectionKey} (${node.count})`
+  })
+}
+
 export function evaluateCapturePlan(
   plan: CapturePlan,
   photos: CapturedPhotoRef[],

@@ -63,6 +63,26 @@ export async function fetchCapturePlan(planKey: string): Promise<CapturePlan | n
   return plan
 }
 
+/**
+ * One exact version of a plan — what a capture report is pinned to, and what the
+ * certification gate (054) evaluates, so a stricter plan published later cannot
+ * invalidate a Rückmeldung already sent. Returns null when that version is gone
+ * from the catalog; the caller then falls back to the current one.
+ */
+export async function fetchCapturePlanVersion(
+  planKey: string,
+  version: number,
+): Promise<CapturePlan | null> {
+  const { data } = await supabase
+    .from('capture_plans')
+    .select('definition')
+    .eq('key', planKey)
+    .eq('version', version)
+    .limit(1)
+
+  return isPlan(data?.[0]?.definition) ? data[0].definition : null
+}
+
 /** The plan a work order is captured under. Mirrors `work_order_capture_plan_key()`. */
 export function fetchCapturePlanForOrder(order: {
   work_type: string

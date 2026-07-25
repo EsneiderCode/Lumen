@@ -7,6 +7,14 @@ import {
   fetchProfileCompliance,
   type ProfileComplianceResult,
 } from '@/services/complianceService'
+import { capturePlanKeyForOrder } from '@/constants/capture-plans'
+import { describeMissingNodes, evaluateCapturePlan } from '@/services/capturePlanEngine'
+import {
+  fetchCapturePlan,
+  fetchCapturePlanVersion,
+  fetchCaptureReport,
+} from '@/services/capturePlanService'
+import type { CapturedPhotoRef } from '@/types/capture-plan'
 import {
   isDirectWorkOrder,
   toFailureResult,
@@ -88,8 +96,13 @@ export function validateStatusTransition(
 // ── Data prerequisites for transitions (DB-backed) ─────────────────────────
 
 /**
- * Required detail fields per work_type. A transition into internally_certified
- * is rejected if any of these is null/empty/0/false.
+ * Required detail fields per work_type, for orders captured before the capture
+ * plans existed. A transition into internally_certified is rejected if any of
+ * these is null/empty/0/false.
+ *
+ * Mirrors assert_work_order_rueckmeldung_complete_legacy() (migration 054, the
+ * verbatim 016 gate). Orders WITH a capture report are judged by their plan
+ * instead — see validateCapturePlanCompleteness below.
  *
  * 'pop' is intentionally absent: wo_detail_pop is referenced by the workType
  * map but its table is not yet created in supabase/migrations. POP orders
@@ -112,12 +125,56 @@ function isFieldFilled(value: unknown): boolean {
   return true
 }
 
+/** Lines of the gate's error message, so the admin is not buried in a wall of text. */
+const MAX_LISTED_MISSING_NODES = 6
+
+/**
+ * Completeness according to the order's capture plan — the client twin of
+ * assert_work_order_rueckmeldung_complete() (migration 054), down to the
+ * wording of the message.
+ *
+ * Returns `undefined` when the order has no capture report, which means "judge
+ * it by the pre-plan rules", exactly as the gate falls back to its legacy twin.
+ */
+async function validateCapturePlanCompleteness(
+  workOrderId: string,
+  order: { work_type: string; capture_plan_key?: string | null },
+): Promise<string | null | undefined> {
+  const { data: report } = await fetchCaptureReport(workOrderId)
+  if (!report) return undefined
+
+  const planKey = capturePlanKeyForOrder(order)
+  // The pinned version wins, unless the admin has since moved the order to a
+  // different plan — that change is a deliberate "capture this differently".
+  const pinned =
+    report.plan_key === planKey ? await fetchCapturePlanVersion(planKey, report.plan_version) : null
+  const plan = pinned ?? (await fetchCapturePlan(planKey))
+  if (!plan) return `Erfassungsplan "${planKey}" nicht gefunden — Rückmeldung nicht prüfbar`
+
+  const { data: photos } = await supabase
+    .from('work_order_photos')
+    .select('id, photo_type, section_key, slot_key, item_id')
+    .eq('work_order_id', workOrderId)
+
+  const evaluation = evaluateCapturePlan(plan, (photos ?? []) as CapturedPhotoRef[], report.answers)
+  if (evaluation.canSubmit) return null
+
+  const missing = describeMissingNodes(evaluation)
+  const shown = missing.slice(0, MAX_LISTED_MISSING_NODES)
+  if (missing.length > shown.length) {
+    shown.push(`… (+${missing.length - shown.length})`)
+  }
+  return `Rückmeldung unvollständig (${planKey}): ${shown.join('; ')}`
+}
+
 /**
  * Validates DB-backed prerequisites for a status transition.
  * Returns an error string if any prerequisite is not met, or null if OK.
  *
  * Enforces (CLAUDE.md business rules):
- *   1. internally_certified  ← requires complete Rückmeldung detail + 3 photos
+ *   1. internally_certified  ← requires a Rückmeldung complete per the order's
+ *      capture plan, or — for orders captured before the plans — the detail
+ *      fields plus the three photo buckets
  *   2. invoiced (with client) ← requires certification_audits row of cert_type='client'
  *   3. invoiced (direct)      ← requires certification_audits row of cert_type='internal'
  */
@@ -131,7 +188,7 @@ export async function validateTransitionPrerequisites(
 
   const { data: order, error: orderError } = await supabase
     .from('work_orders')
-    .select('work_type, client_id')
+    .select('work_type, client_id, capture_plan_key')
     .eq('id', workOrderId)
     .single()
 
@@ -139,6 +196,9 @@ export async function validateTransitionPrerequisites(
 
   // ── Rule 1: internally_certified requires complete Rückmeldung
   if (toStatus === 'internally_certified') {
+    const planResult = await validateCapturePlanCompleteness(workOrderId, order)
+    if (planResult !== undefined) return planResult
+
     const required = REQUIRED_DETAIL_FIELDS[order.work_type as WorkType]
     if (!required) {
       return `Zertifizierung für Arbeitstyp "${order.work_type}" nicht unterstützt`
@@ -717,8 +777,17 @@ function mapRpcLifecycleError(message: string): WorkOrderActionReason {
   if (lower.includes('internal') && lower.includes('audit')) {
     return { code: 'missing_internal_audit', message }
   }
-  if (lower.includes('rueckmeldung')) {
+  // The gate raises in German ("Rückmeldung unvollständig …"), so the umlaut
+  // spelling has to be here or every rejected certification reads as a server
+  // error to the admin.
+  if (lower.includes('rueckmeldung') || lower.includes('rückmeldung')) {
     return { code: 'incomplete_rueckmeldung', message }
+  }
+  if (lower.includes('erfassungsplan')) {
+    return { code: 'incomplete_rueckmeldung', message }
+  }
+  if (lower.includes('foto')) {
+    return { code: 'missing_required_photos', message }
   }
   if (lower.includes('not found')) {
     return { code: 'not_found', message }
