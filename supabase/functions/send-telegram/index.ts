@@ -424,11 +424,9 @@ interface TeamMemberRow {
   role: string
 }
 
+/** Only the name is needed — files are listed in the card, never uploaded. */
 interface DocumentRow {
   file_name: string
-  storage_path: string
-  mime_type: string | null
-  size_bytes: number | null
 }
 
 interface OrderCard {
@@ -478,7 +476,7 @@ async function fetchOrderCard(
     const documents = await supabaseFetch<DocumentRow[]>(
       supabaseUrl,
       serviceRoleKey,
-      `work_order_documents?select=file_name,storage_path,mime_type,size_bytes&work_order_id=eq.${encodeURIComponent(orderId)}&order=uploaded_at.asc`,
+      `work_order_documents?select=file_name&work_order_id=eq.${encodeURIComponent(orderId)}&order=uploaded_at.asc`,
       { method: 'GET' },
     )
 
@@ -624,58 +622,6 @@ function buildRichMessage(body: TelegramBody, card: OrderCard): string | null {
   }
   if (orderUrl) parts.push(`\n🔗 <a href="${orderUrl}">Ver orden en LUMEN</a>`)
   return parts.join('\n')
-}
-
-// ── Document delivery ─────────────────────────────────────────────────────────
-
-const MAX_DOCUMENTS = 10
-const MAX_DOCUMENT_BYTES = 45 * 1024 * 1024 // Telegram bot upload limit is 50 MB
-
-/**
- * Sends the order's attached documents to every target chat, right after the
- * notification message. Each file is downloaded once from Storage and uploaded
- * to Telegram as multipart. Failures are logged per file and never abort the
- * remaining ones.
- */
-async function sendDocuments(
-  card: OrderCard,
-  chatIds: string[],
-  botToken: string,
-  supabaseUrl: string,
-  serviceRoleKey: string,
-): Promise<number> {
-  let sent = 0
-  for (const doc of card.documents.slice(0, MAX_DOCUMENTS)) {
-    if ((doc.size_bytes ?? 0) > MAX_DOCUMENT_BYTES) {
-      console.warn('[send-telegram] document too large, skipped', doc.storage_path)
-      continue
-    }
-    try {
-      const objectPath = doc.storage_path.split('/').map(encodeURIComponent).join('/')
-      const res = await fetch(
-        `${supabaseUrl}/storage/v1/object/work-order-documents/${objectPath}`,
-        { headers: { authorization: `Bearer ${serviceRoleKey}`, apikey: serviceRoleKey } },
-      )
-      if (!res.ok) throw new Error(`storage download failed (${res.status})`)
-      const blob = await res.blob()
-
-      for (const chatId of chatIds) {
-        const form = new FormData()
-        form.append('chat_id', chatId)
-        form.append('document', blob, doc.file_name)
-        form.append('caption', `📎 ${card.order.order_number} — ${doc.file_name}`)
-        const tg = await fetch(`https://api.telegram.org/bot${botToken}/sendDocument`, {
-          method: 'POST',
-          body: form,
-        })
-        if (tg.ok) sent += 1
-        else console.error('[send-telegram] sendDocument failed', await tg.text())
-      }
-    } catch (error) {
-      console.error('[send-telegram] document delivery failed', doc.storage_path, error)
-    }
-  }
-  return sent
 }
 
 // ── Chat validation ───────────────────────────────────────────────────────────
@@ -843,15 +789,10 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Deliver the order's attached files after the card, so the team receives
-    // everything (plano, protocolos, …) in one go on assignment.
-    let documentsSent = 0
-    if (body.type === 'task_assigned' && card?.documents.length) {
-      documentsSent = await sendDocuments(card, chatIds, botToken, supabaseUrl, serviceRoleKey)
-    }
-
+    // Attached files are deliberately NOT uploaded to Telegram: the card only
+    // lists their names and the team opens them in LUMEN.
     const sent = results.length - failures.length
-    return json(200, { ok: true, sent, failed: failures.length, documentsSent })
+    return json(200, { ok: true, sent, failed: failures.length })
   } catch (error) {
     console.error('[send-telegram] unexpected error', error)
     return json(500, { error: error instanceof Error ? error.message : 'Unknown error' })
