@@ -5,6 +5,7 @@
 // validates what is materialized. Uploads go through the `compliance-upload`
 // Edge Function, which re-validates file signature and size server-side.
 
+import i18n from 'i18next'
 import { supabase } from '@/lib/supabase'
 import {
   computeAptitude,
@@ -44,6 +45,12 @@ function msg(error: unknown): string | null {
   if (!error) return null
   if (error instanceof Error) return error.message
   if (typeof error === 'object' && 'message' in (error as Row)) {
+    // 42501 = RLS rejected the row. Raw Postgres wording is meaningless to the
+    // user; keep it in the console for diagnosis and show why it happened.
+    if ((error as Row).code === '42501') {
+      console.error('[compliance] RLS denied the operation', error)
+      return i18n.t('errors.permissionDenied')
+    }
     return String((error as Row).message)
   }
   return String(error)

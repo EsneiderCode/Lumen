@@ -1,7 +1,8 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import i18n from 'i18next'
 import type { Database } from '@/types/database.types'
 import { createDemoSupabaseClient } from './demo/supabase-mock'
-import { getPinAccessToken } from '@/services/pinSession'
+import { clearPinSession, getPinSessionStatus, notifyPinSessionExpired } from '@/services/pinSession'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -39,14 +40,25 @@ function buildClient(): SupabaseClient<Database> {
     },
     global: {
       fetch: async (input, init) => {
-        const token = getPinAccessToken()
         const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
-        if (!token || url.includes('/auth/v1/')) {
+        const isAuthEndpoint = url.includes('/auth/v1/')
+        const pin = getPinSessionStatus()
+
+        // An expired PIN session must never fall through to the anon key: the
+        // request would run as `anon`, so reads come back empty and writes die
+        // with a cryptic RLS 42501 instead of asking the user to log in again.
+        if (pin.status === 'expired' && !isAuthEndpoint) {
+          clearPinSession()
+          notifyPinSessionExpired()
+          throw new Error(i18n.t('errors.sessionExpired'))
+        }
+
+        if (pin.status !== 'active' || isAuthEndpoint) {
           return fetch(input, init)
         }
 
         const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined))
-        headers.set('Authorization', `Bearer ${token}`)
+        headers.set('Authorization', `Bearer ${pin.accessToken}`)
         return fetch(input, { ...init, headers })
       },
     },

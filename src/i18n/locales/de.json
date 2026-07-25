@@ -740,7 +740,8 @@
     "invalidEmail": "Ungültige E-Mail-Adresse",
     "networkError": "Netzwerkfehler. Bitte erneut versuchen.",
     "unexpected": "Etwas ist schiefgelaufen.",
-    "sessionExpired": "Sitzung abgelaufen. Bitte neu anmelden."
+    "sessionExpired": "Sitzung abgelaufen. Bitte neu anmelden.",
+    "permissionDenied": "Keine Berechtigung für diese Aktion, oder die Sitzung ist abgelaufen. Bitte ab- und wieder anmelden; besteht das Problem weiter, Berechtigung beim Administrator anfordern."
   },
   "catalog": {
     "title": "Service-Katalog",

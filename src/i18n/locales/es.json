@@ -740,7 +740,8 @@
     "invalidEmail": "Correo electrónico inválido",
     "networkError": "Error de red. Probá de nuevo.",
     "unexpected": "Algo salió mal.",
-    "sessionExpired": "Sesión expirada. Por favor, iniciá sesión nuevamente."
+    "sessionExpired": "Sesión expirada. Por favor, iniciá sesión nuevamente.",
+    "permissionDenied": "No tenés permiso para esta acción, o tu sesión caducó. Cerrá sesión y volvé a entrar; si el problema sigue, pedí el permiso al administrador."
   },
   "catalog": {
     "title": "Catálogo de servicios",

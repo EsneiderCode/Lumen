@@ -61,6 +61,11 @@ async function fetchProfile(userId: string): Promise<AuthUser | null> {
 
 export const authService = {
   async signInWithEmail(email: string, password: string): Promise<SignInResult> {
+    // A leftover PIN session from a previous login on this device would hijack
+    // every request through the fetch wrapper in lib/supabase.ts — the UI would
+    // show this user while the database sees the other profile's identity.
+    clearPinSession()
+
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {

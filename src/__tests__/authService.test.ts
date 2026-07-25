@@ -68,6 +68,27 @@ describe('authService.signInWithEmail', () => {
     expect(result.error).toBe('Invalid login credentials')
   })
 
+  it('clears a leftover PIN session so it cannot hijack the new identity', async () => {
+    localStorage.setItem(
+      'lumen-pin-session-v1',
+      JSON.stringify({
+        accessToken: 'stale-pin-token',
+        expiresAt: Math.floor(Date.now() / 1000) + 3600,
+        user: { id: 'other-user', email: null, fullName: 'Other', role: 'technician', team: 'rot' },
+        deviceId: 'device-1',
+        localPinHash: 'pbkdf2$1$a$b',
+      }),
+    )
+    mockAuth.signInWithPassword.mockResolvedValue({
+      data: { user: { id: 'user-123' } },
+      error: null,
+    })
+    mockProfileFetch(fakeProfile)
+
+    await authService.signInWithEmail('admin@nexus.de', 'password')
+    expect(localStorage.getItem('lumen-pin-session-v1')).toBeNull()
+  })
+
   it('returns error when profile is not found after auth', async () => {
     mockAuth.signInWithPassword.mockResolvedValue({
       data: { user: { id: 'user-no-profile' } },

@@ -603,6 +603,10 @@ export function CompliancePage() {
   const { t, i18n } = useTranslation()
   const { can } = usePermissions()
   const canConfigureMatrix = can('compliance.configure_matrix')
+  // Creating entities/workers and editing or erasing them is gated by RLS on
+  // `compliance.manage_entities`; without the gate the UI offers actions that
+  // come back as raw 42501 errors.
+  const canManageEntities = can('compliance.manage_entities')
   const [activeTab, setActiveTab] = useState<'inbox' | 'entities' | 'reports' | 'matrix'>('inbox')
   const [queue, setQueue] = useState<ReviewQueueEntry[]>([])
   const [entities, setEntities] = useState<ComplianceEntityRecord[]>([])
@@ -655,13 +659,15 @@ export function CompliancePage() {
           <h1 className="font-display text-xl font-bold text-fg-1">{t('compliance.pageTitle')}</h1>
           <p className="mt-0.5 font-sans text-xs text-fg-2">{t('compliance.pageSubtitle')}</p>
         </div>
-        <button
-          onClick={() => setShowWizard(true)}
-          className="flex items-center gap-2 rounded-s bg-accent px-4 py-2 font-sans text-sm text-fg-1 transition-opacity hover:opacity-90"
-        >
-          <Plus size={14} strokeWidth={2} />
-          {t('compliance.wizard.title')}
-        </button>
+        {canManageEntities && (
+          <button
+            onClick={() => setShowWizard(true)}
+            className="flex items-center gap-2 rounded-s bg-accent px-4 py-2 font-sans text-sm text-fg-1 transition-opacity hover:opacity-90"
+          >
+            <Plus size={14} strokeWidth={2} />
+            {t('compliance.wizard.title')}
+          </button>
+        )}
       </div>
 
       <div className="flex gap-2">
@@ -783,8 +789,9 @@ export function CompliancePage() {
               entity={selectedEntity}
               directApprove
               riskAssessment
-              allowErasure={canConfigureMatrix}
-              allowEdit={canConfigureMatrix}
+              manageWorkers={canManageEntities}
+              allowErasure={canManageEntities}
+              allowEdit={canManageEntities}
               onChanged={() => void load()}
             />
           )}

@@ -96,6 +96,30 @@ export function getPinAccessToken(): string | null {
   return session.accessToken
 }
 
+export type PinSessionStatus =
+  | { status: 'none' }
+  | { status: 'active'; accessToken: string }
+  | { status: 'expired' }
+
+/** Like getPinAccessToken(), but tells "no PIN session" apart from "the PIN
+ *  session timed out" — callers must not silently downgrade the second case to
+ *  an anonymous request. */
+export function getPinSessionStatus(): PinSessionStatus {
+  const session = getStoredPinSession()
+  if (!session) return { status: 'none' }
+  if (session.expiresAt * 1000 <= Date.now()) return { status: 'expired' }
+  return { status: 'active', accessToken: session.accessToken }
+}
+
+/** Fired when a stored PIN session is found expired mid-flight; AuthContext
+ *  listens and forces a re-login instead of leaving a half-authenticated UI. */
+export const PIN_SESSION_EXPIRED_EVENT = 'lumen:pin-session-expired'
+
+export function notifyPinSessionExpired(): void {
+  if (typeof window === 'undefined') return
+  window.dispatchEvent(new CustomEvent(PIN_SESSION_EXPIRED_EVENT))
+}
+
 export async function storePinSession(
   accessToken: string,
   expiresAt: number,

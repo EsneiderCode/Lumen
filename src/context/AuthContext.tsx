@@ -4,6 +4,7 @@ import { authService } from '@/services/authService'
 import { fetchMyPermissions } from '@/services/rbacService'
 import { fallbackPermissionsForRole, getLandingRoute, type PermissionKey } from '@/config/permissions'
 import { supabase } from '@/lib/supabase'
+import { PIN_SESSION_EXPIRED_EVENT } from '@/services/pinSession'
 
 export type { AuthUser, AuthContextType } from './authTypes'
 
@@ -85,6 +86,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       mounted = false
       subscription.unsubscribe()
     }
+  }, [])
+
+  // A PIN session that timed out mid-use leaves the UI logged in with no valid
+  // token: drop to the login screen instead of firing anonymous requests.
+  useEffect(() => {
+    function handleExpired() {
+      setUser(null)
+      setPermissions(new Set())
+      setIsLoading(false)
+    }
+    window.addEventListener(PIN_SESSION_EXPIRED_EVENT, handleExpired)
+    return () => window.removeEventListener(PIN_SESSION_EXPIRED_EVENT, handleExpired)
   }, [])
 
   const signInWithEmail = useCallback(async (email: string, password: string) => {
