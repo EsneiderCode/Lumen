@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, Suspense, lazy, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import {
   ArrowLeft,
@@ -50,8 +50,15 @@ import {
 import { fetchServiceItems } from '@/services/serviceItemService'
 import { InvoicePreviewModal } from '@/components/admin/InvoicePreviewModal'
 import { fetchProfileCompliance, type ProfileComplianceResult } from '@/services/complianceService'
+import { fetchCapturePlanForOrder, fetchCaptureReport } from '@/services/capturePlanService'
+import { buildCaptureMapData } from '@/lib/captureMapPoints'
+import type { CaptureAnswers, CapturePlan } from '@/types/capture-plan'
 import { ComplianceDot } from '@/components/compliance/ComplianceDot'
 import { complianceLevel } from '@/components/compliance/aptitudeLevel'
+
+// MapLibre is ~200 KB gzip: it loads when an order that actually has located
+// evidence is opened, never as part of the admin bundle.
+const NexusMap = lazy(() => import('@/components/map/NexusMap'))
 
 // Catalog detail_form values for infra work — hide address, show
 // supporting-document uploaders. POP items live here too: they're
@@ -104,6 +111,13 @@ interface Photo {
   storage_path: string
   photo_type: PhotoType
   caption: string | null
+  // Capture-plan metadata (migration 052). Absent on photos uploaded before it.
+  section_key?: string | null
+  slot_key?: string | null
+  item_id?: string | null
+  lat?: number | null
+  lng?: number | null
+  taken_at?: string | null
 }
 
 interface StateEntry {
@@ -177,6 +191,10 @@ export function WorkOrderDetailPage() {
   const [photos, setPhotos] = useState<Photo[]>([])
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({})
   const [history, setHistory] = useState<StateEntry[]>([])
+  // Capture plan + answers — what the trench map is drawn from (phase 4).
+  const [capturePlan, setCapturePlan] = useState<CapturePlan | null>(null)
+  const [captureAnswers, setCaptureAnswers] = useState<CaptureAnswers>({})
+  const [selectedPointId, setSelectedPointId] = useState<string | null>(null)
   const [certAudits, setCertAudits] = useState<
     Array<{
       id: string
@@ -210,6 +228,14 @@ export function WorkOrderDetailPage() {
   // Full aptitude result for the assigned contractor — drives the header semáforo.
   const [contractorCompliance, setContractorCompliance] = useState<ProfileComplianceResult | null>(
     null,
+  )
+
+  // Where the work happened, from the trenches' own fixes and the coordinates
+  // stamped on each photo. Recomputed only when the evidence changes — the map
+  // re-frames itself on every new `points` array.
+  const captureMap = useMemo(
+    () => buildCaptureMapData(capturePlan, captureAnswers, photos),
+    [capturePlan, captureAnswers, photos],
   )
 
   const externalMissingDocs = externalDocCompliance?.missingCodes ?? []
@@ -269,6 +295,15 @@ export function WorkOrderDetailPage() {
               setContractorCompliance(compliance)
             }
           }
+
+          // The map is evidence, not decoration: it draws only what the
+          // technician actually recorded, so it needs the plan and the answers.
+          const [plan, { data: report }] = await Promise.all([
+            fetchCapturePlanForOrder(orderData),
+            fetchCaptureReport(id),
+          ])
+          setCapturePlan(plan)
+          setCaptureAnswers(report?.answers ?? {})
 
           const table = workTypeToDetailTable(orderData.work_type)
           const { data: detailData } = await fetchWorkOrderDetail(table, id)
@@ -577,6 +612,7 @@ export function WorkOrderDetailPage() {
 
   const hasDetail = Object.keys(detail).length > 0
   const photosByType = (type: PhotoType) => photos.filter((p) => p.photo_type === type)
+  const selectedPoint = captureMap.points.find((point) => point.id === selectedPointId) ?? null
   const showPdfButton = PDF_VISIBLE_STATUSES.includes(order.status)
   const snapshot = order.assigned_detail_snapshot
   // Show comparison only once the technician has submitted their report
@@ -1201,6 +1237,87 @@ export function WorkOrderDetailPage() {
           </div>
         )
       })()}
+
+      {/* Trench map — only for orders whose plan actually produced coordinates.
+          Nothing is inferred: a trench without a fix is counted, not drawn. */}
+      {(captureMap.points.length > 0 || captureMap.unlocatedTrenches > 0) && (
+        <div className="rounded-l border border-line bg-bg-1 p-5">
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <div>
+              <h3 className="font-display text-sm font-semibold text-fg-1">{t('map.trenches.title')}</h3>
+              <p className="mt-0.5 text-xs text-fg-2">
+                {t('map.trenches.subtitle', { count: captureMap.points.length })}
+              </p>
+            </div>
+            {captureMap.unlocatedTrenches > 0 && (
+              <p className="shrink-0 rounded-s border border-warn/40 bg-warn/10 px-2 py-1 font-mono text-[11px] text-warn">
+                {t('map.trenches.unlocated', { count: captureMap.unlocatedTrenches })}
+              </p>
+            )}
+          </div>
+
+          {captureMap.points.length > 0 && (
+            <Suspense
+              fallback={
+                <div className="flex h-72 items-center justify-center rounded-l border border-line bg-bg-0 font-mono text-[11px] text-fg-3">
+                  {t('map.loading')}
+                </div>
+              }
+            >
+              <NexusMap
+                points={captureMap.points}
+                route={captureMap.route}
+                selectedId={selectedPointId}
+                onSelectPoint={(pointId) =>
+                  setSelectedPointId((current) => (current === pointId ? null : pointId))
+                }
+              />
+            </Suspense>
+          )}
+
+          {selectedPoint && (
+            <div className="mt-3 rounded-l border border-line bg-bg-0 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="font-display text-sm font-semibold text-fg-1">
+                  {t(selectedPoint.labelKey, { defaultValue: selectedPoint.sectionKey })}
+                  {selectedPoint.index !== null ? ` ${selectedPoint.index}` : ''}
+                </p>
+                <p className="font-mono text-[11px] text-fg-3">
+                  {t('capture.geo.reading', {
+                    lat: selectedPoint.lat.toFixed(5),
+                    lng: selectedPoint.lng.toFixed(5),
+                    accuracy: Math.round(selectedPoint.accuracy_m ?? 0),
+                  })}
+                </p>
+              </div>
+              {selectedPoint.depthCm !== null && (
+                <p className="mt-1 font-mono text-[11px] text-fg-2">
+                  {t('map.trenches.depth', { depth: selectedPoint.depthCm })}
+                </p>
+              )}
+              {selectedPoint.photos.length > 0 && (
+                <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
+                  {selectedPoint.photos.map((photo) => (
+                    <a
+                      key={photo.id}
+                      href={photoUrls[photo.storage_path] ?? '#'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="aspect-square overflow-hidden rounded-s bg-bg-1 ring-1 ring-line transition-all hover:ring-accent"
+                    >
+                      <img
+                        src={photoUrls[photo.storage_path] ?? ''}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Photos */}
       {photos.length > 0 && (

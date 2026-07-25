@@ -6,6 +6,7 @@
  */
 
 import { MODULE_REGISTRY } from '@/config/permissions'
+import { COMPILED_CAPTURE_PLANS } from '@/constants/capture-plans'
 
 const ADMIN_ID = '00000000-0000-0000-0000-000000000001'
 const TECH_ID = '00000000-0000-0000-0000-000000000002'
@@ -47,6 +48,7 @@ const WO_6_REJECTED = '50000000-0000-0000-0000-000000000006'
 const WO_7_EXTERNAL = '50000000-0000-0000-0000-000000000007'
 const WO_8_NE4 = '50000000-0000-0000-0000-000000000008'
 const WO_9_DIRECT_TECH = '50000000-0000-0000-0000-000000000009'
+const WO_10_SOPLADO_RA = '50000000-0000-0000-0000-000000000010'
 
 const APPT_1 = '70000000-0000-0000-0000-000000000001'
 const APPT_2 = '70000000-0000-0000-0000-000000000002'
@@ -516,6 +518,22 @@ export const initialFixtures = () => ({
       service_item_id: SI_ALTA_NT, created_by: ADMIN_ID,
       created_at: NOW, updated_at: NOW,
     },
+    // 10 — Soplado de RA: the same 'soplado' work type captured under the
+    // 'soplado_ra' plan (migration 053). The only order in the demo with a
+    // capture_plan_key, so the plan-driven Rückmeldung can be shown without
+    // credentials: mandatory photos, trenches, incidents and the duct checklist.
+    {
+      id: WO_10_SOPLADO_RA, order_number: 'LUM-20260428-0010',
+      client_id: CLIENT_INSYTE, project_id: PROJECT_HXT, operator_id: OP_DGF,
+      line: 'NE3', work_type: 'soplado', status: 'in_progress', priority: 'normal',
+      capture_plan_key: 'soplado_ra',
+      assigned_team: 'rot', assigned_technician: TECH_ID, assigned_date: '2026-04-28',
+      address: 'Corveyer Allee 40', postal_code: '37671', city: 'Höxter',
+      internal_notes: 'Demo: soplado de RA — plan de captura con catas e incidencias',
+      assigned_detail_snapshot: null,
+      service_item_id: SI_SOPLADO_M, created_by: ADMIN_ID,
+      created_at: YESTERDAY, updated_at: NOW,
+    },
   ],
 
   appointments: [
@@ -561,6 +579,9 @@ export const initialFixtures = () => ({
   wo_detail_soplado: [
     { id: 'd1000000-0000-0000-0000-000000000001', work_order_id: WO_3, meters: 142.5, section: 'AP-37 → DP-12', tube_diameter: '40/33', result: 'OK', created_at: NOW },
     { id: 'd1000000-0000-0000-0000-000000000005', work_order_id: WO_5_PAID, meters: 95, section: 'POP-2 → AP-1', tube_diameter: '32/26', result: 'OK', created_at: LAST_WEEK },
+    // Mirror of the capture report of the Soplado de RA order — the phase-2
+    // double write, which is what the certification gate still reads.
+    { id: 'd1000000-0000-0000-0000-000000000010', work_order_id: WO_10_SOPLADO_RA, meters: 128, section: 'DP-12 → POP-2', tube_diameter: '7/3.5', result: 'OK', created_at: NOW },
   ],
 
   wo_detail_fusion_ap: [
@@ -586,19 +607,96 @@ export const initialFixtures = () => ({
   ],
 
   work_order_photos: [
-    { id: 'p0000000-0000-0000-0000-000000000031', work_order_id: WO_3, storage_path: 'demo/wo3-before.jpg', photo_type: 'before',  caption: null, uploaded_by: TECH_ID, created_at: NOW },
-    { id: 'p0000000-0000-0000-0000-000000000032', work_order_id: WO_3, storage_path: 'demo/wo3-during.jpg', photo_type: 'during',  caption: null, uploaded_by: TECH_ID, created_at: NOW },
-    { id: 'p0000000-0000-0000-0000-000000000033', work_order_id: WO_3, storage_path: 'demo/wo3-after.jpg',  photo_type: 'after',   caption: null, uploaded_by: TECH_ID, created_at: NOW },
-    { id: 'p0000000-0000-0000-0000-000000000041', work_order_id: WO_4_DIRECT, storage_path: 'demo/wo4-before.jpg', photo_type: 'before', caption: null, uploaded_by: TECH_ID, created_at: LAST_WEEK },
-    { id: 'p0000000-0000-0000-0000-000000000042', work_order_id: WO_4_DIRECT, storage_path: 'demo/wo4-during.jpg', photo_type: 'during', caption: null, uploaded_by: TECH_ID, created_at: LAST_WEEK },
-    { id: 'p0000000-0000-0000-0000-000000000043', work_order_id: WO_4_DIRECT, storage_path: 'demo/wo4-after.jpg',  photo_type: 'after',  caption: null, uploaded_by: TECH_ID, created_at: LAST_WEEK },
-    { id: 'p0000000-0000-0000-0000-000000000051', work_order_id: WO_5_PAID,   storage_path: 'demo/wo5-before.jpg', photo_type: 'before', caption: null, uploaded_by: TECH_ID, created_at: LAST_WEEK },
-    { id: 'p0000000-0000-0000-0000-000000000052', work_order_id: WO_5_PAID,   storage_path: 'demo/wo5-during.jpg', photo_type: 'during', caption: null, uploaded_by: TECH_ID, created_at: LAST_WEEK },
-    { id: 'p0000000-0000-0000-0000-000000000053', work_order_id: WO_5_PAID,   storage_path: 'demo/wo5-after.jpg',  photo_type: 'after',  caption: null, uploaded_by: TECH_ID, created_at: LAST_WEEK },
-    { id: 'p0000000-0000-0000-0000-000000000071', work_order_id: WO_7_EXTERNAL, storage_path: 'demo/wo7-before.jpg', photo_type: 'before', caption: null, uploaded_by: CONTRACTOR_ID, created_at: LAST_WEEK },
-    { id: 'p0000000-0000-0000-0000-000000000072', work_order_id: WO_7_EXTERNAL, storage_path: 'demo/wo7-during.jpg', photo_type: 'during', caption: null, uploaded_by: CONTRACTOR_ID, created_at: LAST_WEEK },
-    { id: 'p0000000-0000-0000-0000-000000000073', work_order_id: WO_7_EXTERNAL, storage_path: 'demo/wo7-after.jpg',  photo_type: 'after',  caption: null, uploaded_by: CONTRACTOR_ID, created_at: LAST_WEEK },
+    { id: 'p0000000-0000-0000-0000-000000000031', work_order_id: WO_3, storage_path: 'demo/wo3-before.jpg', photo_type: 'before', section_key: 'photos', slot_key: 'before', item_id: null, caption: null, uploaded_by: TECH_ID, created_at: NOW },
+    { id: 'p0000000-0000-0000-0000-000000000032', work_order_id: WO_3, storage_path: 'demo/wo3-during.jpg', photo_type: 'during', section_key: 'photos', slot_key: 'during', item_id: null, caption: null, uploaded_by: TECH_ID, created_at: NOW },
+    { id: 'p0000000-0000-0000-0000-000000000033', work_order_id: WO_3, storage_path: 'demo/wo3-after.jpg',  photo_type: 'after', section_key: 'photos', slot_key: 'after', item_id: null, caption: null, uploaded_by: TECH_ID, created_at: NOW },
+    { id: 'p0000000-0000-0000-0000-000000000041', work_order_id: WO_4_DIRECT, storage_path: 'demo/wo4-before.jpg', photo_type: 'before', section_key: 'photos', slot_key: 'before', item_id: null, caption: null, uploaded_by: TECH_ID, created_at: LAST_WEEK },
+    { id: 'p0000000-0000-0000-0000-000000000042', work_order_id: WO_4_DIRECT, storage_path: 'demo/wo4-during.jpg', photo_type: 'during', section_key: 'photos', slot_key: 'during', item_id: null, caption: null, uploaded_by: TECH_ID, created_at: LAST_WEEK },
+    { id: 'p0000000-0000-0000-0000-000000000043', work_order_id: WO_4_DIRECT, storage_path: 'demo/wo4-after.jpg',  photo_type: 'after', section_key: 'photos', slot_key: 'after', item_id: null, caption: null, uploaded_by: TECH_ID, created_at: LAST_WEEK },
+    { id: 'p0000000-0000-0000-0000-000000000051', work_order_id: WO_5_PAID,   storage_path: 'demo/wo5-before.jpg', photo_type: 'before', section_key: 'photos', slot_key: 'before', item_id: null, caption: null, uploaded_by: TECH_ID, created_at: LAST_WEEK },
+    { id: 'p0000000-0000-0000-0000-000000000052', work_order_id: WO_5_PAID,   storage_path: 'demo/wo5-during.jpg', photo_type: 'during', section_key: 'photos', slot_key: 'during', item_id: null, caption: null, uploaded_by: TECH_ID, created_at: LAST_WEEK },
+    { id: 'p0000000-0000-0000-0000-000000000053', work_order_id: WO_5_PAID,   storage_path: 'demo/wo5-after.jpg',  photo_type: 'after', section_key: 'photos', slot_key: 'after', item_id: null, caption: null, uploaded_by: TECH_ID, created_at: LAST_WEEK },
+    { id: 'p0000000-0000-0000-0000-000000000071', work_order_id: WO_7_EXTERNAL, storage_path: 'demo/wo7-before.jpg', photo_type: 'before', section_key: 'photos', slot_key: 'before', item_id: null, caption: null, uploaded_by: CONTRACTOR_ID, created_at: LAST_WEEK },
+    { id: 'p0000000-0000-0000-0000-000000000072', work_order_id: WO_7_EXTERNAL, storage_path: 'demo/wo7-during.jpg', photo_type: 'during', section_key: 'photos', slot_key: 'during', item_id: null, caption: null, uploaded_by: CONTRACTOR_ID, created_at: LAST_WEEK },
+    { id: 'p0000000-0000-0000-0000-000000000073', work_order_id: WO_7_EXTERNAL, storage_path: 'demo/wo7-after.jpg',  photo_type: 'after', section_key: 'photos', slot_key: 'after', item_id: null, caption: null, uploaded_by: CONTRACTOR_ID, created_at: LAST_WEEK },
+    // Soplado de RA (plan 'soplado_ra'): photos stamped with their slot, the
+    // trench they belong to and where they were taken — this is what the trench
+    // map of the admin order detail draws.
+    { id: 'p0000000-0000-0000-0000-000000000101', work_order_id: WO_10_SOPLADO_RA, storage_path: 'demo/wo10-fiber-dp.jpg',       photo_type: 'before', section_key: 'mandatory', slot_key: 'fiber_dp',          item_id: null,          caption: null, uploaded_by: TECH_ID, created_at: NOW, taken_at: NOW, lat: 51.77648, lng: 9.37982, accuracy_m: 6 },
+    { id: 'p0000000-0000-0000-0000-000000000102', work_order_id: WO_10_SOPLADO_RA, storage_path: 'demo/wo10-gasblock.jpg',       photo_type: 'during', section_key: 'mandatory', slot_key: 'fiber_dp_gasblock', item_id: null,          caption: null, uploaded_by: TECH_ID, created_at: NOW, taken_at: NOW, lat: 51.77651, lng: 9.37987, accuracy_m: 7 },
+    { id: 'p0000000-0000-0000-0000-000000000103', work_order_id: WO_10_SOPLADO_RA, storage_path: 'demo/wo10-pop-label.jpg',      photo_type: 'after',  section_key: 'mandatory', slot_key: 'fiber_pop_label',   item_id: null,          caption: null, uploaded_by: TECH_ID, created_at: NOW, taken_at: NOW, lat: 51.77802, lng: 9.38301, accuracy_m: 9 },
+    { id: 'p0000000-0000-0000-0000-000000000104', work_order_id: WO_10_SOPLADO_RA, storage_path: 'demo/wo10-balloon-pop.jpg',    photo_type: 'after',  section_key: 'mandatory', slot_key: 'balloon_pop',       item_id: null,          caption: null, uploaded_by: TECH_ID, created_at: NOW, taken_at: NOW, lat: 51.77805, lng: 9.38308, accuracy_m: 9 },
+    { id: 'p0000000-0000-0000-0000-000000000111', work_order_id: WO_10_SOPLADO_RA, storage_path: 'demo/wo10-cata1-before.jpg',   photo_type: 'before', section_key: 'catas',     slot_key: 'before_open',       item_id: 'cata-demo-1', caption: null, uploaded_by: TECH_ID, created_at: NOW, taken_at: NOW, lat: 51.77685, lng: 9.38042, accuracy_m: 8 },
+    { id: 'p0000000-0000-0000-0000-000000000112', work_order_id: WO_10_SOPLADO_RA, storage_path: 'demo/wo10-cata1-open.jpg',     photo_type: 'during', section_key: 'catas',     slot_key: 'during_open',       item_id: 'cata-demo-1', caption: null, uploaded_by: TECH_ID, created_at: NOW, taken_at: NOW, lat: 51.77686, lng: 9.38044, accuracy_m: 8 },
+    { id: 'p0000000-0000-0000-0000-000000000113', work_order_id: WO_10_SOPLADO_RA, storage_path: 'demo/wo10-cata1-closed.jpg',   photo_type: 'after',  section_key: 'catas',     slot_key: 'closed',            item_id: 'cata-demo-1', caption: null, uploaded_by: TECH_ID, created_at: NOW, taken_at: NOW, lat: 51.77684, lng: 9.38041, accuracy_m: 8 },
+    { id: 'p0000000-0000-0000-0000-000000000121', work_order_id: WO_10_SOPLADO_RA, storage_path: 'demo/wo10-cata2-before.jpg',   photo_type: 'before', section_key: 'catas',     slot_key: 'before_open',       item_id: 'cata-demo-2', caption: null, uploaded_by: TECH_ID, created_at: NOW, taken_at: NOW, lat: 51.77731, lng: 9.38215, accuracy_m: 11 },
+    { id: 'p0000000-0000-0000-0000-000000000122', work_order_id: WO_10_SOPLADO_RA, storage_path: 'demo/wo10-cata2-open.jpg',     photo_type: 'during', section_key: 'catas',     slot_key: 'during_open',       item_id: 'cata-demo-2', caption: null, uploaded_by: TECH_ID, created_at: NOW, taken_at: NOW, lat: 51.77733, lng: 9.38217, accuracy_m: 11 },
+    { id: 'p0000000-0000-0000-0000-000000000131', work_order_id: WO_10_SOPLADO_RA, storage_path: 'demo/wo10-incident.jpg',       photo_type: 'during', section_key: 'incidents', slot_key: 'photo',             item_id: null,          caption: null, uploaded_by: TECH_ID, created_at: NOW, taken_at: NOW, lat: 51.77712, lng: 9.38134, accuracy_m: 10 },
   ],
+
+  // Capture plans (migrations 052 + 053). The demo carries every compiled plan —
+  // the defaults and the "Soplado de RA" variant — so the Rückmeldung renders
+  // its plan-driven form with no credentials.
+  capture_plans: Object.values(COMPILED_CAPTURE_PLANS).map((plan) => ({
+    key: plan.key,
+    version: plan.version,
+    definition: plan,
+    is_active: true,
+    created_at: LAST_WEEK,
+    updated_at: LAST_WEEK,
+  })),
+
+  // The saved answers of the Soplado de RA order: two trenches (one still open,
+  // hence its safety signage slot), an incident and a duct change. Without this
+  // the trench map has nothing to draw in demo mode.
+  work_order_capture_reports: [
+    {
+      work_order_id: WO_10_SOPLADO_RA,
+      plan_key: 'soplado_ra',
+      plan_version: 1,
+      answers: {
+        catas: [
+          {
+            id: 'cata-demo-1',
+            values: {
+              left_open: false,
+              depth_cm: 62,
+              location: { lat: 51.77685, lng: 9.38042, accuracy_m: 8 },
+            },
+          },
+          {
+            id: 'cata-demo-2',
+            values: {
+              left_open: true,
+              depth_cm: 48,
+              location: { lat: 51.77731, lng: 9.38215, accuracy_m: 11 },
+            },
+          },
+        ],
+        incidents: { description: 'Rohr 4 blockiert auf Höhe Hausnummer 28' },
+        checklist: {
+          duct_as_planned: false,
+          trunk_used: 'Strang 3',
+          duct_used: 'Rohr 7 (grün)',
+          change_reason: 'Geplantes Rohr blockiert',
+        },
+        details: { meters: 128, section: 'DP-12 → POP-2', tube_diameter: '7/3.5', result: 'OK' },
+      } as Record<string, unknown>,
+      submitted_at: null,
+      updated_by: TECH_ID,
+      created_at: NOW,
+      updated_at: NOW,
+    },
+  ] as Array<{
+    work_order_id: string
+    plan_key: string
+    plan_version: number
+    answers: Record<string, unknown>
+    submitted_at: string | null
+    updated_by: string | null
+    created_at: string
+    updated_at: string
+  }>,
 
   work_order_state_history: [
     { id: 'h0000000-0000-0000-0000-000000000010', work_order_id: WO_1, from_status: null,                    to_status: 'created',              changed_by: ADMIN_ID, notes: 'Auftrag erstellt', created_at: NOW },

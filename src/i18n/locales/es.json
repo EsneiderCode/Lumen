@@ -145,7 +145,39 @@
     "connected_section": "Tramo conectado",
     "cable_length": "Largo de cable (m)",
     "connector_type": "Tipo de conector",
-    "test_result": "Resultado de la prueba"
+    "test_result": "Resultado de la prueba",
+    "cabinet_code": "Armario / Cabinet",
+    "card_count": "Tarjetas (solo POP)",
+    "rack_id": "ID de rack",
+    "tray_count": "Bandejas (cantidad)",
+    "cable_entry_points": "Puntos de entrada de cable"
+  },
+  "detailPlaceholder": {
+    "meters": "0",
+    "section": "p. ej. A1-B3",
+    "tube_diameter": "p. ej. 7/3.5",
+    "cabinet_code": "p. ej. NE3-S-001 o POP-X-12",
+    "card_count": "0 = no aplica",
+    "splice_count": "0",
+    "fiber_type": "p. ej. G.657.A2",
+    "fusion_losses": "0.00",
+    "equipment_installed": "p. ej. NT-100, splitter",
+    "serial_number": "SN-XXXXXXXX",
+    "location": "p. ej. sótano sala 1",
+    "configuration": "VLAN, IP…",
+    "connected_section": "p. ej. ODF-1 → ODF-2",
+    "cable_length": "0",
+    "rack_id": "p. ej. RACK-A-04",
+    "tray_count": "0",
+    "cable_entry_points": "p. ej. Norte: 12 cables · Sur: 8 cables · Suelo: 4 cables"
+  },
+  "detailOption": {
+    "Ausstehend": "Pendiente",
+    "Keller": "Sótano",
+    "Erdgeschoss": "Planta baja",
+    "Obergeschoss": "Planta superior",
+    "Dach": "Tejado",
+    "Außen": "Exterior"
   },
   "workOrder": {
     "title": "Órdenes",
@@ -200,6 +232,9 @@
     "chooseServiceItem": "— elegir servicio del catálogo —",
     "uncategorized": "Sin categoría",
     "workTypeDerived": "Tipo de trabajo (derivado del catálogo)",
+    "capturePlan": "Plan de captura",
+    "capturePlanDefault": "Estándar del tipo de trabajo",
+    "capturePlanHint": "Determina qué fotos y datos debe registrar el técnico en la Rückmeldung.",
     "streetAddress": "Calle / Número",
     "supportingDocs": "Documentos de respaldo",
     "supportingDocsDesc": "Para trabajos lineales (Soplado / Fusión) el plano y los Spleißprotokolle reemplazan a la dirección.",
@@ -245,6 +280,58 @@
     }
   },
   "rueckmeldung": {
+    "title": "Rückmeldung",
+    "back": "Volver a la orden",
+    "notFound": "Orden no encontrada",
+    "startTime": "Inicio",
+    "endTime": "Fin",
+    "submitted": "Rückmeldung enviada",
+    "saved": "Datos guardados.",
+    "footer": "«Enviar Rückmeldung» transmite todos los datos al administrador para su certificación.",
+    "returned": {
+      "title": "Orden devuelta — no conformidad",
+      "hint": "Corregí lo indicado y volvé a enviar la Rückmeldung."
+    },
+    "times": {
+      "title": "Horario de intervención",
+      "start": "Inicio",
+      "end": "Fin"
+    },
+    "reported": {
+      "title": "Posiciones ejecutadas",
+      "subtitle": "Qué se montó realmente. Una línea por posición del catálogo de servicios.",
+      "add": "+ Posición",
+      "empty": "Todavía sin posiciones. Tocá {{action}}.",
+      "service": "Servicio",
+      "choose": "— elegir —",
+      "qty": "Cantidad",
+      "remove": "Quitar posición"
+    },
+    "details": {
+      "title": "Datos técnicos — {{workType}}",
+      "subtitle": "Documentá el trabajo ejecutado",
+      "choose": "— elegir —"
+    },
+    "photos": {
+      "title": "Fotos",
+      "add": "+ Foto",
+      "uploading": "Subiendo…",
+      "empty": "Sin fotos · tocá para añadir",
+      "delete": "Eliminar foto",
+      "uploadFailed": "Error al subir la foto: {{error}}",
+      "deleteFailed": "Error al eliminar la foto: {{error}}"
+    },
+    "notes": {
+      "label": "Notas / particularidades",
+      "placeholder": "Particularidades, problemas, avisos para el administrador…"
+    },
+    "actions": {
+      "save": "Guardar borrador",
+      "saving": "Guardando…",
+      "send": "Enviar Rückmeldung",
+      "sendCorrected": "Enviar RM corregida",
+      "sending": "Enviando…"
+    },
     "materialConsumption": {
       "title": "Consumo de material",
       "subtitle": "Opcional. El consumo se descuenta del stock del vehículo del equipo.",
@@ -1492,6 +1579,130 @@
       "missingActions": {
         "none": "Ninguna",
         "notify_billing_withholding": "Retención 15% (§48b)"
+      }
+    }
+  },
+  "capture": {
+    "planMissing": "No hay plan de captura para «{{key}}» — avisa a administración",
+    "yes": "Sí",
+    "no": "No",
+    "section": {
+      "details": "Datos técnicos",
+      "done": "COMPLETO",
+      "pending": "PENDIENTE"
+    },
+    "slot": {
+      "add": "Foto",
+      "count": "{{count}} foto(s)",
+      "missing": "Falta(n) {{count}}",
+      "uploading": "Subiendo…",
+      "retry": "Reintentar",
+      "delete": "Borrar foto",
+      "example": "Ejemplo"
+    },
+    "repeater": {
+      "add": "Añadir",
+      "remove": "Quitar",
+      "empty": "Todavía sin entradas"
+    },
+    "geo": {
+      "adjust": "Ajustar pin",
+      "close": "Cerrar mapa",
+      "dragHint": "Arrastrá el pin hasta el sitio real.",
+      "empty": "Sin posición registrada",
+      "reading": "◎ {{lat}}, {{lng}} · ±{{accuracy}} m",
+      "locate": "Ubicación",
+      "locating": "Buscando…",
+      "unavailable": "Ubicación no disponible"
+    },
+    "missing": {
+      "summary": "Faltan {{count}} datos"
+    }
+  },
+  "map": {
+    "label": "Mapa",
+    "loading": "[CARGANDO MAPA]",
+    "trenches": {
+      "title": "Mapa de catas",
+      "subtitle": "{{count}} puntos localizados de la Rückmeldung",
+      "unlocated": "{{count}} sin ubicación",
+      "depth": "Profundidad: {{depth}} cm"
+    }
+  },
+  "capturePlan": {
+    "sopladoRa": {
+      "title": "Soplado de RA",
+      "mandatory": {
+        "title": "Fotos obligatorias",
+        "description": "Cuatro fotos que hay que hacer en todo soplado."
+      },
+      "catas": {
+        "title": "Catas",
+        "description": "Una cata por cada excavación. Si no se excavó, se deja vacío.",
+        "item": "Cata"
+      },
+      "incidents": {
+        "title": "Incidencias",
+        "description": "Solo si algo se desvió de lo previsto."
+      },
+      "checklist": {
+        "title": "Checklist de cierre",
+        "description": "Confirmar el tubo utilizado o documentar el cambio."
+      },
+      "slot": {
+        "fiberDp": {
+          "label": "Fibra en el DP",
+          "hint": "Fibra soplada dentro del DP abierto, con la etiqueta legible."
+        },
+        "fiberDpGasblock": {
+          "label": "Gasblock en el DP",
+          "hint": "Gasblock colocado y sellado en la entrada del tubo del DP."
+        },
+        "fiberPopLabel": {
+          "label": "Etiqueta de la fibra en el POP",
+          "hint": "Etiqueta de la fibra en el POP, con el texto legible en la foto."
+        },
+        "balloonPop": {
+          "label": "Globo en el POP",
+          "hint": "Globo colocado en el extremo del tubo, dentro del POP."
+        },
+        "beforeOpen": {
+          "label": "Antes de abrir",
+          "hint": "Superficie antes de excavar, con el entorno reconocible."
+        },
+        "duringOpen": {
+          "label": "Cata abierta",
+          "hint": "Cata abierta con el tubo a la vista."
+        },
+        "closed": {
+          "label": "Cata repuesta",
+          "hint": "Superficie cerrada y repuesta."
+        },
+        "safetySignage": {
+          "label": "Señalización",
+          "hint": "Vallado y señalización de la cata que queda abierta."
+        },
+        "incident": {
+          "label": "Foto de la incidencia",
+          "hint": "Lo que ha pasado, tomado con distancia suficiente."
+        }
+      },
+      "field": {
+        "leftOpen": "¿La cata queda abierta?",
+        "depthCm": "Profundidad (cm)",
+        "location": "Ubicación de la cata",
+        "incidentDescription": "Descripción",
+        "ductAsPlanned": "¿Se usó el tubo previsto?",
+        "trunkUsed": "Troncal utilizada",
+        "ductUsed": "Tubo utilizado",
+        "changeReason": "Motivo del cambio"
+      },
+      "placeholder": {
+        "depthCm": "p. ej. 60",
+        "incidentDescription": "¿Qué ha pasado?",
+        "trunkUsed": "p. ej. troncal 3",
+        "ductUsed": "p. ej. tubo 7 (verde)",
+        "changeReason": "p. ej. tubo previsto obstruido"
       }
     }
   }

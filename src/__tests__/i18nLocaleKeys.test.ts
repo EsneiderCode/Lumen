@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import de from '@/i18n/locales/de.json'
 import es from '@/i18n/locales/es.json'
+import { SOPLADO_RA_PLAN } from '@/constants/capture-plans-soplado-ra'
+import type { CapturePlan } from '@/types/capture-plan'
 
 // Helper: retrieve a nested value by dot-path (e.g. "auth.pin.savePIN")
 function getKey(obj: Record<string, unknown>, path: string): unknown {
@@ -48,6 +50,77 @@ describe('i18n locale key parity — de.json and es.json', () => {
     const dePin = (de as Record<string, unknown>).auth as Record<string, Record<string, unknown>>
     const esPin = (es as Record<string, unknown>).auth as Record<string, Record<string, unknown>>
     expect(Object.keys(dePin.pin).sort()).toEqual(Object.keys(esPin.pin).sort())
+  })
+
+  // The capture-plan form (phase 2 of the Rückmeldung photo flow) is fully
+  // driven by these keys — a missing one shows up as a raw key on the
+  // technician's screen, in the field, with no admin around.
+  it('de.json and es.json have the same capture keys', () => {
+    const flatten = (value: unknown, prefix = ''): string[] =>
+      value && typeof value === 'object'
+        ? Object.entries(value as Record<string, unknown>).flatMap(([key, child]) =>
+            flatten(child, prefix ? `${prefix}.${key}` : key),
+          )
+        : [prefix]
+
+    const deCapture = flatten((de as Record<string, unknown>).capture).sort()
+    const esCapture = flatten((es as Record<string, unknown>).capture).sort()
+
+    expect(deCapture).toEqual(esCapture)
+    expect(deCapture).toContain('slot.missing')
+    expect(deCapture).toContain('missing.summary')
+  })
+
+  // A capture plan is data: every label it shows comes from a key in these two
+  // files. A missing one shows up as a raw key on a technician's phone, in the
+  // field, on the plan whose whole point is being self-explanatory.
+  it('resolves every label the Soplado de RA plan references, in both locales', () => {
+    const referencedKeys = (plan: CapturePlan): string[] => {
+      const keys: string[] = []
+      const collect = (value: string | undefined) => {
+        if (value) keys.push(value)
+      }
+      collect(plan.titleKey)
+      for (const section of plan.sections) {
+        collect(section.titleKey)
+        collect(section.descriptionKey)
+        if (section.kind === 'repeater') collect(section.itemLabelKey)
+        if ('slots' in section) {
+          for (const slot of section.slots) {
+            collect(slot.labelKey)
+            collect(slot.hintKey)
+          }
+        }
+        if ('fields' in section) {
+          for (const field of section.fields) {
+            collect(field.labelKey)
+            collect(field.placeholderKey)
+            // Select options are NOT collected: the stored value stays canonical
+            // and `detailOption.*` only overrides the ones that need a different
+            // word per language — the rest fall back to the value itself.
+          }
+        }
+      }
+      return keys
+    }
+
+    for (const key of referencedKeys(SOPLADO_RA_PLAN)) {
+      expect(getKey(de as Record<string, unknown>, key), `de: ${key}`).toEqual(expect.any(String))
+      expect(getKey(es as Record<string, unknown>, key), `es: ${key}`).toEqual(expect.any(String))
+    }
+  })
+
+  it('de.json and es.json have the same capturePlan keys', () => {
+    const flatten = (value: unknown, prefix = ''): string[] =>
+      value && typeof value === 'object'
+        ? Object.entries(value as Record<string, unknown>).flatMap(([key, child]) =>
+            flatten(child, prefix ? `${prefix}.${key}` : key),
+          )
+        : [prefix]
+
+    expect(flatten((de as Record<string, unknown>).capturePlan).sort()).toEqual(
+      flatten((es as Record<string, unknown>).capturePlan).sort(),
+    )
   })
 
   it('de.json and es.json have the same breadcrumb keys', () => {

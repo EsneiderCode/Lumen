@@ -145,7 +145,39 @@
     "connected_section": "Verbundener Abschnitt",
     "cable_length": "Kabellänge (m)",
     "connector_type": "Steckertyp",
-    "test_result": "Testergebnis"
+    "test_result": "Testergebnis",
+    "cabinet_code": "Schrank / Cabinet",
+    "card_count": "Karten (nur POP)",
+    "rack_id": "Rack-ID",
+    "tray_count": "Bandbahnen (Anzahl)",
+    "cable_entry_points": "Kabel-Eingangspunkte"
+  },
+  "detailPlaceholder": {
+    "meters": "0",
+    "section": "z.B. A1-B3",
+    "tube_diameter": "z.B. 7/3.5",
+    "cabinet_code": "z.B. NE3-S-001 oder POP-X-12",
+    "card_count": "0 = nicht anwendbar",
+    "splice_count": "0",
+    "fiber_type": "z.B. G.657.A2",
+    "fusion_losses": "0.00",
+    "equipment_installed": "z.B. NT-100, Splitter",
+    "serial_number": "SN-XXXXXXXX",
+    "location": "z.B. Keller Raum 1",
+    "configuration": "VLAN, IP…",
+    "connected_section": "z.B. ODF-1 → ODF-2",
+    "cable_length": "0",
+    "rack_id": "z.B. RACK-A-04",
+    "tray_count": "0",
+    "cable_entry_points": "z.B. Nord: 12 Kabel · Süd: 8 Kabel · Boden: 4 Kabel"
+  },
+  "detailOption": {
+    "Ausstehend": "Ausstehend",
+    "Keller": "Keller",
+    "Erdgeschoss": "Erdgeschoss",
+    "Obergeschoss": "Obergeschoss",
+    "Dach": "Dach",
+    "Außen": "Außen"
   },
   "workOrder": {
     "title": "Aufträge",
@@ -200,6 +232,9 @@
     "chooseServiceItem": "— Leistung aus Katalog wählen —",
     "uncategorized": "Ohne Kategorie",
     "workTypeDerived": "Arbeitstyp (abgeleitet aus Katalog)",
+    "capturePlan": "Erfassungsplan",
+    "capturePlanDefault": "Standard des Arbeitstyps",
+    "capturePlanHint": "Legt fest, welche Fotos und Daten der Techniker in der Rückmeldung erfassen muss.",
     "streetAddress": "Straße / Hausnummer",
     "supportingDocs": "Unterstützende Dokumente",
     "supportingDocsDesc": "Bei linearen Arbeiten (Soplado / Fusion) sind Plan und Spleißprotokolle anstelle einer Adresse relevant.",
@@ -245,6 +280,58 @@
     }
   },
   "rueckmeldung": {
+    "title": "Rückmeldung",
+    "back": "Zurück zum Auftrag",
+    "notFound": "Auftrag nicht gefunden",
+    "startTime": "Beginn",
+    "endTime": "Ende",
+    "submitted": "Rückmeldung gesendet",
+    "saved": "Daten gespeichert.",
+    "footer": "„Rückmeldung senden“ übermittelt alle Daten an den Admin zur Zertifizierung.",
+    "returned": {
+      "title": "Auftrag zurückgegeben — Nichtkonformität",
+      "hint": "Korrekturen vornehmen und die Rückmeldung erneut senden."
+    },
+    "times": {
+      "title": "Einsatzzeiten",
+      "start": "Beginn",
+      "end": "Ende"
+    },
+    "reported": {
+      "title": "Geleistete Posten",
+      "subtitle": "Was wurde tatsächlich montiert. Eine Zeile je Position aus dem Service-Katalog.",
+      "add": "+ Posten",
+      "empty": "Noch keine Posten. Klick auf {{action}}.",
+      "service": "Leistung",
+      "choose": "— wählen —",
+      "qty": "Menge",
+      "remove": "Posten entfernen"
+    },
+    "details": {
+      "title": "Technische Daten — {{workType}}",
+      "subtitle": "Ausgeführte Arbeit dokumentieren",
+      "choose": "— wählen —"
+    },
+    "photos": {
+      "title": "Fotos",
+      "add": "+ Foto",
+      "uploading": "Lädt…",
+      "empty": "Keine Fotos · Tippen um hinzuzufügen",
+      "delete": "Foto löschen",
+      "uploadFailed": "Foto-Upload fehlgeschlagen: {{error}}",
+      "deleteFailed": "Foto löschen fehlgeschlagen: {{error}}"
+    },
+    "notes": {
+      "label": "Notizen / Besonderheiten",
+      "placeholder": "Besonderheiten, Probleme, Hinweise für Admin…"
+    },
+    "actions": {
+      "save": "Zwischenspeichern",
+      "saving": "Speichern…",
+      "send": "Rückmeldung senden",
+      "sendCorrected": "Korrigierte RM senden",
+      "sending": "Wird gesendet…"
+    },
     "materialConsumption": {
       "title": "Materialverbrauch",
       "subtitle": "Optional. Der Verbrauch wird vom Fahrzeugbestand des Teams abgezogen.",
@@ -1492,6 +1579,130 @@
       "missingActions": {
         "none": "Keine",
         "notify_billing_withholding": "15% Steuerabzug (§48b)"
+      }
+    }
+  },
+  "capture": {
+    "planMissing": "Kein Erfassungsplan für \"{{key}}\" — bitte Administration informieren",
+    "yes": "Ja",
+    "no": "Nein",
+    "section": {
+      "details": "Technische Daten",
+      "done": "VOLLSTÄNDIG",
+      "pending": "OFFEN"
+    },
+    "slot": {
+      "add": "Foto",
+      "count": "{{count}} Foto(s)",
+      "missing": "Fehlt noch {{count}}",
+      "uploading": "Lädt…",
+      "retry": "Erneut",
+      "delete": "Foto löschen",
+      "example": "Beispiel"
+    },
+    "repeater": {
+      "add": "Hinzufügen",
+      "remove": "Entfernen",
+      "empty": "Noch keine Einträge"
+    },
+    "geo": {
+      "adjust": "Pin anpassen",
+      "close": "Karte schließen",
+      "dragHint": "Pin auf die tatsächliche Stelle ziehen.",
+      "empty": "Keine Position erfasst",
+      "reading": "◎ {{lat}}, {{lng}} · ±{{accuracy}} m",
+      "locate": "Position",
+      "locating": "Suche…",
+      "unavailable": "Position nicht verfügbar"
+    },
+    "missing": {
+      "summary": "Es fehlen {{count}} Angaben"
+    }
+  },
+  "map": {
+    "label": "Karte",
+    "loading": "[KARTE LÄDT]",
+    "trenches": {
+      "title": "Karte der Gruben",
+      "subtitle": "{{count}} verortete Punkte aus der Rückmeldung",
+      "unlocated": "{{count}} ohne Position",
+      "depth": "Tiefe: {{depth}} cm"
+    }
+  },
+  "capturePlan": {
+    "sopladoRa": {
+      "title": "Einblasen RA (Soplado de RA)",
+      "mandatory": {
+        "title": "Pflichtfotos",
+        "description": "Vier Fotos, die bei jedem Einblasvorgang gemacht werden müssen."
+      },
+      "catas": {
+        "title": "Gruben (Catas)",
+        "description": "Eine Grube pro Aufgrabung. Wurde nicht aufgegraben, bleibt der Abschnitt leer.",
+        "item": "Grube"
+      },
+      "incidents": {
+        "title": "Vorkommnisse",
+        "description": "Nur ausfüllen, wenn etwas vom Plan abgewichen ist."
+      },
+      "checklist": {
+        "title": "Abschluss-Checkliste",
+        "description": "Verwendetes Rohr bestätigen oder die Abweichung dokumentieren."
+      },
+      "slot": {
+        "fiberDp": {
+          "label": "Faser im DP",
+          "hint": "Eingeblasene Faser im geöffneten DP, Beschriftung lesbar."
+        },
+        "fiberDpGasblock": {
+          "label": "Gasblock am DP",
+          "hint": "Gesetzter und abgedichteter Gasblock am Rohreingang des DP."
+        },
+        "fiberPopLabel": {
+          "label": "Faserbeschriftung im POP",
+          "hint": "Beschriftung der Faser im POP, Text im Bild lesbar."
+        },
+        "balloonPop": {
+          "label": "Ballon im POP",
+          "hint": "Gesetzter Ballon am Rohrende im POP."
+        },
+        "beforeOpen": {
+          "label": "Vor dem Öffnen",
+          "hint": "Oberfläche vor der Aufgrabung, mit erkennbarer Umgebung."
+        },
+        "duringOpen": {
+          "label": "Grube offen",
+          "hint": "Offene Grube mit sichtbarem Rohr."
+        },
+        "closed": {
+          "label": "Wiederhergestellt",
+          "hint": "Verschlossene und wiederhergestellte Oberfläche."
+        },
+        "safetySignage": {
+          "label": "Absicherung",
+          "hint": "Absperrung und Beschilderung der offen bleibenden Grube."
+        },
+        "incident": {
+          "label": "Foto der Abweichung",
+          "hint": "Was passiert ist, aus ausreichendem Abstand aufgenommen."
+        }
+      },
+      "field": {
+        "leftOpen": "Bleibt die Grube offen?",
+        "depthCm": "Tiefe (cm)",
+        "location": "Position der Grube",
+        "incidentDescription": "Beschreibung",
+        "ductAsPlanned": "Wurde das geplante Rohr verwendet?",
+        "trunkUsed": "Verwendeter Strang",
+        "ductUsed": "Verwendetes Rohr",
+        "changeReason": "Grund der Abweichung"
+      },
+      "placeholder": {
+        "depthCm": "z. B. 60",
+        "incidentDescription": "Was ist passiert?",
+        "trunkUsed": "z. B. Strang 3",
+        "ductUsed": "z. B. Rohr 7 (grün)",
+        "changeReason": "z. B. geplantes Rohr blockiert"
       }
     }
   }

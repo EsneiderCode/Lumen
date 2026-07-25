@@ -97,6 +97,33 @@ export type Database = {
           },
         ]
       }
+      capture_plans: {
+        Row: {
+          created_at: string
+          definition: Json
+          is_active: boolean
+          key: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          definition: Json
+          is_active?: boolean
+          key: string
+          updated_at?: string
+          version: number
+        }
+        Update: {
+          created_at?: string
+          definition?: Json
+          is_active?: boolean
+          key?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
       certification_audits: {
         Row: {
           cert_type: string
@@ -2118,6 +2145,54 @@ export type Database = {
           },
         ]
       }
+      work_order_capture_reports: {
+        Row: {
+          answers: Json
+          created_at: string
+          plan_key: string
+          plan_version: number
+          submitted_at: string | null
+          updated_at: string
+          updated_by: string | null
+          work_order_id: string
+        }
+        Insert: {
+          answers?: Json
+          created_at?: string
+          plan_key: string
+          plan_version: number
+          submitted_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          work_order_id: string
+        }
+        Update: {
+          answers?: Json
+          created_at?: string
+          plan_key?: string
+          plan_version?: number
+          submitted_at?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          work_order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_order_capture_reports_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_order_capture_reports_work_order_id_fkey"
+            columns: ["work_order_id"]
+            isOneToOne: true
+            referencedRelation: "work_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       work_order_documents: {
         Row: {
           document_type: Database["public"]["Enums"]["document_type"]
@@ -2301,29 +2376,50 @@ export type Database = {
       }
       work_order_photos: {
         Row: {
+          accuracy_m: number | null
           caption: string | null
           created_at: string
           id: string
+          item_id: string | null
+          lat: number | null
+          lng: number | null
           photo_type: string
+          section_key: string | null
+          slot_key: string | null
           storage_path: string
+          taken_at: string | null
           uploaded_by: string | null
           work_order_id: string
         }
         Insert: {
+          accuracy_m?: number | null
           caption?: string | null
           created_at?: string
           id?: string
+          item_id?: string | null
+          lat?: number | null
+          lng?: number | null
           photo_type: string
+          section_key?: string | null
+          slot_key?: string | null
           storage_path: string
+          taken_at?: string | null
           uploaded_by?: string | null
           work_order_id: string
         }
         Update: {
+          accuracy_m?: number | null
           caption?: string | null
           created_at?: string
           id?: string
+          item_id?: string | null
+          lat?: number | null
+          lng?: number | null
           photo_type?: string
+          section_key?: string | null
+          slot_key?: string | null
           storage_path?: string
+          taken_at?: string | null
           uploaded_by?: string | null
           work_order_id?: string
         }
@@ -2434,6 +2530,7 @@ export type Database = {
           assigned_team: Database["public"]["Enums"]["team_color"] | null
           assigned_technician: string | null
           billing_reference: string | null
+          capture_plan_key: string | null
           city: string | null
           client_id: string | null
           compliance_override: boolean
@@ -2465,6 +2562,7 @@ export type Database = {
           assigned_team?: Database["public"]["Enums"]["team_color"] | null
           assigned_technician?: string | null
           billing_reference?: string | null
+          capture_plan_key?: string | null
           city?: string | null
           client_id?: string | null
           compliance_override?: boolean
@@ -2496,6 +2594,7 @@ export type Database = {
           assigned_team?: Database["public"]["Enums"]["team_color"] | null
           assigned_technician?: string | null
           billing_reference?: string | null
+          capture_plan_key?: string | null
           city?: string | null
           client_id?: string | null
           compliance_override?: boolean
@@ -2642,6 +2741,7 @@ export type Database = {
           assigned_team: Database["public"]["Enums"]["team_color"] | null
           assigned_technician: string | null
           billing_reference: string | null
+          capture_plan_key: string | null
           city: string | null
           client_id: string | null
           compliance_override: boolean
@@ -2697,6 +2797,7 @@ export type Database = {
           assigned_team: Database["public"]["Enums"]["team_color"] | null
           assigned_technician: string | null
           billing_reference: string | null
+          capture_plan_key: string | null
           city: string | null
           client_id: string | null
           compliance_override: boolean
@@ -2742,6 +2843,7 @@ export type Database = {
           assigned_team: Database["public"]["Enums"]["team_color"] | null
           assigned_technician: string | null
           billing_reference: string | null
+          capture_plan_key: string | null
           city: string | null
           client_id: string | null
           compliance_override: boolean
@@ -2797,6 +2899,7 @@ export type Database = {
         Args: { p_country: string }
         Returns: Database["public"]["Enums"]["requirement_origin"]
       }
+      current_capture_plan: { Args: { p_key: string }; Returns: Json }
       employee_vacation_days_used: {
         Args: { p_employee_id: string; p_year: number }
         Returns: number
@@ -2823,6 +2926,7 @@ export type Database = {
           assigned_team: Database["public"]["Enums"]["team_color"] | null
           assigned_technician: string | null
           billing_reference: string | null
+          capture_plan_key: string | null
           city: string | null
           client_id: string | null
           compliance_override: boolean
@@ -2876,10 +2980,18 @@ export type Database = {
           new_status: string
         }[]
       }
+      run_compliance_retention_sweep: {
+        Args: { retain_days?: number }
+        Returns: number
+      }
       sync_permissions: { Args: { perms: Json }; Returns: Json }
       user_has_permission: {
         Args: { perm: string; uid: string }
         Returns: boolean
+      }
+      work_order_capture_plan_key: {
+        Args: { p_work_order_id: string }
+        Returns: string
       }
     }
     Enums: {

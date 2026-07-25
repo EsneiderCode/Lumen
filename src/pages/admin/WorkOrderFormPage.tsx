@@ -30,6 +30,8 @@ import {
   setOrderGroups,
   type TelegramGroup,
 } from '@/services/telegramGroupService'
+import { fetchCapturePlanVariants } from '@/services/capturePlanService'
+import type { CapturePlan } from '@/types/capture-plan'
 
 // Catalog detail_form values for infrastructure work (trenches, splice
 // boxes, POP central sites) rather than street-address-based customer
@@ -87,6 +89,8 @@ interface FormValues {
   line: string
   work_type: WorkType | ''
   service_item_id: string
+  /** Capture plan override; '' = the default plan of the work type. */
+  capture_plan_key: string
   priority: 'normal' | 'alta' | 'urgente'
   address: string
   postal_code: string
@@ -102,6 +106,7 @@ const EMPTY_FORM: FormValues = {
   line: 'NE3',
   work_type: '',
   service_item_id: '',
+  capture_plan_key: '',
   priority: 'normal',
   address: '',
   postal_code: '',
@@ -123,6 +128,9 @@ export function WorkOrderFormPage() {
   const [projects, setProjects] = useState<ProjectLookup[]>([])
   const [operators, setOperators] = useState<{ id: string; name: string; code: string }[]>([])
   const [serviceItems, setServiceItems] = useState<ServiceItemWithRelations[]>([])
+  // Capture-plan variants of the selected work type ("Soplado de RA"). Empty for
+  // work types that only have their default plan, and then nothing is rendered.
+  const [planVariants, setPlanVariants] = useState<CapturePlan[]>([])
   const [isLoading, setIsLoading] = useState(isEdit)
   const [isSaving, setIsSaving] = useState(false)
   const [errors, setErrors] = useState<Partial<Record<keyof FormValues, string>>>({})
@@ -173,6 +181,19 @@ export function WorkOrderFormPage() {
     fetchServiceItems(opts).then(({ data }) => setServiceItems(data.filter((si) => si.detail_form != null)))
   }, [form.operator_id])
 
+  // Which capture plan the technician will be given. The default plan is named
+  // after the work type; a variant has to be chosen explicitly here, or nobody
+  // ever gets it (work_orders.capture_plan_key, migration 052).
+  useEffect(() => {
+    if (!form.work_type) {
+      queueMicrotask(() => setPlanVariants([]))
+      return
+    }
+    fetchCapturePlanVariants(form.work_type)
+      .then(setPlanVariants)
+      .catch(() => setPlanVariants([]))
+  }, [form.work_type])
+
   // Load existing order for edit
   useEffect(() => {
     if (!isEdit || !id) return
@@ -186,6 +207,7 @@ export function WorkOrderFormPage() {
         line: data.line,
         work_type: data.work_type,
         service_item_id: (data as { service_item_id?: string | null }).service_item_id ?? '',
+        capture_plan_key: data.capture_plan_key ?? '',
         priority: data.priority,
         address: data.address ?? '',
         postal_code: data.postal_code ?? '',
@@ -264,6 +286,8 @@ export function WorkOrderFormPage() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       work_type: form.work_type as any, // 'pop' added to DB enum in migration 020
       service_item_id: form.service_item_id || null,
+      // NULL = the plan named after the work type (migration 052).
+      capture_plan_key: form.capture_plan_key || null,
       priority: form.priority,
       address: form.address || null,
       postal_code: form.postal_code || null,
@@ -495,6 +519,10 @@ export function WorkOrderFormPage() {
                     ...f,
                     service_item_id: selectedId,
                     work_type: derivedWorkType as WorkType | '',
+                    // A plan variant belongs to one work type; changing the work
+                    // type drops it rather than carrying an invalid key over.
+                    capture_plan_key:
+                      derivedWorkType === f.work_type ? f.capture_plan_key : '',
                   }))
                   setErrors((er) => ({ ...er, service_item_id: undefined, work_type: undefined }))
                   setDetail({})
@@ -543,6 +571,30 @@ export function WorkOrderFormPage() {
                 className="w-full rounded-s border border-line bg-bg-0/50 px-3 py-2 text-sm text-fg-2"
               />
             </div>
+
+            {/* Capture plan — what the technician will be asked to document.
+                Only rendered when the work type actually has a variant, so the
+                usual order keeps exactly the form it has today. */}
+            {planVariants.length > 0 && (
+              <div className="sm:col-span-2">
+                <label className="mb-1 block text-xs font-medium text-fg-2">
+                  {t('workOrder.capturePlan')}
+                </label>
+                <select
+                  value={form.capture_plan_key}
+                  onChange={(e) => setField('capture_plan_key', e.target.value)}
+                  className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:outline-none focus:ring-1 focus:ring-accent"
+                >
+                  <option value="">{t('workOrder.capturePlanDefault')}</option>
+                  {planVariants.map((plan) => (
+                    <option key={plan.key} value={plan.key}>
+                      {plan.titleKey ? t(plan.titleKey, { defaultValue: plan.key }) : plan.key}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-fg-3">{t('workOrder.capturePlanHint')}</p>
+              </div>
+            )}
 
             {/* Priority */}
             <div>
@@ -667,33 +719,36 @@ export function WorkOrderFormPage() {
                         className="h-4 w-4 rounded border-line text-accent focus:ring-accent"
                       />
                       <label htmlFor={field.key} className="text-sm font-medium text-fg-1 cursor-pointer">
-                        {field.label}
+                        {L.detailField(field.key)}
                       </label>
                     </>
                   ) : field.type === 'select' ? (
                     <>
-                      <label className="mb-1 block text-xs font-medium text-fg-2">{field.label}</label>
+                      <label className="mb-1 block text-xs font-medium text-fg-2">{L.detailField(field.key)}</label>
                       <select
                         value={String(detail[field.key] ?? '')}
                         onChange={(e) => setDetailField(field.key, e.target.value)}
                         className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                       >
-                        <option value="">— wählen —</option>
+                        <option value="">{t('rueckmeldung.details.choose')}</option>
+                        {/* Stored value stays canonical (German); only the label is translated. */}
                         {field.options?.map((opt) => (
-                          <option key={opt} value={opt}>{opt}</option>
+                          <option key={opt} value={opt}>
+                            {t(`detailOption.${opt}`, { defaultValue: opt })}
+                          </option>
                         ))}
                       </select>
                     </>
                   ) : (
                     <>
-                      <label className="mb-1 block text-xs font-medium text-fg-2">{field.label}</label>
+                      <label className="mb-1 block text-xs font-medium text-fg-2">{L.detailField(field.key)}</label>
                       <input
                         type={field.type}
                         value={String(detail[field.key] ?? '')}
                         onChange={(e) =>
                           setDetailField(field.key, field.type === 'number' ? Number(e.target.value) : e.target.value)
                         }
-                        placeholder={field.placeholder}
+                        placeholder={t(`detailPlaceholder.${field.key}`, { defaultValue: field.placeholder ?? '' })}
                         className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                       />
                     </>

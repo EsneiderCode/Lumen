@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { AlertTriangle, Package, Plus, Trash2 } from 'lucide-react'
@@ -31,7 +31,6 @@ import {
   fetchWorkOrderPhotos,
   fetchStateHistory,
   upsertWorkOrderDetail,
-  uploadWorkOrderPhoto,
   deleteWorkOrderPhoto,
   transitionWorkOrderStatus,
   workTypeToDetailTable,
@@ -47,22 +46,47 @@ import {
   registerMaterialConsumption,
 } from '@/services/materialInventoryService'
 import { notifyReportSubmitted } from '@/services/notificationService'
+import {
+  fetchCaptureExampleUrls,
+  fetchCapturePlanForOrder,
+  fetchCaptureReport,
+  saveCaptureReport,
+  uploadCapturePhoto,
+  type CapturePhotoRow,
+} from '@/services/capturePlanService'
+import { getCurrentPoint } from '@/lib/geolocation'
+import { captureExamplePaths, evaluateCapturePlan, slotNodeId } from '@/services/capturePlanEngine'
+import {
+  answersFromLegacyDetail,
+  legacyDetailFromAnswers,
+  mergeAnswers,
+} from '@/services/capturePlanLegacy'
+import { CapturePlanForm, type PendingPhoto, type SlotTarget } from '@/components/capture/CapturePlanForm'
 import type { ServiceItemWithRelations } from '@/types/service-items'
 import type { ConsumptionCorrectionRequired, ConsumptionDraft, InventoryVehicle, VehicleStockRow } from '@/types/material-inventory'
 import type { TeamColor } from '@/types/enums'
+import type {
+  CaptureAnswers,
+  CaptureFieldValues,
+  CaptureGeoPoint,
+  CapturePlan,
+  CaptureRepeaterItem,
+} from '@/types/capture-plan'
 import { useLabels } from '@/i18n/labels'
-import { DETAIL_FIELDS } from '@/constants/detail-fields'
-
-type PhotoType = 'before' | 'during' | 'after'
-
-interface Photo {
-  id: string
-  storage_path: string
-  photo_type: PhotoType
-  caption: string | null
-}
 
 type ConsumptionDraftRow = ConsumptionDraft & { _key: string }
+
+/** A pending photo plus what it needs to be uploaded again after a failure. */
+type PendingUpload = PendingPhoto & {
+  file: File
+  target: SlotTarget
+  /** Kept so a retry re-sends the fix taken at the shutter, not a later one. */
+  location?: CaptureGeoPoint | null
+}
+
+function newItemId(): string {
+  return `item-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+}
 
 export function RueckmeldungPage() {
   const L = useLabels()
@@ -73,16 +97,24 @@ export function RueckmeldungPage() {
 
   const [order, setOrder] = useState<WorkOrderWithRelations | null>(null)
 
+  // Legacy detail columns the capture plan does not own (alta's reported items).
+  // Everything the plan declares lives in `answers` and is mirrored back into the
+  // detail row on save — the phase-2 double write.
   const [detail, setDetail] = useState<Record<string, unknown>>({})
-  const [photos, setPhotos] = useState<Photo[]>([])
+  const [plan, setPlan] = useState<CapturePlan | null>(null)
+  const [answers, setAnswers] = useState<CaptureAnswers>({})
+  const [photos, setPhotos] = useState<CapturePhotoRow[]>([])
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({})
+  // Example thumbnails of the plan's slots, keyed by the slot's `example` path.
+  const [exampleUrls, setExampleUrls] = useState<Record<string, string>>({})
+  const [pendingPhotos, setPendingPhotos] = useState<PendingUpload[]>([])
+  const [highlightedNodeId, setHighlightedNodeId] = useState<string | null>(null)
   const [techNotes, setTechNotes] = useState('')
   const [startTime, setStartTime] = useState('')
   const [endTime, setEndTime] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isSending, setIsSending] = useState(false)
-  const [uploadingType, setUploadingType] = useState<PhotoType | null>(null)
   const [deletingPhotoId, setDeletingPhotoId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [savedOk, setSavedOk] = useState(false)
@@ -98,11 +130,21 @@ export function RueckmeldungPage() {
   const [consumptionDrafts, setConsumptionDrafts] = useState<ConsumptionDraftRow[]>([])
   const [stockCorrections, setStockCorrections] = useState<ConsumptionCorrectionRequired[]>([])
 
-  const fileInputRefs = {
-    before: useRef<HTMLInputElement>(null),
-    during: useRef<HTMLInputElement>(null),
-    after: useRef<HTMLInputElement>(null),
-  }
+  // What the plan still demands. Photos in flight count as already there, so the
+  // form does not flash "missing" between the shutter and the upload finishing.
+  const evaluation = useMemo(() => {
+    if (!plan) return null
+    const optimistic = pendingPhotos
+      .filter((item) => !item.failed)
+      .map((item) => ({
+        id: item.id,
+        section_key: item.target.sectionKey,
+        slot_key: item.target.slotKey,
+        item_id: item.target.itemId,
+        photo_type: item.target.legacyType,
+      }))
+    return evaluateCapturePlan(plan, [...photos, ...optimistic], answers)
+  }, [plan, photos, pendingPhotos, answers])
 
   useEffect(() => {
     if (!id) return
@@ -112,12 +154,13 @@ export function RueckmeldungPage() {
       fetchStateHistory(id),
     ]).then(async ([{ data: orderData, error: orderErr }, { data: photoData }, { data: histData }]) => {
       if (orderErr || !orderData) {
-        setError(orderErr ?? 'Auftrag nicht gefunden')
+        // The empty-state below falls back to a translated "not found".
+        setError(orderErr)
         setIsLoading(false)
         return
       }
       setOrder(orderData)
-      const loadedPhotos = (photoData ?? []) as Photo[]
+      const loadedPhotos = (photoData ?? []) as CapturePhotoRow[]
       setPhotos(loadedPhotos)
       getPhotoSignedUrls(loadedPhotos.map((p) => p.storage_path)).then(setPhotoUrls)
 
@@ -132,6 +175,24 @@ export function RueckmeldungPage() {
         const { id: _i, work_order_id: _w, created_at: _c, ...rest } = detailData as Record<string, unknown>
         void _i; void _w; void _c
         setDetail(rest)
+      }
+
+      // The capture plan drives the whole form. The answers start from whatever
+      // the legacy detail row already holds — an order captured before the plans
+      // must not open blank — and the stored answers win over it.
+      const loadedPlan = await fetchCapturePlanForOrder(orderData)
+      setPlan(loadedPlan)
+      if (loadedPlan) {
+        // What each slot has to look like. Non-critical: a slot whose example is
+        // not uploaded yet simply shows no thumbnail.
+        fetchCaptureExampleUrls(captureExamplePaths(loadedPlan)).then(setExampleUrls)
+        const { data: report } = await fetchCaptureReport(id)
+        setAnswers(
+          mergeAnswers(
+            answersFromLegacyDetail(loadedPlan, detailData as Record<string, unknown> | null),
+            report?.answers ?? {},
+          ),
+        )
       }
 
       // For Alta orders, load field-reported service items + the service-item
@@ -201,16 +262,19 @@ export function RueckmeldungPage() {
     )))
   }
 
+  /**
+   * The phase-2 double write: the plan's own fields are written back into the
+   * legacy detail row, because the SQL certification gate, the PDF and the admin
+   * certification screen still read that row. Columns the plan does not declare
+   * (alta's reported service items) are preserved as loaded.
+   */
   function detailWithReportedItems() {
-    if (order?.work_type !== 'alta') return detail
+    const base = { ...detail, ...(plan ? legacyDetailFromAnswers(plan, answers) : {}) }
+    if (order?.work_type !== 'alta') return base
     return {
-      ...detail,
+      ...base,
       reported_service_items: normalizeReportedServiceItems(reportedDrafts),
     }
-  }
-
-  function setDetailField(key: string, value: unknown) {
-    setDetail((d) => ({ ...d, [key]: value }))
   }
 
   function addConsumptionLine() {
@@ -241,26 +305,167 @@ export function RueckmeldungPage() {
     )))
   }
 
-  async function handlePhotoUpload(photoType: PhotoType, files: FileList | null) {
-    if (!files || files.length === 0 || !id || !user) return
-    setUploadingType(photoType)
-    setError(null)
+  // ── Capture plan ─────────────────────────────────────────────────────────
+  function handleFieldChange(
+    sectionKey: string,
+    fieldKey: string,
+    value: unknown,
+    itemId?: string | null,
+  ) {
+    setHighlightedNodeId(null)
+    setAnswers((previous) => {
+      if (itemId) {
+        const items = (previous[sectionKey] ?? []) as CaptureRepeaterItem[]
+        return {
+          ...previous,
+          [sectionKey]: items.map((item) =>
+            item.id === itemId
+              ? { ...item, values: { ...item.values, [fieldKey]: value as never } }
+              : item,
+          ),
+        }
+      }
+      const values = (previous[sectionKey] ?? {}) as CaptureFieldValues
+      return { ...previous, [sectionKey]: { ...values, [fieldKey]: value as never } }
+    })
+  }
 
-    for (const file of Array.from(files)) {
-      const { data, error } = await uploadWorkOrderPhoto(id, photoType, file, user.id)
-      if (error) {
-        setError(`Foto-Upload fehlgeschlagen: ${error}`)
-        break
-      }
-      if (data) {
-        const newPhoto = data as Photo
-        setPhotos((prev) => [...prev, newPhoto])
-        getPhotoSignedUrls([newPhoto.storage_path]).then((urls) =>
-          setPhotoUrls((prev) => ({ ...prev, ...urls })),
-        )
-      }
+  function handleAddItem(sectionKey: string) {
+    setAnswers((previous) => {
+      const items = (previous[sectionKey] ?? []) as CaptureRepeaterItem[]
+      return { ...previous, [sectionKey]: [...items, { id: newItemId(), values: {} }] }
+    })
+  }
+
+  function handleRemoveItem(sectionKey: string, itemId: string) {
+    setAnswers((previous) => {
+      const items = (previous[sectionKey] ?? []) as CaptureRepeaterItem[]
+      return { ...previous, [sectionKey]: items.filter((item) => item.id !== itemId) }
+    })
+  }
+
+  /**
+   * Optimistic upload: the thumbnail appears immediately from an object URL and
+   * is replaced by the stored photo when the round trip finishes. A failure
+   * leaves the tile in place with a retry — the technician never loses the shot
+   * because the network did.
+   */
+  async function uploadPending(item: PendingUpload, location: CaptureGeoPoint | null = null) {
+    if (!id || !user) return
+    const { data, error } = await uploadCapturePhoto({
+      workOrderId: id,
+      file: item.file,
+      userId: user.id,
+      sectionKey: item.target.sectionKey,
+      slotKey: item.target.slotKey,
+      legacyType: item.target.legacyType,
+      itemId: item.target.itemId,
+      location,
+    })
+
+    if (error || !data) {
+      setError(t('rueckmeldung.photos.uploadFailed', { error: error ?? '' }))
+      setPendingPhotos((previous) =>
+        previous.map((candidate) =>
+          candidate.id === item.id ? { ...candidate, failed: true } : candidate,
+        ),
+      )
+      return
     }
-    setUploadingType(null)
+
+    setPhotos((previous) => [...previous, data])
+    getPhotoSignedUrls([data.storage_path]).then((urls) =>
+      setPhotoUrls((previous) => ({ ...previous, ...urls })),
+    )
+    setPendingPhotos((previous) => previous.filter((candidate) => candidate.id !== item.id))
+    URL.revokeObjectURL(item.previewUrl)
+  }
+
+  /** The plan's geopoint field of a repeater section, if it declares one. */
+  function geoFieldKey(sectionKey: string): string | null {
+    const section = plan?.sections.find((candidate) => candidate.key === sectionKey)
+    if (!section || !('fields' in section)) return null
+    return section.fields.find((field) => field.type === 'geopoint')?.key ?? null
+  }
+
+  /**
+   * Where the photo was taken. Every photo carries it — a Rückmeldung photo with
+   * a verifiable time and coordinate is exactly the transparency Vancom asks for
+   * — and the first photo of a trench also fills the item's geopoint field, so
+   * the trench lands on the map without the technician doing anything. The pin
+   * stays correctable by hand: a phone GPS between buildings drifts 15–20 m.
+   */
+  async function locateForCapture(target: SlotTarget): Promise<CaptureGeoPoint | null> {
+    const point = await getCurrentPoint()
+    if (!point) return null
+
+    const fieldKey = target.itemId ? geoFieldKey(target.sectionKey) : null
+    if (fieldKey) {
+      setAnswers((previous) => {
+        const items = (previous[target.sectionKey] ?? []) as CaptureRepeaterItem[]
+        return {
+          ...previous,
+          [target.sectionKey]: items.map((item) =>
+            // Only if empty: a technician who corrected the pin keeps their fix.
+            item.id === target.itemId && !item.values[fieldKey]
+              ? { ...item, values: { ...item.values, [fieldKey]: point } }
+              : item,
+          ),
+        }
+      })
+    }
+
+    return point
+  }
+
+  function handleCapture(target: SlotTarget, files: FileList | null) {
+    if (!files || files.length === 0 || !id || !user) return
+    setError(null)
+    setHighlightedNodeId(null)
+
+    const nodeId = slotNodeId(target.sectionKey, target.slotKey, target.itemId)
+    const queued: PendingUpload[] = Array.from(files).map((file, index) => ({
+      id: `pending-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 7)}`,
+      nodeId,
+      previewUrl: URL.createObjectURL(file),
+      failed: false,
+      file,
+      target,
+    }))
+
+    setPendingPhotos((previous) => [...previous, ...queued])
+
+    // The thumbnail is already on screen; the position is resolved before the
+    // upload so the photo row carries it, and a refusal never blocks the upload.
+    void locateForCapture(target).then((location) => {
+      const queuedIds = new Set(queued.map((item) => item.id))
+      setPendingPhotos((previous) =>
+        previous.map((candidate) =>
+          queuedIds.has(candidate.id) ? { ...candidate, location } : candidate,
+        ),
+      )
+      for (const item of queued) void uploadPending(item, location)
+    })
+  }
+
+  function handleRetry(pendingId: string) {
+    const item = pendingPhotos.find((candidate) => candidate.id === pendingId)
+    if (!item) return
+    setError(null)
+    setPendingPhotos((previous) =>
+      previous.map((candidate) =>
+        candidate.id === pendingId ? { ...candidate, failed: false } : candidate,
+      ),
+    )
+    void uploadPending({ ...item, failed: false }, item.location ?? null)
+  }
+
+  /** Scrolls to the first unmet requirement instead of greying out the send button. */
+  function focusFirstMissing() {
+    const target = evaluation?.missing[0]
+    if (!target) return
+    setHighlightedNodeId(target.nodeId)
+    document.getElementById(target.nodeId)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }
 
   async function handlePhotoDelete(photoId: string, storagePath: string) {
@@ -268,7 +473,7 @@ export function RueckmeldungPage() {
     setError(null)
     const { error } = await deleteWorkOrderPhoto(photoId, storagePath)
     if (error) {
-      setError(`Foto löschen fehlgeschlagen: ${error}`)
+      setError(t('rueckmeldung.photos.deleteFailed', { error }))
     } else {
       setPhotos((prev) => {
         const updated = prev.filter((p) => p.id !== photoId)
@@ -286,6 +491,19 @@ export function RueckmeldungPage() {
     setDeletingPhotoId(null)
   }
 
+  /** Writes the answers blob; the caller writes the legacy detail row. */
+  async function persistCaptureReport(submitted: boolean): Promise<string | null> {
+    if (!plan || !id || !user) return null
+    const { error } = await saveCaptureReport({
+      workOrderId: id,
+      plan,
+      answers,
+      userId: user.id,
+      submitted,
+    })
+    return error
+  }
+
   async function handleSave() {
     if (!id || !order) return
     setIsSaving(true)
@@ -300,6 +518,12 @@ export function RueckmeldungPage() {
       return
     }
 
+    const reportError = await persistCaptureReport(false)
+    if (reportError) {
+      setError(reportError)
+      setIsSaving(false)
+      return
+    }
 
     setSavedOk(true)
     setTimeout(() => setSavedOk(false), 3000)
@@ -308,6 +532,14 @@ export function RueckmeldungPage() {
 
   async function handleSend() {
     if (!id || !user || !order) return
+
+    // The button is never greyed out: an incomplete Rückmeldung answers by
+    // jumping to what is missing.
+    if (evaluation && !evaluation.canSubmit) {
+      focusFirstMissing()
+      return
+    }
+
     setIsSending(true)
     setError(null)
 
@@ -316,6 +548,13 @@ export function RueckmeldungPage() {
     const { error: detailError } = await upsertWorkOrderDetail(table, id, detailWithReportedItems())
     if (detailError) {
       setError(detailError)
+      setIsSending(false)
+      return
+    }
+
+    const reportError = await persistCaptureReport(true)
+    if (reportError) {
+      setError(reportError)
       setIsSending(false)
       return
     }
@@ -402,13 +641,10 @@ export function RueckmeldungPage() {
   if (!order) {
     return (
       <div className="rounded-s border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
-        {error ?? 'Auftrag nicht gefunden'}
+        {error ?? t('rueckmeldung.notFound')}
       </div>
     )
   }
-
-  const detailFields = DETAIL_FIELDS[order.work_type] ?? []
-  const photosByType = (type: PhotoType) => photos.filter((p) => p.photo_type === type)
 
   return (
     <div className="space-y-4 pb-6">
@@ -416,12 +652,13 @@ export function RueckmeldungPage() {
       <div className="flex items-center gap-3">
         <button
           onClick={() => navigate(`/tech/orders/${id}`)}
+          aria-label={t('rueckmeldung.back')}
           className="flex h-8 w-8 items-center justify-center rounded-s border border-line text-fg-2 hover:border-accent hover:text-accent transition-colors"
         >
           ←
         </button>
         <div>
-          <h2 className="font-display text-lg font-bold text-fg-1">Rückmeldung</h2>
+          <h2 className="font-display text-lg font-bold text-fg-1">{t('rueckmeldung.title')}</h2>
           <p className="text-xs text-fg-2 font-mono">{order.order_number} · {L.workType(order.work_type)}</p>
         </div>
       </div>
@@ -431,10 +668,10 @@ export function RueckmeldungPage() {
         <div className="rounded-l border border-err/50 bg-err/10 p-4">
           <p className="inline-flex items-center gap-2 font-semibold text-err">
             <AlertTriangle size={16} strokeWidth={1.5} />
-            Auftrag zurückgegeben — Nichtkonformität
+            {t('rueckmeldung.returned.title')}
           </p>
           <p className="mt-1 text-sm text-err">{returnedNote}</p>
-          <p className="mt-2 text-xs text-err">Korrekturen vornehmen und die Rückmeldung erneut senden.</p>
+          <p className="mt-2 text-xs text-err">{t('rueckmeldung.returned.hint')}</p>
         </div>
       )}
 
@@ -442,16 +679,16 @@ export function RueckmeldungPage() {
       <div className="rounded-l border border-line bg-bg-1 p-4">
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div>
-            <p className="text-xs text-fg-2">Kunde</p>
+            <p className="text-xs text-fg-2">{t('workOrder.customer')}</p>
             <p className="font-medium text-fg-1">{order.clients?.name ?? '—'}</p>
           </div>
           <div>
-            <p className="text-xs text-fg-2">Projekt</p>
+            <p className="text-xs text-fg-2">{t('workOrder.project')}</p>
             <p className="font-medium text-fg-1">{order.projects?.code ?? '—'}</p>
           </div>
           {(order.address || order.city) && (
             <div className="col-span-2">
-              <p className="text-xs text-fg-2">Adresse</p>
+              <p className="text-xs text-fg-2">{t('workOrder.address')}</p>
               <p className="font-medium text-fg-1">{[order.address, order.city].filter(Boolean).join(', ')}</p>
             </div>
           )}
@@ -460,10 +697,10 @@ export function RueckmeldungPage() {
 
       {/* Time inputs */}
       <div className="rounded-l border border-line bg-bg-1 p-4">
-        <h3 className="mb-3 font-display text-sm font-semibold text-fg-1">Einsatzzeiten</h3>
+        <h3 className="mb-3 font-display text-sm font-semibold text-fg-1">{t('rueckmeldung.times.title')}</h3>
         <div className="grid grid-cols-2 gap-3">
-          <TimePickerField label="Beginn" value={startTime} onChange={setStartTime} />
-          <TimePickerField label="Ende" value={endTime} onChange={setEndTime} />
+          <TimePickerField label={t('rueckmeldung.times.start')} value={startTime} onChange={setStartTime} />
+          <TimePickerField label={t('rueckmeldung.times.end')} value={endTime} onChange={setEndTime} />
         </div>
       </div>
 
@@ -473,21 +710,21 @@ export function RueckmeldungPage() {
         <div className="rounded-l border border-accent/30 bg-bg-1 p-4">
           <div className="mb-3 flex items-center justify-between">
             <div>
-              <h3 className="font-display text-sm font-semibold text-fg-1">Geleistete Posten</h3>
-              <p className="text-xs text-fg-2">Was wurde tatsächlich montiert. Eine Zeile je Position aus dem Service-Katalog.</p>
+              <h3 className="font-display text-sm font-semibold text-fg-1">{t('rueckmeldung.reported.title')}</h3>
+              <p className="text-xs text-fg-2">{t('rueckmeldung.reported.subtitle')}</p>
             </div>
             <button
               type="button"
               onClick={addReportedLine}
               className="rounded-s border border-accent bg-accent/10 px-3 py-1.5 text-xs font-semibold text-accent hover:bg-accent/20 transition-colors"
             >
-              + Posten
+              {t('rueckmeldung.reported.add')}
             </button>
           </div>
 
           {reportedDrafts.length === 0 ? (
             <p className="rounded-s border border-dashed border-line bg-bg-0 p-3 text-center text-xs text-fg-2">
-              Noch keine Posten. Klick auf <span className="font-semibold text-accent">+ Posten</span>.
+              {t('rueckmeldung.reported.empty', { action: t('rueckmeldung.reported.add') })}
             </p>
           ) : (
             <div className="space-y-2">
@@ -500,14 +737,14 @@ export function RueckmeldungPage() {
                   >
                     <div>
                       <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-fg-2">
-                        Leistung
+                        {t('rueckmeldung.reported.service')}
                       </label>
                       <select
                         value={line.service_item_id}
                         onChange={(e) => setReportedLineField(line._key, 'service_item_id', e.target.value)}
                         className="w-full rounded-s border border-line bg-bg-1 px-2 py-1.5 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                       >
-                        <option value="">— wählen —</option>
+                        <option value="">{t('rueckmeldung.reported.choose')}</option>
                         {catalog.map((c) => (
                           <option key={c.id} value={c.id}>
                             {c.code} — {c.description_de}
@@ -520,7 +757,7 @@ export function RueckmeldungPage() {
                     </div>
                     <div>
                       <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-fg-2">
-                        Menge {selectedItem?.unit ? `(${selectedItem.unit})` : ''}
+                        {t('rueckmeldung.reported.qty')} {selectedItem?.unit ? `(${selectedItem.unit})` : ''}
                       </label>
                       <input
                         type="number"
@@ -536,7 +773,7 @@ export function RueckmeldungPage() {
                         type="button"
                         onClick={() => removeReportedLine(line._key)}
                         className="rounded-s border border-err/40 px-3 py-1.5 text-xs text-err hover:bg-err/10 transition-colors"
-                        title="Posten entfernen"
+                        title={t('rueckmeldung.reported.remove')}
                       >
                         ✕
                       </button>
@@ -549,60 +786,29 @@ export function RueckmeldungPage() {
         </div>
       )}
 
-      {/* Dynamic detail fields */}
-      {detailFields.length > 0 && (
-        <div className="rounded-l border border-accent/30 bg-bg-1 p-4">
-          <h3 className="mb-1 font-display text-sm font-semibold text-fg-1">
-            Technische Daten — {L.workType(order.work_type)}
-          </h3>
-          <p className="mb-3 text-xs text-fg-2">Ausgeführte Arbeit dokumentieren</p>
-          <div className="grid grid-cols-1 gap-4">
-            {detailFields.map((field) => (
-              <div key={field.key} className={field.type === 'checkbox' ? 'flex items-center gap-3' : ''}>
-                {field.type === 'checkbox' ? (
-                  <>
-                    <input
-                      type="checkbox"
-                      id={field.key}
-                      checked={Boolean(detail[field.key])}
-                      onChange={(e) => setDetailField(field.key, e.target.checked)}
-                      className="h-5 w-5 rounded border-line text-accent focus:ring-accent"
-                    />
-                    <label htmlFor={field.key} className="text-sm font-medium text-fg-1 cursor-pointer">
-                      {field.label}
-                    </label>
-                  </>
-                ) : field.type === 'select' ? (
-                  <>
-                    <label className="mb-1 block text-xs font-medium text-fg-2">{field.label}</label>
-                    <select
-                      value={String(detail[field.key] ?? '')}
-                      onChange={(e) => setDetailField(field.key, e.target.value)}
-                      className="w-full rounded-s border border-line bg-bg-0 px-3 py-2.5 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-                    >
-                      <option value="">— wählen —</option>
-                      {field.options?.map((opt) => (
-                        <option key={opt} value={opt}>{opt}</option>
-                      ))}
-                    </select>
-                  </>
-                ) : (
-                  <>
-                    <label className="mb-1 block text-xs font-medium text-fg-2">{field.label}</label>
-                    <input
-                      type={field.type}
-                      value={String(detail[field.key] ?? '')}
-                      onChange={(e) =>
-                        setDetailField(field.key, field.type === 'number' ? Number(e.target.value) : e.target.value)
-                      }
-                      placeholder={field.placeholder}
-                      className="w-full rounded-s border border-line bg-bg-0 px-3 py-2.5 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-                    />
-                  </>
-                )}
-              </div>
-            ))}
-          </div>
+      {/* Capture plan — photos and technical data, driven by the plan of this
+          work order (its capture_plan_key, or its work type) */}
+      {plan && evaluation ? (
+        <CapturePlanForm
+          plan={plan}
+          answers={answers}
+          evaluation={evaluation}
+          photos={photos}
+          photoUrls={photoUrls}
+          exampleUrls={exampleUrls}
+          pending={pendingPhotos}
+          highlightedNodeId={highlightedNodeId}
+          deletingPhotoId={deletingPhotoId}
+          onFieldChange={handleFieldChange}
+          onCapture={handleCapture}
+          onRetry={handleRetry}
+          onDeletePhoto={(photo) => handlePhotoDelete(photo.id, photo.storage_path)}
+          onAddItem={handleAddItem}
+          onRemoveItem={handleRemoveItem}
+        />
+      ) : (
+        <div className="rounded-l border border-warn/40 bg-warn/10 px-4 py-3 text-sm text-warn">
+          {t('capture.planMissing', { key: order.capture_plan_key ?? order.work_type })}
         </div>
       )}
 
@@ -638,7 +844,7 @@ export function RueckmeldungPage() {
             <option value="">{t('rueckmeldung.materialConsumption.placeholders.noVehicle')}</option>
             {vehicles.map((vehicle) => (
               <option key={vehicle.id} value={vehicle.id}>
-                {vehicle.name} · Team {vehicle.team}
+                {vehicle.name} · {L.team(vehicle.team)}
               </option>
             ))}
           </select>
@@ -749,87 +955,16 @@ export function RueckmeldungPage() {
         )}
       </div>
 
-      {/* Photos */}
-      <div className="rounded-l border border-line bg-bg-1 p-4">
-        <h3 className="mb-3 font-display text-sm font-semibold text-fg-1">Fotos</h3>
-        <div className="space-y-4">
-          {(['before', 'during', 'after'] as PhotoType[]).map((type) => {
-            const typePhotos = photosByType(type)
-            return (
-              <div key={type}>
-                <div className="mb-2 flex items-center justify-between">
-                  <p className="text-xs font-semibold text-fg-2 uppercase tracking-wide">
-                    {L.photo(type)} ({typePhotos.length})
-                  </p>
-                  <button
-                    type="button"
-                    disabled={uploadingType === type}
-                    onClick={() => fileInputRefs[type].current?.click()}
-                    className="rounded-s border border-line px-2.5 py-1 text-xs font-medium text-fg-2 hover:border-accent hover:text-accent transition-colors disabled:opacity-50"
-                  >
-                    {uploadingType === type ? 'Lädt…' : '+ Foto'}
-                  </button>
-                  <input
-                    ref={fileInputRefs[type]}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    capture="environment"
-                    className="hidden"
-                    onChange={(e) => handlePhotoUpload(type, e.target.files)}
-                  />
-                </div>
-                {typePhotos.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                    {typePhotos.map((photo) => (
-                      <div key={photo.id} className="relative aspect-square overflow-hidden rounded-s bg-bg-0">
-                        <img
-                          src={photoUrls[photo.storage_path] ?? ''}
-                          alt={photo.caption ?? L.photo(type)}
-                          className="h-full w-full object-cover"
-                        />
-                        <button
-                          type="button"
-                          disabled={deletingPhotoId === photo.id}
-                          onClick={() => handlePhotoDelete(photo.id, photo.storage_path)}
-                          className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-bg-0/80 text-fg-1 hover:bg-err disabled:opacity-50 transition-colors"
-                          aria-label="Foto löschen"
-                        >
-                          {deletingPhotoId === photo.id ? (
-                            <span className="nx-loader-sm h-3 w-3" />
-                          ) : (
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5">
-                              <path d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z" />
-                            </svg>
-                          )}
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div
-                    className="flex h-16 cursor-pointer items-center justify-center rounded-s border-2 border-dashed border-line text-xs text-fg-2 hover:border-accent/50 transition-colors"
-                    onClick={() => fileInputRefs[type].current?.click()}
-                  >
-                    Keine Fotos · Tippen um hinzuzufügen
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      </div>
-
       {/* Technician notes */}
       <div className="rounded-l border border-line bg-bg-1 p-4">
         <label className="mb-1 block text-xs font-medium text-fg-2">
-          Notizen / Besonderheiten
+          {t('rueckmeldung.notes.label')}
         </label>
         <textarea
           value={techNotes}
           onChange={(e) => setTechNotes(e.target.value)}
           rows={3}
-          placeholder="Besonderheiten, Probleme, Hinweise für Admin…"
+          placeholder={t('rueckmeldung.notes.placeholder')}
           className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent resize-none"
         />
       </div>
@@ -842,7 +977,7 @@ export function RueckmeldungPage() {
       )}
       {savedOk && (
         <div className="rounded-s border border-ok/30 bg-ok/10 px-4 py-3 text-sm text-ok">
-          Daten gespeichert.
+          {t('rueckmeldung.saved')}
         </div>
       )}
 
@@ -853,19 +988,31 @@ export function RueckmeldungPage() {
           onClick={handleSave}
           className="rounded-l border border-line px-4 py-3 text-sm font-semibold text-fg-1 hover:bg-bg-0 disabled:opacity-50 transition-colors"
         >
-          {isSaving ? 'Speichern…' : 'Zwischenspeichern'}
+          {isSaving ? t('rueckmeldung.actions.saving') : t('rueckmeldung.actions.save')}
         </button>
+        {/* Never greyed out when incomplete: it says what is missing and, on tap,
+            scrolls to the first thing the plan is still waiting for. */}
         <button
           disabled={isSaving || isSending}
           onClick={handleSend}
-          className="rounded-l bg-accent px-4 py-3 text-sm font-semibold text-ink hover:bg-accent disabled:opacity-50 transition-colors"
+          className={`rounded-l px-4 py-3 text-sm font-semibold transition-colors duration-200 disabled:opacity-50 ${
+            evaluation && !evaluation.canSubmit
+              ? 'border border-accent bg-transparent text-accent'
+              : 'bg-accent text-ink'
+          }`}
         >
-          {isSending ? 'Wird gesendet…' : order.status === 'returned' ? 'Korrigierte RM senden' : 'Rückmeldung senden'}
+          {isSending
+            ? t('rueckmeldung.actions.sending')
+            : evaluation && !evaluation.canSubmit
+              ? t('capture.missing.summary', { count: evaluation.missing.length })
+              : order.status === 'returned'
+                ? t('rueckmeldung.actions.sendCorrected')
+                : t('rueckmeldung.actions.send')}
         </button>
       </div>
 
       <p className="text-center text-xs text-fg-2">
-        "Rückmeldung senden" übermittelt alle Daten an den Admin zur Zertifizierung.
+        {t('rueckmeldung.footer')}
       </p>
     </div>
   )
