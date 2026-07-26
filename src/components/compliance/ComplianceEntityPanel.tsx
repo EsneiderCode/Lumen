@@ -647,6 +647,11 @@ interface Props {
   riskAssessment?: boolean
   /** Admin-only GDPR erasure of identifying PII (inactive entities). */
   allowErasure?: boolean
+  /**
+   * Admin-only: retire checklist slots that no longer apply. Off in the
+   * contractor portal, where attempting it is an RLS refusal by design.
+   */
+  canReconcile?: boolean
   /** Admin-only edit + activate/deactivate of the top-level entity. */
   allowEdit?: boolean
   /** Admin-only irreversible deletion of a company/freelancer and its tree. */
@@ -659,6 +664,7 @@ interface Props {
 export function ComplianceEntityPanel({
   entity,
   directApprove = false,
+  canReconcile = false,
   manageWorkers = true,
   riskAssessment = false,
   allowErasure = false,
@@ -788,7 +794,12 @@ export function ComplianceEntityPanel({
             {t('compliance.dossier.error')}
           </p>
         )}
-        <ComplianceChecklist entity={entity} directApprove={directApprove} onChanged={onChanged} />
+        <ComplianceChecklist
+          entity={entity}
+          directApprove={directApprove}
+          canReconcile={canReconcile}
+          onChanged={onChanged}
+        />
       </div>
 
       {showRisk && (
@@ -876,7 +887,12 @@ export function ComplianceEntityPanel({
                     </div>
                     {expanded && (
                       <div className="border-t border-line p-3">
-                        <ComplianceChecklist entity={worker} directApprove={directApprove} onChanged={onChanged} />
+                        <ComplianceChecklist
+                          entity={worker}
+                          directApprove={directApprove}
+                          canReconcile={canReconcile}
+                          onChanged={onChanged}
+                        />
                       </div>
                     )}
                   </div>

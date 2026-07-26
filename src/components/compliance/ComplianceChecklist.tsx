@@ -34,6 +34,13 @@ interface Props {
   entity: ComplianceEntityRecord
   /** Admin one-step flow: upload counts as approved immediately. */
   directApprove?: boolean
+  /**
+   * Whether the viewer may retire slots that no longer apply. Admin only: a
+   * not_applicable item drops out of the blocking calculation, so an owner who
+   * could set it would exempt themselves. Off means the checklist is only ever
+   * added to, never pruned — see materializeChecklist.
+   */
+  canReconcile?: boolean
   /** Called after any change (upload) so parents can refresh aptitude chips. */
   onChanged?: () => void
 }
@@ -365,7 +372,12 @@ function ChecklistRow({ view, directApprove, onUploaded }: RowProps) {
   )
 }
 
-export function ComplianceChecklist({ entity, directApprove = false, onChanged }: Props) {
+export function ComplianceChecklist({
+  entity,
+  directApprove = false,
+  canReconcile = false,
+  onChanged,
+}: Props) {
   const { t } = useTranslation()
   const [views, setViews] = useState<ChecklistItemView[]>([])
   const [requirements, setRequirements] = useState<DocumentRequirement[] | null>(null)
@@ -385,13 +397,15 @@ export function ComplianceChecklist({ entity, directApprove = false, onChanged }
       matrix = data
       setRequirements(data)
     }
-    const { error: materializeError } = await materializeChecklist(entity, matrix)
+    const { error: materializeError } = await materializeChecklist(entity, matrix, {
+      reconcile: canReconcile,
+    })
     if (materializeError) setError(materializeError)
     const { data, error: listError } = await fetchChecklist(entity.id, matrix)
     if (listError) setError(listError)
     setViews(sortChecklist(data))
     setIsLoading(false)
-  }, [entity, requirements])
+  }, [entity, requirements, canReconcile])
 
   useEffect(() => {
     setIsLoading(true)

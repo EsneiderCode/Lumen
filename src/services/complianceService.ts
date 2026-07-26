@@ -536,6 +536,7 @@ export async function fetchAssignedProjectIds(entityId: string) {
 export async function materializeChecklist(
   entity: ComplianceEntity,
   requirements: DocumentRequirement[],
+  options: { reconcile?: boolean } = {},
 ) {
   const [{ data: itemRows, error: itemsError }, { data: projectIds, error: projectError }] =
     await Promise.all([fetchEntityItems(entity.id), fetchAssignedProjectIds(entity.id)])
@@ -562,7 +563,18 @@ export async function materializeChecklist(
     )
     if (error) return { error: msg(error) }
   }
-  if (toMarkNotApplicable.length > 0) {
+  // Retiring a slot is an ADMIN act, and RLS enforces that: a not_applicable
+  // item is excluded from the blocking calculation (complianceHelpers), so an
+  // owner allowed to set it could exempt themselves from their own liability
+  // insurance. `entity_documents_own_update` therefore only accepts
+  // pending/in_review, and an owner's attempt comes back as 42501.
+  //
+  // Which is why this is skipped rather than attempted-and-swallowed: a
+  // contractor opening their own folder must not be shown a permissions error
+  // on a cleanup that was never theirs to perform. The slots stay visible until
+  // an admin opens the entity — every change that retires a slot is an admin
+  // action on that same entity, so that happens on the next screen they see.
+  if (options.reconcile && toMarkNotApplicable.length > 0) {
     const { error } = await supabase
       .from('entity_documents')
       .update({ status: 'not_applicable' as const })

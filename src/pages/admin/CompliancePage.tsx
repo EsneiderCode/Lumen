@@ -781,6 +781,7 @@ export function CompliancePage() {
             <ComplianceEntityPanel
               entity={selectedEntity}
               directApprove
+              canReconcile
               riskAssessment
               manageWorkers={canManageEntities}
               allowErasure={canManageEntities}

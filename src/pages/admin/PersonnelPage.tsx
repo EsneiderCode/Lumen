@@ -242,7 +242,7 @@ function EmployeeModal({ employee, technicians, onClose, onSaved }: EmployeeModa
 
         {isEdit && complianceEntity && (
           <div className="border-t border-line p-5">
-            <ComplianceEntityPanel entity={complianceEntity} directApprove manageWorkers={false} />
+            <ComplianceEntityPanel entity={complianceEntity} directApprove canReconcile manageWorkers={false} />
           </div>
         )}
       </div>

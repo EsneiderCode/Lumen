@@ -29,6 +29,7 @@ import {
   fetchEntityDossier,
   fetchProfileCompliance,
   fetchRequirements,
+  materializeChecklist,
   fetchReviewQueue,
   getTemplateSignedUrl,
   saveScheinselbstCheck,
@@ -76,6 +77,35 @@ describe('demo compliance — entity + checklist wiring', () => {
     expect(rc?.item.status).toBe('approved')
     expect(rc?.requirement?.min_amount).toBe(500000)
     expect(rc?.currentVersion?.file_name).toBe('seguro-rc.pdf')
+  })
+})
+
+// A not_applicable item drops out of the blocking calculation, so retiring a
+// slot has to stay an admin act — an owner able to set it would exempt itself
+// from its own liability insurance. RLS enforces that (entity_documents_own_update
+// only accepts pending/in_review), and the client must not even try, or a
+// contractor opening its own folder gets a permissions error on its own documents.
+describe('demo compliance — retiring a checklist slot is admin-only', () => {
+  it('leaves slots alone when the viewer may not reconcile', async () => {
+    const { data: requirements } = await fetchRequirements()
+    const { data: entity } = await fetchEntityByProfileId(CONTRACTOR_ID)
+
+    const { error } = await materializeChecklist(entity!, requirements)
+    expect(error).toBeNull()
+
+    const { data: rows } = await fetchChecklist(COMPANY_ENTITY, requirements)
+    expect(rows.every((row) => row.item.status !== 'not_applicable')).toBe(true)
+  })
+
+  it('still creates the missing slots, so the owner can always upload', async () => {
+    const { data: requirements } = await fetchRequirements()
+    const { data: entity } = await fetchEntityByProfileId(CONTRACTOR_ID)
+
+    const { error } = await materializeChecklist(entity!, requirements)
+    expect(error).toBeNull()
+
+    const { data: rows } = await fetchChecklist(COMPANY_ENTITY, requirements)
+    expect(rows.length).toBeGreaterThan(0)
   })
 })
 
