@@ -446,6 +446,22 @@ describe('database migrations cover billing workflow schema', () => {
     expect(supabaseConfig).toMatch(/\[functions\.compliance-ocr\][\s\S]*verify_jwt\s*=\s*true/)
   })
 
+  // A company adding a worker sends INSERT ... RETURNING (createEntity does
+  // .insert().select().single()). Postgres applies the SELECT policies to the
+  // returned row, and owns_compliance_entity(id) cannot see a row its own
+  // statement just created — so the insert came back as 42501 for two months.
+  // The fix judges the row by its parent, which already exists.
+  it('lets an owner read a child entity from its parent, so RETURNING works (057)', () => {
+    expect(migrationSql).toContain('depends on: 042_compliance_core.sql')
+    expect(migrationSql).toMatch(
+      /create\s+policy\s+"compliance_entities_own_child_select"[\s\S]*for\s+select[\s\S]*parent_entity_id\s+is\s+not\s+null[\s\S]*owns_compliance_entity\(parent_entity_id\)/,
+    )
+    // The insert policy it unblocks must stay keyed on the parent too.
+    expect(migrationSql).toMatch(
+      /create\s+policy\s+"compliance_entities_own_worker_insert"[\s\S]*owns_compliance_entity\(parent_entity_id\)/,
+    )
+  })
+
   it('rewrites admin-gated RLS policies to permission checks (035)', () => {
     expect(migrationSql).toContain('depends on: 034_rbac_core.sql')
     // the old role-literal admin gates must be dropped…
