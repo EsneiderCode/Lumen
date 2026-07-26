@@ -1409,7 +1409,6 @@
       "address": "Adresse",
       "conditionsHint": "Markieren Sie die zutreffenden Bedingungen zur Ermittlung der erforderlichen Dokumente.",
       "previewHint": "Aufgrund der gewählten Bedingungen sind {{count}} Dokumente erforderlich.",
-      "createAccount": "Portal-Zugang anlegen",
       "accountHint": "Es wird ein Contractor-Benutzer mit der E-Mail {{email}} angelegt.",
       "accountFieldsRequired": "E-Mail und temporäres Passwort sind für die Kontoerstellung erforderlich.",
       "tempPassword": "Temporäres Passwort",
@@ -1593,6 +1592,21 @@
       "missingActions": {
         "none": "Keine",
         "notify_billing_withholding": "15% Steuerabzug (§48b)"
+      }
+    },
+    "account": {
+      "title": "Portal-Zugang",
+      "owner": "Portal-Zugang (Inhaber)",
+      "choose": "— Konto wählen —",
+      "chooseRequired": "Bitte ein bestehendes Konto wählen.",
+      "noneAvailable": "Keine Auftragnehmer-Konten vorhanden. Lege eins an oder fahre ohne Zugang fort.",
+      "noneWarning": "Ohne Portal-Zugang kann dieser Eintrag keine Mitarbeiter anlegen und keine Dokumente hochladen. Die Verwaltung übernimmt dann alles. Später jederzeit nachtragbar.",
+      "unlinked": "Ohne Zugang",
+      "createdButNotFound": "Konto angelegt, aber nicht auffindbar. Bitte Eintrag erneut speichern und Konto verknüpfen.",
+      "mode": {
+        "new": "Neu anlegen",
+        "existing": "Bestehendes",
+        "none": "Ohne Zugang"
       }
     }
   },

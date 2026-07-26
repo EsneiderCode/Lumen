@@ -18,6 +18,7 @@ import type {
   EntityPayload,
 } from '@/services/complianceService'
 import { scoreScheinselbst } from '@/services/complianceHelpers'
+import { useContractorAccounts } from './portalAccount'
 import { SCHEINSELBST_INDICATORS } from '@/types/compliance'
 import type {
   ScheinselbstCheck,
@@ -465,10 +466,15 @@ interface EntityModalProps {
 }
 
 /** Edit a top-level entity (company/freelancer/employee), incl. active toggle.
- *  Deactivating an entity is the gate that unlocks GDPR erasure. */
+ *  Deactivating an entity is the gate that unlocks GDPR erasure.
+ *  Also where the portal owner is set — the only way to repair an entity that
+ *  was created without one, which until now needed a hand-written UPDATE. */
 function EntityModal({ entity, onClose, onSaved }: EntityModalProps) {
   const { t } = useTranslation()
   const isFreelancer = entity.kind === 'freelancer'
+  const canOwnPortal = entity.kind === 'company' || entity.kind === 'freelancer'
+  const { accounts } = useContractorAccounts()
+  const [profileId, setProfileId] = useState<string | null>(entity.profile_id)
   const [name, setName] = useState(entity.display_name)
   const [country, setCountry] = useState(entity.country_code)
   const [nationality, setNationality] = useState(entity.nationality_country ?? '')
@@ -500,6 +506,7 @@ function EntityModal({ entity, onClose, onSaved }: EntityModalProps) {
       contact_phone: phone || null,
       address: address || null,
       is_active: isActive,
+      ...(canOwnPortal ? { profile_id: profileId } : {}),
     }
     const { error: saveError } = await updateEntity(entity.id, payload)
     setSaving(false)
@@ -527,6 +534,31 @@ function EntityModal({ entity, onClose, onSaved }: EntityModalProps) {
             <label className="mb-1 block font-mono text-xs text-fg-2">{t('compliance.workers.name').toUpperCase()} *</label>
             <input type="text" value={name} onChange={(e) => setName(e.target.value)} className={inputClass} required />
           </div>
+          {canOwnPortal && (
+            <div>
+              <label className="mb-1 block font-mono text-xs text-fg-2">
+                {t('compliance.account.owner').toUpperCase()}
+              </label>
+              <select
+                value={profileId ?? ''}
+                onChange={(e) => setProfileId(e.target.value || null)}
+                className={inputClass}
+              >
+                <option value="">{t('compliance.account.mode.none')}</option>
+                {accounts.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.full_name}
+                    {option.email ? ` · ${option.email}` : ''}
+                  </option>
+                ))}
+              </select>
+              {!profileId && (
+                <p className="mt-2 rounded-s border border-warn/30 bg-warn/10 px-3 py-2 text-xs text-warn">
+                  {t('compliance.account.noneWarning')}
+                </p>
+              )}
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="mb-1 block font-mono text-xs text-fg-2">{t('compliance.entity.country').toUpperCase()}</label>
@@ -688,6 +720,14 @@ export function ComplianceEntityPanel({
               {!entity.is_active && (
                 <span className="rounded-full border border-line px-2 py-0.5 font-mono text-[10px] font-normal uppercase text-fg-3">
                   {t('compliance.entity.inactive')}
+                </span>
+              )}
+              {/* No portal owner = the entity cannot act on itself at all. It
+                  used to look perfectly normal right up to the RLS refusal. */}
+              {(entity.kind === 'company' || entity.kind === 'freelancer') && !entity.profile_id && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-warn/40 px-2 py-0.5 font-mono text-[10px] font-normal uppercase text-warn">
+                  <ShieldAlert size={11} strokeWidth={1.5} />
+                  {t('compliance.account.unlinked')}
                 </span>
               )}
             </h3>

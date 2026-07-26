@@ -1409,7 +1409,6 @@
       "address": "Dirección",
       "conditionsHint": "Marca las condiciones aplicables para calcular la documentación requerida.",
       "previewHint": "Se requerirán {{count}} documentos según las condiciones seleccionadas.",
-      "createAccount": "Crear cuenta de acceso al portal",
       "accountHint": "Se creará un usuario contractor con el correo {{email}}.",
       "accountFieldsRequired": "El correo y la contraseña temporal son obligatorios para crear la cuenta.",
       "tempPassword": "Contraseña temporal",
@@ -1593,6 +1592,21 @@
       "missingActions": {
         "none": "Ninguna",
         "notify_billing_withholding": "Retención 15% (§48b)"
+      }
+    },
+    "account": {
+      "title": "Acceso al portal",
+      "owner": "Acceso al portal (titular)",
+      "choose": "— elegir cuenta —",
+      "chooseRequired": "Elegí una cuenta existente.",
+      "noneAvailable": "No hay cuentas de contratista. Creá una o seguí sin acceso.",
+      "noneWarning": "Sin acceso al portal, esta ficha no podrá dar de alta trabajadores ni subir documentos: lo gestionará todo administración. Se puede vincular más adelante.",
+      "unlinked": "Sin acceso",
+      "createdButNotFound": "La cuenta se creó pero no se encuentra. Guardá la ficha otra vez y vinculá la cuenta.",
+      "mode": {
+        "new": "Crear nueva",
+        "existing": "Existente",
+        "none": "Sin acceso"
       }
     }
   },

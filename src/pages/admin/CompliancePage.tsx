@@ -27,7 +27,12 @@ import { ComplianceEntityPanel } from '@/components/compliance/ComplianceEntityP
 import { ComplianceReports } from '@/components/compliance/ComplianceReports'
 import { ComplianceMatrixConfig } from '@/components/compliance/ComplianceMatrixConfig'
 import { usePermissions } from '@/hooks/usePermissions'
-import { createOperationalUser } from '@/services/userService'
+import { PortalAccountPicker } from '@/components/compliance/PortalAccountPicker'
+import {
+  EMPTY_PORTAL_ACCOUNT,
+  resolvePortalAccount,
+  type PortalAccountChoice,
+} from '@/components/compliance/portalAccount'
 import { useAuth } from '@/hooks/useAuth'
 import { REJECTION_REASONS } from '@/types/compliance'
 import type {
@@ -340,8 +345,11 @@ function OnboardingWizard({ requirements, documentTypes, onClose, onCreated }: W
   const [hiresWorkers, setHiresWorkers] = useState(false)
   const [regulatedTrade, setRegulatedTrade] = useState(false)
   const [shortStay, setShortStay] = useState(false)
-  const [createAccount, setCreateAccount] = useState(false)
-  const [accountPassword, setAccountPassword] = useState('')
+  // Who will own this entity in the portal. `profile_id` is what the RLS
+  // policies check, so an entity created without one is inert: it cannot add a
+  // worker or upload a document, ever. Defaulting to 'new' makes the linked
+  // entity the normal outcome and the unlinked one a deliberate choice.
+  const [account, setAccount] = useState<PortalAccountChoice>(EMPTY_PORTAL_ACCOUNT)
   const [working, setWorking] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -385,25 +393,15 @@ function OnboardingWizard({ requirements, documentTypes, onClose, onCreated }: W
     setWorking(true)
     setError(null)
 
-    let profileId: string | null = null
-    if (createAccount) {
-      if (!contactEmail.trim() || !accountPassword) {
-        setError(t('compliance.wizard.accountFieldsRequired'))
-        setWorking(false)
-        return
-      }
-      const { data: users, error: userError } = await createOperationalUser({
-        email: contactEmail.trim(),
-        fullName: name.trim(),
-        password: accountPassword,
-        role: 'contractor',
-      })
-      if (userError) {
-        setError(userError)
-        setWorking(false)
-        return
-      }
-      profileId = users.find((u) => u.email === contactEmail.trim())?.id ?? null
+    const { profileId, error: accountError } = await resolvePortalAccount(
+      account,
+      { email: contactEmail, fullName: name },
+      t,
+    )
+    if (accountError) {
+      setError(accountError)
+      setWorking(false)
+      return
     }
 
     const payload: EntityPayload = {
@@ -545,17 +543,12 @@ function OnboardingWizard({ requirements, documentTypes, onClose, onCreated }: W
                   )
                 })}
               </ul>
-              <label className="flex items-center gap-2 text-sm text-fg-2">
-                <input type="checkbox" checked={createAccount} onChange={(e) => setCreateAccount(e.target.checked)} className="accent-accent" />
-                {t('compliance.wizard.createAccount')}
-              </label>
-              {createAccount && (
-                <div>
-                  <p className="mb-2 text-xs text-fg-3">{t('compliance.wizard.accountHint', { email: contactEmail || '—' })}</p>
-                  <label className="mb-1 block font-mono text-xs text-fg-2">{t('compliance.wizard.tempPassword').toUpperCase()} *</label>
-                  <input type="text" value={accountPassword} onChange={(e) => setAccountPassword(e.target.value)} className={inputClass} />
-                </div>
-              )}
+              <PortalAccountPicker
+                value={account}
+                onChange={setAccount}
+                email={contactEmail}
+                inputClass={inputClass}
+              />
             </>
           )}
 
