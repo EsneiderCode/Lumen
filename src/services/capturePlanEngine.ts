@@ -15,6 +15,7 @@
 import type {
   CaptureAnswers,
   CaptureCondition,
+  CaptureDetailEntry,
   CaptureField,
   CaptureFieldState,
   CaptureFieldValues,
@@ -185,6 +186,67 @@ export function captureExamplePaths(plan: CapturePlan): string[] {
     }
   }
   return [...paths]
+}
+
+/**
+ * The order's technical data as a flat, readable list — what the admin detail
+ * page, the technician's read-only view and the certificate PDF used to read
+ * out of the `wo_detail_*` row.
+ *
+ * Only sections that hold ONE set of values are included: `fields`, `checklist`
+ * and `gallery`. Repeaters (the trenches) are per-item and have their own
+ * presentation — the map and the item's photos — so flattening them here would
+ * only produce `depth_cm` three times with no way to tell them apart.
+ *
+ * Unanswered fields are left out entirely rather than rendered blank, so the
+ * list says what was captured and nothing else. The first section to declare a
+ * key wins, which matters only if a plan ever repeats one.
+ */
+export function captureDetailEntries(
+  plan: CapturePlan | null,
+  answers: CaptureAnswers,
+): CaptureDetailEntry[] {
+  if (!plan) return []
+  const entries: CaptureDetailEntry[] = []
+  const seen = new Set<string>()
+
+  for (const section of plan.sections) {
+    if (section.kind === 'repeater') continue
+    const values = sectionValues(answers, section.key)
+    for (const field of sectionFields(section)) {
+      if (seen.has(field.key)) continue
+      const value = values[field.key]
+      if (value === undefined || value === null || value === '') continue
+      seen.add(field.key)
+      entries.push({ key: field.key, labelKey: field.labelKey, value })
+    }
+  }
+
+  return entries
+}
+
+/**
+ * The plan's plain data fields — the `fields` sections only. This is what the
+ * admin pre-fills when creating an order, and what `DETAIL_FIELDS` used to be:
+ * the checklist, the gallery and the trenches are the technician's to answer in
+ * the field, not the office's to guess in advance.
+ */
+export function planDataFields(plan: CapturePlan | null): CaptureField[] {
+  if (!plan) return []
+  return plan.sections.filter((s) => s.kind === 'fields').flatMap((s) => s.fields)
+}
+
+/** The section a plan's data fields live in — where the admin's answers go. */
+export function planDataSectionKey(plan: CapturePlan | null): string | null {
+  return plan?.sections.find((s) => s.kind === 'fields')?.key ?? null
+}
+
+/** The same data as a plain record, for the places that compare it key by key. */
+export function captureDetailRecord(
+  plan: CapturePlan | null,
+  answers: CaptureAnswers,
+): Record<string, unknown> {
+  return Object.fromEntries(captureDetailEntries(plan, answers).map((e) => [e.key, e.value]))
 }
 
 // ── Node ids ─────────────────────────────────────────────────────────────────

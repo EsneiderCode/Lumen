@@ -646,10 +646,110 @@ export const initialFixtures = () => ({
     updated_at: LAST_WEEK,
   })),
 
-  // The saved answers of the Soplado de RA order: two trenches (one still open,
-  // hence its safety signage slot), an incident and a duct change. Without this
-  // the trench map has nothing to draw in demo mode.
+  // Every order's Rückmeldung, in the one place the app reads it (phase 7). The
+  // wo_detail_* rows below are left exactly as they are, because that is what
+  // production looks like after migration 055: the legacy rows still sit there,
+  // nothing reads them any more.
+  //
+  // The Soplado de RA order carries the interesting one — two trenches (one
+  // still open, hence its safety signage slot), an incident and a duct change.
+  // Without it the trench map has nothing to draw in demo mode.
   work_order_capture_reports: [
+    {
+      work_order_id: WO_2,
+      plan_key: 'fusion_ap',
+      plan_version: 1,
+      answers: {
+        details: {
+          cabinet_code: 'NE4-S-007',
+          splice_count: 24,
+          fiber_type: 'G.652D',
+          fusion_losses: 0.08,
+          has_measurement_cert: false,
+        },
+      } as Record<string, unknown>,
+      reported_service_items: [],
+      submitted_at: null,
+      updated_by: TECH_ID,
+      created_at: NOW,
+      updated_at: NOW,
+    },
+    {
+      work_order_id: WO_3,
+      plan_key: 'alta',
+      plan_version: 1,
+      answers: {
+        details: {
+          access_type: 'Tiefbau',
+          equipment_installed: 'NT-1234, ONT-5678',
+          client_signature: true,
+        },
+      } as Record<string, unknown>,
+      reported_service_items: [],
+      submitted_at: NOW,
+      updated_by: TECH_ID,
+      created_at: NOW,
+      updated_at: NOW,
+    },
+    {
+      work_order_id: WO_4_DIRECT,
+      plan_key: 'patchkabel',
+      plan_version: 1,
+      answers: {
+        details: {
+          connected_section: 'POP→Rack-3',
+          cable_length: 2.5,
+          connector_type: 'LC/APC',
+          test_result: 'OK',
+        },
+      } as Record<string, unknown>,
+      reported_service_items: [],
+      submitted_at: LAST_WEEK,
+      updated_by: TECH_ID,
+      created_at: LAST_WEEK,
+      updated_at: LAST_WEEK,
+    },
+    {
+      work_order_id: WO_5_PAID,
+      plan_key: 'fusion_ap',
+      plan_version: 1,
+      answers: {
+        details: {
+          cabinet_code: 'NE4-S-001',
+          splice_count: 16,
+          fiber_type: 'G.657A1',
+          fusion_losses: 0.05,
+          has_measurement_cert: true,
+        },
+      } as Record<string, unknown>,
+      reported_service_items: [],
+      submitted_at: LAST_WEEK,
+      updated_by: TECH_ID,
+      created_at: LAST_WEEK,
+      updated_at: LAST_WEEK,
+    },
+    {
+      // The one that bills: its reported services moved out of wo_detail_alta.
+      work_order_id: WO_7_EXTERNAL,
+      plan_key: 'alta',
+      plan_version: 1,
+      answers: {
+        details: {
+          access_type: 'Hausanschluss',
+          equipment_installed: 'NT-9001, ONT-7700, Patchkabel 5m',
+          client_signature: true,
+        },
+      } as Record<string, unknown>,
+      reported_service_items: [
+        { service_item_id: SI_ALTA_BASIC, qty: 1, notes: null },
+        { service_item_id: SI_ALTA_NT, qty: 1, notes: null },
+        { service_item_id: SI_PATCHKABEL, qty: 1, notes: null },
+      ],
+      submitted_at: LAST_WEEK,
+      updated_by: TECH_ID,
+      created_at: LAST_WEEK,
+      updated_at: LAST_WEEK,
+    },
     {
       work_order_id: WO_10_SOPLADO_RA,
       plan_key: 'soplado_ra',
@@ -682,6 +782,7 @@ export const initialFixtures = () => ({
         },
         details: { meters: 128, section: 'DP-12 → POP-2', tube_diameter: '7/3.5', result: 'OK' },
       } as Record<string, unknown>,
+      reported_service_items: [],
       submitted_at: null,
       updated_by: TECH_ID,
       created_at: NOW,
@@ -692,6 +793,7 @@ export const initialFixtures = () => ({
     plan_key: string
     plan_version: number
     answers: Record<string, unknown>
+    reported_service_items: Array<{ service_item_id: string; qty: number; notes: string | null }>
     submitted_at: string | null
     updated_by: string | null
     created_at: string

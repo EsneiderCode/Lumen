@@ -12,25 +12,23 @@ const fetchWorkOrderPhotos = vi.fn(async () => ({ data: [{ id: 'p1', storage_pat
 const fetchStateHistory = vi.fn(async () => ({
   data: [{ to_status: 'returned', notes: 'Foto unscharf' }],
 }))
-const fetchWorkOrderDetail = vi.fn(async () => ({
-  data: { id: 'd1', work_order_id: 'wo-1', created_at: 'x', meters: 120, section: 'A1-B3' },
-}))
 const fetchCapturePlanForOrder = vi.fn(async () => ({
   key: 'soplado',
   version: 1,
   sections: [],
 }))
 const fetchCaptureReport = vi.fn(async () => ({
-  data: { answers: { details: { meters: 140 } } },
+  data: {
+    answers: { details: { meters: 140 } },
+    reported_service_items: [{ service_item_id: 'si-1', qty: 2, notes: null }],
+  },
 }))
 
 vi.mock('@/services/workOrderService', () => ({
   fetchWorkOrder: (id: string) => fetchWorkOrder(id),
   fetchWorkOrderPhotos: () => fetchWorkOrderPhotos(),
   fetchStateHistory: () => fetchStateHistory(),
-  fetchWorkOrderDetail: () => fetchWorkOrderDetail(),
-  normalizeReportedServiceItems: () => [],
-  workTypeToDetailTable: () => 'wo_detail_soplado',
+  normalizeReportedServiceItems: (value: unknown) => (Array.isArray(value) ? value : []),
 }))
 vi.mock('@/services/serviceItemService', () => ({ fetchServiceItems: async () => ({ data: [] }) }))
 vi.mock('@/services/materialInventoryService', () => ({
@@ -72,10 +70,9 @@ describe('opening the Rückmeldung with a network', () => {
     expect(result.data?.order.order_number).toBe('LUM-20260427-0003')
     expect(result.data?.photos).toHaveLength(1)
     expect(result.data?.returnedNote).toBe('Foto unscharf')
-    // Stored answers win over what the legacy detail row holds.
+    // Everything the technician entered comes out of the capture report — the
+    // wo_detail_* tables are gone (phase 7).
     expect(result.data?.answers).toMatchObject({ details: { meters: 140 } })
-    // The row's own bookkeeping columns are not part of the form.
-    expect(result.data?.detail).not.toHaveProperty('work_order_id')
 
     expect((await readOrderSnapshot(WO))?.order.order_number).toBe('LUM-20260427-0003')
   })
@@ -109,7 +106,7 @@ describe('opening it again with no network', () => {
 
   it('shows the draft saved offline, not the one that was loaded', async () => {
     await loadRueckmeldung(WO, null)
-    await cacheAnswers(WO, { details: { meters: 999 } }, { meters: 999 })
+    await cacheAnswers(WO, { details: { meters: 999 } }, [])
 
     fetchWorkOrder.mockImplementation(async () => ({ data: null, error: 'Failed to fetch' }))
     const offline = await loadRueckmeldung(WO, null)

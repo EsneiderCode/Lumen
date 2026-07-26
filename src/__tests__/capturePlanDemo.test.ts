@@ -82,7 +82,9 @@ describe('capture plans in demo mode', () => {
 })
 
 describe('capture reports in demo mode', () => {
-  const workOrderId = '50000000-0000-0000-0000-000000000003'
+  // The freshly created order: since phase 7 every order that has ever been
+  // captured carries a report, so an untouched one is what "empty" looks like.
+  const workOrderId = '50000000-0000-0000-0000-000000000001'
 
   it('starts empty, then stores and updates the answers', async () => {
     expect((await fetchCaptureReport(workOrderId)).data).toBeNull()
@@ -126,10 +128,11 @@ describe('capture reports in demo mode', () => {
   })
 
   it('evaluates a seeded order against its plan using the stamped photos', async () => {
+    // The order that actually carries photos, not the untouched one above.
     const { data: photos } = await supabase
       .from('work_order_photos')
       .select('*')
-      .eq('work_order_id', workOrderId)
+      .eq('work_order_id', '50000000-0000-0000-0000-000000000003')
 
     const plan = await fetchCapturePlanForOrder({ work_type: 'soplado' })
     const evaluation = evaluateCapturePlan(plan!, photos ?? [], {
@@ -151,9 +154,25 @@ describe('the certification gate in demo mode', () => {
     details: { access_type: 'Keller', equipment_installed: 'NT-1234', client_signature: true },
   }
 
-  it('judges an order with no capture report by the pre-plan rules', async () => {
-    expect((await fetchCaptureReport(workOrderId)).data).toBeNull()
+  // Migration 055 moved every wo_detail_* row into a report, and the demo
+  // fixtures mirror that. So the seeded alta order arrives already judged by its
+  // plan, with the data the technician reported.
+  it('judges the seeded order by its plan, which its answers satisfy', async () => {
+    expect((await fetchCaptureReport(workOrderId)).data).toMatchObject({
+      plan_key: 'alta',
+      answers: { details: { access_type: 'Tiefbau', client_signature: true } },
+    })
     expect(await validateTransitionPrerequisites(workOrderId, 'internally_certified')).toBeNull()
+  })
+
+  // The fallback is still there for an order nobody ever captured — it is what
+  // migration 056 removes, once 055 has been applied and verified in production.
+  it('falls back to the pre-plan rules for an order with no report at all', async () => {
+    const untouched = '50000000-0000-0000-0000-000000000001'
+    expect((await fetchCaptureReport(untouched)).data).toBeNull()
+    expect(await validateTransitionPrerequisites(untouched, 'internally_certified')).toContain(
+      'Rückmeldung',
+    )
   })
 
   it('accepts the order once its plan is satisfied', async () => {

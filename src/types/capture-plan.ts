@@ -184,6 +184,17 @@ export interface CapturedPhotoRef {
   photo_type?: string | null
 }
 
+/**
+ * One line of the order's technical data, ready to render. Produced by
+ * captureDetailEntries(); it carries its own `labelKey` so the reader never has
+ * to look the label up in a catalog outside the plan.
+ */
+export interface CaptureDetailEntry {
+  key: string
+  labelKey: string
+  value: CaptureAnswerValue
+}
+
 // ── Evaluation output ────────────────────────────────────────────────────────
 
 export interface CaptureSlotState {

@@ -17,14 +17,12 @@ const uploadCapturePhoto = vi.fn(async ({ slotKey }: { slotKey: string }): Promi
   calls.push(`upload:${slotKey}`)
   return { data: { id: slotKey }, error: null }
 })
-const saveCaptureReport = vi.fn(async () => {
+const saveCaptureReport = vi.fn(async (args: { reportedServiceItems?: unknown }) => {
   calls.push('answers')
+  savedReportedItems = args.reportedServiceItems
   return { error: null as string | null }
 })
-const upsertWorkOrderDetail = vi.fn(async () => {
-  calls.push('detail')
-  return { data: null, error: null as string | null }
-})
+let savedReportedItems: unknown
 const registerMaterialConsumption = vi.fn(async () => {
   calls.push('material')
   return { correctionRequired: [] as unknown[], error: null as string | null }
@@ -45,11 +43,11 @@ const fetchWorkOrder = vi.fn(async () => ({
 
 vi.mock('@/services/capturePlanService', () => ({
   uploadCapturePhoto: (args: { slotKey: string }) => uploadCapturePhoto(args),
-  saveCaptureReport: () => saveCaptureReport(),
+  saveCaptureReport: (args: { reportedServiceItems?: unknown }) => saveCaptureReport(args),
 }))
 vi.mock('@/services/workOrderService', () => ({
   fetchWorkOrder: () => fetchWorkOrder(),
-  upsertWorkOrderDetail: () => upsertWorkOrderDetail(),
+  normalizeReportedServiceItems: (value: unknown) => (Array.isArray(value) ? value : []),
   transitionWorkOrderStatus: (id: string, status: string) => transitionWorkOrderStatus(id, status),
 }))
 // NOT mocked: the route through the state machine is exactly what these tests
@@ -96,8 +94,7 @@ function queueSubmission(workOrderId: string, overrides: Record<string, unknown>
     planKey: 'soplado_ra',
     planVersion: 1,
     answers: { details: { meters: 120 } },
-    detailTable: 'wo_detail_soplado',
-    detail: { meters: 120 },
+    reportedServiceItems: [],
     notes: 'Fertig',
     consumption: null,
     notification: null,
@@ -111,7 +108,13 @@ beforeEach(() => {
   globalThis.indexedDB = new IDBFactory()
   resetLumenDb()
   calls.length = 0
+  savedReportedItems = undefined
   vi.clearAllMocks()
+  saveCaptureReport.mockImplementation(async (args: { reportedServiceItems?: unknown }) => {
+    calls.push('answers')
+    savedReportedItems = args.reportedServiceItems
+    return { error: null }
+  })
   uploadCapturePhoto.mockImplementation(async ({ slotKey }: { slotKey: string }) => {
     calls.push(`upload:${slotKey}`)
     return { data: { id: slotKey }, error: null }
@@ -143,7 +146,6 @@ describe('draining the offline queue', () => {
       'upload:fiber_dp',
       'upload:balloon_pop',
       'answers',
-      'detail',
       'status:rueckmeldung_sent',
     ])
     expect(result).toMatchObject({ photosUploaded: 2, submissionsSent: 1, submissionsFailed: 0 })
@@ -222,7 +224,6 @@ describe('draining the offline queue', () => {
 
     expect(calls).toEqual([
       'answers',
-      'detail',
       'status:executed',
       'status:rueckmeldung_pending',
       'status:rueckmeldung_sent',
@@ -237,7 +238,6 @@ describe('draining the offline queue', () => {
 
     expect(calls).toEqual([
       'answers',
-      'detail',
       'status:rueckmeldung_pending',
       'status:rueckmeldung_sent',
     ])
@@ -268,6 +268,25 @@ describe('draining the offline queue', () => {
     expect((await pendingSubmissions())[0].lastError).toBe('not_sendable_from_cancelled')
   })
 
+  // A phone can hold a submission for days. One queued before phase 7 carries
+  // the technician's reported services in the legacy `detail` blob and has no
+  // `reportedServiceItems` at all — draining it must recover them, not overwrite
+  // the billing evidence with an empty list.
+  it('recovers the reported services of a submission queued before phase 7', async () => {
+    await queueSubmission(WO_A, {
+      reportedServiceItems: undefined,
+      detailTable: 'wo_detail_alta',
+      detail: {
+        access_type: 'Keller',
+        reported_service_items: [{ service_item_id: 'si-9', qty: 3, notes: null }],
+      },
+    })
+
+    await syncOfflineQueue()
+
+    expect(savedReportedItems).toEqual([{ service_item_id: 'si-9', qty: 3, notes: null }])
+  })
+
   it('books material before the transition, and only when there is some', async () => {
     await queueSubmission(WO_A, {
       consumption: { vehicleId: 'v1', drafts: [{ material_id: 'm1', quantity: 2 }] },
@@ -275,7 +294,7 @@ describe('draining the offline queue', () => {
 
     await syncOfflineQueue()
 
-    expect(calls).toEqual(['answers', 'detail', 'material', 'status:rueckmeldung_sent'])
+    expect(calls).toEqual(['answers', 'material', 'status:rueckmeldung_sent'])
   })
 
   it('leaves a stock correction for the technician instead of guessing', async () => {
@@ -301,7 +320,7 @@ describe('draining the offline queue', () => {
 
     await syncOfflineQueue()
 
-    expect(calls).toEqual(['answers', 'detail', 'status:rueckmeldung_sent', 'telegram'])
+    expect(calls).toEqual(['answers', 'status:rueckmeldung_sent', 'telegram'])
   })
 
   it('does nothing at all while still offline', async () => {

@@ -5,6 +5,9 @@
 
 import { supabase } from '@/lib/supabase'
 import { scalePhotoForUpload } from '@/lib/photoScaling'
+// Type-only: workOrderService imports this module, so a value import here would
+// close a cycle. Callers normalize the raw column themselves, as they already do.
+import type { ReportedServiceItemDraft } from '@/services/workOrderService'
 import {
   capturePlanKeyForOrder,
   capturePlanWorkType,
@@ -20,7 +23,15 @@ import type {
 } from '@/types/capture-plan'
 import type { Database, Json } from '@/types/database.types'
 
-type CaptureReportInsert = Database['public']['Tables']['work_order_capture_reports']['Insert']
+/**
+ * `reported_service_items` is added by migration 055. Until Alejandro applies it
+ * and regenerates database.types.ts the generated Insert type does not know the
+ * column yet, so it is spelled out here. Drop this intersection once the types
+ * carry it — same dance as 052/053.
+ */
+type CaptureReportInsert = Database['public']['Tables']['work_order_capture_reports']['Insert'] & {
+  reported_service_items?: Json
+}
 
 /**
  * Plans change about never, and the technician screen asks for one on every
@@ -139,6 +150,13 @@ export interface CaptureReport {
   plan_key: string
   plan_version: number
   answers: CaptureAnswers
+  /**
+   * Catalogued services actually performed (alta orders). It sits beside the
+   * answers rather than inside them because no plan declares it and none should
+   * — it is a list of catalog references with quantities, and it is what the
+   * admin bills from. Moved here from wo_detail_alta by migration 055.
+   */
+  reported_service_items: ReportedServiceItemDraft[]
   submitted_at: string | null
 }
 
@@ -166,8 +184,10 @@ export async function saveCaptureReport(params: {
   answers: CaptureAnswers
   userId: string
   submitted?: boolean
+  /** Alta orders only; left alone when omitted. */
+  reportedServiceItems?: ReportedServiceItemDraft[]
 }): Promise<{ error: string | null }> {
-  const { workOrderId, plan, answers, userId, submitted } = params
+  const { workOrderId, plan, answers, userId, submitted, reportedServiceItems } = params
 
   const payload: CaptureReportInsert = {
     work_order_id: workOrderId,
@@ -177,6 +197,7 @@ export async function saveCaptureReport(params: {
     answers: answers as Json,
     updated_by: userId,
   }
+  if (reportedServiceItems) payload.reported_service_items = reportedServiceItems as unknown as Json
   if (submitted) payload.submitted_at = new Date().toISOString()
 
   const { data: existing } = await supabase

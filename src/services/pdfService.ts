@@ -1,5 +1,7 @@
 import jsPDF from 'jspdf'
+import i18n from '@/i18n'
 import { labels } from '@/i18n/labels'
+import type { CaptureDetailEntry } from '@/types/capture-plan'
 import type { WorkOrderStatus, WorkType } from '@/types/enums'
 import type { DossierSection, EntityDossier } from '@/services/complianceService'
 import type { ComplianceReports } from '@/services/complianceReportsService'
@@ -37,7 +39,12 @@ interface PhotoItem {
 
 export function generateCertificatePdf(
   order: OrderData,
-  detail: Record<string, unknown>,
+  /**
+   * The technical data as captureDetailEntries() produced it. Each line carries
+   * its own label key, so a plan can add a field without this file (or the
+   * `detailField.*` catalog) having to know about it.
+   */
+  detail: CaptureDetailEntry[],
   photos: PhotoItem[],
   history: StateEntry[],
   getPhotoUrl: (path: string) => string,
@@ -124,15 +131,11 @@ export function generateCertificatePdf(
   y += 4
 
   // ── Technische Daten ──────────────────────────────────────────
-  const detailEntries = Object.entries(detail).filter(
-    ([, v]) => v !== null && v !== undefined && v !== '',
-  )
-  if (detailEntries.length > 0) {
+  if (detail.length > 0) {
     addSection(`Technische Daten — ${labels.workType(order.work_type as WorkType) || order.work_type}`)
-    for (const [key, value] of detailEntries) {
-      const label = labels.detailField(key)
+    for (const { labelKey, value } of detail) {
       const strValue = typeof value === 'boolean' ? (value ? 'Ja' : 'Nein') : String(value)
-      addRow(label, strValue)
+      addRow(i18n.t(labelKey), strValue)
     }
     y += 4
   }

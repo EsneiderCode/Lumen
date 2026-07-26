@@ -1,7 +1,7 @@
 /**
  * Drains what the technician did offline, in the only order that works.
  *
- * Per work order: **photos → answers + detail row → material → transitions**.
+ * Per work order: **photos → capture report → material → transitions**.
  * Never any other way round. The certification gate (migration 054) reads the
  * plan against the photos that are actually in Storage, so a Rückmeldung whose
  * status moves to `rueckmeldung_sent` before its photos are up is a Rückmeldung
@@ -18,9 +18,8 @@ import { registerMaterialConsumption } from '@/services/materialInventoryService
 import { saveCaptureReport, uploadCapturePhoto } from '@/services/capturePlanService'
 import {
   fetchWorkOrder,
+  normalizeReportedServiceItems,
   transitionWorkOrderStatus,
-  upsertWorkOrderDetail,
-  type DetailTable,
 } from '@/services/workOrderService'
 import { rueckmeldungSendPath } from '@/services/workOrderStateMachine'
 import type { WorkOrderStatus } from '@/types/enums'
@@ -109,15 +108,14 @@ async function sendSubmission(submission: QueuedSubmission): Promise<string | nu
     answers: submission.answers,
     userId: submission.userId,
     submitted: true,
+    // A submission queued before phase 7 has no such field; its reported
+    // services are still in `detail`, so recover them rather than send `[]` and
+    // wipe what the technician typed into a form with no coverage.
+    reportedServiceItems:
+      submission.reportedServiceItems ??
+      normalizeReportedServiceItems(submission.detail?.reported_service_items),
   })
   if (reportError.error) return reportError.error
-
-  const { error: detailError } = await upsertWorkOrderDetail(
-    submission.detailTable as DetailTable,
-    submission.workOrderId,
-    submission.detail,
-  )
-  if (detailError) return detailError
 
   if (submission.consumption && submission.consumption.drafts.length > 0) {
     const result = await registerMaterialConsumption({

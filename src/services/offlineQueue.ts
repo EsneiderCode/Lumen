@@ -4,7 +4,7 @@
  * Two queues, both in IndexedDB (`src/lib/idb.ts`):
  *   - photos      : one entry per shot, with the slot it belongs to and the blob
  *   - submissions : one entry per work order, the whole "send the Rückmeldung"
- *                   act — answers, legacy detail row, material consumption,
+ *                   act — answers, reported services, material consumption,
  *                   notes and the status transitions it has to make
  *
  * They are separate because they drain in a fixed order: every photo of an order
@@ -27,6 +27,7 @@ import {
   idbPut,
 } from '@/lib/idb'
 import type { ReportSubmittedNotification } from '@/services/notificationService'
+import type { ReportedServiceItemDraft } from '@/services/workOrderService'
 import type { CaptureAnswers, CaptureGeoPoint, LegacyPhotoType } from '@/types/capture-plan'
 import type { ConsumptionDraft } from '@/types/material-inventory'
 import type { UserRole } from '@/types/enums'
@@ -72,8 +73,16 @@ export interface QueuedSubmission {
   planKey: string
   planVersion: number
   answers: CaptureAnswers
-  detailTable: string
-  detail: Record<string, unknown>
+  /** Alta orders only; empty otherwise. */
+  reportedServiceItems: ReportedServiceItemDraft[]
+  /**
+   * Written by the phase-2 double write and still present in submissions queued
+   * on a device before phase 7. They are ignored on drain — the answers carry
+   * the same values — but the fields are kept so an old queue entry still parses
+   * instead of being dropped with the technician's work in it.
+   */
+  detailTable?: string
+  detail?: Record<string, unknown>
   notes: string
   consumption: QueuedConsumption | null
   /** Telegram card, sent after the transition lands. */

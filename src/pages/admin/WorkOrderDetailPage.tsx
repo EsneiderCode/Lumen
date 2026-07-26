@@ -16,7 +16,6 @@ import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import {
   fetchWorkOrder,
-  fetchWorkOrderDetail,
   fetchWorkOrderPhotos,
   fetchStateHistory,
   fetchBillingLines,
@@ -26,7 +25,6 @@ import {
   certifyWorkOrderInternal,
   acceptWorkOrderClient,
   invoiceWorkOrder,
-  workTypeToDetailTable,
   getPhotoSignedUrls,
   generateDataHash,
   insertCertificationAudit,
@@ -51,6 +49,7 @@ import { fetchServiceItems } from '@/services/serviceItemService'
 import { InvoicePreviewModal } from '@/components/admin/InvoicePreviewModal'
 import { fetchProfileCompliance, type ProfileComplianceResult } from '@/services/complianceService'
 import { fetchCapturePlanForOrder, fetchCaptureReport } from '@/services/capturePlanService'
+import { captureDetailEntries, captureDetailRecord } from '@/services/capturePlanEngine'
 import { buildCaptureMapData } from '@/lib/captureMapPoints'
 import type { CaptureAnswers, CapturePlan } from '@/types/capture-plan'
 import { ComplianceDot } from '@/components/compliance/ComplianceDot'
@@ -187,13 +186,14 @@ export function WorkOrderDetailPage() {
   const { user } = useAuth()
 
   const [order, setOrder] = useState<WorkOrderWithRelations | null>(null)
-  const [detail, setDetail] = useState<Record<string, unknown>>({})
   const [photos, setPhotos] = useState<Photo[]>([])
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({})
   const [history, setHistory] = useState<StateEntry[]>([])
-  // Capture plan + answers — what the trench map is drawn from (phase 4).
+  // Capture plan + answers: the single source for the trench map (phase 4), the
+  // technical data below and the certificate PDF (phase 7).
   const [capturePlan, setCapturePlan] = useState<CapturePlan | null>(null)
   const [captureAnswers, setCaptureAnswers] = useState<CaptureAnswers>({})
+  const [reportedServiceItems, setReportedServiceItems] = useState<unknown>([])
   const [selectedPointId, setSelectedPointId] = useState<string | null>(null)
   const [certAudits, setCertAudits] = useState<
     Array<{
@@ -236,6 +236,19 @@ export function WorkOrderDetailPage() {
   const captureMap = useMemo(
     () => buildCaptureMapData(capturePlan, captureAnswers, photos),
     [capturePlan, captureAnswers, photos],
+  )
+
+  // The technical data, straight from the plan the order was captured under.
+  // `detail` keeps the flat key→value shape because the comparison against the
+  // admin's assigned snapshot is keyed the same way, and because it is what
+  // goes into the certification hash.
+  const detailEntries = useMemo(
+    () => captureDetailEntries(capturePlan, captureAnswers),
+    [capturePlan, captureAnswers],
+  )
+  const detail = useMemo(
+    () => captureDetailRecord(capturePlan, captureAnswers),
+    [capturePlan, captureAnswers],
   )
 
   const externalMissingDocs = externalDocCompliance?.missingCodes ?? []
@@ -296,29 +309,16 @@ export function WorkOrderDetailPage() {
             }
           }
 
-          // The map is evidence, not decoration: it draws only what the
-          // technician actually recorded, so it needs the plan and the answers.
+          // Everything the technician reported, in one place: the trench map,
+          // the technical data and the reported services all come out of the
+          // capture report now that the wo_detail_* tables are gone.
           const [plan, { data: report }] = await Promise.all([
             fetchCapturePlanForOrder(orderData),
             fetchCaptureReport(id),
           ])
           setCapturePlan(plan)
           setCaptureAnswers(report?.answers ?? {})
-
-          const table = workTypeToDetailTable(orderData.work_type)
-          const { data: detailData } = await fetchWorkOrderDetail(table, id)
-          if (detailData) {
-            const {
-              id: _i,
-              work_order_id: _w,
-              created_at: _c,
-              ...rest
-            } = detailData as Record<string, unknown>
-            void _i
-            void _w
-            void _c
-            setDetail(rest)
-          }
+          setReportedServiceItems(report?.reported_service_items ?? [])
         } catch {
           setError('Verbindungsfehler. Bitte Seite neu laden.')
         } finally {
@@ -436,7 +436,7 @@ export function WorkOrderDetailPage() {
     // the admin-only billing/catalog query so technicians never need to carry
     // or see amounts.
     if (order.work_type === 'alta') {
-      const reportedItems = normalizeReportedServiceItems(detail.reported_service_items)
+      const reportedItems = normalizeReportedServiceItems(reportedServiceItems)
       let drafts = []
 
       if (reportedItems.length > 0) {
@@ -525,7 +525,7 @@ export function WorkOrderDetailPage() {
     const paths = photos.map((p) => p.storage_path)
     const urls = paths.length > 0 ? await getPhotoSignedUrls(paths) : {}
     const { generateCertificatePdf } = await import('@/services/pdfService')
-    generateCertificatePdf(order, detail, photos, history, (path) => urls[path] ?? '')
+    generateCertificatePdf(order, detailEntries, photos, history, (path) => urls[path] ?? '')
   }
 
   function openModal(type: ModalType) {
@@ -1202,24 +1202,14 @@ export function WorkOrderDetailPage() {
           </h3>
           <p className="mb-4 text-xs text-fg-2">Vom Techniker eingetragene Daten</p>
           <div className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
-            {Object.entries(detail).map(([key, value]) => {
-              const label = L.detailField(key)
-              const isEmpty = value === null || value === undefined || value === ''
-              return (
-                <div key={key}>
-                  <p className="text-xs capitalize text-fg-2">{label}</p>
-                  <p className={`font-medium ${isEmpty ? 'text-fg-2' : 'text-fg-1'}`}>
-                    {isEmpty
-                      ? '—'
-                      : typeof value === 'boolean'
-                        ? value
-                          ? 'Ja ✓'
-                          : 'Nein ✗'
-                        : String(value)}
-                  </p>
-                </div>
-              )
-            })}
+            {detailEntries.map(({ key, labelKey, value }) => (
+              <div key={key}>
+                <p className="text-xs capitalize text-fg-2">{t(labelKey)}</p>
+                <p className="font-medium text-fg-1">
+                  {typeof value === 'boolean' ? (value ? 'Ja ✓' : 'Nein ✗') : String(value)}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       ) : null}

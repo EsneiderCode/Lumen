@@ -13,10 +13,8 @@
 import {
   fetchStateHistory,
   fetchWorkOrder,
-  fetchWorkOrderDetail,
   fetchWorkOrderPhotos,
   normalizeReportedServiceItems,
-  workTypeToDetailTable,
   type ReportedServiceItemDraft,
   type WorkOrderWithRelations,
 } from '@/services/workOrderService'
@@ -27,7 +25,6 @@ import {
   fetchCaptureReport,
   type CapturePhotoRow,
 } from '@/services/capturePlanService'
-import { answersFromLegacyDetail, mergeAnswers } from '@/services/capturePlanLegacy'
 import { cacheOrderSnapshot, readOrderSnapshot } from '@/services/offlineCache'
 import type { CaptureAnswers, CapturePlan } from '@/types/capture-plan'
 import type { ServiceItemWithRelations } from '@/types/service-items'
@@ -38,8 +35,6 @@ export interface RueckmeldungSnapshot {
   order: WorkOrderWithRelations
   plan: CapturePlan | null
   answers: CaptureAnswers
-  /** Legacy detail columns the plan does not own (alta's reported items). */
-  detail: Record<string, unknown>
   photos: CapturePhotoRow[]
   reportedDrafts: ReportedServiceItemDraft[]
   catalog: ServiceItemWithRelations[]
@@ -83,34 +78,21 @@ async function loadFromNetwork(
     return { data: null, error: orderError ?? 'not_found', fromCache: false, cachedAt: null }
   }
 
-  const detailTable = workTypeToDetailTable(order.work_type)
-  const { data: detailRow } = await fetchWorkOrderDetail(detailTable, workOrderId)
-  const detailRecord = (detailRow ?? null) as Record<string, unknown> | null
-
-  const detail: Record<string, unknown> = {}
-  if (detailRecord) {
-    for (const [key, value] of Object.entries(detailRecord)) {
-      if (key === 'id' || key === 'work_order_id' || key === 'created_at') continue
-      detail[key] = value
-    }
-  }
-
-  // The plan drives the whole form. The answers start from whatever the legacy
-  // detail row already holds — an order captured before the plans existed must
-  // not open blank — and the stored answers win over it.
-  const plan = await fetchCapturePlanForOrder(order)
-  let answers: CaptureAnswers = {}
-  if (plan) {
-    const { data: report } = await fetchCaptureReport(workOrderId)
-    answers = mergeAnswers(answersFromLegacyDetail(plan, detailRecord), report?.answers ?? {})
-  }
+  // The plan drives the whole form and the report holds everything the
+  // technician has entered so far. Orders captured before the plans existed were
+  // moved into a report by migration 055, so there is nothing else to read.
+  const [plan, { data: report }] = await Promise.all([
+    fetchCapturePlanForOrder(order),
+    fetchCaptureReport(workOrderId),
+  ])
+  const answers: CaptureAnswers = report?.answers ?? {}
 
   let catalog: ServiceItemWithRelations[] = []
   let reportedDrafts: ReportedServiceItemDraft[] = []
   if (order.work_type === 'alta') {
     const { data: items } = await fetchServiceItems({ includeInactive: false })
     catalog = applicableCatalog(items, order)
-    reportedDrafts = normalizeReportedServiceItems(detailRecord?.reported_service_items)
+    reportedDrafts = normalizeReportedServiceItems(report?.reported_service_items)
   }
 
   let vehicles: InventoryVehicle[] = []
@@ -127,7 +109,6 @@ async function loadFromNetwork(
     order,
     plan,
     answers,
-    detail,
     photos: (photoRows ?? []) as CapturePhotoRow[],
     reportedDrafts,
     catalog,

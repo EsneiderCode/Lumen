@@ -25,8 +25,6 @@ export interface CachedOrderSnapshot {
   order: WorkOrderWithRelations
   plan: CapturePlan | null
   answers: CaptureAnswers
-  /** Legacy detail columns the plan does not own. */
-  detail: Record<string, unknown>
   photos: CapturePhotoRow[]
   reportedDrafts: ReportedServiceItemDraft[]
   catalog: ServiceItemWithRelations[]
@@ -57,18 +55,18 @@ export async function readOrderSnapshot(workOrderId: string): Promise<CachedOrde
 }
 
 /**
- * Updates just the answers of a cached order — what "save draft" does with no
+ * Updates just what the technician has entered — what "save draft" does with no
  * network. Does nothing when the order was never cached: there is no snapshot
  * to reopen anyway.
  */
 export async function cacheAnswers(
   workOrderId: string,
   answers: CaptureAnswers,
-  detail: Record<string, unknown>,
+  reportedDrafts: ReportedServiceItemDraft[],
 ): Promise<void> {
   const snapshot = await readOrderSnapshot(workOrderId)
   if (!snapshot) return
-  await cacheOrderSnapshot({ ...snapshot, answers, detail })
+  await cacheOrderSnapshot({ ...snapshot, answers, reportedDrafts })
 }
 
 export async function forgetOrderSnapshot(workOrderId: string): Promise<void> {

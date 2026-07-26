@@ -4,12 +4,13 @@ import { ArrowLeft, Play, Check, PencilLine, AlertTriangle } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import {
   fetchWorkOrder,
-  fetchWorkOrderDetail,
   fetchStateHistory,
-  workTypeToDetailTable,
   transitionWorkOrderStatus,
   type WorkOrderWithRelations,
 } from '@/services/workOrderService'
+import { fetchCapturePlanForOrder, fetchCaptureReport } from '@/services/capturePlanService'
+import { captureDetailEntries } from '@/services/capturePlanEngine'
+import type { CaptureDetailEntry } from '@/types/capture-plan'
 import type { WorkOrderStatus } from '@/types/enums'
 import { useTranslation } from 'react-i18next'
 import { useLabels } from '@/i18n/labels'
@@ -32,7 +33,7 @@ export function TechOrderDetailPage() {
   const { user } = useAuth()
 
   const [order, setOrder] = useState<WorkOrderWithRelations | null>(null)
-  const [detail, setDetail] = useState<Record<string, unknown>>({})
+  const [detail, setDetail] = useState<CaptureDetailEntry[]>([])
   const [history, setHistory] = useState<StateHistoryEntry[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isTransitioning, setIsTransitioning] = useState(false)
@@ -52,14 +53,12 @@ export function TechOrderDetailPage() {
       setOrder(orderData)
       setHistory(histData as StateHistoryEntry[])
 
-      // Load detail
-      const table = workTypeToDetailTable(orderData.work_type)
-      const { data: detailData } = await fetchWorkOrderDetail(table, id)
-      if (detailData) {
-        const { id: _i, work_order_id: _w, created_at: _c, ...rest } = detailData as Record<string, unknown>
-        void _i; void _w; void _c
-        setDetail(rest)
-      }
+      // The technical data the admin pre-filled, read through the order's plan.
+      const [plan, { data: report }] = await Promise.all([
+        fetchCapturePlanForOrder(orderData),
+        fetchCaptureReport(id),
+      ])
+      setDetail(captureDetailEntries(plan, report?.answers ?? {}))
       setIsLoading(false)
     })
   }, [id])
@@ -97,7 +96,7 @@ export function TechOrderDetailPage() {
     )
   }
 
-  const hasDetail = Object.values(detail).some((v) => v !== null && v !== '' && v !== false)
+  const hasDetail = detail.length > 0
 
   return (
     <div className="space-y-4">
@@ -267,18 +266,14 @@ export function TechOrderDetailPage() {
             {t('tech.technicalSpecs', { workType: L.workType(order.work_type) })}
           </h3>
           <div className="grid grid-cols-2 gap-3 text-sm">
-            {Object.entries(detail).map(([key, value]) => {
-              if (value === null || value === '' || value === undefined) return null
-              const label = key.replace(/_/g, ' ')
-              return (
-                <div key={key}>
-                  <p className="text-xs capitalize text-fg-2">{label}</p>
-                  <p className="font-medium text-fg-1">
-                    {typeof value === 'boolean' ? (value ? t('common.yes') : t('common.no')) : String(value)}
-                  </p>
-                </div>
-              )
-            })}
+            {detail.map(({ key, labelKey, value }) => (
+              <div key={key}>
+                <p className="text-xs capitalize text-fg-2">{t(labelKey)}</p>
+                <p className="font-medium text-fg-1">
+                  {typeof value === 'boolean' ? (value ? t('common.yes') : t('common.no')) : String(value)}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       )}

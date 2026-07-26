@@ -1,3 +1,15 @@
+// Field definitions of the DEFAULT capture plans, one set per work type.
+//
+// This used to be a catalog of its own, read directly by the admin form, the
+// technician's screen, the certificate PDF and the admin detail view. Since
+// phase 7 it has exactly one consumer: `capture-plan-sections.ts`, which turns
+// it into the `details` section of each default plan. Everything else reads the
+// plan, so this file is now the plans' source data, not a parallel catalog —
+// change a field here and the plan (and the SQL seed generated from it) follows.
+//
+// `label` is only a developer-facing fallback; the UI labels come from the
+// plan's `labelKey` (`detailField.*` in the locales).
+
 import type { WorkType } from '@/types/enums'
 
 export interface DetailField {

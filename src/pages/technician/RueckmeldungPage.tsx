@@ -27,10 +27,8 @@ function TimePickerField({ label, value, onChange }: {
 }
 import {
   fetchWorkOrderPhotos,
-  upsertWorkOrderDetail,
   deleteWorkOrderPhoto,
   transitionWorkOrderStatus,
-  workTypeToDetailTable,
   getPhotoSignedUrls,
   normalizeReportedServiceItems,
   type ReportedServiceItemDraft,
@@ -61,7 +59,6 @@ import { useOfflineSync } from '@/hooks/useOfflineSync'
 import { scalePhotoForUpload } from '@/lib/photoScaling'
 import { getCurrentPoint } from '@/lib/geolocation'
 import { captureExamplePaths, evaluateCapturePlan, slotNodeId } from '@/services/capturePlanEngine'
-import { legacyDetailFromAnswers } from '@/services/capturePlanLegacy'
 import { CapturePlanForm, type PendingPhoto, type SlotTarget } from '@/components/capture/CapturePlanForm'
 import type { ServiceItemWithRelations } from '@/types/service-items'
 import type { ConsumptionCorrectionRequired, ConsumptionDraft, InventoryVehicle, VehicleStockRow } from '@/types/material-inventory'
@@ -100,10 +97,8 @@ export function RueckmeldungPage() {
 
   const [order, setOrder] = useState<WorkOrderWithRelations | null>(null)
 
-  // Legacy detail columns the capture plan does not own (alta's reported items).
-  // Everything the plan declares lives in `answers` and is mirrored back into the
-  // detail row on save — the phase-2 double write.
-  const [detail, setDetail] = useState<Record<string, unknown>>({})
+  // The plan is the form and `answers` is the whole of what the technician
+  // entered. Both are saved as one capture report — there is no second copy.
   const [plan, setPlan] = useState<CapturePlan | null>(null)
   const [answers, setAnswers] = useState<CaptureAnswers>({})
   const [photos, setPhotos] = useState<CapturePhotoRow[]>([])
@@ -172,7 +167,6 @@ export function RueckmeldungPage() {
 
         setOrder(data.order)
         setPhotos(data.photos)
-        setDetail(data.detail)
         setPlan(data.plan)
         setAnswers(data.answers)
         setReturnedNote(data.returnedNote)
@@ -317,18 +311,12 @@ export function RueckmeldungPage() {
   }
 
   /**
-   * The phase-2 double write: the plan's own fields are written back into the
-   * legacy detail row, because the SQL certification gate, the PDF and the admin
-   * certification screen still read that row. Columns the plan does not declare
-   * (alta's reported service items) are preserved as loaded.
+   * The catalogued services actually performed. They ride along with the answers
+   * in the capture report — no plan declares them, and the admin bills from them.
    */
-  function detailWithReportedItems() {
-    const base = { ...detail, ...(plan ? legacyDetailFromAnswers(plan, answers) : {}) }
-    if (order?.work_type !== 'alta') return base
-    return {
-      ...base,
-      reported_service_items: normalizeReportedServiceItems(reportedDrafts),
-    }
+  function reportedServiceItems() {
+    if (order?.work_type !== 'alta') return []
+    return normalizeReportedServiceItems(reportedDrafts)
   }
 
   function addConsumptionLine() {
@@ -596,7 +584,7 @@ export function RueckmeldungPage() {
     setDeletingPhotoId(null)
   }
 
-  /** Writes the answers blob; the caller writes the legacy detail row. */
+  /** The single write of the Rückmeldung: answers plus the reported services. */
   async function persistCaptureReport(submitted: boolean): Promise<string | null> {
     if (!plan || !id || !user) return null
     const { error } = await saveCaptureReport({
@@ -605,6 +593,7 @@ export function RueckmeldungPage() {
       answers,
       userId: user.id,
       submitted,
+      reportedServiceItems: reportedServiceItems(),
     })
     return error
   }
@@ -619,16 +608,8 @@ export function RueckmeldungPage() {
     // No network: the draft lives on the device. Nothing is queued for upload —
     // a draft is not a submission, and re-saving it later replaces it.
     if (!navigator.onLine) {
-      await cacheAnswers(id, answers, detailWithReportedItems())
+      await cacheAnswers(id, answers, reportedServiceItems())
       setQueuedNotice(t('offline.savedLocally'))
-      setIsSaving(false)
-      return
-    }
-
-    const table = workTypeToDetailTable(order.work_type)
-    const { error } = await upsertWorkOrderDetail(table, id, detailWithReportedItems())
-    if (error) {
-      setError(error)
       setIsSaving(false)
       return
     }
@@ -642,7 +623,7 @@ export function RueckmeldungPage() {
 
     // Keep the offline copy current, so reopening without coverage shows what
     // was just saved rather than what was loaded.
-    await cacheAnswers(id, answers, detailWithReportedItems())
+    await cacheAnswers(id, answers, reportedServiceItems())
 
     setSavedOk(true)
     setTimeout(() => setSavedOk(false), 3000)
@@ -690,7 +671,6 @@ export function RueckmeldungPage() {
     setError(null)
     setQueuedNotice(null)
 
-    const table = workTypeToDetailTable(order.work_type)
     const validConsumption = consumptionDrafts.filter((d) => d.material_id && d.quantity > 0)
     if (validConsumption.length > 0 && !selectedVehicleId) {
       setError(t('rueckmeldung.materialConsumption.errors.vehicleRequired'))
@@ -729,8 +709,7 @@ export function RueckmeldungPage() {
         planKey: plan.key,
         planVersion: plan.version,
         answers,
-        detailTable: table,
-        detail: detailWithReportedItems(),
+        reportedServiceItems: reportedServiceItems(),
         notes,
         consumption:
           consumptionDraftValues.length > 0
@@ -747,18 +726,10 @@ export function RueckmeldungPage() {
         return
       }
 
-      await cacheAnswers(id, answers, detailWithReportedItems())
+      await cacheAnswers(id, answers, reportedServiceItems())
       void refreshPendingCounts()
       setIsSending(false)
       navigate(`/tech/orders/${id}`)
-      return
-    }
-
-    // First save detail
-    const { error: detailError } = await upsertWorkOrderDetail(table, id, detailWithReportedItems())
-    if (detailError) {
-      setError(detailError)
-      setIsSending(false)
       return
     }
 
