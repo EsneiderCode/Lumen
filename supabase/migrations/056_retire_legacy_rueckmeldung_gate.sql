@@ -18,21 +18,20 @@
 --   report outside this repo still points at them. Dropping them is a separate,
 --   deliberate migration.
 --
---   PRECONDITION, ENFORCED BELOW: no work order sitting at or past "the
---   technician has done the work" may be without a capture report. The guard
---   raises and rolls the whole migration back rather than leaving those orders
---   uncertifiable.
+--   PRECONDITION, ENFORCED BELOW: no work order whose Rückmeldung was actually
+--   submitted may be without a capture report. The guard raises and rolls the
+--   whole migration back rather than leaving those orders uncertifiable.
+--   Orders that have not got that far yet — `executed`, `rueckmeldung_pending`
+--   and everything before — are supposed to have no report; see section 1.
 --
 --   IF THE GUARD FIRES, running 055 again will not help — 055 has already moved
---   everything it could. There are exactly three reasons an order past execution
---   can still have no report, and each needs a decision, not a retry:
---     1. Its wo_detail_* row is empty, or it has none. Nobody reported anything;
---        the order needs its Rückmeldung filled in, or moving back/cancelling.
+--   everything it could. An order that says it sent a Rückmeldung and has no
+--   report is a genuine anomaly, and it needs a decision rather than a retry:
+--     1. Its wo_detail_* row is empty, or it has none — so the "sent" status was
+--        reached without anything being reported. Somebody moved it by hand.
 --     2. Its capture_plan_key names a plan that is in no migration. A data
 --        error: fix the key (or seed the plan) and re-run 055.
---     3. It reached this state without ever passing through the technician's
---        screen. Worth understanding before waving it through.
---   The query in section 1 is the same one the guard runs; use it to look.
+--   The guard names the order numbers; look at them before deciding.
 -- Run manually in Supabase SQL Editor.
 -- ─────────────────────────────────────────────────────────────────────────────
 
@@ -43,9 +42,17 @@
 BEGIN;
 
 -- 1) Refuse to proceed if anything would be stranded ──────────────────────────
--- 'created' and 'assigned' orders legitimately have no report yet — nobody has
--- been on site. The states below are the ones an admin could be asked to
--- certify, and those must all be judgeable by their plan.
+-- Only the states where a Rückmeldung has DEMONSTRABLY been submitted:
+--   rueckmeldung_sent  the technician sent it
+--   returned           it was sent and handed back for correction
+--   client_rejected    it went the whole way and came back
+--
+-- Everything earlier is deliberately excluded, including the two that read as if
+-- they were not: `executed` means the work is done and the Rückmeldung has NOT
+-- been filled in yet, and `rueckmeldung_pending` means exactly what it says.
+-- Orders sit in those states normally, with no report and nothing to migrate —
+-- requiring one there would make this migration unrunnable on any live system.
+-- (It did: the first production run stopped on an order in `executed`.)
 
 DO $guard$
 DECLARE
@@ -55,8 +62,7 @@ BEGIN
   SELECT count(*), string_agg(wo.order_number, ', ' ORDER BY wo.order_number)
     INTO v_stranded, v_sample
   FROM public.work_orders wo
-  WHERE wo.status IN ('executed', 'returned', 'rueckmeldung_pending',
-                      'rueckmeldung_sent', 'client_rejected')
+  WHERE wo.status IN ('rueckmeldung_sent', 'returned', 'client_rejected')
     AND NOT EXISTS (
       SELECT 1 FROM public.work_order_capture_reports cr
       WHERE cr.work_order_id = wo.id
@@ -64,12 +70,13 @@ BEGIN
 
   IF v_stranded > 0 THEN
     RAISE EXCEPTION
-      'Cannot retire the legacy gate: % order(s) past execution have no capture report (%)',
+      'Cannot retire the legacy gate: % order(s) whose Rückmeldung was submitted have no capture report (%)',
       v_stranded, left(v_sample, 200)
       USING errcode = 'check_violation',
             hint = 'Re-running 055 will not help; it already moved everything it could. '
-                || 'Each of these has an empty/absent wo_detail_* row, or a capture_plan_key '
-                || 'that no migration seeds. See the header of 056.';
+                || 'Each of these says it sent a Rückmeldung but has an empty/absent '
+                || 'wo_detail_* row, or a capture_plan_key that no migration seeds. '
+                || 'See the header of 056.';
   END IF;
 END;
 $guard$;
