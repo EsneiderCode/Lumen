@@ -39,53 +39,24 @@ export { VALID_TRANSITIONS, validateStatusTransition, statusPath, rueckmeldungSe
 
 // ── Data prerequisites for transitions (DB-backed) ─────────────────────────
 
-/**
- * Required detail fields per work_type, for orders captured before the capture
- * plans existed. A transition into internally_certified is rejected if any of
- * these is null/empty/0/false.
- *
- * Mirrors assert_work_order_rueckmeldung_complete_legacy() (migration 054, the
- * verbatim 016 gate). Orders WITH a capture report are judged by their plan
- * instead — see validateCapturePlanCompleteness below.
- *
- * 'pop' is intentionally absent: wo_detail_pop is referenced by the workType
- * map but its table is not yet created in supabase/migrations. POP orders
- * cannot currently be certified through this path.
- */
-const REQUIRED_DETAIL_FIELDS: Partial<Record<WorkType, readonly string[]>> = {
-  soplado: ['meters', 'section'],
-  fusion_ap: ['cabinet_code', 'fiber_type', 'has_measurement_cert'],
-  fusion_dp: ['cabinet_code', 'fiber_type', 'has_measurement_cert'],
-  alta: ['access_type', 'equipment_installed', 'client_signature'],
-  nt_installation: ['nt_type', 'serial_number', 'location'],
-  patchkabel: ['connected_section', 'cable_length', 'connector_type', 'test_result'],
-}
-
-function isFieldFilled(value: unknown): boolean {
-  if (value === null || value === undefined) return false
-  if (typeof value === 'string') return value.trim().length > 0
-  if (typeof value === 'number') return value > 0
-  if (typeof value === 'boolean') return value === true
-  return true
-}
-
 /** Lines of the gate's error message, so the admin is not buried in a wall of text. */
 const MAX_LISTED_MISSING_NODES = 6
 
 /**
  * Completeness according to the order's capture plan — the client twin of
- * assert_work_order_rueckmeldung_complete() (migration 054), down to the
+ * assert_work_order_rueckmeldung_complete() (migration 056), down to the
  * wording of the message.
  *
- * Returns `undefined` when the order has no capture report, which means "judge
- * it by the pre-plan rules", exactly as the gate falls back to its legacy twin.
+ * Every order that was ever captured has a report — migration 055 backfilled
+ * the ones that predate the plans — so no report means nobody has reported
+ * anything yet.
  */
 async function validateCapturePlanCompleteness(
   workOrderId: string,
   order: { work_type: string; capture_plan_key?: string | null },
-): Promise<string | null | undefined> {
+): Promise<string | null> {
   const { data: report } = await fetchCaptureReport(workOrderId)
-  if (!report) return undefined
+  if (!report) return 'Rückmeldung fehlt — Auftrag kann nicht zertifiziert werden'
 
   const planKey = capturePlanKeyForOrder(order)
   // The pinned version wins, unless the admin has since moved the order to a
@@ -117,8 +88,7 @@ async function validateCapturePlanCompleteness(
  *
  * Enforces (CLAUDE.md business rules):
  *   1. internally_certified  ← requires a Rückmeldung complete per the order's
- *      capture plan, or — for orders captured before the plans — the detail
- *      fields plus the three photo buckets
+ *      capture plan
  *   2. invoiced (with client) ← requires certification_audits row of cert_type='client'
  *   3. invoiced (direct)      ← requires certification_audits row of cert_type='internal'
  */
@@ -141,41 +111,7 @@ export async function validateTransitionPrerequisites(
   // ── Rule 1: internally_certified requires complete Rückmeldung
   if (toStatus === 'internally_certified') {
     const planResult = await validateCapturePlanCompleteness(workOrderId, order)
-    if (planResult !== undefined) return planResult
-
-    const required = REQUIRED_DETAIL_FIELDS[order.work_type as WorkType]
-    if (!required) {
-      return `Zertifizierung für Arbeitstyp "${order.work_type}" nicht unterstützt`
-    }
-
-    const detailTable = workTypeToDetailTable(order.work_type as WorkType)
-    const { data: detail } = await supabase
-      .from(detailTable as 'wo_detail_soplado')
-      .select('*')
-      .eq('work_order_id', workOrderId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-
-    const detailRow = detail && detail.length > 0 ? (detail[0] as Record<string, unknown>) : null
-    if (!detailRow) {
-      return 'Rückmeldung fehlt — Auftrag kann nicht zertifiziert werden'
-    }
-
-    const missing = required.filter((f) => !isFieldFilled(detailRow[f]))
-    if (missing.length > 0) {
-      return `Rückmeldung unvollständig: ${missing.join(', ')}`
-    }
-
-    const { data: photos } = await supabase
-      .from('work_order_photos')
-      .select('photo_type')
-      .eq('work_order_id', workOrderId)
-
-    const photoTypes = new Set((photos ?? []).map((p) => p.photo_type as string))
-    const missingPhotos = (['before', 'during', 'after'] as const).filter((t) => !photoTypes.has(t))
-    if (missingPhotos.length > 0) {
-      return `Fehlende Fotos (${missingPhotos.join(', ')}) — Auftrag kann nicht zertifiziert werden`
-    }
+    if (planResult) return planResult
   }
 
   // ── Rules 2/3: invoiced requires the right certification audit

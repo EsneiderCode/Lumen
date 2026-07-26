@@ -23,15 +23,7 @@ import type {
 } from '@/types/capture-plan'
 import type { Database, Json } from '@/types/database.types'
 
-/**
- * `reported_service_items` is added by migration 055. Until Alejandro applies it
- * and regenerates database.types.ts the generated Insert type does not know the
- * column yet, so it is spelled out here. Drop this intersection once the types
- * carry it — same dance as 052/053.
- */
-type CaptureReportInsert = Database['public']['Tables']['work_order_capture_reports']['Insert'] & {
-  reported_service_items?: Json
-}
+type CaptureReportInsert = Database['public']['Tables']['work_order_capture_reports']['Insert']
 
 /**
  * Plans change about never, and the technician screen asks for one on every
@@ -197,6 +189,8 @@ export async function saveCaptureReport(params: {
     answers: answers as Json,
     updated_by: userId,
   }
+  // The double cast is structural, not a missing type: an interface has no index
+  // signature, so TS will not accept it as Json even though the shape is valid.
   if (reportedServiceItems) payload.reported_service_items = reportedServiceItems as unknown as Json
   if (submitted) payload.submitted_at = new Date().toISOString()
 

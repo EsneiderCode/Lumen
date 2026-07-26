@@ -165,13 +165,13 @@ describe('the certification gate in demo mode', () => {
     expect(await validateTransitionPrerequisites(workOrderId, 'internally_certified')).toBeNull()
   })
 
-  // The fallback is still there for an order nobody ever captured — it is what
-  // migration 056 removes, once 055 has been applied and verified in production.
-  it('falls back to the pre-plan rules for an order with no report at all', async () => {
+  // Since migration 056 there is no laxer set of rules to fall into: an order
+  // nobody ever captured is simply not certifiable.
+  it('refuses an order with no capture report at all', async () => {
     const untouched = '50000000-0000-0000-0000-000000000001'
     expect((await fetchCaptureReport(untouched)).data).toBeNull()
-    expect(await validateTransitionPrerequisites(untouched, 'internally_certified')).toContain(
-      'Rückmeldung',
+    expect(await validateTransitionPrerequisites(untouched, 'internally_certified')).toMatch(
+      /Rückmeldung fehlt/i,
     )
   })
 

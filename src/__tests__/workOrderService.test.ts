@@ -405,97 +405,20 @@ describe('validateTransitionPrerequisites — internally_certified', () => {
     expect(result).toMatch(/Auftrag nicht gefunden/i)
   })
 
-  it('rejects when no detail row exists', async () => {
+  // Every order that was ever captured has a report (migration 055 backfilled
+  // the ones that predate the plans), so no report means nobody reported.
+  it('rejects when the order has no capture report', async () => {
     setupSupabaseFor({
       order: { work_type: 'alta', client_id: 'client-1' },
-      detail: null,
+      report: null,
       photoTypes: ALL_PHOTOS,
     })
     const result = await validateTransitionPrerequisites('id-1', 'internally_certified')
     expect(result).toMatch(/Rückmeldung fehlt/i)
   })
-
-  it('rejects when detail has missing required fields', async () => {
-    setupSupabaseFor({
-      order: { work_type: 'alta', client_id: 'client-1' },
-      detail: { access_type: 'standard', equipment_installed: '', client_signature: false },
-      photoTypes: ALL_PHOTOS,
-    })
-    const result = await validateTransitionPrerequisites('id-1', 'internally_certified')
-    expect(result).toMatch(/Rückmeldung unvollständig/i)
-    expect(result).toMatch(/equipment_installed/)
-    expect(result).toMatch(/client_signature/)
-  })
-
-  it('rejects when soplado meters is 0', async () => {
-    setupSupabaseFor({
-      order: { work_type: 'soplado', client_id: 'client-1' },
-      detail: { meters: 0, section: 'Tramo A' },
-      photoTypes: ALL_PHOTOS,
-    })
-    const result = await validateTransitionPrerequisites('id-1', 'internally_certified')
-    expect(result).toMatch(/Rückmeldung unvollständig/i)
-    expect(result).toMatch(/meters/)
-  })
-
-  it('rejects when fusion has_measurement_cert is false', async () => {
-    setupSupabaseFor({
-      order: { work_type: 'fusion_ap', client_id: 'client-1' },
-      detail: { cabinet_code: 'NE3-S-001', fiber_type: 'G.652', has_measurement_cert: false },
-      photoTypes: ALL_PHOTOS,
-    })
-    const result = await validateTransitionPrerequisites('id-1', 'internally_certified')
-    expect(result).toMatch(/Rückmeldung unvollständig/i)
-    expect(result).toMatch(/has_measurement_cert/)
-  })
-
-  it('rejects when no photos are uploaded', async () => {
-    setupSupabaseFor({
-      order: { work_type: 'alta', client_id: 'client-1' },
-      detail: COMPLETE_ALTA_DETAIL,
-      photoTypes: [],
-    })
-    const result = await validateTransitionPrerequisites('id-1', 'internally_certified')
-    expect(result).toMatch(/Fehlende Fotos/i)
-    expect(result).toMatch(/before/)
-    expect(result).toMatch(/during/)
-    expect(result).toMatch(/after/)
-  })
-
-  it('rejects when only "before" photo exists', async () => {
-    setupSupabaseFor({
-      order: { work_type: 'alta', client_id: 'client-1' },
-      detail: COMPLETE_ALTA_DETAIL,
-      photoTypes: ['before'],
-    })
-    const result = await validateTransitionPrerequisites('id-1', 'internally_certified')
-    expect(result).toMatch(/Fehlende Fotos/i)
-    expect(result).toMatch(/during/)
-    expect(result).toMatch(/after/)
-    expect(result).not.toMatch(/before/)
-  })
-
-  it('returns null when detail is complete and all 3 photo types exist', async () => {
-    setupSupabaseFor({
-      order: { work_type: 'alta', client_id: 'client-1' },
-      detail: COMPLETE_ALTA_DETAIL,
-      photoTypes: ALL_PHOTOS,
-    })
-    expect(await validateTransitionPrerequisites('id-1', 'internally_certified')).toBeNull()
-  })
-
-  it('rejects work_type that has no required-fields entry (e.g. pop)', async () => {
-    setupSupabaseFor({
-      order: { work_type: 'pop', client_id: 'client-1' },
-      detail: { foo: 'bar' },
-      photoTypes: ALL_PHOTOS,
-    })
-    const result = await validateTransitionPrerequisites('id-1', 'internally_certified')
-    expect(result).toMatch(/nicht unterstützt/i)
-  })
 })
 
-// ── The capture-plan gate (mirror of migration 054) ─────────────────────────
+// ── The capture-plan gate (mirror of migration 056) ─────────────────────────
 
 /** Photos stamped with their slot, the shape uploadCapturePhoto writes. */
 const slotPhoto = (sectionKey: string, slotKey: string, itemId: string | null = null) => ({
@@ -519,16 +442,6 @@ const SOPLADO_RA_ANSWERS = {
 }
 
 describe('validateTransitionPrerequisites — capture plan gate', () => {
-  it('falls back to the legacy rules when the order has no capture report', async () => {
-    setupSupabaseFor({
-      order: { work_type: 'alta', client_id: 'client-1' },
-      detail: COMPLETE_ALTA_DETAIL,
-      photoTypes: ALL_PHOTOS,
-      report: null,
-    })
-    expect(await validateTransitionPrerequisites('id-1', 'internally_certified')).toBeNull()
-  })
-
   it('accepts a Soplado de RA order that satisfies its plan', async () => {
     setupSupabaseFor({
       order: { work_type: 'soplado', client_id: 'client-1', capture_plan_key: 'soplado_ra' },
@@ -774,8 +687,8 @@ describe('single-order lifecycle RPC adapters', () => {
   it('certifies internally through the atomic internal certification RPC', async () => {
     setupSupabaseFor({
       order: { work_type: 'alta', client_id: 'client-1' },
-      detail: { access_type: 'Hausanschluss', equipment_installed: 'NT', client_signature: true },
-      photoTypes: ['before', 'during', 'after'],
+      report: { plan_key: 'alta', plan_version: 1, answers: { details: COMPLETE_ALTA_DETAIL } },
+      photoTypes: ALL_PHOTOS,
     })
     mockSupabase.rpc = vi
       .fn()
@@ -800,8 +713,8 @@ describe('single-order lifecycle RPC adapters', () => {
   it('rejects incomplete Rückmeldung before calling the internal certification RPC', async () => {
     setupSupabaseFor({
       order: { work_type: 'alta', client_id: 'client-1' },
-      detail: null,
-      photoTypes: ['before', 'during', 'after'],
+      report: null,
+      photoTypes: ALL_PHOTOS,
     })
     mockSupabase.rpc = vi.fn()
 

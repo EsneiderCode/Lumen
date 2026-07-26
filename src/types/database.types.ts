@@ -2151,6 +2151,7 @@ export type Database = {
           created_at: string
           plan_key: string
           plan_version: number
+          reported_service_items: Json
           submitted_at: string | null
           updated_at: string
           updated_by: string | null
@@ -2161,6 +2162,7 @@ export type Database = {
           created_at?: string
           plan_key: string
           plan_version: number
+          reported_service_items?: Json
           submitted_at?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -2171,6 +2173,7 @@ export type Database = {
           created_at?: string
           plan_key?: string
           plan_version?: number
+          reported_service_items?: Json
           submitted_at?: string | null
           updated_at?: string
           updated_by?: string | null
@@ -2780,6 +2783,10 @@ export type Database = {
         Args: { p_work_order_id: string }
         Returns: undefined
       }
+      assert_work_order_rueckmeldung_complete_legacy: {
+        Args: { p_work_order_id: string }
+        Returns: undefined
+      }
       assign_work_order_checked: {
         Args: {
           p_assigned_date: string
@@ -2827,6 +2834,18 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      capture_condition_met: {
+        Args: { p_answers: Json; p_condition: Json; p_item: Json }
+        Returns: boolean
+      }
+      capture_field_filled: {
+        Args: { p_field: Json; p_value: Json }
+        Returns: boolean
+      }
+      capture_plan_missing_nodes: {
+        Args: { p_answers: Json; p_plan: Json; p_work_order_id: string }
+        Returns: string[]
       }
       certify_work_order_internal: {
         Args: {
