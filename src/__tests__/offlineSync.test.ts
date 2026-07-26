@@ -36,15 +36,24 @@ const transitionWorkOrderStatus = vi.fn(async (_id: string, status: string) => {
 const notifyReportSubmitted = vi.fn(async () => {
   calls.push('telegram')
 })
+// The drain asks the server where the order actually is before transitioning,
+// because hours may have passed since it was queued.
+const fetchWorkOrder = vi.fn(async () => ({
+  data: { status: 'rueckmeldung_pending' as string },
+  error: null,
+}))
 
 vi.mock('@/services/capturePlanService', () => ({
   uploadCapturePhoto: (args: { slotKey: string }) => uploadCapturePhoto(args),
   saveCaptureReport: () => saveCaptureReport(),
 }))
 vi.mock('@/services/workOrderService', () => ({
+  fetchWorkOrder: () => fetchWorkOrder(),
   upsertWorkOrderDetail: () => upsertWorkOrderDetail(),
   transitionWorkOrderStatus: (id: string, status: string) => transitionWorkOrderStatus(id, status),
 }))
+// NOT mocked: the route through the state machine is exactly what these tests
+// are checking, and it is pure.
 vi.mock('@/services/materialInventoryService', () => ({
   registerMaterialConsumption: () => registerMaterialConsumption(),
 }))
@@ -89,7 +98,6 @@ function queueSubmission(workOrderId: string, overrides: Record<string, unknown>
     detailTable: 'wo_detail_soplado',
     detail: { meters: 120 },
     notes: 'Fertig',
-    needsPendingStep: false,
     consumption: null,
     notification: null,
     userId: USER,
@@ -115,6 +123,10 @@ beforeEach(() => {
     calls.push('material')
     return { correctionRequired: [], error: null }
   })
+  fetchWorkOrder.mockImplementation(async () => ({
+    data: { status: 'rueckmeldung_pending' },
+    error: null,
+  }))
   Object.defineProperty(navigator, 'onLine', { value: true, configurable: true })
 })
 
@@ -185,8 +197,26 @@ describe('draining the offline queue', () => {
     expect((await pendingSubmissions())[0].workOrderId).toBe(WO_A)
   })
 
-  it('makes the intermediate status hop the state machine demands', async () => {
-    await queueSubmission(WO_A, { needsPendingStep: true })
+  it('walks every hop the state machine demands from where the order IS', async () => {
+    // Queued while the job was still open: the drain has to climb the whole
+    // ladder, not just the last rung.
+    fetchWorkOrder.mockImplementation(async () => ({ data: { status: 'in_progress' }, error: null }))
+    await queueSubmission(WO_A)
+
+    await syncOfflineQueue()
+
+    expect(calls).toEqual([
+      'answers',
+      'detail',
+      'status:executed',
+      'status:rueckmeldung_pending',
+      'status:rueckmeldung_sent',
+    ])
+  })
+
+  it('takes the single hop when the order is already waiting to be sent', async () => {
+    fetchWorkOrder.mockImplementation(async () => ({ data: { status: 'executed' }, error: null }))
+    await queueSubmission(WO_A)
 
     await syncOfflineQueue()
 
@@ -196,6 +226,31 @@ describe('draining the offline queue', () => {
       'status:rueckmeldung_pending',
       'status:rueckmeldung_sent',
     ])
+  })
+
+  it('does not resend an order somebody already sent from another device', async () => {
+    fetchWorkOrder.mockImplementation(async () => ({
+      data: { status: 'rueckmeldung_sent' },
+      error: null,
+    }))
+    await queueSubmission(WO_A)
+
+    const result = await syncOfflineQueue()
+
+    expect(transitionWorkOrderStatus).not.toHaveBeenCalled()
+    expect(result.submissionsSent).toBe(1)
+    expect(await pendingSubmissions()).toHaveLength(0)
+  })
+
+  it('refuses to force an order the machine cannot take there', async () => {
+    fetchWorkOrder.mockImplementation(async () => ({ data: { status: 'cancelled' }, error: null }))
+    await queueSubmission(WO_A)
+
+    const result = await syncOfflineQueue()
+
+    expect(transitionWorkOrderStatus).not.toHaveBeenCalled()
+    expect(result.submissionsFailed).toBe(1)
+    expect((await pendingSubmissions())[0].lastError).toBe('not_sendable_from_cancelled')
   })
 
   it('books material before the transition, and only when there is some', async () => {

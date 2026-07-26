@@ -211,6 +211,64 @@ describe('fetchWorkOrders — success path', () => {
   })
 })
 
+// ── The route a Rückmeldung has to walk ─────────────────────────────────────
+
+import { rueckmeldungSendPath, statusPath } from '@/services/workOrderStateMachine'
+
+describe('statusPath', () => {
+  it('is empty between a status and itself', () => {
+    expect(statusPath('executed', 'executed')).toEqual([])
+  })
+
+  it('finds the shortest legal route, target included', () => {
+    expect(statusPath('in_progress', 'rueckmeldung_sent')).toEqual([
+      'executed',
+      'rueckmeldung_pending',
+      'rueckmeldung_sent',
+    ])
+    expect(statusPath('executed', 'rueckmeldung_sent')).toEqual([
+      'rueckmeldung_pending',
+      'rueckmeldung_sent',
+    ])
+  })
+
+  it('reports the absence of a route rather than inventing one', () => {
+    expect(statusPath('cancelled', 'rueckmeldung_sent')).toBeNull()
+    expect(statusPath('paid', 'invoiced')).toBeNull()
+  })
+})
+
+describe('rueckmeldungSendPath', () => {
+  // The screen is reachable by link, and a queued submission drains hours after
+  // it was written — neither can assume the order is where it was.
+  it('climbs the whole ladder from wherever the order is', () => {
+    expect(rueckmeldungSendPath('in_progress')).toEqual([
+      'executed',
+      'rueckmeldung_pending',
+      'rueckmeldung_sent',
+    ])
+    expect(rueckmeldungSendPath('executed')).toEqual(['rueckmeldung_pending', 'rueckmeldung_sent'])
+    expect(rueckmeldungSendPath('returned')).toEqual(['rueckmeldung_pending', 'rueckmeldung_sent'])
+    expect(rueckmeldungSendPath('rueckmeldung_pending')).toEqual(['rueckmeldung_sent'])
+  })
+
+  it('has nothing to do for an order already sent, so a second drain is harmless', () => {
+    expect(rueckmeldungSendPath('rueckmeldung_sent')).toEqual([])
+  })
+
+  // An assignment carries a team and a technician and has its own RPC; walking
+  // past it here would leave a half-assigned order behind.
+  it('never conjures an assignment on the way', () => {
+    expect(rueckmeldungSendPath('created')).toBeNull()
+  })
+
+  it('refuses orders that are done, dead, or past this point', () => {
+    expect(rueckmeldungSendPath('cancelled')).toBeNull()
+    expect(rueckmeldungSendPath('internally_certified')).toBeNull()
+    expect(rueckmeldungSendPath('paid')).toBeNull()
+  })
+})
+
 // ── validateTransitionPrerequisites (Migration 004 — business rules) ───────
 
 import { validateTransitionPrerequisites } from '@/services/workOrderService'

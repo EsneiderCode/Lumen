@@ -17,10 +17,13 @@ import { notifyReportSubmitted } from '@/services/notificationService'
 import { registerMaterialConsumption } from '@/services/materialInventoryService'
 import { saveCaptureReport, uploadCapturePhoto } from '@/services/capturePlanService'
 import {
+  fetchWorkOrder,
   transitionWorkOrderStatus,
   upsertWorkOrderDetail,
   type DetailTable,
 } from '@/services/workOrderService'
+import { rueckmeldungSendPath } from '@/services/workOrderStateMachine'
+import type { WorkOrderStatus } from '@/types/enums'
 import {
   markPhotoFailed,
   markSubmissionFailed,
@@ -132,26 +135,25 @@ async function sendSubmission(submission: QueuedSubmission): Promise<string | nu
     if (result.error) return result.error
   }
 
-  if (submission.needsPendingStep) {
+  // The route is computed HERE, not when the submission was queued: hours may
+  // have passed and the order may have moved on. An order already sent gives an
+  // empty path, which is what makes a second drain harmless.
+  const { data: order } = await fetchWorkOrder(submission.workOrderId)
+  if (!order) return 'work order not found'
+
+  const path = rueckmeldungSendPath(order.status as WorkOrderStatus)
+  if (!path) return `not_sendable_from_${order.status}`
+
+  for (const [index, step] of path.entries()) {
     const { error } = await transitionWorkOrderStatus(
       submission.workOrderId,
-      'rueckmeldung_pending',
+      step,
       submission.userId,
-      undefined,
+      index === path.length - 1 ? submission.notes : undefined,
       submission.userRole,
     )
-    // Another device may have moved it already; only a real refusal stops us.
-    if (error && !/statusübergang|transition/i.test(error)) return error
+    if (error) return error
   }
-
-  const { error } = await transitionWorkOrderStatus(
-    submission.workOrderId,
-    'rueckmeldung_sent',
-    submission.userId,
-    submission.notes,
-    submission.userRole,
-  )
-  if (error) return error
 
   if (submission.notification) {
     // Best effort, exactly as online: a Telegram outage must not requeue a

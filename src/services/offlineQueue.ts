@@ -69,11 +69,6 @@ export interface QueuedSubmission {
   detailTable: string
   detail: Record<string, unknown>
   notes: string
-  /**
-   * Orders sitting in `executed` or `returned` need the intermediate
-   * `rueckmeldung_pending` hop before `rueckmeldung_sent`.
-   */
-  needsPendingStep: boolean
   consumption: QueuedConsumption | null
   /** Telegram card, sent after the transition lands. */
   notification: ReportSubmittedNotification | null

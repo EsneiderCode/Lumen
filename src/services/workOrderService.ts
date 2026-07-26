@@ -25,73 +25,17 @@ import {
 import type { ServiceItem } from '@/types/service-items'
 
 // ── State machine ──────────────────────────────────────────────────────────
+// Lives in workOrderStateMachine.ts (pure, no Supabase); re-exported here
+// because every caller already reaches for it through this module.
 
-/**
- * Canonical valid transitions for the work order state machine.
- * Any transition not listed here is illegal.
- */
-export const VALID_TRANSITIONS: Record<WorkOrderStatus, readonly WorkOrderStatus[]> = {
-  created: ['assigned', 'cancelled'],
-  assigned: ['in_progress', 'cancelled'],
-  in_progress: ['executed', 'cancelled'],
-  executed: ['rueckmeldung_pending', 'cancelled'],
-  rueckmeldung_pending: ['rueckmeldung_sent', 'cancelled'],
-  rueckmeldung_sent: ['internally_certified', 'returned', 'cancelled'],
-  internally_certified: ['sent_to_client', 'cancelled'],
-  sent_to_client: ['client_accepted', 'client_rejected'],
-  client_accepted: ['invoiced'],
-  client_rejected: ['internally_certified'],
-  invoiced: ['paid'],
-  returned: ['rueckmeldung_pending'],
-  paid: [],
-  cancelled: [],
-}
+import {
+  rueckmeldungSendPath,
+  statusPath,
+  validateStatusTransition,
+  VALID_TRANSITIONS,
+} from '@/services/workOrderStateMachine'
 
-/**
- * Statuses that only an admin may transition to.
- * Technicians are limited to the field-reporting portion of the pipeline.
- */
-const ADMIN_ONLY_TARGETS = new Set<WorkOrderStatus>([
-  'internally_certified',
-  'sent_to_client',
-  'client_accepted',
-  'client_rejected',
-  'invoiced',
-  'paid',
-  'returned',
-  'cancelled',
-])
-
-/**
- * Validates a proposed status transition (pure: machine + role only).
- * Returns an error string if invalid, or null if allowed.
- *
- * Direct orders (no external client) may shortcut from internally_certified
- * straight to invoiced — pass isDirectOrder=true for that case.
- * Mirror of the SQL trigger validate_work_order_status_transition().
- */
-export function validateStatusTransition(
-  from: WorkOrderStatus,
-  to: WorkOrderStatus,
-  userRole?: UserRole,
-  isDirectOrder?: boolean,
-): string | null {
-  // Direct-order shortcut: internally_certified → invoiced
-  const isDirectShortcut =
-    isDirectOrder === true && from === 'internally_certified' && to === 'invoiced'
-
-  if (!isDirectShortcut) {
-    const allowed = VALID_TRANSITIONS[from]
-    if (!allowed.includes(to)) {
-      return `Ungültiger Statusübergang: ${from} → ${to}`
-    }
-  }
-
-  if (userRole && userRole !== 'admin' && ADMIN_ONLY_TARGETS.has(to)) {
-    return `Keine Berechtigung: Nur Admins können den Status auf "${to}" setzen`
-  }
-  return null
-}
+export { VALID_TRANSITIONS, validateStatusTransition, statusPath, rueckmeldungSendPath }
 
 // ── Data prerequisites for transitions (DB-backed) ─────────────────────────
 

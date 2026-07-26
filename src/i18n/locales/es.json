@@ -361,6 +361,9 @@
       "notes": {
         "summary": "Consumo de material: {{count}} posición(es)"
       }
+    },
+    "errors": {
+      "notSendable": "No se puede enviar la Rückmeldung desde el estado «{{status}}»"
     }
   },
   "certification": {

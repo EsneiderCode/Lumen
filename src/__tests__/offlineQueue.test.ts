@@ -49,7 +49,6 @@ function submission(workOrderId: string, overrides = {}) {
     detailTable: 'wo_detail_soplado',
     detail: { meters: 120 },
     notes: 'Fertig',
-    needsPendingStep: false,
     consumption: null,
     notification: null,
     userId: USER,

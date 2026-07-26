@@ -361,6 +361,9 @@
       "notes": {
         "summary": "Materialverbrauch: {{count}} Position(en)"
       }
+    },
+    "errors": {
+      "notSendable": "Rückmeldung aus dem Status \"{{status}}\" nicht möglich"
     }
   },
   "certification": {

@@ -47,6 +47,7 @@ import {
   uploadCapturePhoto,
   type CapturePhotoRow,
 } from '@/services/capturePlanService'
+import { rueckmeldungSendPath } from '@/services/workOrderStateMachine'
 import { loadRueckmeldung } from '@/services/rueckmeldungLoader'
 import { cacheAnswers } from '@/services/offlineCache'
 import {
@@ -701,6 +702,16 @@ export function RueckmeldungPage() {
     })
     const notes = buildNotes(validConsumption.length)
 
+    // An order that cannot legally reach `rueckmeldung_sent` — cancelled,
+    // already certified, still unassigned — is one the technician must not be
+    // left filling in for nothing, online or queued.
+    const sendPath = rueckmeldungSendPath(order.status)
+    if (!sendPath) {
+      setError(t('rueckmeldung.errors.notSendable', { status: L.status(order.status) }))
+      setIsSending(false)
+      return
+    }
+
     // No network: the whole submission goes to the device and is replayed in
     // order — photos, then answers, then the transition — when there is one.
     // The plan is what pins the answers to a version, so without it there is
@@ -720,7 +731,6 @@ export function RueckmeldungPage() {
         detailTable: table,
         detail: detailWithReportedItems(),
         notes,
-        needsPendingStep: order.status === 'executed' || order.status === 'returned',
         consumption:
           consumptionDraftValues.length > 0
             ? { vehicleId: selectedVehicleId, drafts: consumptionDraftValues }
@@ -778,28 +788,28 @@ export function RueckmeldungPage() {
       }
     }
 
-    // If the order is in 'executed' or 'returned', first move to 'rueckmeldung_pending'
-    // before transitioning to 'rueckmeldung_sent' (state machine requires the intermediate step)
-    if (order.status === 'executed' || order.status === 'returned') {
-      const { error: pendingError } = await transitionWorkOrderStatus(
-        id, 'rueckmeldung_pending', user.id, undefined, user.role,
+    // Walk whatever route the state machine has from where the order actually
+    // is. Usually one or two hops (executed → rueckmeldung_pending → sent), but
+    // the screen is reachable by link from earlier statuses too. Only the last
+    // hop carries the notes: it is the one the admin reads.
+    for (const [index, step] of sendPath.entries()) {
+      const { error: stepError } = await transitionWorkOrderStatus(
+        id,
+        step,
+        user.id,
+        index === sendPath.length - 1 ? notes : undefined,
+        user.role,
       )
-      if (pendingError) {
-        setError(pendingError)
+      if (stepError) {
+        setError(stepError)
         setIsSending(false)
         return
       }
     }
 
-    const { error } = await transitionWorkOrderStatus(id, 'rueckmeldung_sent', user.id, notes, user.role)
-    if (error) {
-      setError(error)
-      setIsSending(false)
-    } else {
-      const notification = buildNotification(notes)
-      if (notification) notifyReportSubmitted(notification)
-      navigate(`/tech/orders/${id}`)
-    }
+    const notification = buildNotification(notes)
+    if (notification) notifyReportSubmitted(notification)
+    navigate(`/tech/orders/${id}`)
   }
 
   if (isLoading) {
