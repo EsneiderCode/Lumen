@@ -599,7 +599,7 @@ export { assignmentKey }
 
 // ── Detail tables ─────────────────────────────────────────────
 
-type DetailTable =
+export type DetailTable =
   | 'wo_detail_soplado'
   | 'wo_detail_fusion_ap'
   | 'wo_detail_fusion_dp'

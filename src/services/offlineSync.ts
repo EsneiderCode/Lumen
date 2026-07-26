@@ -1,0 +1,244 @@
+/**
+ * Drains what the technician did offline, in the only order that works.
+ *
+ * Per work order: **photos → answers + detail row → material → transitions**.
+ * Never any other way round. The certification gate (migration 054) reads the
+ * plan against the photos that are actually in Storage, so a Rückmeldung whose
+ * status moves to `rueckmeldung_sent` before its photos are up is a Rückmeldung
+ * the admin cannot certify — and the technician is already three villages away.
+ *
+ * A failure stops that one work order and leaves its queue intact; every other
+ * order in the queue still runs. Nothing is ever removed from the queue before
+ * the write it stands for has succeeded, so the worst case is a repeated upload,
+ * never a lost photo.
+ */
+
+import { notifyReportSubmitted } from '@/services/notificationService'
+import { registerMaterialConsumption } from '@/services/materialInventoryService'
+import { saveCaptureReport, uploadCapturePhoto } from '@/services/capturePlanService'
+import {
+  transitionWorkOrderStatus,
+  upsertWorkOrderDetail,
+  type DetailTable,
+} from '@/services/workOrderService'
+import {
+  markPhotoFailed,
+  markSubmissionFailed,
+  pendingPhotos,
+  pendingSubmissions,
+  queuedPhotoBlob,
+  removePhoto,
+  removeSubmission,
+  type QueuedPhoto,
+  type QueuedSubmission,
+} from '@/services/offlineQueue'
+
+export interface SyncResult {
+  photosUploaded: number
+  photosFailed: number
+  submissionsSent: number
+  submissionsFailed: number
+  /** First error of the run, for the banner. */
+  error: string | null
+}
+
+const EMPTY_RESULT: SyncResult = {
+  photosUploaded: 0,
+  photosFailed: 0,
+  submissionsSent: 0,
+  submissionsFailed: 0,
+  error: null,
+}
+
+/** IndexedDB keeps bytes; Storage wants a File with a name and a type. */
+function toFile(photo: QueuedPhoto): File {
+  return new File([queuedPhotoBlob(photo)], photo.fileName, { type: photo.contentType })
+}
+
+/**
+ * Uploads every queued photo of one work order.
+ * Returns the number uploaded and the first error, if any — on an error the
+ * caller must NOT run that order's submission.
+ */
+async function uploadOrderPhotos(
+  workOrderId: string,
+  userId: string,
+  photos: QueuedPhoto[],
+): Promise<{ uploaded: number; failed: number; error: string | null }> {
+  let uploaded = 0
+  let failed = 0
+  let firstError: string | null = null
+
+  for (const photo of photos) {
+    const { error } = await uploadCapturePhoto({
+      workOrderId,
+      file: toFile(photo),
+      userId,
+      sectionKey: photo.sectionKey,
+      slotKey: photo.slotKey,
+      legacyType: photo.legacyType,
+      itemId: photo.itemId,
+      location: photo.location,
+      takenAt: photo.takenAt,
+      skipScaling: true,
+    })
+
+    if (error) {
+      failed += 1
+      firstError ??= error
+      await markPhotoFailed(photo, error)
+      // Keep going: one rejected file must not hold back the rest of the job.
+      continue
+    }
+
+    if (photo.id !== undefined) await removePhoto(photo.id)
+    uploaded += 1
+  }
+
+  return { uploaded, failed, error: firstError }
+}
+
+/** The write half of "send the Rückmeldung", replayed exactly as the page does it. */
+async function sendSubmission(submission: QueuedSubmission): Promise<string | null> {
+  const reportError = await saveCaptureReport({
+    workOrderId: submission.workOrderId,
+    plan: { key: submission.planKey, version: submission.planVersion },
+    answers: submission.answers,
+    userId: submission.userId,
+    submitted: true,
+  })
+  if (reportError.error) return reportError.error
+
+  const { error: detailError } = await upsertWorkOrderDetail(
+    submission.detailTable as DetailTable,
+    submission.workOrderId,
+    submission.detail,
+  )
+  if (detailError) return detailError
+
+  if (submission.consumption && submission.consumption.drafts.length > 0) {
+    const result = await registerMaterialConsumption({
+      workOrderId: submission.workOrderId,
+      vehicleId: submission.consumption.vehicleId,
+      reportedBy: submission.userId,
+      drafts: submission.consumption.drafts,
+    })
+    // A stock correction needs the technician to decide; it cannot be resolved
+    // by a background flush. The submission stays queued, flagged, and the
+    // Rückmeldung screen shows why when they open the order again.
+    if (result.correctionRequired.length > 0) {
+      return 'stock_correction_required'
+    }
+    if (result.error) return result.error
+  }
+
+  if (submission.needsPendingStep) {
+    const { error } = await transitionWorkOrderStatus(
+      submission.workOrderId,
+      'rueckmeldung_pending',
+      submission.userId,
+      undefined,
+      submission.userRole,
+    )
+    // Another device may have moved it already; only a real refusal stops us.
+    if (error && !/statusübergang|transition/i.test(error)) return error
+  }
+
+  const { error } = await transitionWorkOrderStatus(
+    submission.workOrderId,
+    'rueckmeldung_sent',
+    submission.userId,
+    submission.notes,
+    submission.userRole,
+  )
+  if (error) return error
+
+  if (submission.notification) {
+    // Best effort, exactly as online: a Telegram outage must not requeue a
+    // Rückmeldung the server has already accepted.
+    await notifyReportSubmitted(submission.notification).catch(() => undefined)
+  }
+
+  return null
+}
+
+/**
+ * Runs one full drain. Safe to call when there is nothing queued (it costs two
+ * IndexedDB reads) and safe to call twice — the second run finds the first
+ * one's work already removed.
+ */
+export async function syncOfflineQueue(): Promise<SyncResult> {
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    return EMPTY_RESULT
+  }
+
+  const [photos, submissions] = await Promise.all([pendingPhotos(), pendingSubmissions()])
+  if (photos.length === 0 && submissions.length === 0) return EMPTY_RESULT
+
+  const result: SyncResult = { ...EMPTY_RESULT }
+
+  const photosByOrder = new Map<string, QueuedPhoto[]>()
+  for (const photo of photos) {
+    const bucket = photosByOrder.get(photo.workOrderId)
+    if (bucket) bucket.push(photo)
+    else photosByOrder.set(photo.workOrderId, [photo])
+  }
+
+  const submissionByOrder = new Map(submissions.map((entry) => [entry.workOrderId, entry]))
+  // Orders with a submission first: those are the ones an admin is waiting on.
+  const orderIds = [...new Set([...submissionByOrder.keys(), ...photosByOrder.keys()])]
+
+  for (const workOrderId of orderIds) {
+    const submission = submissionByOrder.get(workOrderId) ?? null
+    const queued = photosByOrder.get(workOrderId) ?? []
+    // A photo taken offline on an order that was never sent still belongs to
+    // someone: the uploader of its submission, or whoever queued the photo.
+    const userId = submission?.userId ?? null
+
+    if (queued.length > 0 && userId) {
+      const photoResult = await uploadOrderPhotos(workOrderId, userId, queued)
+      result.photosUploaded += photoResult.uploaded
+      result.photosFailed += photoResult.failed
+      result.error ??= photoResult.error
+
+      // The gate would reject the Rückmeldung: leave it queued and try again.
+      if (photoResult.failed > 0) {
+        if (submission) {
+          result.submissionsFailed += 1
+          await markSubmissionFailed(submission, photoResult.error ?? 'photo_upload_failed')
+        }
+        continue
+      }
+    }
+
+    if (!submission) continue
+
+    const error = await sendSubmission(submission)
+    if (error) {
+      result.submissionsFailed += 1
+      result.error ??= error
+      await markSubmissionFailed(submission, error)
+      continue
+    }
+
+    await removeSubmission(workOrderId)
+    result.submissionsSent += 1
+  }
+
+  return result
+}
+
+/**
+ * Photos of orders whose submission is not queued (the technician shot them and
+ * left the screen without sending) have no user id to upload under. They are
+ * picked up by the Rückmeldung screen itself, which knows who is logged in.
+ */
+export async function syncOrderPhotos(workOrderId: string, userId: string): Promise<SyncResult> {
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return EMPTY_RESULT
+
+  const queued = await pendingPhotos(workOrderId)
+  if (queued.length === 0) return EMPTY_RESULT
+
+  const { uploaded, failed, error } = await uploadOrderPhotos(workOrderId, userId, queued)
+  return { ...EMPTY_RESULT, photosUploaded: uploaded, photosFailed: failed, error }
+}

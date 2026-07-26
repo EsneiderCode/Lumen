@@ -489,7 +489,18 @@
     "change": "Cambiar idioma"
   },
   "offline": {
-    "banner": "Sin conexión — los cambios se guardan en el dispositivo"
+    "banner": "Sin conexión — los cambios se guardan en el dispositivo",
+    "bannerQueued": "Sin conexión — {{count}} elemento(s) pendiente(s) de subir",
+    "pending": "{{count}} elemento(s) pendiente(s) de subir",
+    "syncing": "Sincronizando {{count}} elemento(s)…",
+    "syncNow": "Enviar ahora",
+    "savedLocally": "Guardado en el dispositivo — se enviará al recuperar conexión",
+    "sendQueued": "Rückmeldung guardada — se enviará automáticamente al recuperar conexión",
+    "sendQueuedFailed": "No se pudo guardar la Rückmeldung en el dispositivo",
+    "photoQueueFailed": "No se pudo guardar la foto en el dispositivo",
+    "cachedView": "Vista sin conexión — datos de {{time}}",
+    "stockCorrectionQueued": "El consumo de material necesita una corrección de stock — vuelve a enviar",
+    "pendingBlocked": "{{count}} elemento(s) bloqueado(s): {{error}}"
   },
   "authPin": {
     "tabPin": "PIN",
@@ -1598,7 +1609,8 @@
       "uploading": "Subiendo…",
       "retry": "Reintentar",
       "delete": "Borrar foto",
-      "example": "Ejemplo"
+      "example": "Ejemplo",
+      "queued": "En cola"
     },
     "repeater": {
       "add": "Añadir",

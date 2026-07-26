@@ -49,6 +49,11 @@ export interface PendingPhoto {
   nodeId: string
   previewUrl: string
   failed: boolean
+  /**
+   * Stored in IndexedDB waiting for a network. Not a failure and not in flight:
+   * the technician did their part and can walk away.
+   */
+  queued?: boolean
 }
 
 export interface CapturePlanFormProps {
@@ -404,8 +409,10 @@ function PhotoSlotRow({
                     {t('capture.slot.retry')}
                   </button>
                 ) : (
-                  <span className="font-mono text-[10px] text-fg-2">
-                    {t('capture.slot.uploading')}
+                  <span
+                    className={`font-mono text-[10px] ${item.queued ? 'text-warn' : 'text-fg-2'}`}
+                  >
+                    {t(item.queued ? 'capture.slot.queued' : 'capture.slot.uploading')}
                   </span>
                 )}
               </div>

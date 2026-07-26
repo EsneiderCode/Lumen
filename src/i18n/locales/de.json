@@ -489,7 +489,18 @@
     "change": "Sprache ändern"
   },
   "offline": {
-    "banner": "Keine Verbindung — Änderungen werden lokal gespeichert"
+    "banner": "Keine Verbindung — Änderungen werden lokal gespeichert",
+    "bannerQueued": "Keine Verbindung — {{count}} Element(e) warten auf Upload",
+    "pending": "{{count}} Element(e) warten auf Upload",
+    "syncing": "Synchronisiere {{count}} Element(e)…",
+    "syncNow": "Jetzt senden",
+    "savedLocally": "Lokal gespeichert — wird bei Verbindung gesendet",
+    "sendQueued": "Rückmeldung gespeichert — wird bei Verbindung automatisch gesendet",
+    "sendQueuedFailed": "Rückmeldung konnte nicht lokal gespeichert werden",
+    "photoQueueFailed": "Foto konnte nicht lokal gespeichert werden",
+    "cachedView": "Offline-Ansicht — Stand {{time}}",
+    "stockCorrectionQueued": "Materialbuchung braucht eine Bestandskorrektur — bitte erneut senden",
+    "pendingBlocked": "{{count}} Element(e) blockiert: {{error}}"
   },
   "authPin": {
     "tabPin": "PIN",
@@ -1598,7 +1609,8 @@
       "uploading": "Lädt…",
       "retry": "Erneut",
       "delete": "Foto löschen",
-      "example": "Beispiel"
+      "example": "Beispiel",
+      "queued": "Wartet"
     },
     "repeater": {
       "add": "Hinzufügen",

@@ -68,7 +68,39 @@ describe('i18n locale key parity — de.json and es.json', () => {
 
     expect(deCapture).toEqual(esCapture)
     expect(deCapture).toContain('slot.missing')
+    expect(deCapture).toContain('slot.queued')
     expect(deCapture).toContain('missing.summary')
+  })
+
+  // The offline strings are the only feedback a technician gets when nothing
+  // else on the screen can talk to the server — a raw key there reads as a bug
+  // in the exact moment the app is asking to be trusted with their work.
+  it('has every offline string in both locales', () => {
+    const deOffline = (de as Record<string, unknown>).offline as Record<string, string>
+    const esOffline = (es as Record<string, unknown>).offline as Record<string, string>
+
+    expect(Object.keys(deOffline).sort()).toEqual(Object.keys(esOffline).sort())
+    for (const key of [
+      'banner',
+      'bannerQueued',
+      'pending',
+      'syncing',
+      'syncNow',
+      'savedLocally',
+      'sendQueued',
+      'sendQueuedFailed',
+      'photoQueueFailed',
+      'cachedView',
+      'pendingBlocked',
+    ]) {
+      expect(deOffline[key]?.length, `de.offline.${key}`).toBeGreaterThan(0)
+      expect(esOffline[key]?.length, `es.offline.${key}`).toBeGreaterThan(0)
+    }
+    // Counted strings interpolate; a hardcoded number would lie.
+    for (const key of ['bannerQueued', 'pending', 'syncing']) {
+      expect(deOffline[key]).toContain('{{count}}')
+      expect(esOffline[key]).toContain('{{count}}')
+    }
   })
 
   // A capture plan is data: every label it shows comes from a key in these two

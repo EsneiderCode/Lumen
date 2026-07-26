@@ -26,10 +26,7 @@ function TimePickerField({ label, value, onChange }: {
   )
 }
 import {
-  fetchWorkOrder,
-  fetchWorkOrderDetail,
   fetchWorkOrderPhotos,
-  fetchStateHistory,
   upsertWorkOrderDetail,
   deleteWorkOrderPhoto,
   transitionWorkOrderStatus,
@@ -39,28 +36,31 @@ import {
   type ReportedServiceItemDraft,
   type WorkOrderWithRelations,
 } from '@/services/workOrderService'
-import { fetchServiceItems } from '@/services/serviceItemService'
 import {
-  fetchVehicles,
   fetchVehicleStock,
   registerMaterialConsumption,
 } from '@/services/materialInventoryService'
-import { notifyReportSubmitted } from '@/services/notificationService'
+import { notifyReportSubmitted, type ReportSubmittedNotification } from '@/services/notificationService'
 import {
   fetchCaptureExampleUrls,
-  fetchCapturePlanForOrder,
-  fetchCaptureReport,
   saveCaptureReport,
   uploadCapturePhoto,
   type CapturePhotoRow,
 } from '@/services/capturePlanService'
+import { loadRueckmeldung } from '@/services/rueckmeldungLoader'
+import { cacheAnswers } from '@/services/offlineCache'
+import {
+  enqueuePhoto,
+  enqueueSubmission,
+  pendingPhotos as readQueuedPhotos,
+  queuedPhotoBlob,
+} from '@/services/offlineQueue'
+import { refreshPendingCounts } from '@/services/offlineSyncState'
+import { useOfflineSync } from '@/hooks/useOfflineSync'
+import { scalePhotoForUpload } from '@/lib/photoScaling'
 import { getCurrentPoint } from '@/lib/geolocation'
 import { captureExamplePaths, evaluateCapturePlan, slotNodeId } from '@/services/capturePlanEngine'
-import {
-  answersFromLegacyDetail,
-  legacyDetailFromAnswers,
-  mergeAnswers,
-} from '@/services/capturePlanLegacy'
+import { legacyDetailFromAnswers } from '@/services/capturePlanLegacy'
 import { CapturePlanForm, type PendingPhoto, type SlotTarget } from '@/components/capture/CapturePlanForm'
 import type { ServiceItemWithRelations } from '@/types/service-items'
 import type { ConsumptionCorrectionRequired, ConsumptionDraft, InventoryVehicle, VehicleStockRow } from '@/types/material-inventory'
@@ -82,6 +82,8 @@ type PendingUpload = PendingPhoto & {
   target: SlotTarget
   /** Kept so a retry re-sends the fix taken at the shutter, not a later one. */
   location?: CaptureGeoPoint | null
+  /** Row id in the offline photo queue, for the tiles rebuilt from IndexedDB. */
+  queueId?: number
 }
 
 function newItemId(): string {
@@ -119,6 +121,13 @@ export function RueckmeldungPage() {
   const [error, setError] = useState<string | null>(null)
   const [savedOk, setSavedOk] = useState(false)
   const [returnedNote, setReturnedNote] = useState<string | null>(null)
+  /** `cachedAt` of the snapshot on screen when it came from the device, else null. */
+  const [offlineSince, setOfflineSince] = useState<string | null>(null)
+  const [queuedNotice, setQueuedNotice] = useState<string | null>(null)
+
+  // A drain finished elsewhere in the app (the banner drives it): the queued
+  // tiles this screen shows may now be real photos.
+  const { lastSyncAt } = useOfflineSync()
 
   // Alta multi-item service report. Technicians record executed items without
   // price data; admin certification materializes protected billing lines.
@@ -148,84 +157,128 @@ export function RueckmeldungPage() {
 
   useEffect(() => {
     if (!id) return
-    Promise.all([
-      fetchWorkOrder(id),
-      fetchWorkOrderPhotos(id),
-      fetchStateHistory(id),
-    ]).then(async ([{ data: orderData, error: orderErr }, { data: photoData }, { data: histData }]) => {
-      if (orderErr || !orderData) {
-        // The empty-state below falls back to a translated "not found".
-        setError(orderErr)
-        setIsLoading(false)
-        return
-      }
-      setOrder(orderData)
-      const loadedPhotos = (photoData ?? []) as CapturePhotoRow[]
-      setPhotos(loadedPhotos)
-      getPhotoSignedUrls(loadedPhotos.map((p) => p.storage_path)).then(setPhotoUrls)
+    let cancelled = false
 
-      const histEntries = (histData ?? []) as Array<{ to_status: string; notes: string | null }>
-      const returnEntry = [...histEntries].reverse().find((e) => e.to_status === 'returned')
-      if (returnEntry?.notes) setReturnedNote(returnEntry.notes)
+    void loadRueckmeldung(id, (user?.team ?? null) as TeamColor | null).then(
+      ({ data, error: loadError, fromCache, cachedAt }) => {
+        if (cancelled) return
+        if (!data) {
+          // The empty-state below falls back to a translated "not found".
+          setError(loadError)
+          setIsLoading(false)
+          return
+        }
 
-      // Load existing detail
-      const table = workTypeToDetailTable(orderData.work_type)
-      const { data: detailData } = await fetchWorkOrderDetail(table, id)
-      if (detailData) {
-        const { id: _i, work_order_id: _w, created_at: _c, ...rest } = detailData as Record<string, unknown>
-        void _i; void _w; void _c
-        setDetail(rest)
-      }
-
-      // The capture plan drives the whole form. The answers start from whatever
-      // the legacy detail row already holds — an order captured before the plans
-      // must not open blank — and the stored answers win over it.
-      const loadedPlan = await fetchCapturePlanForOrder(orderData)
-      setPlan(loadedPlan)
-      if (loadedPlan) {
-        // What each slot has to look like. Non-critical: a slot whose example is
-        // not uploaded yet simply shows no thumbnail.
-        fetchCaptureExampleUrls(captureExamplePaths(loadedPlan)).then(setExampleUrls)
-        const { data: report } = await fetchCaptureReport(id)
-        setAnswers(
-          mergeAnswers(
-            answersFromLegacyDetail(loadedPlan, detailData as Record<string, unknown> | null),
-            report?.answers ?? {},
-          ),
-        )
-      }
-
-      // For Alta orders, load field-reported service items + the service-item
-      // catalog. Price columns are deliberately omitted from this field screen.
-      if (orderData.work_type === 'alta') {
-        const { data: items } = await fetchServiceItems({ includeInactive: false })
-        const drafts = normalizeReportedServiceItems((detailData as Record<string, unknown> | null)?.reported_service_items)
-          .map((item, index) => ({
+        setOrder(data.order)
+        setPhotos(data.photos)
+        setDetail(data.detail)
+        setPlan(data.plan)
+        setAnswers(data.answers)
+        setReturnedNote(data.returnedNote)
+        setCatalog(data.catalog)
+        setVehicles(data.vehicles)
+        setReportedDrafts(
+          data.reportedDrafts.map((item, index) => ({
             _key: `reported-${index}-${item.service_item_id}`,
             ...item,
-          }))
-        setReportedDrafts(drafts)
-        // Filter catalog by order's client and operator so the picker only shows
-        // applicable rates (catalog rows with NULL client/operator stay visible
-        // as "global" entries).
-        const filtered = items.filter((it) => {
-          const okClient = it.client_id == null || it.client_id === orderData.client_id
-          const okOp = it.operator_id == null || it.operator_id === orderData.operator_id
-          return okClient && okOp
-        })
-        setCatalog(filtered)
-      }
+          })),
+        )
+        if (data.vehicles.length === 1) setSelectedVehicleId(data.vehicles[0].id)
+        setOfflineSince(fromCache ? cachedAt : null)
+        setIsLoading(false)
 
-      const team = (orderData.assigned_team ?? user?.team ?? null) as TeamColor | null
-      if (team) {
-        const { data: teamVehicles } = await fetchVehicles({ team, includeInactive: false })
-        setVehicles(teamVehicles)
-        if (teamVehicles.length === 1) setSelectedVehicleId(teamVehicles[0].id)
-      }
+        // Both need a network and neither is essential: a signed URL that never
+        // arrives shows the slot as filled without its thumbnail.
+        if (!fromCache) {
+          getPhotoSignedUrls(data.photos.map((photo) => photo.storage_path)).then(setPhotoUrls)
+          if (data.plan) {
+            fetchCaptureExampleUrls(captureExamplePaths(data.plan)).then(setExampleUrls)
+          }
+        }
+      },
+    )
 
-      setIsLoading(false)
-    })
+    return () => {
+      cancelled = true
+    }
   }, [id, user?.team])
+
+  /**
+   * Photos taken without coverage. They are rebuilt as pending tiles so they
+   * count towards the plan (the evaluation above treats a tile as a photo) and
+   * survive closing the app — which is the whole point of queueing them.
+   */
+  useEffect(() => {
+    if (!id) return
+    let cancelled = false
+    const urls: string[] = []
+
+    void readQueuedPhotos(id).then((queued) => {
+      if (cancelled) return
+      setPendingPhotos((previous) => {
+        const alreadyShown = new Set(
+          previous.filter((item) => item.queueId !== undefined).map((item) => item.queueId),
+        )
+        const restored = queued
+          .filter((photo) => photo.id !== undefined && !alreadyShown.has(photo.id))
+          .map((photo) => {
+            const blob = queuedPhotoBlob(photo)
+            const previewUrl = URL.createObjectURL(blob)
+            urls.push(previewUrl)
+            return {
+              id: `queued-${photo.id}`,
+              queueId: photo.id,
+              nodeId: slotNodeId(photo.sectionKey, photo.slotKey, photo.itemId),
+              previewUrl,
+              failed: false,
+              queued: true,
+              file: new File([blob], photo.fileName, { type: photo.contentType }),
+              location: photo.location,
+              target: {
+                sectionKey: photo.sectionKey,
+                slotKey: photo.slotKey,
+                itemId: photo.itemId,
+                legacyType: photo.legacyType,
+              },
+            } satisfies PendingUpload
+          })
+        return restored.length > 0 ? [...previous, ...restored] : previous
+      })
+    })
+
+    return () => {
+      cancelled = true
+      for (const url of urls) URL.revokeObjectURL(url)
+    }
+    // Re-runs after a drain: the tiles it uploaded are gone from the queue.
+  }, [id, lastSyncAt])
+
+  /** A drain that uploaded something replaces the queued tiles with real rows. */
+  useEffect(() => {
+    if (!id || !lastSyncAt) return
+    let cancelled = false
+
+    void fetchWorkOrderPhotos(id).then(({ data }) => {
+      if (cancelled || !data) return
+      const rows = data as CapturePhotoRow[]
+      setPhotos(rows)
+      getPhotoSignedUrls(rows.map((photo) => photo.storage_path)).then((urls) =>
+        setPhotoUrls((previous) => ({ ...previous, ...urls })),
+      )
+    })
+
+    void readQueuedPhotos(id).then((queued) => {
+      if (cancelled) return
+      const stillQueued = new Set(queued.map((photo) => photo.id))
+      setPendingPhotos((previous) =>
+        previous.filter((item) => item.queueId === undefined || stillQueued.has(item.queueId)),
+      )
+    })
+
+    return () => {
+      cancelled = true
+    }
+  }, [id, lastSyncAt])
 
   useEffect(() => {
     if (!selectedVehicleId) {
@@ -350,8 +403,52 @@ export function RueckmeldungPage() {
    * leaves the tile in place with a retry — the technician never loses the shot
    * because the network did.
    */
+  /**
+   * Stores the shot on the device instead of uploading it. The tile stays where
+   * it is, marked as waiting: the technician has done their part and can put the
+   * phone away — the queue uploads it when there is a network again.
+   */
+  async function queuePhoto(item: PendingUpload, location: CaptureGeoPoint | null) {
+    if (!id) return
+    const { file: scaled } = await scalePhotoForUpload(item.file)
+    const queueId = await enqueuePhoto({
+      workOrderId: id,
+      sectionKey: item.target.sectionKey,
+      slotKey: item.target.slotKey,
+      itemId: item.target.itemId,
+      legacyType: item.target.legacyType,
+      fileName: scaled.name,
+      contentType: scaled.type || 'image/jpeg',
+      file: scaled,
+      takenAt: new Date().toISOString(),
+      location,
+    })
+
+    if (queueId === null) {
+      setError(t('offline.photoQueueFailed'))
+      setPendingPhotos((previous) =>
+        previous.map((candidate) =>
+          candidate.id === item.id ? { ...candidate, failed: true } : candidate,
+        ),
+      )
+      return
+    }
+
+    setPendingPhotos((previous) =>
+      previous.map((candidate) =>
+        candidate.id === item.id ? { ...candidate, queued: true, queueId, location } : candidate,
+      ),
+    )
+    void refreshPendingCounts()
+  }
+
   async function uploadPending(item: PendingUpload, location: CaptureGeoPoint | null = null) {
     if (!id || !user) return
+    if (!navigator.onLine) {
+      await queuePhoto(item, location)
+      return
+    }
+
     const { data, error } = await uploadCapturePhoto({
       workOrderId: id,
       file: item.file,
@@ -364,6 +461,12 @@ export function RueckmeldungPage() {
     })
 
     if (error || !data) {
+      // The connection dropped between the shutter and the upload: queue it
+      // rather than making the technician watch a retry button.
+      if (!navigator.onLine) {
+        await queuePhoto(item, location)
+        return
+      }
       setError(t('rueckmeldung.photos.uploadFailed', { error: error ?? '' }))
       setPendingPhotos((previous) =>
         previous.map((candidate) =>
@@ -509,6 +612,16 @@ export function RueckmeldungPage() {
     setIsSaving(true)
     setError(null)
     setSavedOk(false)
+    setQueuedNotice(null)
+
+    // No network: the draft lives on the device. Nothing is queued for upload —
+    // a draft is not a submission, and re-saving it later replaces it.
+    if (!navigator.onLine) {
+      await cacheAnswers(id, answers, detailWithReportedItems())
+      setQueuedNotice(t('offline.savedLocally'))
+      setIsSaving(false)
+      return
+    }
 
     const table = workTypeToDetailTable(order.work_type)
     const { error } = await upsertWorkOrderDetail(table, id, detailWithReportedItems())
@@ -525,9 +638,40 @@ export function RueckmeldungPage() {
       return
     }
 
+    // Keep the offline copy current, so reopening without coverage shows what
+    // was just saved rather than what was loaded.
+    await cacheAnswers(id, answers, detailWithReportedItems())
+
     setSavedOk(true)
     setTimeout(() => setSavedOk(false), 3000)
     setIsSaving(false)
+  }
+
+  /** The note the transition carries. Identical whether it is sent now or queued. */
+  function buildNotes(consumptionLines: number): string {
+    const noteParts: string[] = []
+    if (techNotes.trim()) noteParts.push(techNotes.trim())
+    if (startTime) noteParts.push(`${t('rueckmeldung.startTime')}: ${startTime}`)
+    if (endTime) noteParts.push(`${t('rueckmeldung.endTime')}: ${endTime}`)
+    if (consumptionLines > 0) {
+      noteParts.push(t('rueckmeldung.materialConsumption.notes.summary', { count: consumptionLines }))
+    }
+    return noteParts.length > 0 ? noteParts.join(' | ') : t('rueckmeldung.submitted')
+  }
+
+  function buildNotification(notes: string): ReportSubmittedNotification | null {
+    if (!order || !user || !id) return null
+    return {
+      orderNumber: order.order_number,
+      techName: user.fullName || user.email || '',
+      workType: L.workType(order.work_type),
+      address: order.address ?? '',
+      city: order.city ?? '',
+      summary: notes,
+      techNotes: techNotes.trim() || undefined,
+      orderUrl: `${window.location.origin}/admin/orders/${id}`,
+      orderId: id,
+    }
   }
 
   async function handleSend() {
@@ -542,9 +686,64 @@ export function RueckmeldungPage() {
 
     setIsSending(true)
     setError(null)
+    setQueuedNotice(null)
+
+    const table = workTypeToDetailTable(order.work_type)
+    const validConsumption = consumptionDrafts.filter((d) => d.material_id && d.quantity > 0)
+    if (validConsumption.length > 0 && !selectedVehicleId) {
+      setError(t('rueckmeldung.materialConsumption.errors.vehicleRequired'))
+      setIsSending(false)
+      return
+    }
+    const consumptionDraftValues = validConsumption.map(({ _key: _k, ...rest }) => {
+      void _k
+      return rest
+    })
+    const notes = buildNotes(validConsumption.length)
+
+    // No network: the whole submission goes to the device and is replayed in
+    // order — photos, then answers, then the transition — when there is one.
+    // The plan is what pins the answers to a version, so without it there is
+    // nothing coherent to queue.
+    if (!navigator.onLine) {
+      if (!plan) {
+        setError(t('capture.planMissing', { key: order.capture_plan_key ?? order.work_type }))
+        setIsSending(false)
+        return
+      }
+
+      const queued = await enqueueSubmission({
+        workOrderId: id,
+        planKey: plan.key,
+        planVersion: plan.version,
+        answers,
+        detailTable: table,
+        detail: detailWithReportedItems(),
+        notes,
+        needsPendingStep: order.status === 'executed' || order.status === 'returned',
+        consumption:
+          consumptionDraftValues.length > 0
+            ? { vehicleId: selectedVehicleId, drafts: consumptionDraftValues }
+            : null,
+        notification: buildNotification(notes),
+        userId: user.id,
+        userRole: user.role,
+      })
+
+      if (!queued) {
+        setError(t('offline.sendQueuedFailed'))
+        setIsSending(false)
+        return
+      }
+
+      await cacheAnswers(id, answers, detailWithReportedItems())
+      void refreshPendingCounts()
+      setIsSending(false)
+      navigate(`/tech/orders/${id}`)
+      return
+    }
 
     // First save detail
-    const table = workTypeToDetailTable(order.work_type)
     const { error: detailError } = await upsertWorkOrderDetail(table, id, detailWithReportedItems())
     if (detailError) {
       setError(detailError)
@@ -559,19 +758,12 @@ export function RueckmeldungPage() {
       return
     }
 
-
-    const validConsumption = consumptionDrafts.filter((d) => d.material_id && d.quantity > 0)
-    if (validConsumption.length > 0) {
-      if (!selectedVehicleId) {
-        setError(t('rueckmeldung.materialConsumption.errors.vehicleRequired'))
-        setIsSending(false)
-        return
-      }
+    if (consumptionDraftValues.length > 0) {
       const result = await registerMaterialConsumption({
         workOrderId: id,
         vehicleId: selectedVehicleId,
         reportedBy: user.id,
-        drafts: validConsumption.map(({ _key: _k, ...rest }) => { void _k; return rest }),
+        drafts: consumptionDraftValues,
       })
       if (result.correctionRequired.length > 0) {
         setStockCorrections(result.correctionRequired)
@@ -585,16 +777,6 @@ export function RueckmeldungPage() {
         return
       }
     }
-
-    // Build notes string with tech input
-    const noteParts: string[] = []
-    if (techNotes.trim()) noteParts.push(techNotes.trim())
-    if (startTime) noteParts.push(`${t('rueckmeldung.startTime')}: ${startTime}`)
-    if (endTime) noteParts.push(`${t('rueckmeldung.endTime')}: ${endTime}`)
-    if (validConsumption.length > 0) {
-      noteParts.push(t('rueckmeldung.materialConsumption.notes.summary', { count: validConsumption.length }))
-    }
-    const notes = noteParts.length > 0 ? noteParts.join(' | ') : t('rueckmeldung.submitted')
 
     // If the order is in 'executed' or 'returned', first move to 'rueckmeldung_pending'
     // before transitioning to 'rueckmeldung_sent' (state machine requires the intermediate step)
@@ -614,18 +796,8 @@ export function RueckmeldungPage() {
       setError(error)
       setIsSending(false)
     } else {
-      const techFullName = user.fullName || user.email || ''
-      notifyReportSubmitted({
-        orderNumber: order.order_number,
-        techName: techFullName,
-        workType: L.workType(order.work_type),
-        address: order.address ?? '',
-        city: order.city ?? '',
-        summary: notes,
-        techNotes: techNotes.trim() || undefined,
-        orderUrl: `${window.location.origin}/admin/orders/${id}`,
-        orderId: id,
-      })
+      const notification = buildNotification(notes)
+      if (notification) notifyReportSubmitted(notification)
       navigate(`/tech/orders/${id}`)
     }
   }
@@ -662,6 +834,13 @@ export function RueckmeldungPage() {
           <p className="text-xs text-fg-2 font-mono">{order.order_number} · {L.workType(order.work_type)}</p>
         </div>
       </div>
+
+      {/* Loaded from the device: the form works, but it is as old as it says. */}
+      {offlineSince && (
+        <div className="rounded-s border border-warn/30 bg-warn/10 px-4 py-2 text-xs text-warn">
+          {t('offline.cachedView', { time: new Date(offlineSince).toLocaleString() })}
+        </div>
+      )}
 
       {/* Non-conformity banner */}
       {order.status === 'returned' && returnedNote && (
@@ -978,6 +1157,11 @@ export function RueckmeldungPage() {
       {savedOk && (
         <div className="rounded-s border border-ok/30 bg-ok/10 px-4 py-3 text-sm text-ok">
           {t('rueckmeldung.saved')}
+        </div>
+      )}
+      {queuedNotice && (
+        <div className="rounded-s border border-warn/30 bg-warn/10 px-4 py-3 text-sm text-warn">
+          {queuedNotice}
         </div>
       )}
 

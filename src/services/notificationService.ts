@@ -126,7 +126,8 @@ export async function notifyOrderCancelled(
  * Notifies the order's groups that a technician has submitted a Rückmeldung.
  * Triggered after a successful report submission (rueckmeldung_sent).
  */
-export async function notifyReportSubmitted(opts: {
+/** Named so the offline queue can store a submission's pending card verbatim. */
+export interface ReportSubmittedNotification {
   orderNumber: string
   techName?: string
   workType?: string
@@ -136,7 +137,9 @@ export async function notifyReportSubmitted(opts: {
   techNotes?: string
   orderUrl: string
   orderId?: string
-}): Promise<void> {
+}
+
+export async function notifyReportSubmitted(opts: ReportSubmittedNotification): Promise<void> {
   await sendTelegram({
     type: 'report_submitted',
     orderNumber: opts.orderNumber,

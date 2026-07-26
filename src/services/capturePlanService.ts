@@ -161,7 +161,8 @@ export async function fetchCaptureReport(
  */
 export async function saveCaptureReport(params: {
   workOrderId: string
-  plan: CapturePlan
+  /** Only the identity is stored; the offline queue replays it without the sections. */
+  plan: Pick<CapturePlan, 'key' | 'version'>
   answers: CaptureAnswers
   userId: string
   submitted?: boolean
@@ -212,6 +213,12 @@ export interface UploadCapturePhotoParams {
   itemId?: string | null
   location?: CaptureGeoPoint | null
   takenAt?: string
+  /**
+   * Skips the client-side rescale. Set by the offline queue, whose blobs were
+   * already scaled before being stored — re-encoding them would only lose
+   * quality and time.
+   */
+  skipScaling?: boolean
 }
 
 /**
@@ -222,10 +229,20 @@ export interface UploadCapturePhotoParams {
 export async function uploadCapturePhoto(
   params: UploadCapturePhotoParams,
 ): Promise<{ data: CapturePhotoRow | null; error: string | null }> {
-  const { workOrderId, file, userId, sectionKey, slotKey, legacyType, itemId, location, takenAt } =
-    params
+  const {
+    workOrderId,
+    file,
+    userId,
+    sectionKey,
+    slotKey,
+    legacyType,
+    itemId,
+    location,
+    takenAt,
+    skipScaling,
+  } = params
 
-  const { file: upload } = await scalePhotoForUpload(file)
+  const upload = skipScaling ? file : (await scalePhotoForUpload(file)).file
   const ext = upload.name.split('.').pop() ?? 'jpg'
   const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
   const storagePath = `${workOrderId}/${sectionKey}/${slotKey}/${filename}`

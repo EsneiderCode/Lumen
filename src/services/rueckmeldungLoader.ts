@@ -1,0 +1,172 @@
+/**
+ * Everything the Rückmeldung screen needs to open, in one call — from the
+ * network when there is one, from the device when there is not.
+ *
+ * Six round trips used to live inside the page's mount effect (order, photos,
+ * history, legacy detail row, capture plan, capture report, plus the catalogs
+ * the work type pulls in). Under the 4G a fiber crew actually works with, they
+ * fail together, and the technician was left with an empty screen holding a
+ * phone over a trench. Here they succeed together and get cached as one
+ * snapshot, or the last good snapshot is handed back instead.
+ */
+
+import {
+  fetchStateHistory,
+  fetchWorkOrder,
+  fetchWorkOrderDetail,
+  fetchWorkOrderPhotos,
+  normalizeReportedServiceItems,
+  workTypeToDetailTable,
+  type ReportedServiceItemDraft,
+  type WorkOrderWithRelations,
+} from '@/services/workOrderService'
+import { fetchServiceItems } from '@/services/serviceItemService'
+import { fetchVehicles } from '@/services/materialInventoryService'
+import {
+  fetchCapturePlanForOrder,
+  fetchCaptureReport,
+  type CapturePhotoRow,
+} from '@/services/capturePlanService'
+import { answersFromLegacyDetail, mergeAnswers } from '@/services/capturePlanLegacy'
+import { cacheOrderSnapshot, readOrderSnapshot } from '@/services/offlineCache'
+import type { CaptureAnswers, CapturePlan } from '@/types/capture-plan'
+import type { ServiceItemWithRelations } from '@/types/service-items'
+import type { InventoryVehicle } from '@/types/material-inventory'
+import type { TeamColor } from '@/types/enums'
+
+export interface RueckmeldungSnapshot {
+  order: WorkOrderWithRelations
+  plan: CapturePlan | null
+  answers: CaptureAnswers
+  /** Legacy detail columns the plan does not own (alta's reported items). */
+  detail: Record<string, unknown>
+  photos: CapturePhotoRow[]
+  reportedDrafts: ReportedServiceItemDraft[]
+  catalog: ServiceItemWithRelations[]
+  vehicles: InventoryVehicle[]
+  returnedNote: string | null
+}
+
+export interface RueckmeldungLoadResult {
+  data: RueckmeldungSnapshot | null
+  error: string | null
+  /** True when the network failed and this came out of IndexedDB. */
+  fromCache: boolean
+  /** When that snapshot was taken, so the screen can say how old it is. */
+  cachedAt: string | null
+}
+
+/** The catalog rows that apply to this order — global rows stay visible. */
+function applicableCatalog(
+  items: ServiceItemWithRelations[],
+  order: WorkOrderWithRelations,
+): ServiceItemWithRelations[] {
+  return items.filter((item) => {
+    const okClient = item.client_id == null || item.client_id === order.client_id
+    const okOperator = item.operator_id == null || item.operator_id === order.operator_id
+    return okClient && okOperator
+  })
+}
+
+async function loadFromNetwork(
+  workOrderId: string,
+  fallbackTeam: TeamColor | null,
+): Promise<RueckmeldungLoadResult> {
+  const [{ data: order, error: orderError }, { data: photoRows }, { data: history }] =
+    await Promise.all([
+      fetchWorkOrder(workOrderId),
+      fetchWorkOrderPhotos(workOrderId),
+      fetchStateHistory(workOrderId),
+    ])
+
+  if (orderError || !order) {
+    return { data: null, error: orderError ?? 'not_found', fromCache: false, cachedAt: null }
+  }
+
+  const detailTable = workTypeToDetailTable(order.work_type)
+  const { data: detailRow } = await fetchWorkOrderDetail(detailTable, workOrderId)
+  const detailRecord = (detailRow ?? null) as Record<string, unknown> | null
+
+  const detail: Record<string, unknown> = {}
+  if (detailRecord) {
+    for (const [key, value] of Object.entries(detailRecord)) {
+      if (key === 'id' || key === 'work_order_id' || key === 'created_at') continue
+      detail[key] = value
+    }
+  }
+
+  // The plan drives the whole form. The answers start from whatever the legacy
+  // detail row already holds — an order captured before the plans existed must
+  // not open blank — and the stored answers win over it.
+  const plan = await fetchCapturePlanForOrder(order)
+  let answers: CaptureAnswers = {}
+  if (plan) {
+    const { data: report } = await fetchCaptureReport(workOrderId)
+    answers = mergeAnswers(answersFromLegacyDetail(plan, detailRecord), report?.answers ?? {})
+  }
+
+  let catalog: ServiceItemWithRelations[] = []
+  let reportedDrafts: ReportedServiceItemDraft[] = []
+  if (order.work_type === 'alta') {
+    const { data: items } = await fetchServiceItems({ includeInactive: false })
+    catalog = applicableCatalog(items, order)
+    reportedDrafts = normalizeReportedServiceItems(detailRecord?.reported_service_items)
+  }
+
+  let vehicles: InventoryVehicle[] = []
+  const team = (order.assigned_team ?? fallbackTeam ?? null) as TeamColor | null
+  if (team) {
+    const { data: teamVehicles } = await fetchVehicles({ team, includeInactive: false })
+    vehicles = teamVehicles
+  }
+
+  const historyEntries = (history ?? []) as Array<{ to_status: string; notes: string | null }>
+  const returnEntry = [...historyEntries].reverse().find((entry) => entry.to_status === 'returned')
+
+  const snapshot: RueckmeldungSnapshot = {
+    order,
+    plan,
+    answers,
+    detail,
+    photos: (photoRows ?? []) as CapturePhotoRow[],
+    reportedDrafts,
+    catalog,
+    vehicles,
+    returnedNote: returnEntry?.notes ?? null,
+  }
+
+  // Best effort: a device that cannot cache still works with a network.
+  await cacheOrderSnapshot({ workOrderId, ...snapshot })
+
+  return { data: snapshot, error: null, fromCache: false, cachedAt: null }
+}
+
+/**
+ * Loads the screen. Goes to the network first even when the browser claims to
+ * be offline — `navigator.onLine` lies often enough (captive portals, a phone
+ * that just woke up) that a wasted request beats a wrongly stale form.
+ */
+export async function loadRueckmeldung(
+  workOrderId: string,
+  fallbackTeam: TeamColor | null,
+): Promise<RueckmeldungLoadResult> {
+  let networkResult: RueckmeldungLoadResult
+  try {
+    networkResult = await loadFromNetwork(workOrderId, fallbackTeam)
+  } catch (error) {
+    networkResult = {
+      data: null,
+      error: error instanceof Error ? error.message : 'network_error',
+      fromCache: false,
+      cachedAt: null,
+    }
+  }
+  if (networkResult.data) return networkResult
+
+  const cached = await readOrderSnapshot(workOrderId)
+  if (!cached) return networkResult
+
+  const { workOrderId: _id, cachedAt, ...snapshot } = cached
+  void _id
+  return { data: snapshot, error: null, fromCache: true, cachedAt }
+}
