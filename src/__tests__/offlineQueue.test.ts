@@ -27,6 +27,7 @@ const USER = '00000000-0000-0000-0000-000000000002'
 function photo(workOrderId: string, slotKey: string, overrides: Partial<PhotoToQueue> = {}) {
   return {
     workOrderId,
+    userId: USER,
     sectionKey: 'mandatory',
     slotKey,
     itemId: null,

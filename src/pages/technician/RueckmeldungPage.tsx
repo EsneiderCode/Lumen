@@ -410,10 +410,11 @@ export function RueckmeldungPage() {
    * phone away — the queue uploads it when there is a network again.
    */
   async function queuePhoto(item: PendingUpload, location: CaptureGeoPoint | null) {
-    if (!id) return
+    if (!id || !user) return
     const { file: scaled } = await scalePhotoForUpload(item.file)
     const queueId = await enqueuePhoto({
       workOrderId: id,
+      userId: user.id,
       sectionKey: item.target.sectionKey,
       slotKey: item.target.slotKey,
       itemId: item.target.itemId,

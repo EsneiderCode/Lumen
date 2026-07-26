@@ -77,6 +77,7 @@ const USER = '00000000-0000-0000-0000-000000000002'
 function queuePhoto(workOrderId: string, slotKey: string) {
   return enqueuePhoto({
     workOrderId,
+    userId: USER,
     sectionKey: 'mandatory',
     slotKey,
     itemId: null,
@@ -156,6 +157,20 @@ describe('draining the offline queue', () => {
 
     expect(await pendingPhotos()).toHaveLength(0)
     expect(await pendingSubmissions()).toHaveLength(0)
+  })
+
+  // The technician shot the trench, the network was gone, and they closed the
+  // app without sending. The photos are still evidence of the job.
+  it('uploads photos of an order that was never sent', async () => {
+    await queuePhoto(WO_A, 'fiber_dp')
+
+    const result = await syncOfflineQueue()
+
+    expect(calls).toEqual(['upload:fiber_dp'])
+    expect(result.photosUploaded).toBe(1)
+    expect(await pendingPhotos()).toHaveLength(0)
+    // No submission means no status change: sending is still the tech's call.
+    expect(transitionWorkOrderStatus).not.toHaveBeenCalled()
   })
 
   it('does not send a Rückmeldung whose photos failed to upload', async () => {

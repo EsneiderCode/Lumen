@@ -35,6 +35,12 @@ export interface QueuedPhoto {
   /** Auto-incremented; present on everything read back out. */
   id?: number
   workOrderId: string
+  /**
+   * Who took it. Stored per photo, not taken from the order's submission: a
+   * technician who shoots and walks away without sending has photos to upload
+   * and no submission to borrow an uploader from.
+   */
+  userId: string
   sectionKey: string
   slotKey: string
   itemId: string | null

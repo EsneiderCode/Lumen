@@ -193,9 +193,9 @@ export async function syncOfflineQueue(): Promise<SyncResult> {
   for (const workOrderId of orderIds) {
     const submission = submissionByOrder.get(workOrderId) ?? null
     const queued = photosByOrder.get(workOrderId) ?? []
-    // A photo taken offline on an order that was never sent still belongs to
-    // someone: the uploader of its submission, or whoever queued the photo.
-    const userId = submission?.userId ?? null
+    // Photos go up even with no submission behind them: the technician may have
+    // shot them and left the screen, and they are still evidence of the job.
+    const userId = submission?.userId ?? queued[0]?.userId ?? null
 
     if (queued.length > 0 && userId) {
       const photoResult = await uploadOrderPhotos(workOrderId, userId, queued)
@@ -228,19 +228,4 @@ export async function syncOfflineQueue(): Promise<SyncResult> {
   }
 
   return result
-}
-
-/**
- * Photos of orders whose submission is not queued (the technician shot them and
- * left the screen without sending) have no user id to upload under. They are
- * picked up by the Rückmeldung screen itself, which knows who is logged in.
- */
-export async function syncOrderPhotos(workOrderId: string, userId: string): Promise<SyncResult> {
-  if (typeof navigator !== 'undefined' && navigator.onLine === false) return EMPTY_RESULT
-
-  const queued = await pendingPhotos(workOrderId)
-  if (queued.length === 0) return EMPTY_RESULT
-
-  const { uploaded, failed, error } = await uploadOrderPhotos(workOrderId, userId, queued)
-  return { ...EMPTY_RESULT, photosUploaded: uploaded, photosFailed: failed, error }
 }
