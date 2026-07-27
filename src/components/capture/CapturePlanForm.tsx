@@ -15,7 +15,7 @@
 
 import { Suspense, lazy, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Camera, ChevronDown, ChevronRight, Crosshair, MapPin, Plus, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronRight, ImagePlus, MapPin, Plus, Trash2 } from 'lucide-react'
 import type {
   CaptureAnswers,
   CaptureField,
@@ -30,7 +30,6 @@ import type {
 } from '@/types/capture-plan'
 import type { CapturePhotoRow } from '@/services/capturePlanService'
 import { slotNodeId, fieldNodeId } from '@/services/capturePlanEngine'
-import { getCurrentPoint } from '@/lib/geolocation'
 
 // ~200 KB gzip of map library that a technician who never opens the pin editor
 // must not download.
@@ -112,30 +111,32 @@ function YesNoField({
   )
 }
 
+/**
+ * Where the map opens when nothing is known yet: the first photo of the
+ * Rückmeldung that carried coordinates, else the middle of Germany. Only a
+ * starting view — no value is written until the technician drags the pin.
+ */
+const GERMANY_CENTER: CaptureGeoPoint = { lat: 51.1657, lng: 10.4515, accuracy_m: null }
+
 function GeoPointField({
   value,
   onChange,
+  fallbackCenter,
 }: {
   value: unknown
   onChange: (value: CaptureGeoPoint | null) => void
+  fallbackCenter: CaptureGeoPoint | null
 }) {
   const { t } = useTranslation()
-  const [busy, setBusy] = useState(false)
-  const [failed, setFailed] = useState(false)
   const [mapOpen, setMapOpen] = useState(false)
   const point = value && typeof value === 'object' ? (value as CaptureGeoPoint) : null
+  const center = point ?? fallbackCenter ?? GERMANY_CENTER
 
-  // Manual correction of the fix taken with the first photo: between buildings a
-  // phone GPS drifts 15–20 m, and the technician is the one standing there.
-  async function locate() {
-    setBusy(true)
-    setFailed(false)
-    const fix = await getCurrentPoint()
-    if (fix) onChange(fix)
-    else setFailed(true)
-    setBusy(false)
-  }
-
+  // There is deliberately no "use my current location" button. The Rückmeldung
+  // is filled after the job, so the device's position is the technician's sofa,
+  // not the trench — one tap would stamp a plausible, wrong coordinate. The
+  // position comes from the photo's own EXIF, or from this pin, placed by the
+  // one person who knows where the hole was.
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-3">
@@ -146,35 +147,22 @@ function GeoPointField({
                 lng: point.lng.toFixed(5),
                 accuracy: Math.round(point.accuracy_m ?? 0),
               })
-            : failed
-              ? t('capture.geo.unavailable')
-              : t('capture.geo.empty')}
+            : t('capture.geo.empty')}
         </p>
         <div className="flex shrink-0 items-center gap-2">
-          {/* Correcting the pin only makes sense once there is one to correct. */}
-          {point && (
-            <button
-              type="button"
-              onClick={() => setMapOpen((open) => !open)}
-              aria-expanded={mapOpen}
-              className="inline-flex items-center gap-1.5 rounded-m border border-line px-3 py-2 text-xs font-semibold text-fg-1 transition-colors duration-200 hover:border-accent hover:text-accent"
-            >
-              <MapPin size={14} strokeWidth={1.5} />
-              {mapOpen ? t('capture.geo.close') : t('capture.geo.adjust')}
-            </button>
-          )}
           <button
             type="button"
-            onClick={locate}
+            onClick={() => setMapOpen((open) => !open)}
+            aria-expanded={mapOpen}
             className="inline-flex items-center gap-1.5 rounded-m border border-line px-3 py-2 text-xs font-semibold text-fg-1 transition-colors duration-200 hover:border-accent hover:text-accent"
           >
-            <Crosshair size={14} strokeWidth={1.5} />
-            {busy ? t('capture.geo.locating') : t('capture.geo.locate')}
+            <MapPin size={14} strokeWidth={1.5} />
+            {mapOpen ? t('capture.geo.close') : point ? t('capture.geo.adjust') : t('capture.geo.place')}
           </button>
         </div>
       </div>
 
-      {mapOpen && point && (
+      {mapOpen && (
         <>
           <Suspense
             fallback={
@@ -185,15 +173,17 @@ function GeoPointField({
           >
             <NexusMap
               heightClass="h-56"
-              draggable={{ lat: point.lat, lng: point.lng }}
+              draggable={{ lat: center.lat, lng: center.lng }}
               onDragEnd={(position) =>
                 // A hand-placed pin is exact by definition: the accuracy radius
-                // of the GPS fix it replaces would be a lie.
+                // of the EXIF fix it replaces would be a lie.
                 onChange({ lat: position.lat, lng: position.lng, accuracy_m: null })
               }
             />
           </Suspense>
-          <p className="text-xs text-fg-3">{t('capture.geo.dragHint')}</p>
+          <p className="text-xs text-fg-3">
+            {point ? t('capture.geo.dragHint') : t('capture.geo.placeHint')}
+          </p>
         </>
       )}
     </div>
@@ -208,6 +198,7 @@ function CaptureFieldControl({
   highlighted,
   nodeId,
   onChange,
+  fallbackCenter,
 }: {
   field: CaptureField
   value: unknown
@@ -216,6 +207,8 @@ function CaptureFieldControl({
   highlighted: boolean
   nodeId: string
   onChange: (value: unknown) => void
+  /** Where a still-empty map should open. */
+  fallbackCenter: CaptureGeoPoint | null
 }) {
   const { t } = useTranslation()
   const label = t(field.labelKey, { defaultValue: field.key.replace(/_/g, ' ') })
@@ -250,7 +243,7 @@ function CaptureFieldControl({
               no={t('capture.no')}
             />
           ) : field.type === 'geopoint' ? (
-            <GeoPointField value={value} onChange={onChange} />
+            <GeoPointField value={value} onChange={onChange} fallbackCenter={fallbackCenter} />
           ) : field.type === 'select' ? (
             <select
               value={typeof value === 'string' ? value : ''}
@@ -357,15 +350,17 @@ function PhotoSlotRow({
               htmlFor={inputId}
               className="inline-flex cursor-pointer items-center gap-1.5 rounded-m border border-line px-3 py-2 text-xs font-semibold text-fg-1 transition-colors duration-200 hover:border-accent hover:text-accent"
             >
-              <Camera size={14} strokeWidth={1.5} />
+              <ImagePlus size={14} strokeWidth={1.5} />
               {t('capture.slot.add')}
             </label>
           )}
+          {/* No `capture` attribute on purpose: the Rückmeldung is filled after
+              the job, from the gallery. Forcing the camera would mean the
+              technician cannot attach the photos they already took on site. */}
           <input
             id={inputId}
             type="file"
             accept="image/*"
-            capture="environment"
             multiple={state.max === null || state.max > 1}
             className="hidden"
             onChange={(event) => {
@@ -447,6 +442,19 @@ export function CapturePlanForm(props: CapturePlanFormProps) {
     return map
   }, [evaluation])
 
+  // The first photo of this Rückmeldung that carried a position. It is what an
+  // empty map opens on, so the second trench does not start over the middle of
+  // the country.
+  const locatedPhotoPoint = useMemo(() => {
+    for (const photo of photos) {
+      const { lat, lng } = photo as { lat?: number | null; lng?: number | null }
+      if (typeof lat === 'number' && typeof lng === 'number') {
+        return { lat, lng, accuracy_m: null } as CaptureGeoPoint
+      }
+    }
+    return null
+  }, [photos])
+
   const photosBySlot = useMemo(() => {
     const map = new Map<string, CapturePhotoRow[]>()
     for (const photo of photos) {
@@ -515,6 +523,7 @@ export function CapturePlanForm(props: CapturePlanFormProps) {
         missing={!state.satisfied}
         highlighted={props.highlightedNodeId === nodeId}
         onChange={(value) => props.onFieldChange(section.key, field.key, value, itemId)}
+        fallbackCenter={locatedPhotoPoint}
       />
     )
   }

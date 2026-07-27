@@ -1640,9 +1640,8 @@
       "dragHint": "Pin auf die tatsächliche Stelle ziehen.",
       "empty": "Keine Position erfasst",
       "reading": "◎ {{lat}}, {{lng}} · ±{{accuracy}} m",
-      "locate": "Position",
-      "locating": "Suche…",
-      "unavailable": "Position nicht verfügbar"
+      "place": "Auf der Karte setzen",
+      "placeHint": "Ziehe den Pin an die Stelle der Kata."
     },
     "missing": {
       "summary": "Es fehlen {{count}} Angaben"

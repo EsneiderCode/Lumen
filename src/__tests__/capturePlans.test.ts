@@ -384,8 +384,8 @@ describe('evaluating the Soplado de RA plan', () => {
       'during_open',
       'closed',
     ])
-    // The position is not demanded: a denied geolocation must not strand the
-    // technician with a Rückmeldung they cannot send.
+    // The position is not demanded: phones strip EXIF location often, and that
+    // must not strand the technician with a Rückmeldung they cannot send.
     expect(result.missing.filter((node) => node.kind === 'field').map((node) => node.fieldKey)).toEqual([
       'left_open',
       'depth_cm',

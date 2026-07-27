@@ -15,9 +15,10 @@
 //     blowing job may not require opening the ground at all;
 //   - answering "yes" to "does the trench stay open?" REVEALS the safety-signage
 //     slot but does not demand it (`min: 0`);
-//   - the trench's `location` is not required: it is filled automatically from
-//     the first photo of the trench, and a denied browser permission must not
-//     strand a technician with a Rückmeldung they cannot send;
+//   - the trench's `location` is not required: it is filled from the EXIF of the
+//     first photo of the trench when the camera wrote one, and phones strip that
+//     often enough that demanding it would strand technicians. Without it the
+//     pin is placed by hand on the map;
 //   - incidents are never mandatory by design.
 
 import { legacyDetailsSection } from '@/constants/capture-plan-sections'

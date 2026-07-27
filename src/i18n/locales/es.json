@@ -1640,9 +1640,8 @@
       "dragHint": "Arrastrá el pin hasta el sitio real.",
       "empty": "Sin posición registrada",
       "reading": "◎ {{lat}}, {{lng}} · ±{{accuracy}} m",
-      "locate": "Ubicación",
-      "locating": "Buscando…",
-      "unavailable": "Ubicación no disponible"
+      "place": "Poner en el mapa",
+      "placeHint": "Arrastrá el pin hasta donde se hizo la cata."
     },
     "missing": {
       "summary": "Faltan {{count}} datos"

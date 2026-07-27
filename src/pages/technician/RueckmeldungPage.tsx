@@ -57,7 +57,7 @@ import {
 import { refreshPendingCounts } from '@/services/offlineSyncState'
 import { useOfflineSync } from '@/hooks/useOfflineSync'
 import { scalePhotoForUpload } from '@/lib/photoScaling'
-import { getCurrentPoint } from '@/lib/geolocation'
+import { readPhotoMetadata } from '@/lib/exif'
 import { captureExamplePaths, evaluateCapturePlan, slotNodeId } from '@/services/capturePlanEngine'
 import { CapturePlanForm, type PendingPhoto, type SlotTarget } from '@/components/capture/CapturePlanForm'
 import type { ServiceItemWithRelations } from '@/types/service-items'
@@ -78,8 +78,10 @@ type ConsumptionDraftRow = ConsumptionDraft & { _key: string }
 type PendingUpload = PendingPhoto & {
   file: File
   target: SlotTarget
-  /** Kept so a retry re-sends the fix taken at the shutter, not a later one. */
+  /** Read off the file's EXIF, so a retry re-sends the same position. */
   location?: CaptureGeoPoint | null
+  /** When the camera says the photo was taken; NOT when it was uploaded. */
+  takenAt?: string | null
   /** Row id in the offline photo queue, for the tiles rebuilt from IndexedDB. */
   queueId?: number
 }
@@ -136,7 +138,7 @@ export function RueckmeldungPage() {
   const [stockCorrections, setStockCorrections] = useState<ConsumptionCorrectionRequired[]>([])
 
   // What the plan still demands. Photos in flight count as already there, so the
-  // form does not flash "missing" between the shutter and the upload finishing.
+  // form does not flash "missing" between picking the file and the upload finishing.
   const evaluation = useMemo(() => {
     if (!plan) return null
     const optimistic = pendingPhotos
@@ -229,6 +231,7 @@ export function RueckmeldungPage() {
               queued: true,
               file: new File([blob], photo.fileName, { type: photo.contentType }),
               location: photo.location,
+              takenAt: photo.takenAt,
               target: {
                 sectionKey: photo.sectionKey,
                 slotKey: photo.slotKey,
@@ -397,7 +400,7 @@ export function RueckmeldungPage() {
    * it is, marked as waiting: the technician has done their part and can put the
    * phone away — the queue uploads it when there is a network again.
    */
-  async function queuePhoto(item: PendingUpload, location: CaptureGeoPoint | null) {
+  async function queuePhoto(item: PendingUpload) {
     if (!id || !user) return
     const { file: scaled } = await scalePhotoForUpload(item.file)
     const queueId = await enqueuePhoto({
@@ -410,8 +413,8 @@ export function RueckmeldungPage() {
       fileName: scaled.name,
       contentType: scaled.type || 'image/jpeg',
       file: scaled,
-      takenAt: new Date().toISOString(),
-      location,
+      takenAt: item.takenAt ?? new Date().toISOString(),
+      location: item.location ?? null,
     })
 
     if (queueId === null) {
@@ -426,16 +429,16 @@ export function RueckmeldungPage() {
 
     setPendingPhotos((previous) =>
       previous.map((candidate) =>
-        candidate.id === item.id ? { ...candidate, queued: true, queueId, location } : candidate,
+        candidate.id === item.id ? { ...candidate, queued: true, queueId } : candidate,
       ),
     )
     void refreshPendingCounts()
   }
 
-  async function uploadPending(item: PendingUpload, location: CaptureGeoPoint | null = null) {
+  async function uploadPending(item: PendingUpload) {
     if (!id || !user) return
     if (!navigator.onLine) {
-      await queuePhoto(item, location)
+      await queuePhoto(item)
       return
     }
 
@@ -447,14 +450,15 @@ export function RueckmeldungPage() {
       slotKey: item.target.slotKey,
       legacyType: item.target.legacyType,
       itemId: item.target.itemId,
-      location,
+      location: item.location ?? null,
+      takenAt: item.takenAt ?? undefined,
     })
 
     if (error || !data) {
-      // The connection dropped between the shutter and the upload: queue it
+      // The connection dropped between picking the file and the upload: queue it
       // rather than making the technician watch a retry button.
       if (!navigator.onLine) {
-        await queuePhoto(item, location)
+        await queuePhoto(item)
         return
       }
       setError(t('rueckmeldung.photos.uploadFailed', { error: error ?? '' }))
@@ -482,24 +486,31 @@ export function RueckmeldungPage() {
   }
 
   /**
-   * Where the photo was taken. Every photo carries it — a Rückmeldung photo with
-   * a verifiable time and coordinate is exactly the transparency Vancom asks for
-   * — and the first photo of a trench also fills the item's geopoint field, so
-   * the trench lands on the map without the technician doing anything. The pin
-   * stays correctable by hand: a phone GPS between buildings drifts 15–20 m.
+   * Where and when the photo was taken, read from the FILE, not from the device.
+   * The Rückmeldung is filled after the job — often at home, hours later — so
+   * `navigator.geolocation` would stamp every trench with wherever the
+   * technician is sitting. The camera already wrote the truth into the photo's
+   * EXIF; when it is there, the first photo of a trench also fills the item's
+   * geopoint so the trench lands on the map by itself.
+   *
+   * A photo with no EXIF position is the normal case, not a failure: phones
+   * strip it when a picture leaves the gallery. The technician then places the
+   * pin by hand on the map, which is the only other honest source.
    */
-  async function locateForCapture(target: SlotTarget): Promise<CaptureGeoPoint | null> {
-    const point = await getCurrentPoint()
-    if (!point) return null
+  async function metadataForCapture(
+    target: SlotTarget,
+    file: File,
+  ): Promise<{ location: CaptureGeoPoint | null; takenAt: string | null }> {
+    const { point, takenAt } = await readPhotoMetadata(file)
 
-    const fieldKey = target.itemId ? geoFieldKey(target.sectionKey) : null
-    if (fieldKey) {
+    const fieldKey = point && target.itemId ? geoFieldKey(target.sectionKey) : null
+    if (fieldKey && point) {
       setAnswers((previous) => {
         const items = (previous[target.sectionKey] ?? []) as CaptureRepeaterItem[]
         return {
           ...previous,
           [target.sectionKey]: items.map((item) =>
-            // Only if empty: a technician who corrected the pin keeps their fix.
+            // Only if empty: a technician who placed the pin keeps their point.
             item.id === target.itemId && !item.values[fieldKey]
               ? { ...item, values: { ...item.values, [fieldKey]: point } }
               : item,
@@ -508,7 +519,7 @@ export function RueckmeldungPage() {
       })
     }
 
-    return point
+    return { location: point, takenAt }
   }
 
   function handleCapture(target: SlotTarget, files: FileList | null) {
@@ -528,17 +539,19 @@ export function RueckmeldungPage() {
 
     setPendingPhotos((previous) => [...previous, ...queued])
 
-    // The thumbnail is already on screen; the position is resolved before the
-    // upload so the photo row carries it, and a refusal never blocks the upload.
-    void locateForCapture(target).then((location) => {
-      const queuedIds = new Set(queued.map((item) => item.id))
-      setPendingPhotos((previous) =>
-        previous.map((candidate) =>
-          queuedIds.has(candidate.id) ? { ...candidate, location } : candidate,
-        ),
-      )
-      for (const item of queued) void uploadPending(item, location)
-    })
+    // The thumbnail is already on screen. Each file is read on its own: a batch
+    // picked from the gallery can span several trenches and several hours, so
+    // one position for all of them would be wrong.
+    for (const item of queued) {
+      void metadataForCapture(target, item.file).then(({ location, takenAt }) => {
+        setPendingPhotos((previous) =>
+          previous.map((candidate) =>
+            candidate.id === item.id ? { ...candidate, location, takenAt } : candidate,
+          ),
+        )
+        void uploadPending({ ...item, location, takenAt })
+      })
+    }
   }
 
   function handleRetry(pendingId: string) {
@@ -550,7 +563,7 @@ export function RueckmeldungPage() {
         candidate.id === pendingId ? { ...candidate, failed: false } : candidate,
       ),
     )
-    void uploadPending({ ...item, failed: false }, item.location ?? null)
+    void uploadPending({ ...item, failed: false })
   }
 
   /** Scrolls to the first unmet requirement instead of greying out the send button. */
