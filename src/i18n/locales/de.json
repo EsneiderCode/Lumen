@@ -238,8 +238,6 @@
     "streetAddress": "Straße / Hausnummer",
     "supportingDocs": "Unterstützende Dokumente",
     "supportingDocsDesc": "Bei linearen Arbeiten (Soplado / Fusion) sind Plan und Spleißprotokolle anstelle einer Adresse relevant.",
-    "detailsTitle": "Details: {{workType}}",
-    "detailsSubtitle": "Arbeitstyp-spezifische Felder",
     "notesPlaceholder": "Interne Hinweise für das Team…",
     "telegramGroupsTitle": "Telegram-Benachrichtigungen",
     "telegramGroupsHint": "Meldungen zu diesem Auftrag (Zuweisung, Änderungen, Berichte, Löschung) gehen nur an die ausgewählten Gruppen. Ohne Auswahl gilt das Event-Mapping aus den Einstellungen.",

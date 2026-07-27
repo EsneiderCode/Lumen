@@ -238,8 +238,6 @@
     "streetAddress": "Calle / Número",
     "supportingDocs": "Documentos de respaldo",
     "supportingDocsDesc": "Para trabajos lineales (Soplado / Fusión) el plano y los Spleißprotokolle reemplazan a la dirección.",
-    "detailsTitle": "Detalles: {{workType}}",
-    "detailsSubtitle": "Campos específicos del tipo de trabajo",
     "notesPlaceholder": "Notas internas para el equipo…",
     "telegramGroupsTitle": "Notificaciones Telegram",
     "telegramGroupsHint": "Los avisos sobre esta orden (asignación, cambios, reportes, eliminación) se envían solo a los grupos seleccionados. Sin selección, se usa el mapeo de eventos de Ajustes.",

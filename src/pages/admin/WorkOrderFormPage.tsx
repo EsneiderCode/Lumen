@@ -8,7 +8,6 @@ import {
   fetchClients,
   fetchProjects,
   fetchOperators,
-  saveAssignedDetailSnapshot,
   type ProjectLookup,
 } from '@/services/workOrderService'
 import type { WorkType } from '@/types/enums'
@@ -26,15 +25,8 @@ import {
   setOrderGroups,
   type TelegramGroup,
 } from '@/services/telegramGroupService'
-import {
-  fetchCapturePlan,
-  fetchCapturePlanVariants,
-  fetchCaptureReport,
-  saveCaptureReport,
-} from '@/services/capturePlanService'
-import { planDataFields, planDataSectionKey } from '@/services/capturePlanEngine'
-import { capturePlanKeyForOrder } from '@/constants/capture-plans'
-import type { CaptureFieldValues, CapturePlan } from '@/types/capture-plan'
+import { fetchCapturePlanVariants } from '@/services/capturePlanService'
+import type { CapturePlan } from '@/types/capture-plan'
 
 // Catalog detail_form values for infrastructure work (trenches, splice
 // boxes, POP central sites) rather than street-address-based customer
@@ -126,7 +118,6 @@ export function WorkOrderFormPage() {
   const isEdit = Boolean(id)
 
   const [form, setForm] = useState<FormValues>(EMPTY_FORM)
-  const [detail, setDetail] = useState<Record<string, unknown>>({})
   const [clients, setClients] = useState<{ id: string; name: string; code: string }[]>([])
   const [projects, setProjects] = useState<ProjectLookup[]>([])
   const [operators, setOperators] = useState<{ id: string; name: string; code: string }[]>([])
@@ -134,8 +125,6 @@ export function WorkOrderFormPage() {
   // Capture-plan variants of the selected work type ("Soplado de RA"). Empty for
   // work types that only have their default plan, and then nothing is rendered.
   const [planVariants, setPlanVariants] = useState<CapturePlan[]>([])
-  /** The plan itself: it supplies the technical fields the admin pre-fills. */
-  const [plan, setPlan] = useState<CapturePlan | null>(null)
   const [isLoading, setIsLoading] = useState(isEdit)
   const [isSaving, setIsSaving] = useState(false)
   const [errors, setErrors] = useState<Partial<Record<keyof FormValues, string>>>({})
@@ -199,26 +188,10 @@ export function WorkOrderFormPage() {
       .catch(() => setPlanVariants([]))
   }, [form.work_type])
 
-  // The technical fields come from the plan, not from a table of their own —
-  // which is what lets a new work type ship without touching this form.
-  useEffect(() => {
-    if (!form.work_type) {
-      queueMicrotask(() => setPlan(null))
-      return
-    }
-    const key = capturePlanKeyForOrder({
-      work_type: form.work_type,
-      capture_plan_key: form.capture_plan_key,
-    })
-    fetchCapturePlan(key)
-      .then(setPlan)
-      .catch(() => setPlan(null))
-  }, [form.work_type, form.capture_plan_key])
-
   // Load existing order for edit
   useEffect(() => {
     if (!isEdit || !id) return
-    fetchWorkOrder(id).then(async ({ data, error }) => {
+    fetchWorkOrder(id).then(({ data, error }) => {
       if (error || !data) { setSaveError(error ?? 'Auftrag nicht gefunden'); setIsLoading(false); return }
       setForm({
         is_direct_order: data.client_id == null,
@@ -235,13 +208,6 @@ export function WorkOrderFormPage() {
         city: data.city ?? '',
         internal_notes: data.internal_notes ?? '',
       })
-      // What is already on the order, whether the admin put it there or the
-      // technician did. One row now, not one per work type.
-      const { data: report } = await fetchCaptureReport(id)
-      const sectionKey = planDataSectionKey(await fetchCapturePlan(capturePlanKeyForOrder(data)))
-      if (report && sectionKey) {
-        setDetail((report.answers[sectionKey] ?? {}) as Record<string, unknown>)
-      }
       setIsLoading(false)
     })
   }, [id, isEdit])
@@ -255,10 +221,6 @@ export function WorkOrderFormPage() {
       return
     }
     setForm((f) => ({ ...f, [key]: value }))
-  }
-
-  function setDetailField(key: string, value: unknown) {
-    setDetail((d) => ({ ...d, [key]: value }))
   }
 
   function validate(): boolean {
@@ -333,32 +295,6 @@ export function WorkOrderFormPage() {
       )
     }
 
-    // The pre-filled technical data goes into the order's capture report, in
-    // the section the plan declares for it. The technician's screen opens on
-    // the same values, and the certification gate reads the same blob.
-    const dataSectionKey = planDataSectionKey(plan)
-    if (orderId && plan && dataSectionKey && Object.keys(detail).length > 0 && user) {
-      const { data: existing } = await fetchCaptureReport(orderId)
-      await saveCaptureReport({
-        workOrderId: orderId,
-        plan,
-        // Merge, never replace: an edit must not drop the trenches, the
-        // checklist or the incidents the technician already answered.
-        answers: {
-          ...(existing?.answers ?? {}),
-          [dataSectionKey]: {
-            ...((existing?.answers?.[dataSectionKey] ?? {}) as CaptureFieldValues),
-            ...(detail as CaptureFieldValues),
-          },
-        },
-        userId: user.id,
-      })
-      // LUM-023: on creation only, save admin's assigned values as immutable snapshot
-      if (!isEdit) {
-        await saveAssignedDetailSnapshot(orderId, detail)
-      }
-    }
-
     // Upload any staged supporting documents now that we have an order id
     if (orderId && user) {
       const allStaged: Array<[DocumentType, File]> = []
@@ -415,12 +351,6 @@ export function WorkOrderFormPage() {
   const derivedSummary = [selectedClient?.code, selectedOperator?.code, form.line]
     .filter(Boolean)
     .join(' · ')
-
-  // Only the field types this form knows how to render. `yesno` and `geopoint`
-  // are the technician's to answer in the field, with a thumb and a GPS fix.
-  const detailFields = planDataFields(plan).filter((field) =>
-    ['text', 'number', 'select', 'checkbox'].includes(field.type),
-  )
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -565,7 +495,6 @@ export function WorkOrderFormPage() {
                       derivedWorkType === f.work_type ? f.capture_plan_key : '',
                   }))
                   setErrors((er) => ({ ...er, service_item_id: undefined, work_type: undefined }))
-                  setDetail({})
                 }}
                 className={`w-full rounded-s border px-3 py-2 text-sm text-fg-1 focus:outline-none focus:ring-1 focus:ring-accent ${errors.service_item_id ? 'border-err bg-err/5' : 'border-line bg-bg-0'}`}
               >
@@ -735,66 +664,6 @@ export function WorkOrderFormPage() {
                   />
                 )
               })}
-            </div>
-          </div>
-        )}
-
-        {/* Dynamic detail fields */}
-        {detailFields.length > 0 && (
-          <div className="rounded-l border border-accent/30 bg-bg-1 p-5">
-            <h3 className="mb-1 font-display text-sm font-semibold text-fg-1">
-              {t('workOrder.detailsTitle', { workType: L.workType(form.work_type as WorkType) })}
-            </h3>
-            <p className="mb-4 text-xs text-fg-2">{t('workOrder.detailsSubtitle')}</p>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {detailFields.map((field) => (
-                <div key={field.key} className={field.type === 'checkbox' ? 'flex items-center gap-2 sm:col-span-2' : ''}>
-                  {field.type === 'checkbox' ? (
-                    <>
-                      <input
-                        type="checkbox"
-                        id={field.key}
-                        checked={Boolean(detail[field.key])}
-                        onChange={(e) => setDetailField(field.key, e.target.checked)}
-                        className="h-4 w-4 rounded border-line text-accent focus:ring-accent"
-                      />
-                      <label htmlFor={field.key} className="text-sm font-medium text-fg-1 cursor-pointer">
-                        {t(field.labelKey)}
-                      </label>
-                    </>
-                  ) : field.type === 'select' ? (
-                    <>
-                      <label className="mb-1 block text-xs font-medium text-fg-2">{t(field.labelKey)}</label>
-                      <select
-                        value={String(detail[field.key] ?? '')}
-                        onChange={(e) => setDetailField(field.key, e.target.value)}
-                        className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-                      >
-                        <option value="">{t('rueckmeldung.details.choose')}</option>
-                        {/* Stored value stays canonical (German); only the label is translated. */}
-                        {field.options?.map((opt) => (
-                          <option key={opt} value={opt}>
-                            {t(`detailOption.${opt}`, { defaultValue: opt })}
-                          </option>
-                        ))}
-                      </select>
-                    </>
-                  ) : (
-                    <>
-                      <label className="mb-1 block text-xs font-medium text-fg-2">{t(field.labelKey)}</label>
-                      <input
-                        type={field.type}
-                        value={String(detail[field.key] ?? '')}
-                        onChange={(e) =>
-                          setDetailField(field.key, field.type === 'number' ? Number(e.target.value) : e.target.value)
-                        }
-                        placeholder={field.placeholderKey ? t(field.placeholderKey) : ''}
-                        className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-                      />
-                    </>
-                  )}
-                </div>
-              ))}
             </div>
           </div>
         )}

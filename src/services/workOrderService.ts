@@ -980,21 +980,10 @@ export async function deleteWorkOrderPhoto(photoId: string, storagePath: string)
 
 // ── Sprint 7 — Certification Review (LUM-023 / LUM-024) ──────────────────
 
-/**
- * LUM-023: Save the admin-assigned detail snapshot once on order creation.
- * Uses .is('assigned_detail_snapshot', null) guard — never overwrites.
- */
-export async function saveAssignedDetailSnapshot(
-  workOrderId: string,
-  detail: Record<string, unknown>,
-) {
-  const { error } = await supabase
-    .from('work_orders')
-    .update({ assigned_detail_snapshot: detail } as never)
-    .eq('id', workOrderId)
-    .is('assigned_detail_snapshot', null)
-  return { error: error?.message ?? null }
-}
+// LUM-023's writer is gone: the order form no longer asks the office for
+// technical data, so nothing produces an `assigned_detail_snapshot` any more.
+// The column and the orders that already carry one stay untouched, and the
+// admin detail page still shows their Assigned-vs-Reported table.
 
 /**
  * LUM-024: Generate a SHA-256 hex digest of the provided data object.
