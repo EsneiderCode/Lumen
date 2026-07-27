@@ -542,7 +542,7 @@ export function CapturePlanForm(props: CapturePlanFormProps) {
         const answerItems = (answers[section.key] ?? []) as CaptureRepeaterItem[]
 
         return (
-          <section key={section.key} className="rounded-l border border-line bg-bg-1">
+          <section key={section.key} id={section.key} className="rounded-l border border-line bg-bg-1">
             <button
               type="button"
               onClick={() =>

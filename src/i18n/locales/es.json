@@ -1643,6 +1643,23 @@
     },
     "missing": {
       "summary": "Faltan {{count}} datos"
+    },
+    "review": {
+      "title": "Revisá las catas en el mapa",
+      "subtitle": "{{count}} cata(s) con su pin, sus fotos y su profundidad.",
+      "accepted": "REVISADO",
+      "pending": "SIN REVISAR",
+      "missingPins": "{{count}} cata(s) todavía sin pin. Ponéselo en el formulario de arriba y volvé aquí.",
+      "farFromProject": "Una cata queda a {{km}} km del proyecto. Comprobá su pin antes de aceptar.",
+      "noPins": "Ninguna cata tiene el pin puesto todavía. En cada cata, «Poner en el mapa».",
+      "noPin": "sin pin",
+      "trench": "Cata",
+      "adjustPin": "Mover el pin",
+      "noPhotosInTrench": "Esta cata todavía no tiene fotos.",
+      "accept": "Está bien así",
+      "correct": "Corregir algo",
+      "hint": "Mirá que cada pin esté donde estuvo la cata de verdad. Al aceptar queda registrado qué revisaste; si después movés un pin o cambiás fotos, habrá que revisarlo otra vez.",
+      "acceptedHint": "Revisado. Si movés un pin o cambiás las fotos de una cata, esto vuelve a quedar pendiente."
     }
   },
   "map": {

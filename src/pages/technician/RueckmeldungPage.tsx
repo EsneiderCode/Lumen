@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { AlertTriangle, Package, Plus, Trash2 } from 'lucide-react'
@@ -45,6 +45,15 @@ import {
   uploadCapturePhoto,
   type CapturePhotoRow,
 } from '@/services/capturePlanService'
+import {
+  clearReview,
+  firstRepeaterSection,
+  markReviewed,
+  reviewAcceptedAt,
+  setTrenchLocation,
+  trenchesForReview,
+} from '@/lib/trenchReview'
+import { TrenchReview } from '@/components/capture/TrenchReview'
 import { rueckmeldungSendPath } from '@/services/workOrderStateMachine'
 import { loadRueckmeldung } from '@/services/rueckmeldungLoader'
 import { cacheAnswers } from '@/services/offlineCache'
@@ -213,6 +222,69 @@ export function RueckmeldungPage() {
       cancelled = true
     }
   }, [id, user?.team])
+
+  // ── Autoguardado ──────────────────────────────────────────────────────────
+  // Las fotos suben al instante, pero lo tecleado vivía SOLO en memoria hasta
+  // que alguien pulsara Guardar. Una recarga, o un móvil que descarta la
+  // pestaña de fondo —normal en una jornada de obra—, se lo llevaba entero y
+  // dejaba las fotos ya subidas colgando de catas que ya no existían en el
+  // informe. Le pasó de verdad a LUM-20260727-1017: 32 fotos de catas y una
+  // Rückmeldung enviada sin una sola cata dentro.
+  const persistedRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (isLoading || !plan || !id || !user) return
+    const snapshot = JSON.stringify({ answers, reported: reportedServiceItems() })
+    // La primera pasada es lo recién cargado: no hay nada que guardar todavía.
+    if (persistedRef.current === null) {
+      persistedRef.current = snapshot
+      return
+    }
+    if (persistedRef.current === snapshot) return
+
+    const timer = setTimeout(() => {
+      persistedRef.current = snapshot
+      void cacheAnswers(id, answers, reportedServiceItems())
+      // Sin cobertura basta la copia del dispositivo; la de servidor irá cuando
+      // vuelva la red o cuando el técnico guarde a mano.
+      if (navigator.onLine) void persistCaptureReport(false)
+    }, 2500)
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [answers, reportedDrafts, isLoading, plan, id, user])
+
+  // ── Revisión de las catas ─────────────────────────────────────────────────
+  // El pin de cada cata lo pone el técnico en el formulario; aquí solo se le
+  // enseña el conjunto sobre el mapa para que lo dé por bueno. Cualquier cambio
+  // posterior tumba la aceptación (la huella deja de cuadrar), así que lo que
+  // queda registrado siempre describe lo que hay.
+  const reviewTrenches = useMemo(
+    () => trenchesForReview(plan, answers, photos),
+    [plan, answers, photos],
+  )
+  const reviewAccepted = useMemo(
+    () => reviewAcceptedAt(answers, reviewTrenches),
+    [answers, reviewTrenches],
+  )
+
+  /** Mover el pin desde el mapa de revisión: lo mismo que moverlo en su cata. */
+  function handleTrenchPin(itemId: string, point: CaptureGeoPoint) {
+    setAnswers((previous) => setTrenchLocation(plan, previous, itemId, point))
+  }
+
+  function handleTrenchAccept() {
+    setAnswers((previous) =>
+      markReviewed(previous, trenchesForReview(plan, previous, photos), new Date().toISOString()),
+    )
+  }
+
+  /** «Corregir algo»: se retira el visto bueno y se le sube a las catas. */
+  function handleTrenchReject() {
+    setAnswers((previous) => clearReview(previous))
+    const section = firstRepeaterSection(plan)
+    if (section) {
+      document.getElementById(section.key)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
 
   /**
    * Photos taken without coverage. They are rebuilt as pending tiles so they
@@ -972,6 +1044,24 @@ export function RueckmeldungPage() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Trench review — the positions come from each photo's watermark, so the
+          screen proposes the split and the technician confirms or corrects it.
+          Only for plans that actually have trenches (soplado_ra today). */}
+      {/* Trench review — the pins are the ones the technician placed; this only
+          shows them together on a map so he can vouch for them before sending. */}
+      {reviewTrenches.length > 0 && (
+        <TrenchReview
+          trenches={reviewTrenches}
+          photoPaths={Object.fromEntries(photos.map((photo) => [photo.id, photo.storage_path]))}
+          photoUrls={photoUrls}
+          projectCentre={projectCenter}
+          acceptedAt={reviewAccepted}
+          onMovePin={handleTrenchPin}
+          onAccept={handleTrenchAccept}
+          onReject={handleTrenchReject}
+        />
       )}
 
       {/* Capture plan — photos and technical data, driven by the plan of this

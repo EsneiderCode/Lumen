@@ -1643,6 +1643,23 @@
     },
     "missing": {
       "summary": "Es fehlen {{count}} Angaben"
+    },
+    "review": {
+      "title": "Gruben auf der Karte prüfen",
+      "subtitle": "{{count}} Grube(n) mit Pin, Fotos und Tiefe.",
+      "accepted": "GEPRÜFT",
+      "pending": "UNGEPRÜFT",
+      "missingPins": "{{count}} Grube(n) noch ohne Pin. Oben im Formular setzen und hierher zurückkehren.",
+      "farFromProject": "Eine Grube liegt {{km}} km vom Projekt entfernt. Pin vor dem Bestätigen prüfen.",
+      "noPins": "Noch keine Grube hat einen Pin. Pro Grube «Auf der Karte setzen».",
+      "noPin": "ohne Pin",
+      "trench": "Grube",
+      "adjustPin": "Pin verschieben",
+      "noPhotosInTrench": "Diese Grube hat noch keine Fotos.",
+      "accept": "So ist es richtig",
+      "correct": "Etwas korrigieren",
+      "hint": "Prüfen, ob jeder Pin dort sitzt, wo die Grube wirklich war. Beim Bestätigen wird festgehalten, was geprüft wurde; wird danach ein Pin verschoben oder Fotos geändert, ist erneut zu prüfen.",
+      "acceptedHint": "Geprüft. Wird ein Pin verschoben oder werden Fotos einer Grube geändert, gilt dies wieder als ungeprüft."
     }
   },
   "map": {
