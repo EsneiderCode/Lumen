@@ -1248,6 +1248,9 @@ export type Database = {
       }
       projects: {
         Row: {
+          center_lat: number | null
+          center_lng: number | null
+          city: string | null
           client_id: string | null
           code: string
           created_at: string
@@ -1258,6 +1261,9 @@ export type Database = {
           name: string
         }
         Insert: {
+          center_lat?: number | null
+          center_lng?: number | null
+          city?: string | null
           client_id?: string | null
           code: string
           created_at?: string
@@ -1268,6 +1274,9 @@ export type Database = {
           name: string
         }
         Update: {
+          center_lat?: number | null
+          center_lng?: number | null
+          city?: string | null
           client_id?: string | null
           code?: string
           created_at?: string
@@ -2780,10 +2789,6 @@ export type Database = {
         Returns: string[]
       }
       assert_work_order_rueckmeldung_complete: {
-        Args: { p_work_order_id: string }
-        Returns: undefined
-      }
-      assert_work_order_rueckmeldung_complete_legacy: {
         Args: { p_work_order_id: string }
         Returns: undefined
       }

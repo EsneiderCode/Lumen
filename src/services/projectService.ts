@@ -104,7 +104,7 @@ export async function createProject(input: ProjectInput): Promise<{ data: Projec
   }
   const { data, error } = await supabase
     .from('projects')
-    .insert(payload as never)
+    .insert(payload)
     .select('*, clients(id, code, name)')
     .single()
   return { data: (data as Project | null) ?? null, error: error?.message ?? null }
@@ -120,7 +120,7 @@ export async function updateProject(
   }
   const { data, error } = await supabase
     .from('projects')
-    .update(payload as never)
+    .update(payload)
     .eq('id', id)
     .select('*, clients(id, code, name)')
     .single()
