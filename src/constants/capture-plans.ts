@@ -18,22 +18,45 @@ import { SOPLADO_RA_PLAN } from '@/constants/capture-plans-soplado-ra'
 import type { CapturePlan, CaptureSection, LegacyPhotoType } from '@/types/capture-plan'
 import { WorkType } from '@/types/enums'
 
-export const CAPTURE_PLAN_VERSION = 1
+/**
+ * Per work type, because a plan is versioned on its own: changing soplado must
+ * not reissue the other six. A bump here needs a migration seeding that exact
+ * version — `capturePlans.test.ts` fails until it exists.
+ *
+ * soplado@2 (migration 059): technical data first, no `section`, result leading.
+ */
+export const CAPTURE_PLAN_VERSIONS: Record<WorkType, number> = {
+  [WorkType.SOPLADO]: 2,
+  [WorkType.FUSION_AP]: 1,
+  [WorkType.FUSION_DP]: 1,
+  [WorkType.ALTA]: 1,
+  [WorkType.NT_INSTALLATION]: 1,
+  [WorkType.PATCHKABEL]: 1,
+  [WorkType.POP]: 1,
+}
+
+/**
+ * Work types whose plan opens on the technical data instead of the photos.
+ * Asked for on soplado, where the result and the metres are what the office is
+ * waiting for; the rest keep photos first until someone asks otherwise.
+ */
+const DETAILS_FIRST = new Set<WorkType>([WorkType.SOPLADO])
 
 const LEGACY_PHOTO_TYPES: LegacyPhotoType[] = ['before', 'during', 'after']
 
 export function buildDefaultCapturePlan(workType: WorkType): CapturePlan {
-  const sections: CaptureSection[] = [
-    {
-      key: 'photos',
-      kind: 'photos',
-      titleKey: 'rueckmeldung.photos.title',
-      slots: LEGACY_PHOTO_TYPES.map(legacyPhotoSlot),
-    },
-    legacyDetailsSection(workType),
-  ]
+  const photos: CaptureSection = {
+    key: 'photos',
+    kind: 'photos',
+    titleKey: 'rueckmeldung.photos.title',
+    slots: LEGACY_PHOTO_TYPES.map(legacyPhotoSlot),
+  }
+  const details = legacyDetailsSection(workType)
+  const sections: CaptureSection[] = DETAILS_FIRST.has(workType)
+    ? [details, photos]
+    : [photos, details]
 
-  return { key: workType, version: CAPTURE_PLAN_VERSION, sections }
+  return { key: workType, version: CAPTURE_PLAN_VERSIONS[workType], sections }
 }
 
 export const DEFAULT_CAPTURE_PLANS: Record<WorkType, CapturePlan> = Object.fromEntries(

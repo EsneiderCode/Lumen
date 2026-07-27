@@ -128,7 +128,6 @@
   },
   "detailField": {
     "meters": "Meter",
-    "section": "Abschnitt",
     "tube_diameter": "Rohrdurchmesser",
     "result": "Ergebnis",
     "splice_count": "Spleiß-Anzahl",
@@ -154,7 +153,6 @@
   },
   "detailPlaceholder": {
     "meters": "0",
-    "section": "z.B. A1-B3",
     "tube_diameter": "z.B. 7/3.5",
     "cabinet_code": "z.B. NE3-S-001 oder POP-X-12",
     "card_count": "0 = nicht anwendbar",
@@ -172,6 +170,8 @@
     "cable_entry_points": "z.B. Nord: 12 Kabel · Süd: 8 Kabel · Boden: 4 Kabel"
   },
   "detailOption": {
+    "Abgeschlossen": "Abgeschlossen",
+    "Storniert": "Storniert",
     "Ausstehend": "Ausstehend",
     "Keller": "Keller",
     "Erdgeschoss": "Erdgeschoss",

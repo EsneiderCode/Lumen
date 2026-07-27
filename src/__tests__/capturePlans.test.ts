@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
-  CAPTURE_PLAN_VERSION,
+  CAPTURE_PLAN_VERSIONS,
   DEFAULT_CAPTURE_PLANS,
   capturePlanKeyForOrder,
   compiledVariantsForWorkType,
@@ -38,6 +38,31 @@ const migration054 = readFileSync(
   join(process.cwd(), 'supabase', 'migrations', '054_capture_plan_gate.sql'),
   'utf8',
 )
+const migration059 = readFileSync(
+  join(process.cwd(), 'supabase', 'migrations', '059_soplado_details_v2.sql'),
+  'utf8',
+)
+
+/** Every `('key', version, $plan$…$plan$)` row of a seed migration. */
+const seededPlans = (sql: string): Map<string, unknown> => {
+  const rowPattern = /\('([a-z_]+)',\s*(\d+),\s*\$plan\$([\s\S]*?)\$plan\$::jsonb\)/g
+  const seeded = new Map<string, unknown>()
+  for (const match of sql.matchAll(rowPattern)) {
+    seeded.set(`${match[1]}@${match[2]}`, JSON.parse(match[3]))
+  }
+  return seeded
+}
+
+/**
+ * The whole catalog as the migrations build it, newest seed last. A plan is
+ * versioned, never edited in place, so older rows stay here untouched — what
+ * has to match the compiled copy is the version the constants currently carry.
+ */
+const CATALOG = new Map<string, unknown>([
+  ...seededPlans(migration052),
+  ...seededPlans(migration053),
+  ...seededPlans(migration059),
+])
 
 const sectionOf = (plan: CapturePlan, key: string): CaptureSection => {
   const section = plan.sections.find((candidate) => candidate.key === key)
@@ -71,7 +96,7 @@ describe('default capture plans', () => {
     expect(Object.keys(DEFAULT_CAPTURE_PLANS).sort()).toEqual(Object.values(WorkType).sort())
     for (const [key, plan] of Object.entries(DEFAULT_CAPTURE_PLANS)) {
       expect(plan.key).toBe(key)
-      expect(plan.version).toBe(CAPTURE_PLAN_VERSION)
+      expect(plan.version).toBe(CAPTURE_PLAN_VERSIONS[key as WorkType])
     }
   })
 
@@ -99,17 +124,19 @@ describe('default capture plans', () => {
     }
   })
 
-  // Regression guard on the union of the two gates enforced today: the SQL one
-  // in 016 and REQUIRED_DETAIL_FIELDS in workOrderService.ts. Loosening this
-  // set would let an order through the plan that the current gates reject.
-  it('marks exactly the fields both current gates demand', () => {
+  // Regression guard on what the certification gate demands. Since 056 the plan
+  // is the only gate, so loosening this set silently lets an order through that
+  // the office could not certify before.
+  it('marks exactly the fields the gate demands', () => {
     const requiredOf = (workType: WorkType) => {
       const details = DEFAULT_CAPTURE_PLANS[workType].sections.find((s) => s.key === 'details')
       const fields = details && 'fields' in details ? details.fields : []
       return fields.filter((field) => field.required).map((field) => field.key)
     }
 
-    expect(requiredOf('soplado')).toEqual(['meters', 'section', 'tube_diameter', 'result'])
+    // `section` was dropped in v2 (migration 059): the stretch is already on the
+    // order, so the technician was retyping it.
+    expect(requiredOf('soplado')).toEqual(['result', 'meters', 'tube_diameter'])
     expect(requiredOf('fusion_ap')).toEqual([
       'cabinet_code',
       'splice_count',
@@ -200,29 +227,37 @@ describe('default plans match today’s completeness rules', () => {
   })
 })
 
-describe('migration 052 seeds exactly the default plans', () => {
-  // The seed is generated from src/constants/capture-plans.ts. If this fails,
-  // the SQL was hand-edited (or the constants changed) and the DB copy the
-  // certification gate will read no longer matches what the app evaluates.
-  const seeded = new Map<string, unknown>()
-  const rowPattern = /\('([a-z_]+)',\s*(\d+),\s*\$plan\$([\s\S]*?)\$plan\$::jsonb\)/g
-  for (const match of migration052.matchAll(rowPattern)) {
-    seeded.set(`${match[1]}@${match[2]}`, JSON.parse(match[3]))
-  }
+describe('the migrations seed exactly the compiled plans', () => {
+  // The seeds are generated from src/constants/capture-plans.ts. If this fails,
+  // some SQL was hand-edited (or the constants changed without a migration) and
+  // the DB copy the certification gate reads no longer matches what the app
+  // evaluates.
 
-  it('seeds one plan per work type', () => {
-    expect([...seeded.keys()].sort()).toEqual(
+  it('seeds one v1 plan per work type in 052', () => {
+    expect([...seededPlans(migration052).keys()].sort()).toEqual(
       Object.values(WorkType)
-        .map((workType) => `${workType}@${CAPTURE_PLAN_VERSION}`)
+        .map((workType) => `${workType}@1`)
         .sort(),
     )
   })
 
-  it('seeds definitions identical to the compiled defaults', () => {
+  it('seeds a definition identical to the compiled default of every work type', () => {
     for (const workType of Object.values(WorkType)) {
-      expect(seeded.get(`${workType}@${CAPTURE_PLAN_VERSION}`), workType).toEqual(
-        JSON.parse(JSON.stringify(DEFAULT_CAPTURE_PLANS[workType])),
+      const plan = DEFAULT_CAPTURE_PLANS[workType]
+      expect(plan.version, workType).toBe(CAPTURE_PLAN_VERSIONS[workType])
+      expect(CATALOG.get(`${workType}@${plan.version}`), workType).toEqual(
+        JSON.parse(JSON.stringify(plan)),
       )
+    }
+  })
+
+  it('never rewrites a published version in place', () => {
+    // A revision publishes a new row; the old one has to survive, or a
+    // Rückmeldung captured under it stops being reproducible.
+    for (const workType of Object.values(WorkType)) {
+      for (let version = 1; version <= CAPTURE_PLAN_VERSIONS[workType]; version += 1) {
+        expect(CATALOG.has(`${workType}@${version}`), `${workType}@${version}`).toBe(true)
+      }
     }
   })
 })
@@ -273,7 +308,7 @@ describe('the Soplado de RA plan', () => {
     expect(signage?.condition).toEqual({ path: 'item.left_open', equals: true })
   })
 
-  it('keeps writing wo_detail_soplado, with the fields both gates demand', () => {
+  it('keeps writing wo_detail_soplado, with the fields the gate demands', () => {
     const details = sectionOf(SOPLADO_RA_PLAN, 'details')
     const fields = 'fields' in details ? details.fields : []
 
@@ -282,10 +317,9 @@ describe('the Soplado de RA plan', () => {
       DEFAULT_CAPTURE_PLANS.soplado.sections.find((section) => section.key === 'details'),
     )
     expect(fields.filter((field) => field.required).map((field) => field.key)).toEqual([
-      'meters',
-      'section',
-      'tube_diameter',
       'result',
+      'meters',
+      'tube_diameter',
     ])
   })
 
@@ -447,18 +481,12 @@ describe('evaluating the Soplado de RA plan', () => {
 })
 
 describe('migration 053 seeds exactly the Soplado de RA plan', () => {
-  const rowPattern = /\('([a-z_]+)',\s*(\d+),\s*\$plan\$([\s\S]*?)\$plan\$::jsonb\)/g
-  const seeded = new Map<string, unknown>()
-  for (const match of migration053.matchAll(rowPattern)) {
-    seeded.set(`${match[1]}@${match[2]}`, JSON.parse(match[3]))
-  }
-
   it('seeds the plan and nothing else', () => {
-    expect([...seeded.keys()]).toEqual([`soplado_ra@${SOPLADO_RA_PLAN.version}`])
+    expect([...seededPlans(migration053).keys()]).toEqual(['soplado_ra@1'])
   })
 
   it('seeds a definition identical to the compiled plan', () => {
-    expect(seeded.get(`soplado_ra@${SOPLADO_RA_PLAN.version}`)).toEqual(
+    expect(CATALOG.get(`soplado_ra@${SOPLADO_RA_PLAN.version}`)).toEqual(
       JSON.parse(JSON.stringify(SOPLADO_RA_PLAN)),
     )
   })

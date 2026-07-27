@@ -753,7 +753,7 @@ export const initialFixtures = () => ({
     {
       work_order_id: WO_10_SOPLADO_RA,
       plan_key: 'soplado_ra',
-      plan_version: 1,
+      plan_version: 2,
       answers: {
         catas: [
           {
@@ -780,7 +780,7 @@ export const initialFixtures = () => ({
           duct_used: 'Rohr 7 (grün)',
           change_reason: 'Geplantes Rohr blockiert',
         },
-        details: { meters: 128, section: 'DP-12 → POP-2', tube_diameter: '7/3.5', result: 'OK' },
+        details: { result: 'Abgeschlossen', meters: 128, tube_diameter: '7/3.5' },
       } as Record<string, unknown>,
       reported_service_items: [],
       submitted_at: null,

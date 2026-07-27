@@ -29,7 +29,12 @@ import type {
 } from '@/types/capture-plan'
 
 export const SOPLADO_RA_PLAN_KEY = 'soplado_ra'
-export const SOPLADO_RA_PLAN_VERSION = 1
+/**
+ * v2 (migration 059): the technical data leads the plan, `section` is gone and
+ * the result comes first inside it. v1 stays in the catalog — a Rückmeldung
+ * already sent under it is judged against the version it was captured under.
+ */
+export const SOPLADO_RA_PLAN_VERSION = 2
 
 const T = 'capturePlan.sopladoRa'
 
@@ -86,6 +91,9 @@ const TRENCH_LEFT_OPEN: CaptureCondition = { path: 'item.left_open', equals: tru
 const DUCT_CHANGED: CaptureCondition = { path: 'checklist.duct_as_planned', equals: false }
 
 const SECTIONS: CaptureSection[] = [
+  // Opens the plan since v2: the result and the metres are what the office is
+  // waiting for, and they are the fastest thing to fill in the van.
+  legacyDetailsSection('soplado'),
   {
     key: 'mandatory',
     kind: 'photos',
@@ -217,9 +225,6 @@ const SECTIONS: CaptureSection[] = [
       },
     ],
   },
-  // Keeps feeding wo_detail_soplado: the order's work_type is still 'soplado',
-  // so both gates enforced today read these very columns.
-  legacyDetailsSection('soplado'),
 ]
 
 export const SOPLADO_RA_PLAN: CapturePlan = {

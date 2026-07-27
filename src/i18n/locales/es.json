@@ -128,7 +128,6 @@
   },
   "detailField": {
     "meters": "Metros",
-    "section": "Tramo",
     "tube_diameter": "Diámetro del tubo",
     "result": "Resultado",
     "splice_count": "Cantidad de empalmes",
@@ -154,7 +153,6 @@
   },
   "detailPlaceholder": {
     "meters": "0",
-    "section": "p. ej. A1-B3",
     "tube_diameter": "p. ej. 7/3.5",
     "cabinet_code": "p. ej. NE3-S-001 o POP-X-12",
     "card_count": "0 = no aplica",
@@ -172,6 +170,8 @@
     "cable_entry_points": "p. ej. Norte: 12 cables · Sur: 8 cables · Suelo: 4 cables"
   },
   "detailOption": {
+    "Abgeschlossen": "Finalizado",
+    "Storniert": "Cancelado",
     "Ausstehend": "Pendiente",
     "Keller": "Sótano",
     "Erdgeschoss": "Planta baja",

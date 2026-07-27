@@ -21,11 +21,19 @@ export interface DetailField {
 }
 
 export const DETAIL_FIELDS: Record<WorkType, DetailField[]> = {
+  // The result leads: it is what the office looks for first, and it decides how
+  // the rest of the card is read. `section` (Abschnitt/Tramo) was dropped — the
+  // stretch is already in the order itself, so the technician was retyping it.
+  // The wo_detail_soplado.section column stays, simply unfed.
   soplado: [
+    {
+      key: 'result',
+      label: 'Ergebnis',
+      type: 'select',
+      options: ['Abgeschlossen', 'Storniert', 'Ausstehend'],
+    },
     { key: 'meters', label: 'Meter', type: 'number', placeholder: '0' },
-    { key: 'section', label: 'Abschnitt', type: 'text', placeholder: 'z.B. A1-B3' },
     { key: 'tube_diameter', label: 'Rohrdurchmesser', type: 'text', placeholder: 'z.B. 7/3.5' },
-    { key: 'result', label: 'Ergebnis', type: 'select', options: ['OK', 'NOK', 'Ausstehend'] },
   ],
   fusion_ap: [
     { key: 'cabinet_code', label: 'Schrank / Cabinet', type: 'text', placeholder: 'z.B. NE3-S-001 oder POP-X-12' },

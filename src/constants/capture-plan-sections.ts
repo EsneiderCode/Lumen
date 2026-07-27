@@ -20,17 +20,15 @@ import type {
 import type { WorkType } from '@/types/enums'
 
 /**
- * Fields the order must carry to be certifiable today. It is the union of the
- * two gates that are both enforced right now — the SQL one in
- * `assert_work_order_rueckmeldung_complete` (016) and the client-side
- * `REQUIRED_DETAIL_FIELDS` in `workOrderService.ts` — because an order has to
- * pass both. They differ: SQL also demands soplado's tube_diameter/result, the
- * client also demands the fusion cabinet_code.
+ * Fields the order must carry to be certifiable. Since migration 056 retired the
+ * legacy gates, this list IS the rule — the plan is the only thing the
+ * certification gate reads — so adding or dropping a key here changes what the
+ * office can certify, not just what the form asks for.
  *
  * 'pop' is absent on purpose: POP orders have no certification gate today.
  */
 export const REQUIRED_BY_WORK_TYPE: Partial<Record<WorkType, readonly string[]>> = {
-  soplado: ['meters', 'section', 'tube_diameter', 'result'],
+  soplado: ['result', 'meters', 'tube_diameter'],
   fusion_ap: ['cabinet_code', 'splice_count', 'fiber_type', 'has_measurement_cert'],
   fusion_dp: ['cabinet_code', 'splice_count', 'fiber_type', 'has_measurement_cert'],
   alta: ['access_type', 'equipment_installed', 'client_signature'],
