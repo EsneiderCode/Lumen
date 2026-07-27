@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Save, X } from 'lucide-react'
+import { Suspense, lazy, useState } from 'react'
+import { MapPin, Save, X } from 'lucide-react'
 import {
   createProject,
   updateProject,
@@ -8,12 +8,20 @@ import {
 } from '@/services/projectService'
 import { T } from '@/components/T'
 
+const NexusMap = lazy(() => import('@/components/map/NexusMap'))
+
+/** Where the pin starts when the project has no centre yet. */
+const GERMANY_CENTER = { lat: 51.1657, lng: 10.4515 }
+
 const EMPTY_FORM: ProjectInput = {
   code: '',
   name: '',
   client_id: null,
   default_operator_id: null,
   default_line: null,
+  city: null,
+  center_lat: null,
+  center_lng: null,
 }
 
 export interface ProjectClientRef {
@@ -46,11 +54,20 @@ export function ProjectFormModal({ project, clients, operators = [], onClose, on
           client_id: project.client_id,
           default_operator_id: project.default_operator_id,
           default_line: project.default_line,
+          city: project.city,
+          center_lat: project.center_lat,
+          center_lng: project.center_lng,
         }
       : EMPTY_FORM,
   )
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  const [mapOpen, setMapOpen] = useState(false)
+
+  const center =
+    typeof form.center_lat === 'number' && typeof form.center_lng === 'number'
+      ? { lat: form.center_lat, lng: form.center_lng }
+      : null
 
   const set = <K extends keyof ProjectInput>(key: K, value: ProjectInput[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -177,6 +194,72 @@ export function ProjectFormModal({ project, clients, operators = [], onClose, on
                   <option value="NE4">NE4</option>
                 </select>
               </div>
+            </div>
+          )}
+
+          {/* Locality and map centre. A project always happens in the same
+              town, so this is set once here instead of by every technician on
+              every trench: it is where their map opens when a photo brought no
+              coordinates of its own. */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="input">
+              <label><T de="Ort" /></label>
+              <input
+                value={form.city ?? ''}
+                onChange={(e) => set('city', e.target.value || null)}
+                placeholder="z. B. Roßdorf"
+                maxLength={120}
+              />
+            </div>
+            <div className="input">
+              <label><T de="Kartenmittelpunkt" /></label>
+              <button
+                type="button"
+                onClick={() => setMapOpen((open) => !open)}
+                aria-expanded={mapOpen}
+                className="inline-flex w-full items-center justify-center gap-1.5 rounded-m border border-line px-3 py-2 font-mono text-xs text-fg-1 transition-colors duration-200 hover:border-accent hover:text-accent"
+              >
+                <MapPin size={14} strokeWidth={1.5} />
+                {center
+                  ? `${center.lat.toFixed(4)}, ${center.lng.toFixed(4)}`
+                  : <T de="Nicht gesetzt" />}
+              </button>
+            </div>
+          </div>
+
+          {mapOpen && (
+            <div className="space-y-2">
+              <Suspense
+                fallback={
+                  <div className="flex h-56 items-center justify-center rounded-l border border-line bg-bg-0 font-mono text-[11px] text-fg-3">
+                    [LOADING]
+                  </div>
+                }
+              >
+                <NexusMap
+                  heightClass="h-56"
+                  draggable={center ?? GERMANY_CENTER}
+                  onDragEnd={(position) => {
+                    set('center_lat', position.lat)
+                    set('center_lng', position.lng)
+                  }}
+                />
+              </Suspense>
+              <p className="text-xs text-fg-3">
+                <T de="Ziehe den Pin in die Ortsmitte. Dort öffnet sich die Karte des Technikers." />
+              </p>
+              {center && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    set('center_lat', null)
+                    set('center_lng', null)
+                  }}
+                  className="text-xs text-fg-3 underline underline-offset-2 hover:text-accent"
+                >
+                  <T de="Mittelpunkt entfernen" />
+                </button>
+              )}
             </div>
           )}
 

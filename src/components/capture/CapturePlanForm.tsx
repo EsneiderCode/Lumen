@@ -60,6 +60,8 @@ export interface CapturePlanFormProps {
   answers: CaptureAnswers
   evaluation: CapturePlanEvaluation
   photos: CapturePhotoRow[]
+  /** Centre of the order's project, used when no photo brought a position. */
+  projectCenter?: CaptureGeoPoint | null
   photoUrls: Record<string, string>
   /** Example thumbnails from the `capture-examples` bucket, keyed by the slot's `example` path. */
   exampleUrls?: Record<string, string>
@@ -112,9 +114,10 @@ function YesNoField({
 }
 
 /**
- * Where the map opens when nothing is known yet: the first photo of the
- * Rückmeldung that carried coordinates, else the middle of Germany. Only a
- * starting view — no value is written until the technician drags the pin.
+ * Where the map opens when nothing is known yet, in order: the first photo of
+ * this Rückmeldung that carried coordinates, then the centre of the order's
+ * project (a project always happens in the same town), then the middle of
+ * Germany. Only a starting view — no value is written until the pin is dragged.
  */
 const GERMANY_CENTER: CaptureGeoPoint = { lat: 51.1657, lng: 10.4515, accuracy_m: null }
 
@@ -452,8 +455,8 @@ export function CapturePlanForm(props: CapturePlanFormProps) {
         return { lat, lng, accuracy_m: null } as CaptureGeoPoint
       }
     }
-    return null
-  }, [photos])
+    return props.projectCenter ?? null
+  }, [photos, props.projectCenter])
 
   const photosBySlot = useMemo(() => {
     const map = new Map<string, CapturePhotoRow[]>()

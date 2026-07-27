@@ -169,7 +169,14 @@ type DirectOrderUpdate = Omit<WorkOrderUpdate, 'client_id' | 'service_item_id'> 
 
 export interface WorkOrderWithRelations extends WorkOrderRow {
   clients: { name: string; code: string } | null
-  projects: { name: string; code: string } | null
+  projects: {
+    name: string
+    code: string
+    /** Locality and map centre of the project (migration 060). */
+    city?: string | null
+    center_lat?: number | null
+    center_lng?: number | null
+  } | null
   operators: { name: string; code: string } | null
   assignedProfile?: { full_name: string } | null
   // service_items join populated by fetchWorkOrder + list fetches
@@ -310,7 +317,7 @@ export async function fetchWorkOrder(id: string) {
       `
       *,
       clients ( name, code ),
-      projects ( name, code ),
+      projects ( name, code, city, center_lat, center_lng ),
       operators ( name, code ),
       service_items ( id, code, description_de, description_es, unit, detail_form )
     `,

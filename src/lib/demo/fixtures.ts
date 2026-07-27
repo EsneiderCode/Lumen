@@ -242,13 +242,17 @@ export const initialFixtures = () => ({
   ],
 
   projects: [
+    // city/center_* (migration 060): where the technician's trench map opens.
+    // WCB deliberately has none, so the demo also covers a project without one.
     {
       id: PROJECT_HXT, code: 'HXT', name: 'Höxter Nord', client_id: CLIENT_INSYTE,
       default_operator_id: OP_DGF, default_line: 'NE3', is_active: true, created_at: LAST_WEEK,
+      city: 'Höxter', center_lat: 51.7757, center_lng: 9.3811,
     },
     {
       id: PROJECT_RSD, code: 'RSD', name: 'Roßdorf 1', client_id: CLIENT_INSYTE,
       default_operator_id: OP_DGF, default_line: 'NE3', is_active: true, created_at: LAST_WEEK,
+      city: 'Roßdorf', center_lat: 49.8614, center_lng: 8.7625,
     },
     {
       id: PROJECT_WCB, code: 'WCB', name: 'Westconnect', client_id: CLIENT_VANCOM,

@@ -137,6 +137,7 @@ export function ProjectsPage() {
                 <th>Code</th>
                 <th><T de="Name" /></th>
                 <th><T de="Kunde" /></th>
+                <th><T de="Ort" /></th>
                 <th><T de="Status" /></th>
                 <th className="text-right">Aktionen</th>
               </tr>
@@ -154,6 +155,16 @@ export function ProjectsPage() {
                   </td>
                   <td>{p.name}</td>
                   <td className="text-fg-2">{p.clients?.name ?? '—'}</td>
+                  {/* A project with a locality but no pin still centres nowhere,
+                      so the two are shown together. */}
+                  <td className="text-fg-2">
+                    {p.city ?? '—'}
+                    {p.city && p.center_lat === null && (
+                      <span className="ml-1.5 font-mono text-[11px] text-warn">
+                        <T de="ohne Pin" />
+                      </span>
+                    )}
+                  </td>
                   <td>
                     <span
                       className={`inline-flex items-center gap-1.5 text-xs ${

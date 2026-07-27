@@ -13,6 +13,11 @@ export interface Project {
   client_id: string | null
   default_operator_id: string | null
   default_line: 'NE3' | 'NE4' | null
+  /** Readable label of the project's locality (QFF → Roßdorf). */
+  city: string | null
+  /** Where the technician's map opens before a trench has a position. */
+  center_lat: number | null
+  center_lng: number | null
   is_active: boolean
   created_at: string
   clients: ProjectClientRef | null
@@ -24,6 +29,9 @@ export interface ProjectInput {
   client_id: string | null
   default_operator_id?: string | null
   default_line?: 'NE3' | 'NE4' | null
+  city?: string | null
+  center_lat?: number | null
+  center_lng?: number | null
 }
 
 export interface ProjectMetrics {
@@ -81,6 +89,11 @@ function normalizeInput(input: ProjectInput): ProjectInput {
     client_id: input.client_id || null,
     default_operator_id: input.default_operator_id || null,
     default_line: input.default_line || null,
+    city: input.city?.trim() || null,
+    // Both or neither: half a coordinate centres nothing, and the DB check
+    // (migration 060) rejects it anyway.
+    center_lat: typeof input.center_lat === 'number' ? input.center_lat : null,
+    center_lng: typeof input.center_lng === 'number' ? input.center_lng : null,
   }
 }
 

@@ -137,6 +137,20 @@ export function RueckmeldungPage() {
   const [consumptionDrafts, setConsumptionDrafts] = useState<ConsumptionDraftRow[]>([])
   const [stockCorrections, setStockCorrections] = useState<ConsumptionCorrectionRequired[]>([])
 
+  /**
+   * Centre of the order's project (migration 060). A project always happens in
+   * the same town, so this is where a still-empty trench map opens — rather than
+   * over the middle of the country, which meant hunting for the village on every
+   * single trench.
+   */
+  const projectCenter = useMemo<CaptureGeoPoint | null>(() => {
+    const project = order?.projects
+    if (!project || typeof project.center_lat !== 'number' || typeof project.center_lng !== 'number') {
+      return null
+    }
+    return { lat: project.center_lat, lng: project.center_lng, accuracy_m: null }
+  }, [order])
+
   // What the plan still demands. Photos in flight count as already there, so the
   // form does not flash "missing" between picking the file and the upload finishing.
   const evaluation = useMemo(() => {
@@ -968,6 +982,7 @@ export function RueckmeldungPage() {
           answers={answers}
           evaluation={evaluation}
           photos={photos}
+          projectCenter={projectCenter}
           photoUrls={photoUrls}
           exampleUrls={exampleUrls}
           pending={pendingPhotos}
