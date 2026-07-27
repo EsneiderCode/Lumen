@@ -343,8 +343,9 @@ function buildMessage(body: TelegramBody): string | null {
 // ── Order card enrichment ─────────────────────────────────────────────────────
 // When the payload carries an orderId, the message is built server-side from
 // the live order: project/client/operator, address, priority, status, team
-// with its member list, notes, and attached documents. The payload-based
-// buildMessage above stays as fallback (order_deleted, lookup failures).
+// with its member list, and notes. The order's attachments are deliberately
+// absent. The payload-based buildMessage above stays as fallback
+// (order_deleted, lookup failures).
 
 const WORK_TYPE_LABELS: Record<string, string> = {
   soplado: 'Soplado',
@@ -424,16 +425,10 @@ interface TeamMemberRow {
   role: string
 }
 
-/** Only the name is needed — files are listed in the card, never uploaded. */
-interface DocumentRow {
-  file_name: string
-}
-
 interface OrderCard {
   order: OrderCardRow
   members: TeamMemberRow[]
   responsibleName: string | null
-  documents: DocumentRow[]
 }
 
 async function fetchOrderCard(
@@ -473,14 +468,10 @@ async function fetchOrderCard(
       responsibleName = profiles[0]?.full_name ?? null
     }
 
-    const documents = await supabaseFetch<DocumentRow[]>(
-      supabaseUrl,
-      serviceRoleKey,
-      `work_order_documents?select=file_name&work_order_id=eq.${encodeURIComponent(orderId)}&order=uploaded_at.asc`,
-      { method: 'GET' },
-    )
-
-    return { order, members, responsibleName, documents }
+    // The card deliberately says nothing about the order's attachments — not the
+    // files, not their names. They are read in LUMEN, which is where the access
+    // control lives; a Telegram group is a wider audience than the order is.
+    return { order, members, responsibleName }
   } catch (error) {
     console.error('[send-telegram] order card fetch failed', error)
     return null
@@ -541,12 +532,6 @@ function buildCardText(card: OrderCard): string {
   if (notes) {
     lines.push('')
     lines.push(`📝 <b>Notas:</b> ${esc(notes)}`)
-  }
-
-  if (card.documents.length) {
-    const names = trim(card.documents.map((d) => d.file_name).join(', '), 300)
-    lines.push('')
-    lines.push(`📎 Documentos (${card.documents.length}): ${esc(names ?? '')}`)
   }
 
   return lines.join('\n')

@@ -145,10 +145,10 @@ describe('database migrations cover billing workflow schema', () => {
     // Open events must not honor caller-supplied explicit group ids.
     expect(edgeFunctionSource).toContain('open_event_types.has(body.type)')
     // Messages are enriched server-side from the live order (full card:
-    // project, address, team member list, notes). Attached documents are only
-    // listed by name — the files themselves are never uploaded to Telegram.
+    // project, address, team member list, notes). The order's attachments are
+    // out of scope entirely: neither the files nor their names ever leave LUMEN.
     expect(edgeFunctionSource).toContain('work_orders?select=')
-    expect(edgeFunctionSource).toContain('work_order_documents?select=file_name')
+    expect(edgeFunctionSource).not.toContain('work_order_documents')
     expect(edgeFunctionSource).not.toContain('senddocument')
   })
 
