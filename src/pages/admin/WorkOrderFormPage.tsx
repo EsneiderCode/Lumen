@@ -13,7 +13,7 @@ import {
 import type { WorkType } from '@/types/enums'
 import { useLabels } from '@/i18n/labels'
 import { useTranslation } from 'react-i18next'
-import { fetchServiceItems, groupServiceItemsByCategory } from '@/services/serviceItemService'
+import { fetchServiceItems, filterServiceItemsByClient, groupServiceItemsByCategory } from '@/services/serviceItemService'
 import type { ServiceItemWithRelations } from '@/types/service-items'
 import { DocumentUploader } from '@/components/ui/DocumentUploader'
 import { uploadWorkOrderDocument } from '@/services/workOrderDocumentService'
@@ -352,6 +352,18 @@ export function WorkOrderFormPage() {
     .filter(Boolean)
     .join(' · ')
 
+  // Client-conditioned catalog (spec: catálogo de servicios por cliente).
+  // Generic items (client_id NULL) stay visible for every order; items scoped
+  // to a client only show when the order belongs to that client. Direct orders
+  // (client_id NULL) only see generic items. The currently selected item is
+  // kept visible so editing an order never blanks the selector.
+  const orderClientId = form.is_direct_order ? null : form.client_id || null
+  const visibleServiceItems = filterServiceItemsByClient(
+    serviceItems,
+    orderClientId,
+    form.service_item_id || null,
+  )
+
   return (
     <div className="mx-auto max-w-2xl">
       {/* Header */}
@@ -499,7 +511,7 @@ export function WorkOrderFormPage() {
                 className={`w-full rounded-s border px-3 py-2 text-sm text-fg-1 focus:outline-none focus:ring-1 focus:ring-accent ${errors.service_item_id ? 'border-err bg-err/5' : 'border-line bg-bg-0'}`}
               >
                 <option value="">{t('workOrder.chooseServiceItem')}</option>
-                {groupServiceItemsByCategory(serviceItems).map((group) => (
+                {groupServiceItemsByCategory(visibleServiceItems).map((group) => (
                   <optgroup key={group.category ?? '__none__'} label={group.category ?? t('workOrder.uncategorized')}>
                     {group.items.map((si) => (
                       <option key={si.id} value={si.id}>{si.code} — {si.description_de}</option>

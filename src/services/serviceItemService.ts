@@ -172,6 +172,30 @@ export async function deleteServiceItem(
   return { error: error?.message ?? null }
 }
 
+/**
+ * Client-conditioned catalog filter (spec: catálogo de servicios por cliente).
+ *
+ * Generic items (`client_id === null`) are offered to every order; items
+ * scoped to a client are only offered when the order belongs to that client.
+ * Orders without a client (direct orders, or no client chosen yet) only see
+ * the generic items — the client filter is hard, never cross-client.
+ *
+ * `keepItemId` keeps the currently selected item visible even when it does
+ * not match the filter, so editing a legacy order never blanks the selector.
+ */
+export function filterServiceItemsByClient<T extends ServiceItem>(
+  items: T[],
+  clientId: string | null,
+  keepItemId?: string | null,
+): T[] {
+  return items.filter(
+    (item) =>
+      item.client_id === null ||
+      item.client_id === clientId ||
+      (keepItemId != null && keepItemId !== '' && item.id === keepItemId),
+  )
+}
+
 export interface ServiceItemGroup<T extends ServiceItem> {
   category: string | null
   items: T[]

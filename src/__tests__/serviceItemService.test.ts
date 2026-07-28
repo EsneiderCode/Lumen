@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { groupServiceItemsByCategory } from '@/services/serviceItemService'
+import { filterServiceItemsByClient, groupServiceItemsByCategory } from '@/services/serviceItemService'
 import type { ServiceItem } from '@/types/service-items'
 
 // groupServiceItemsByCategory is a pure function, but the module imports
@@ -97,5 +97,40 @@ describe('groupServiceItemsByCategory', () => {
     expect(groups).toHaveLength(1)
     expect(groups[0].category).toBeNull()
     expect(groups[0].items).toHaveLength(2)
+  })
+})
+
+describe('filterServiceItemsByClient', () => {
+  const CLIENT_FNS = 'client-fns'
+  const CLIENT_INSYTE = 'client-insyte'
+  const items = [
+    makeItem({ id: 'generic', code: 'GEN-1', client_id: null }),
+    makeItem({ id: 'fns', code: '10030300', client_id: CLIENT_FNS }),
+    makeItem({ id: 'insyte', code: 'SOP-M', client_id: CLIENT_INSYTE }),
+  ]
+
+  it('shows generic + own-client items for an order with a client', () => {
+    expect(filterServiceItemsByClient(items, CLIENT_FNS).map((i) => i.id)).toEqual([
+      'generic',
+      'fns',
+    ])
+  })
+
+  it('never leaks another client\u2019s items', () => {
+    const visible = filterServiceItemsByClient(items, CLIENT_INSYTE)
+    expect(visible.map((i) => i.id)).toEqual(['generic', 'insyte'])
+  })
+
+  it('shows only generic items when the order has no client (direct order)', () => {
+    expect(filterServiceItemsByClient(items, null).map((i) => i.id)).toEqual(['generic'])
+  })
+
+  it('keeps the currently selected item visible even if it no longer matches', () => {
+    const visible = filterServiceItemsByClient(items, CLIENT_FNS, 'insyte')
+    expect(visible.map((i) => i.id)).toEqual(['generic', 'fns', 'insyte'])
+  })
+
+  it('ignores an empty keepItemId', () => {
+    expect(filterServiceItemsByClient(items, null, '').map((i) => i.id)).toEqual(['generic'])
   })
 })
