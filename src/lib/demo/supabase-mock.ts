@@ -967,6 +967,38 @@ function makeFunctions() {
             rejection_text: null,
             created_at: new Date().toISOString(),
           })
+        } else {
+          // Espejo del trigger de la migración 062: al entrar en revisión, avisa
+          // en la campana a todos los administradores (cualquiera puede revisar).
+          // El correo al encargado lo manda la Edge Function; aquí no hay envío.
+          const entity = store.compliance_entities.find((e) => e.id === item.entity_id)
+          const docType = store.document_types.find((d) => d.id === item.document_type_id)
+          const dedupeKey = `submitted:${version.id}`
+          for (const profile of store.profiles) {
+            if (profile.role !== 'admin' || !profile.is_active) continue
+            const exists = (store.notifications as unknown as Row[]).some(
+              (n) => n.recipient_id === profile.id && n.dedupe_key === dedupeKey,
+            )
+            if (exists) continue
+            ;(store.notifications as unknown as Row[]).push({
+              id: demoUuid(),
+              recipient_id: profile.id,
+              category: 'doc_submitted',
+              level: 'info',
+              payload: {
+                entity_id: item.entity_id,
+                entity_document_id: item.id,
+                entity_name: entity?.display_name ?? '',
+                doc_type_code: docType?.code ?? '',
+                doc_type_name: docType?.name_i18n ?? null,
+                version_id: version.id,
+                status: 'in_review',
+              },
+              dedupe_key: dedupeKey,
+              read_at: null,
+              created_at: new Date().toISOString(),
+            })
+          }
         }
         saveStore(store)
         return { data: { version }, error: null }

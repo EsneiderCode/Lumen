@@ -45,6 +45,11 @@ import {
   markAllRead,
   markRead,
 } from '@/services/notificationInboxService'
+import {
+  fetchReviewAssigneeCandidates,
+  fetchReviewAssigneeId,
+  setReviewAssignee,
+} from '@/services/complianceSettingsService'
 
 const CONTRACTOR_ID = '00000000-0000-0000-0000-000000000003'
 const TECH_ID = '00000000-0000-0000-0000-000000000002'
@@ -178,6 +183,68 @@ describe('demo compliance — upload edge function (mock)', () => {
       .eq('id', 'ed000000-0000-0000-0000-000000000010')
       .single()
     expect((item as { status?: string })?.status).toBe('approved')
+  })
+
+  it('an upload sent to review notifies the reviewers in the bell', async () => {
+    // The contractor uploads: nobody had been told until migración 062.
+    await supabase.auth.signInWithPassword({ email: 'contractor@demo.lumen', password: 'demo123' })
+
+    const before = await fetchUnreadCount(ADMIN_ID)
+
+    const form = new FormData()
+    form.append('entity_document_id', 'ed000000-0000-0000-0000-000000000008')
+    form.append('metadata', JSON.stringify({ issued_at: '2026-04-01' }))
+    form.append('file', new File([new Uint8Array([0x25, 0x50, 0x44, 0x46])], 'dni.pdf', { type: 'application/pdf' }))
+    await supabase.functions.invoke('compliance-upload', {
+      body: form as unknown as Record<string, unknown>,
+    })
+
+    expect(await fetchUnreadCount(ADMIN_ID)).toBe(before + 1)
+    const { data } = await fetchNotifications(ADMIN_ID)
+    expect(data[0]?.category).toBe('doc_submitted')
+    // El aviso nombra a la entidad dueña del slot — aquí un trabajador desplazado.
+    expect(data[0]?.payload.entity_name).toBe('Luis Fernández')
+  })
+
+  it('direct_approve does not raise a submission notice — nothing is pending review', async () => {
+    await supabase.auth.signInWithPassword({ email: 'admin@demo.lumen', password: 'demo123' })
+    const before = await fetchUnreadCount(ADMIN_ID)
+
+    const form = new FormData()
+    form.append('entity_document_id', 'ed000000-0000-0000-0000-000000000010')
+    form.append('metadata', JSON.stringify({}))
+    form.append('direct_approve', 'true')
+    form.append('file', new File([new Uint8Array([0x25, 0x50, 0x44, 0x46])], 'ausweis.pdf', { type: 'application/pdf' }))
+    await supabase.functions.invoke('compliance-upload', {
+      body: form as unknown as Record<string, unknown>,
+    })
+
+    expect(await fetchUnreadCount(ADMIN_ID)).toBe(before)
+  })
+})
+
+describe('demo compliance — encargado de la documentación (062)', () => {
+  it('starts unassigned and lists the active admins as candidates', async () => {
+    await supabase.auth.signInWithPassword({ email: 'admin@demo.lumen', password: 'demo123' })
+
+    const { data: assignee } = await fetchReviewAssigneeId()
+    expect(assignee).toBeNull()
+
+    const { data: candidates } = await fetchReviewAssigneeCandidates()
+    expect(candidates.map((c) => c.id)).toContain(ADMIN_ID)
+    // Técnicos y contratistas no son candidatos: el encargado es un admin.
+    expect(candidates.map((c) => c.id)).not.toContain(TECH_ID)
+    expect(candidates.map((c) => c.id)).not.toContain(CONTRACTOR_ID)
+  })
+
+  it('persists the chosen assignee and can clear it again', async () => {
+    await supabase.auth.signInWithPassword({ email: 'admin@demo.lumen', password: 'demo123' })
+
+    expect((await setReviewAssignee(ADMIN_ID, ADMIN_ID)).error).toBeNull()
+    expect((await fetchReviewAssigneeId()).data).toBe(ADMIN_ID)
+
+    expect((await setReviewAssignee(null, ADMIN_ID)).error).toBeNull()
+    expect((await fetchReviewAssigneeId()).data).toBeNull()
   })
 })
 

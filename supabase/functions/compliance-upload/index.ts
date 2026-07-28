@@ -11,8 +11,17 @@
 // via magic bytes plus a size cap. Authorization: the caller must either own
 // the compliance entity (contractor portal) or hold compliance.review.
 // Keep the signature check in sync with src/services/complianceHelpers.ts.
+//
+// On a normal upload (no direct_approve) the slot enters `in_review` and two
+// things fire: the in-app bell for every reviewer (DB trigger, migration 062)
+// and — from here — one email to the administrator in charge of documentation
+// (compliance_settings.review_assignee_id, chosen in Administración →
+// Configuración). Reviewing stays open to any compliance.review holder; the
+// assignee is only who gets told. Both are best-effort: the document is already
+// stored and in review before either runs.
 
 import { CORS_HEADERS, env, json, supabaseFetch, userIdFromJwt } from '../_shared/http.ts'
+import { esc, sendEmail } from '../_shared/email.ts'
 
 const MAX_UPLOAD_BYTES = 15 * 1024 * 1024
 const BUCKET = 'compliance-documents'
@@ -20,8 +29,11 @@ const BUCKET = 'compliance-documents'
 interface EntityDocumentRow {
   id: string
   entity_id: string
+  document_type_id: string
   status: string
   current_version_id: string | null
+  compliance_entities: { display_name: string } | null
+  document_types: { code: string; name_i18n: Record<string, string> | null } | null
 }
 
 interface EntityRow {
@@ -102,6 +114,85 @@ async function ownsEntity(
   return false
 }
 
+interface ProfileEmailRow {
+  email: string | null
+}
+
+/**
+ * Recipients of the «documentación nueva» email: the configured assignee. If
+ * nobody is configured — or the configured profile is inactive / has no email —
+ * every active admin gets it, so an upload is never announced to nobody.
+ */
+async function reviewRecipients(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+): Promise<string[]> {
+  const settings = await supabaseFetch<{ review_assignee_id: string | null }[]>(
+    supabaseUrl,
+    serviceRoleKey,
+    'compliance_settings?select=review_assignee_id&limit=1',
+  )
+  const assigneeId = settings[0]?.review_assignee_id ?? null
+
+  if (assigneeId) {
+    const rows = await supabaseFetch<ProfileEmailRow[]>(
+      supabaseUrl,
+      serviceRoleKey,
+      `profiles?select=email&id=eq.${encodeURIComponent(assigneeId)}&is_active=eq.true`,
+    )
+    const emails = rows.map((r) => r.email).filter((e): e is string => !!e)
+    if (emails.length) return emails
+  }
+
+  const admins = await supabaseFetch<ProfileEmailRow[]>(
+    supabaseUrl,
+    serviceRoleKey,
+    'profiles?select=email&role=eq.admin&is_active=eq.true',
+  )
+  return admins.map((r) => r.email).filter((e): e is string => !!e)
+}
+
+function submissionEmailHtml(entityName: string, docName: string, link: string | null): string {
+  const cta = link
+    ? `<p style="margin:16px 0 0"><a href="${esc(link)}" style="color:#FF4D2E">Abrir la bandeja de revisión</a></p>`
+    : ''
+  return (
+    `<div style="font-family:Inter,Arial,sans-serif;color:#F5F3EE;background:#0E1014;padding:24px;border-radius:10px">` +
+    `<p style="margin:0 0 12px"><b>${esc(entityName)}</b> ha enviado documentación para revisar:</p>` +
+    `<p style="margin:0 0 12px;padding:10px 12px;border-left:3px solid #FF4D2E;background:#161920">` +
+    `<b>${esc(docName)}</b></p>` +
+    cta +
+    `<p style="margin:16px 0 0;color:#7B7D7A;font-size:12px">LUMEN · HMR Nexus Engineering GmbH</p>` +
+    `</div>`
+  )
+}
+
+/** Best-effort: a bounced email must never fail an upload that already landed. */
+async function notifySubmission(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  item: EntityDocumentRow,
+): Promise<void> {
+  try {
+    const to = await reviewRecipients(supabaseUrl, serviceRoleKey)
+    if (!to.length) return
+    const entityName = item.compliance_entities?.display_name ?? '—'
+    const docName =
+      item.document_types?.name_i18n?.es ??
+      item.document_types?.name_i18n?.de ??
+      item.document_types?.code ??
+      '—'
+    const appUrl = Deno.env.get('APP_BASE_URL')
+    await sendEmail({
+      to,
+      subject: `Documentación nueva para revisar — ${entityName}`,
+      html: submissionEmailHtml(entityName, docName, appUrl ? `${appUrl.replace(/\/$/, '')}/admin/compliance` : null),
+    })
+  } catch (error) {
+    console.error('[compliance-upload] submission email failed (non-fatal)', error)
+  }
+}
+
 function parseMetadata(raw: FormDataEntryValue | null): Record<string, unknown> {
   if (typeof raw !== 'string' || !raw) return {}
   try {
@@ -142,7 +233,9 @@ Deno.serve(async (req) => {
     const itemRows = await supabaseFetch<EntityDocumentRow[]>(
       supabaseUrl,
       serviceRoleKey,
-      `entity_documents?id=eq.${encodeURIComponent(entityDocumentId)}&select=id,entity_id,status,current_version_id`,
+      `entity_documents?id=eq.${encodeURIComponent(entityDocumentId)}` +
+        '&select=id,entity_id,document_type_id,status,current_version_id,' +
+        'compliance_entities:entity_id(display_name),document_types:document_type_id(code,name_i18n)',
     )
     const item = itemRows[0]
     if (!item) return json(404, { error: 'Checklist item not found' })
@@ -227,6 +320,12 @@ Deno.serve(async (req) => {
         body: JSON.stringify({ current_version_id: version.id, ...approvedPatch }),
       },
     )
+
+    if (!directApprove) {
+      // The slot is now in_review: tell the administrator in charge. The bell
+      // notification for every reviewer is already written by the DB trigger.
+      await notifySubmission(supabaseUrl, serviceRoleKey, item)
+    }
 
     if (directApprove) {
       await supabaseFetch<void>(

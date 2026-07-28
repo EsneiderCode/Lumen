@@ -1119,6 +1119,12 @@ export const initialFixtures = () => ({
     { id: 'pa000000-0000-0000-0000-000000000001', entity_id: 'ce000000-0000-0000-0000-000000000001', project_id: PROJECT_HXT, start_date: '2026-04-01', end_date: '2026-12-31', status: 'confirmed', override: false, override_by: null, override_reason: null, created_by: ADMIN_ID, created_at: LAST_WEEK, updated_at: LAST_WEEK },
   ],
 
+  // Fila única de ajustes de cumplimiento (migración 062). El encargado empieza
+  // sin asignar: así se ve el aviso de «sin encargado» en Configuración.
+  compliance_settings: [
+    { id: true, review_assignee_id: null as string | null, updated_at: LAST_WEEK, updated_by: null as string | null },
+  ],
+
   notifications: [
     { id: 'no000000-0000-0000-0000-000000000001', recipient_id: ADMIN_ID, category: 'doc_rejected', level: 'err', payload: { entity_id: 'ce000000-0000-0000-0000-000000000003', entity_name: 'Luis Fernández', doc_type_code: 'a1_certificate', doc_type_name: { es: 'Certificado A1', de: 'A1-Bescheinigung', en: 'A1 certificate' }, action: 'rejected' }, dedupe_key: 'review:dr000000-0000-0000-0000-000000000002', read_at: null, created_at: YESTERDAY },
     { id: 'no000000-0000-0000-0000-000000000002', recipient_id: ADMIN_ID, category: 'doc_expiring', level: 'warn', payload: { entity_id: 'ce000000-0000-0000-0000-000000000001', entity_document_id: 'ed000000-0000-0000-0000-000000000002', entity_name: 'Fibra Ibérica S.L.', doc_type_code: 'rc_insurance', doc_type_name: { es: 'Seguro de responsabilidad civil', de: 'Betriebshaftpflichtversicherung', en: 'Liability insurance' }, status: 'expiring', days: 21 }, dedupe_key: 'sweep:ed000000-0000-0000-0000-000000000002:expiring', read_at: null, created_at: NOW },

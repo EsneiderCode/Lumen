@@ -1098,6 +1098,14 @@
   },
   "settings": {
     "subtitle": "Systemkonfiguration",
+    "complianceReviewer": {
+      "title": "Verantwortlich für die Dokumentation",
+      "subtitle": "Administrator, der die Einreichungen von Firmen und Selbstständigen per E-Mail erhält. Prüfen darf jeder Administrator.",
+      "label": "Zuständiger Administrator",
+      "unassigned": "— Nicht zugewiesen —",
+      "noneWarning": "Ohne Zuständigen geht die Benachrichtigung an alle aktiven Administratoren.",
+      "noPermission": "Sie haben keine Berechtigung, den Zuständigen zu ändern."
+    },
     "telegram": {
       "subtitle": "Konfiguriere Telegram-Gruppen für automatische Systembenachrichtigungen.",
       "groups": {
@@ -1266,7 +1274,8 @@
       "doc_expiring": "{{doc}} von {{entity}} läuft in {{days}} Tag(en) ab",
       "doc_expired": "{{doc}} von {{entity}} ist abgelaufen",
       "doc_approved": "{{doc}} von {{entity}} genehmigt",
-      "doc_rejected": "{{doc}} von {{entity}} abgelehnt"
+      "doc_rejected": "{{doc}} von {{entity}} abgelehnt",
+      "doc_submitted": "{{entity}} hat {{doc}} zur Prüfung eingereicht"
     }
   },
   "compliance": {

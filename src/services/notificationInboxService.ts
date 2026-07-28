@@ -12,6 +12,8 @@ export type NotificationCategory =
   | 'doc_expired'
   | 'doc_approved'
   | 'doc_rejected'
+  // Documentación enviada a revisión por una empresa o autónomo (migración 062).
+  | 'doc_submitted'
 
 export type NotificationLevel = 'info' | 'warn' | 'err'
 

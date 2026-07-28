@@ -1,8 +1,16 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CheckSquare, KeyRound, Pencil, Plus, Send, Square, Trash2 } from 'lucide-react'
+import { CheckSquare, FileCheck2, KeyRound, Pencil, Plus, Send, Square, Trash2 } from 'lucide-react'
 import { ManualCard } from '@/components/profile/ManualCard'
 import { TEAMS } from '@/constants/styles'
+import { useAuth } from '@/hooks/useAuth'
+import { usePermissions } from '@/hooks/usePermissions'
+import {
+  fetchReviewAssigneeCandidates,
+  fetchReviewAssigneeId,
+  setReviewAssignee,
+  type ReviewAssigneeCandidate,
+} from '@/services/complianceSettingsService'
 import {
   fetchTeamPinStatuses,
   setTeamPin,
@@ -52,6 +60,9 @@ type ValidationState =
 
 export function SettingsPage() {
   const { t } = useTranslation()
+  const { user } = useAuth()
+  const { can } = usePermissions()
+  const canConfigureCompliance = can('compliance.configure_matrix')
 
   const [groups, setGroups] = useState<TelegramGroup[]>([])
   const [mappings, setMappings] = useState<EventGroupMapping[]>([])
@@ -75,6 +86,12 @@ export function SettingsPage() {
   const [pinSaving, setPinSaving] = useState(false)
   const [pinError, setPinError] = useState<string | null>(null)
 
+  // ── Encargado de documentación (cumplimiento) ──────────────────────────────
+  const [assigneeId, setAssigneeId] = useState<string | null>(null)
+  const [assigneeCandidates, setAssigneeCandidates] = useState<ReviewAssigneeCandidate[]>([])
+  const [assigneeSaving, setAssigneeSaving] = useState(false)
+  const [assigneeError, setAssigneeError] = useState<string | null>(null)
+
   // ── Load ───────────────────────────────────────────────────────────────────
 
   const load = useCallback(async () => {
@@ -96,8 +113,32 @@ export function SettingsPage() {
     setTeamPins(data)
   }, [])
 
+  const loadAssignee = useCallback(async () => {
+    const [current, candidates] = await Promise.all([
+      fetchReviewAssigneeId(),
+      fetchReviewAssigneeCandidates(),
+    ])
+    setAssigneeId(current.data)
+    setAssigneeCandidates(candidates.data)
+  }, [])
+
   useEffect(() => { void load() }, [load])
   useEffect(() => { void loadTeamPins() }, [loadTeamPins])
+  useEffect(() => { void loadAssignee() }, [loadAssignee])
+
+  async function handleAssigneeChange(value: string) {
+    const next = value || null
+    const previous = assigneeId
+    setAssigneeId(next)
+    setAssigneeSaving(true)
+    setAssigneeError(null)
+    const { error } = await setReviewAssignee(next, user?.id ?? null)
+    setAssigneeSaving(false)
+    if (error) {
+      setAssigneeId(previous)
+      setAssigneeError(t('common.error'))
+    }
+  }
 
   // ── Form helpers ───────────────────────────────────────────────────────────
 
@@ -276,6 +317,53 @@ export function SettingsPage() {
       {dataError && (
         <p className="text-sm text-err">{dataError}</p>
       )}
+
+      {/* ════════════════════════════════════════════════════════════════════
+          Section 0 — Encargado de la documentación (cumplimiento)
+          Solo decide a quién le llega el correo cuando una empresa o autónomo
+          envía documentación: revisarla puede cualquier administrador.
+      ═══════════════════════════════════════════════════════════════════════ */}
+      <div className="rounded-l border border-line bg-bg-1">
+        <div className="border-b border-line px-5 py-4">
+          <div className="flex items-center gap-2">
+            <FileCheck2 size={14} strokeWidth={1.5} className="text-fg-2" />
+            <h3 className="text-sm font-medium text-fg-1">{t('settings.complianceReviewer.title')}</h3>
+          </div>
+          <p className="mt-0.5 text-xs text-fg-2">{t('settings.complianceReviewer.subtitle')}</p>
+        </div>
+
+        <div className="px-5 py-4">
+          <label htmlFor="compliance-assignee" className="nx-label mb-1.5 block">
+            {t('settings.complianceReviewer.label')}
+          </label>
+          <select
+            id="compliance-assignee"
+            value={assigneeId ?? ''}
+            disabled={!canConfigureCompliance || assigneeSaving}
+            onChange={(e) => void handleAssigneeChange(e.target.value)}
+            className="w-full max-w-sm rounded-s border border-line bg-bg-2 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none disabled:opacity-50"
+          >
+            <option value="">{t('settings.complianceReviewer.unassigned')}</option>
+            {assigneeCandidates.map((candidate) => (
+              <option key={candidate.id} value={candidate.id}>
+                {candidate.fullName}
+                {candidate.email ? ` · ${candidate.email}` : ''}
+              </option>
+            ))}
+          </select>
+
+          {assigneeSaving && (
+            <p className="mt-2 font-mono text-xs text-fg-3">[{t('common.saving')}]</p>
+          )}
+          {assigneeError && <p className="mt-2 text-xs text-err">{assigneeError}</p>}
+          {!assigneeId && !assigneeSaving && (
+            <p className="mt-2 text-xs text-warn">{t('settings.complianceReviewer.noneWarning')}</p>
+          )}
+          {!canConfigureCompliance && (
+            <p className="mt-2 text-xs text-fg-3">{t('settings.complianceReviewer.noPermission')}</p>
+          )}
+        </div>
+      </div>
 
       {/* ════════════════════════════════════════════════════════════════════
           Section 1 — Telegram groups CRUD

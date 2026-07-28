@@ -1098,6 +1098,14 @@
   },
   "settings": {
     "subtitle": "Configuración del sistema",
+    "complianceReviewer": {
+      "title": "Encargado de la documentación",
+      "subtitle": "Administrador que recibe por correo los envíos de documentación de empresas y autónomos. Revisarla puede cualquier administrador.",
+      "label": "Administrador encargado",
+      "unassigned": "— Sin asignar —",
+      "noneWarning": "Sin encargado: el aviso se manda a todos los administradores activos.",
+      "noPermission": "No tienes permiso para cambiar el encargado."
+    },
     "telegram": {
       "subtitle": "Configurá los grupos de Telegram para las notificaciones automáticas del sistema.",
       "groups": {
@@ -1266,7 +1274,8 @@
       "doc_expiring": "{{doc}} de {{entity}} caduca en {{days}} día(s)",
       "doc_expired": "{{doc}} de {{entity}} ha caducado",
       "doc_approved": "{{doc}} de {{entity}} aprobado",
-      "doc_rejected": "{{doc}} de {{entity}} rechazado"
+      "doc_rejected": "{{doc}} de {{entity}} rechazado",
+      "doc_submitted": "{{entity}} ha enviado {{doc}} para revisar"
     }
   },
   "compliance": {
