@@ -121,8 +121,23 @@ describe('filterServiceItemsByClient', () => {
     expect(visible.map((i) => i.id)).toEqual(['generic', 'insyte'])
   })
 
-  it('shows only generic items when the order has no client (direct order)', () => {
+  it('shows only generic items when the order has no client (direct order, none chosen yet)', () => {
     expect(filterServiceItemsByClient(items, null).map((i) => i.id)).toEqual(['generic'])
+  })
+
+  it('direct order with a chosen catalog client sees generic + that client\u2019s items', () => {
+    // Direct orders persist client_id NULL, but the form may choose a client
+    // purely to unlock its catalog — same filter semantics as a client order.
+    const visible = filterServiceItemsByClient(items, CLIENT_FNS)
+    expect(visible.map((i) => i.id)).toEqual(['generic', 'fns'])
+    expect(visible.map((i) => i.id)).not.toContain('insyte')
+  })
+
+  it('direct order switching catalog client swaps the scoped items', () => {
+    expect(filterServiceItemsByClient(items, CLIENT_INSYTE).map((i) => i.id)).toEqual([
+      'generic',
+      'insyte',
+    ])
   })
 
   it('keeps the currently selected item visible even if it no longer matches', () => {

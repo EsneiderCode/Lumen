@@ -355,9 +355,12 @@ export function WorkOrderFormPage() {
   // Client-conditioned catalog (spec: catálogo de servicios por cliente).
   // Generic items (client_id NULL) stay visible for every order; items scoped
   // to a client only show when the order belongs to that client. Direct orders
-  // (client_id NULL) only see generic items. The currently selected item is
-  // kept visible so editing an order never blanks the selector.
-  const orderClientId = form.is_direct_order ? null : form.client_id || null
+  // can pick a client purely to unlock that client's catalog (form-side filter
+  // only — work_orders.client_id stays NULL on save, because NULL is what makes
+  // the order "direct" for the DB state machine, migration 005). With no client
+  // chosen yet, only generic items show. The currently selected item is kept
+  // visible so editing an order never blanks the selector.
+  const orderClientId = form.client_id || null
   const visibleServiceItems = filterServiceItemsByClient(
     serviceItems,
     orderClientId,
@@ -445,6 +448,28 @@ export function WorkOrderFormPage() {
                       ))}
                     </select>
                     {errors.client_id && <p className="mt-1 text-xs text-err">{errors.client_id}</p>}
+                  </div>
+                )}
+
+                {/* Direct order: optional client, only to unlock that client's
+                    service catalog. Never persisted — the save payload keeps
+                    client_id NULL so the order stays a Direktauftrag. */}
+                {form.is_direct_order && (
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-fg-2">
+                      {t('workOrder.catalogClient')}
+                    </label>
+                    <select
+                      value={form.client_id}
+                      onChange={(e) => setField('client_id', e.target.value)}
+                      className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:outline-none focus:ring-1 focus:ring-accent"
+                    >
+                      <option value="">{t('workOrder.catalogClientNone')}</option>
+                      {clients.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name} ({c.code})</option>
+                      ))}
+                    </select>
+                    <p className="mt-1 text-xs text-fg-3">{t('workOrder.catalogClientHint')}</p>
                   </div>
                 )}
 

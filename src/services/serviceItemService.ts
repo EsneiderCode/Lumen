@@ -177,8 +177,10 @@ export async function deleteServiceItem(
  *
  * Generic items (`client_id === null`) are offered to every order; items
  * scoped to a client are only offered when the order belongs to that client.
- * Orders without a client (direct orders, or no client chosen yet) only see
- * the generic items — the client filter is hard, never cross-client.
+ * Orders without a client only see the generic items — the client filter is
+ * hard, never cross-client. Direct orders (client_id NULL in the DB) may pass
+ * a form-chosen catalog client here to unlock that client's items without
+ * persisting the choice.
  *
  * `keepItemId` keeps the currently selected item visible even when it does
  * not match the filter, so editing a legacy order never blanks the selector.
