@@ -15,6 +15,7 @@ const SCHEDULER_ID = '00000000-0000-0000-0000-000000000004'
 
 const CLIENT_INSYTE = '10000000-0000-0000-0000-000000000001'
 const CLIENT_VANCOM = '10000000-0000-0000-0000-000000000002'
+const CLIENT_FNS = '10000000-0000-0000-0000-000000000003'
 
 const PROJECT_HXT = '20000000-0000-0000-0000-000000000001'
 const PROJECT_RSD = '20000000-0000-0000-0000-000000000002'
@@ -23,6 +24,7 @@ const PROJECT_WCB = '20000000-0000-0000-0000-000000000003'
 const OP_DGF = '30000000-0000-0000-0000-000000000001'
 const OP_GFPLUS = '30000000-0000-0000-0000-000000000002'
 const OP_UGG = '30000000-0000-0000-0000-000000000003'
+const OP_TELEKOM = '30000000-0000-0000-0000-000000000004'
 
 const SI_SOPLADO_M = '40000000-0000-0000-0000-000000000001'
 const SI_FUSION_AP = '40000000-0000-0000-0000-000000000002'
@@ -239,6 +241,8 @@ export const initialFixtures = () => ({
   clients: [
     { id: CLIENT_INSYTE, name: 'Insyte Deutschland', code: 'INSYTE', is_active: true, created_at: LAST_WEEK },
     { id: CLIENT_VANCOM, name: 'Vancom IT',         code: 'VANCOM', is_active: true, created_at: LAST_WEEK },
+    // Migración 061: cliente nuevo, todavía sin proyectos ni órdenes.
+    { id: CLIENT_FNS,    name: 'FNS Infrastruktur GmbH', code: 'FNS', is_active: true, created_at: LAST_WEEK },
   ],
 
   projects: [
@@ -264,6 +268,7 @@ export const initialFixtures = () => ({
     { id: OP_DGF,    code: 'DGF',    name: 'Deutsche Glasfaser', is_active: true, created_at: LAST_WEEK },
     { id: OP_GFPLUS, code: 'GFPLUS', name: 'GlasfaserPlus',      is_active: true, created_at: LAST_WEEK },
     { id: OP_UGG,    code: 'UGG',    name: 'UGG',                is_active: true, created_at: LAST_WEEK },
+    { id: OP_TELEKOM, code: 'TELEKOM', name: 'Telekom',          is_active: true, created_at: LAST_WEEK },
   ],
 
   service_items: [

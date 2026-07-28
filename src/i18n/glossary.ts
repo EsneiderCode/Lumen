@@ -136,13 +136,13 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   Operator: {
     es: 'Operador',
     concept:
-      'Empresa que opera la red (DGF, GFP, UGG). Las órdenes pertenecen a un operador específico.',
+      'Empresa que opera la red (DGF, GFP, UGG, Telekom). Las órdenes pertenecen a un operador específico.',
   },
   Kunden: { es: 'Clientes' },
   Kunde: {
     es: 'Cliente',
     concept:
-      'Empresa contratante del trabajo (Insyte Deutschland, Vancom IT). No confundir con el cliente final del Hausanschluss.',
+      'Empresa contratante del trabajo (Insyte Deutschland, Vancom IT, FNS Infrastruktur). No confundir con el cliente final del Hausanschluss.',
   },
   Material: { es: 'Materiales' },
   Personal: { es: 'Personal / Recursos humanos' },

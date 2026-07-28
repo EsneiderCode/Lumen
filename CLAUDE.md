@@ -117,10 +117,10 @@ Client Accepted → Invoiced → Paid
 
 ## Client Context
 
-- **Primary Clients**: Insyte Deutschland, Vancom IT
+- **Primary Clients**: Insyte Deutschland, Vancom IT, FNS Infrastruktur
 - **Field Teams** (12): Rot, Grün, Blau, Gelb, Weiß, Grau, Braun, Violett, Türkis, Schwarz, Orange, Rosa
 - **Projects**: HXT, RSD, WCB, QFF, WRZ, EHR
-- **Operators**: DGF, GFP, UGG
+- **Operators**: DGF, GFP, UGG, Telekom
 - **Lines**: NE3 / NE4
 
 ## German Compliance Requirements
