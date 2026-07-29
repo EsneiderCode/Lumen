@@ -18,7 +18,7 @@ import {
   type ReportedServiceItemDraft,
   type WorkOrderWithRelations,
 } from '@/services/workOrderService'
-import { fetchServiceItems } from '@/services/serviceItemService'
+import { applicableServiceItems, fetchServiceItems } from '@/services/serviceItemService'
 import { fetchVehicles } from '@/services/materialInventoryService'
 import {
   fetchCapturePlanForOrder,
@@ -51,15 +51,20 @@ export interface RueckmeldungLoadResult {
   cachedAt: string | null
 }
 
-/** The catalog rows that apply to this order — global rows stay visible. */
+/**
+ * The catalog rows this order's technician may report — global rows stay
+ * visible. Pass-through positions are excluded: they are settled at actual
+ * cost from administration, and reporting one would block the internal
+ * certification on a missing price (migration 063).
+ */
 function applicableCatalog(
   items: ServiceItemWithRelations[],
   order: WorkOrderWithRelations,
 ): ServiceItemWithRelations[] {
-  return items.filter((item) => {
-    const okClient = item.client_id == null || item.client_id === order.client_id
-    const okOperator = item.operator_id == null || item.operator_id === order.operator_id
-    return okClient && okOperator
+  return applicableServiceItems(items, {
+    clientId: order.client_id,
+    operatorId: order.operator_id,
+    excludePassThrough: true,
   })
 }
 

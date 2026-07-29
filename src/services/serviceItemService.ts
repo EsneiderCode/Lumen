@@ -49,6 +49,7 @@ export async function fetchServiceItems(
         detail_form: row.detail_form,
         display_order: row.display_order,
         active: row.active,
+        is_pass_through: row.is_pass_through,
         notes: row.notes,
         created_at: row.created_at,
         updated_at: row.updated_at,
@@ -91,7 +92,7 @@ export async function fetchServiceItem(
 ): Promise<{ data: ServiceItem | null; error: string | null }> {
   const itemColumns = options.includePrices
     ? '*'
-    : 'id, code, description_de, description_es, unit, category, operator_id, client_id, detail_form, display_order, active, notes, created_at, updated_at'
+    : 'id, code, description_de, description_es, unit, category, operator_id, client_id, detail_form, display_order, active, is_pass_through, notes, created_at, updated_at'
 
   const { data, error } = await supabase
     .from(options.includePrices ? 'service_items' : 'service_items_public' as 'service_items')
@@ -172,54 +173,55 @@ export async function deleteServiceItem(
   return { error: error?.message ?? null }
 }
 
-/**
- * Client-conditioned catalog filter (spec: catálogo de servicios por cliente).
- *
- * Generic items (`client_id === null`) are offered to every order; items
- * scoped to a client are only offered when the order belongs to that client.
- * Orders without a client only see the generic items — the client filter is
- * hard, never cross-client. Direct orders (client_id NULL in the DB) may pass
- * a form-chosen catalog client here to unlock that client's items without
- * persisting the choice.
- *
- * `keepItemId` keeps the currently selected item visible even when it does
- * not match the filter, so editing a legacy order never blanks the selector.
- */
-export function filterServiceItemsByClient<T extends ServiceItem>(
-  items: T[],
-  clientId: string | null,
-  keepItemId?: string | null,
-): T[] {
-  return items.filter(
-    (item) =>
-      item.client_id === null ||
-      item.client_id === clientId ||
-      (keepItemId != null && keepItemId !== '' && item.id === keepItemId),
-  )
+/** Which slice of the catalog a given order may pick from. */
+export interface CatalogScope {
+  /**
+   * The order's client. `null` means the order has no client (Direktauftrag),
+   * and then only the generic items apply — the client filter is hard, never
+   * cross-client.
+   */
+  clientId: string | null
+  /** The order's operator. `null` means only operator-agnostic items apply. */
+  operatorId: string | null
+  /**
+   * Drop positions settled at actual cost (migration 063). Field paths pass
+   * true: a technician must not be able to report a position with no price,
+   * because internal certification then fails on a missing rate (see
+   * `buildBillingDraftsFromReportedItems`). Admin/catalog screens pass false.
+   */
+  excludePassThrough: boolean
+  /**
+   * Keeps an already-selected item visible even when it falls outside the
+   * scope, so editing an older order never blanks its selector.
+   */
+  keepItemId?: string | null
 }
 
 /**
- * Which client conditions the service catalog shown in the order form.
+ * The catalog rows that apply to one order (spec: catálogo de servicios por
+ * cliente). Single definition of "which positions apply", shared by the order
+ * form and the Rückmeldung — two copies of this rule would drift.
  *
- * Normal orders filter by the order's own client (usually derived from the
- * project). Direct orders (Direktauftrag) ignore the project-derived client
- * entirely and use only the explicitly chosen catalog client — otherwise a
- * previously selected project would leak its client into the direct catalog
- * filter. Empty strings normalize to null ("no client → generic items only").
+ * An item applies when its client and operator either match the order's or are
+ * unset (global rows stay visible everywhere).
  */
-export function resolveEffectiveCatalogClient(
-  isDirectOrder: boolean,
-  orderClientId: string | null,
-  directCatalogClientId: string | null,
-): string | null {
-  const effective = isDirectOrder ? directCatalogClientId : orderClientId
-  return effective || null
+export function applicableServiceItems<T extends ServiceItem>(
+  items: T[],
+  scope: CatalogScope,
+): T[] {
+  const keepItemId = scope.keepItemId || null
+  return items.filter((item) => {
+    if (keepItemId !== null && item.id === keepItemId) return true
+    if (scope.excludePassThrough && item.is_pass_through) return false
+    const okClient = item.client_id === null || item.client_id === scope.clientId
+    const okOperator = item.operator_id === null || item.operator_id === scope.operatorId
+    return okClient && okOperator
+  })
 }
 
 /**
  * Value persisted to work_orders.client_id. NULL is what makes an order a
- * Direktauftrag for the DB state machine (migration 005), so direct orders
- * always persist NULL — regardless of any catalog client chosen in the form.
+ * Direktauftrag for the DB state machine (migration 005).
  */
 export function resolvePersistedClientId(
   isDirectOrder: boolean,

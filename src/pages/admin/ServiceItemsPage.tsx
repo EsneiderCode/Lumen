@@ -45,6 +45,7 @@ const EMPTY_FORM: ServiceItemPayload = {
   detail_form: null,
   display_order: 0,
   active: true,
+  is_pass_through: false,
   notes: null,
 }
 
@@ -84,6 +85,10 @@ function ServiceItemModal({ item, operators, clients, categories, onClose, onSav
           detail_form:   item.detail_form,
           display_order: item.display_order,
           active:        item.active,
+          // Not editable here: it is set by the rate-card migration and the DB
+          // forbids pairing it with a unit price. Carried over so saving an
+          // edit never silently reclassifies the position.
+          is_pass_through: item.is_pass_through,
           notes:         item.notes,
         }
       : { ...EMPTY_FORM },

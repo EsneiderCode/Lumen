@@ -13,7 +13,7 @@ import {
 import type { WorkType } from '@/types/enums'
 import { useLabels } from '@/i18n/labels'
 import { useTranslation } from 'react-i18next'
-import { fetchServiceItems, filterServiceItemsByClient, groupServiceItemsByCategory, resolveEffectiveCatalogClient, resolvePersistedClientId } from '@/services/serviceItemService'
+import { applicableServiceItems, fetchServiceItems, groupServiceItemsByCategory, resolvePersistedClientId } from '@/services/serviceItemService'
 import type { ServiceItemWithRelations } from '@/types/service-items'
 import { DocumentUploader } from '@/components/ui/DocumentUploader'
 import { uploadWorkOrderDocument } from '@/services/workOrderDocumentService'
@@ -93,6 +93,27 @@ interface FormValues {
   internal_notes: string
 }
 
+/**
+ * The client whose rate card this order may pick from. A Direktauftrag has no
+ * client (persisted as NULL, migration 005), so it only ever sees the generic
+ * positions — a client's catalog belongs to that client's orders.
+ */
+function catalogClientOf(form: FormValues): string | null {
+  return form.is_direct_order ? null : form.client_id || null
+}
+
+/**
+ * Changing the client — directly, through the project, or by toggling
+ * Direktauftrag — changes which positions apply. A service item picked under
+ * the previous client must not survive the change, or the order would be saved
+ * against a client whose rate card does not contain it.
+ */
+function withCatalogScope(next: FormValues, prev: FormValues): FormValues {
+  if (!next.service_item_id) return next
+  if (catalogClientOf(next) === catalogClientOf(prev)) return next
+  return { ...next, service_item_id: '', work_type: '', capture_plan_key: '' }
+}
+
 const EMPTY_FORM: FormValues = {
   is_direct_order: false,
   client_id: '',
@@ -118,10 +139,6 @@ export function WorkOrderFormPage() {
   const isEdit = Boolean(id)
 
   const [form, setForm] = useState<FormValues>(EMPTY_FORM)
-  // Direktauftrag catalog filter — which client's catalog to unlock for a
-  // direct order. Kept OUTSIDE the form so a project-derived client_id never
-  // leaks into the direct catalog filter. Form-side only, never persisted.
-  const [directCatalogClientId, setDirectCatalogClientId] = useState<string | null>(null)
   const [clients, setClients] = useState<{ id: string; name: string; code: string }[]>([])
   const [projects, setProjects] = useState<ProjectLookup[]>([])
   const [operators, setOperators] = useState<{ id: string; name: string; code: string }[]>([])
@@ -218,23 +235,13 @@ export function WorkOrderFormPage() {
 
   function setField<K extends keyof FormValues>(key: K, value: FormValues[K]) {
     setErrors((e) => ({ ...e, [key]: undefined }))
-    if (key === 'is_direct_order') {
-      // Toggling direct order ON starts the catalog filter from scratch —
-      // whatever client the project derived must not pre-filter the catalog.
-      if (value === true) setDirectCatalogClientId(null)
-      setForm((f) => ({ ...f, is_direct_order: value as boolean }))
-      return
-    }
     if (key === 'project_id') {
       const project = projects.find((p) => p.id === value)
       const defaults = deriveOrderDefaultsFromProject(project)
-      // defaults may include client_id (order client) — it intentionally
-      // never touches directCatalogClientId (rule: project changes must not
-      // influence the direct-order catalog filter).
-      setForm((f) => ({ ...f, project_id: value as string, ...defaults }))
+      setForm((f) => withCatalogScope({ ...f, project_id: value as string, ...defaults }, f))
       return
     }
-    setForm((f) => ({ ...f, [key]: value }))
+    setForm((f) => withCatalogScope({ ...f, [key]: value }, f))
   }
 
   function validate(): boolean {
@@ -367,25 +374,17 @@ export function WorkOrderFormPage() {
     .join(' · ')
 
   // Client-conditioned catalog (spec: catálogo de servicios por cliente).
-  // Generic items (client_id NULL) stay visible for every order; items scoped
-  // to a client only show when the order belongs to that client. Direct orders
-  // can pick a catalog client purely to unlock that client's catalog (form-side
-  // filter only — work_orders.client_id stays NULL on save, because NULL is
-  // what makes the order "direct" for the DB state machine, migration 005).
-  // Direct orders use directCatalogClientId exclusively, so a project-derived
-  // form.client_id never leaks into the direct filter. With no client chosen
-  // yet, only generic items show. The currently selected item is kept visible
-  // so editing an order never blanks the selector.
-  const catalogClientId = resolveEffectiveCatalogClient(
-    form.is_direct_order,
-    form.client_id || null,
-    directCatalogClientId,
-  )
-  const visibleServiceItems = filterServiceItemsByClient(
-    serviceItems,
-    catalogClientId,
-    form.service_item_id || null,
-  )
+  // Generic items stay visible for every order; items scoped to a client only
+  // show on that client's orders, and an order without a client sees only the
+  // generic ones. Pass-through positions stay available here: they are the
+  // admin's to settle. The item already selected is kept visible so opening an
+  // older order never blanks its selector.
+  const visibleServiceItems = applicableServiceItems(serviceItems, {
+    clientId: catalogClientOf(form),
+    operatorId: form.operator_id || null,
+    excludePassThrough: false,
+    keepItemId: form.service_item_id,
+  })
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -468,30 +467,6 @@ export function WorkOrderFormPage() {
                       ))}
                     </select>
                     {errors.client_id && <p className="mt-1 text-xs text-err">{errors.client_id}</p>}
-                  </div>
-                )}
-
-                {/* Direct order: optional catalog client, only to unlock that
-                    client's service catalog. Reads/writes directCatalogClientId
-                    only — never form.client_id. Never persisted: the save
-                    payload keeps client_id NULL so the order stays a
-                    Direktauftrag. */}
-                {form.is_direct_order && (
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-fg-2">
-                      {t('workOrder.catalogClient')}
-                    </label>
-                    <select
-                      value={directCatalogClientId ?? ''}
-                      onChange={(e) => setDirectCatalogClientId(e.target.value || null)}
-                      className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:outline-none focus:ring-1 focus:ring-accent"
-                    >
-                      <option value="">{t('workOrder.catalogClientNone')}</option>
-                      {clients.map((c) => (
-                        <option key={c.id} value={c.id}>{c.name} ({c.code})</option>
-                      ))}
-                    </select>
-                    <p className="mt-1 text-xs text-fg-3">{t('workOrder.catalogClientHint')}</p>
                   </div>
                 )}
 

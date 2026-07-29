@@ -21,6 +21,11 @@ export interface ServiceItem {
   detail_form: 'soplado' | 'fusion_ap' | 'fusion_dp' | 'alta' | 'nt' | 'patchkabel' | 'pop' | null
   display_order: number
   active: boolean
+  /**
+   * Durchlaufende Position (LE): settled at actual cost, so it carries no unit
+   * price and is never reported from the field (migration 063).
+   */
+  is_pass_through: boolean
   notes: string | null
   created_at: string
   updated_at: string
