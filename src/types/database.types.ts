@@ -1417,6 +1417,7 @@ export type Database = {
           detail_form: string | null
           display_order: number
           id: string
+          is_pass_through: boolean
           notes: string | null
           operator_id: string | null
           unit: string | null
@@ -1435,6 +1436,7 @@ export type Database = {
           detail_form?: string | null
           display_order?: number
           id?: string
+          is_pass_through?: boolean
           notes?: string | null
           operator_id?: string | null
           unit?: string | null
@@ -1453,6 +1455,7 @@ export type Database = {
           detail_form?: string | null
           display_order?: number
           id?: string
+          is_pass_through?: boolean
           notes?: string | null
           operator_id?: string | null
           unit?: string | null
@@ -2748,6 +2751,7 @@ export type Database = {
           detail_form: string | null
           display_order: number | null
           id: string | null
+          is_pass_through: boolean | null
           notes: string | null
           operator_code: string | null
           operator_id: string | null
