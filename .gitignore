@@ -41,3 +41,7 @@ docs/
 
 # Playwright MCP debug artifacts
 .playwright-mcp/
+
+# Contratos, tarifarios firmados y demás documentación local del cliente.
+# No entra al repositorio: son documentos firmados con datos del cliente.
+Recursos_Locales/
