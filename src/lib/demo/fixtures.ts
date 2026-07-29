@@ -20,6 +20,7 @@ const CLIENT_FNS = '10000000-0000-0000-0000-000000000003'
 const PROJECT_HXT = '20000000-0000-0000-0000-000000000001'
 const PROJECT_RSD = '20000000-0000-0000-0000-000000000002'
 const PROJECT_WCB = '20000000-0000-0000-0000-000000000003'
+const PROJECT_GSW = '20000000-0000-0000-0000-000000000004'
 
 const OP_DGF = '30000000-0000-0000-0000-000000000001'
 const OP_GFPLUS = '30000000-0000-0000-0000-000000000002'
@@ -34,6 +35,14 @@ const SI_PATCHKABEL = '40000000-0000-0000-0000-000000000005'
 const SI_NAS_PAKET_1 = '40000000-0000-0000-0000-000000000006'
 const SI_WESTC_130 = '40000000-0000-0000-0000-000000000007'
 const SI_VANCOM_160 = '40000000-0000-0000-0000-000000000008'
+// FNS Infrastruktur (migración 063) — representative slice of the signed
+// LV Gernsheim GSW-SUB rate card, incl. one LE (cost-passthrough) position.
+const SI_FNS_TIEFBAU = '40000000-0000-0000-0000-000000000009'
+const SI_FNS_EINBLAS_SNR = '40000000-0000-0000-0000-000000000010'
+const SI_FNS_EINBLAS_GF = '40000000-0000-0000-0000-000000000011'
+const SI_FNS_HA_KOMPLETT = '40000000-0000-0000-0000-000000000012'
+const SI_FNS_HA_SNR = '40000000-0000-0000-0000-000000000013'
+const SI_FNS_SAUGBAGGER_LE = '40000000-0000-0000-0000-000000000014'
 
 const VEHICLE_ROT_COMBO = '41000000-0000-0000-0000-000000000001'
 const MAT_GFP_HUEP_48 = '42000000-0000-0000-0000-000000000001'
@@ -262,6 +271,12 @@ export const initialFixtures = () => ({
       id: PROJECT_WCB, code: 'WCB', name: 'Westconnect', client_id: CLIENT_VANCOM,
       default_operator_id: OP_GFPLUS, default_line: 'NE4', is_active: true, created_at: LAST_WEEK,
     },
+    // FNS Infrastruktur (migración 061/063): LV Gernsheim GSW-SUB on Telekom net.
+    {
+      id: PROJECT_GSW, code: 'GSW', name: 'Gernsheim GSW-SUB', client_id: CLIENT_FNS,
+      default_operator_id: OP_TELEKOM, default_line: 'NE3', is_active: true, created_at: LAST_WEEK,
+      city: 'Gernsheim', center_lat: 49.7526, center_lng: 8.4879,
+    },
   ],
 
   operators: [
@@ -327,6 +342,53 @@ export const initialFixtures = () => ({
       category: 'NE4 > Suplementos / Mehraufwand',
       operator_id: null, client_id: CLIENT_VANCOM, detail_form: null,
       display_order: 540, active: true, notes: 'Precio según oferta', created_at: LAST_WEEK, updated_at: LAST_WEEK,
+    },
+    // FNS Infrastruktur — representative slice of the signed rate card
+    // (migración 063, LV Gernsheim GSW-SUB, precios netos firmados 27.07.2026).
+    // Only visible on orders of the FNS client — demoes the client filter.
+    {
+      id: SI_FNS_TIEFBAU, code: '10030300', description_de: 'Tiefbauarbeiten',
+      description_es: 'Obra civil (zanja)', unit: 'm', unit_price: 23.28, unit_price_external: null,
+      category: 'FNS > Gr. 03 Tiefbau (Graben)',
+      operator_id: OP_TELEKOM, client_id: CLIENT_FNS, detail_form: null,
+      display_order: 1010, active: true, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK,
+    },
+    {
+      id: SI_FNS_EINBLAS_SNR, code: '10030340', description_de: 'Einzieh- und Einblasarbeiten für SNR(V)',
+      description_es: 'Tendido y soplado de SNR(V)', unit: 'm', unit_price: 1.88, unit_price_external: null,
+      category: 'FNS > Gr. 04 Kabelzug/Einblasung',
+      operator_id: OP_TELEKOM, client_id: CLIENT_FNS, detail_form: 'soplado',
+      display_order: 1035, active: true, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK,
+    },
+    {
+      id: SI_FNS_EINBLAS_GF, code: '10030341', description_de: 'Einblasarbeiten für Gf-Kabel',
+      description_es: 'Soplado de cable de fibra óptica', unit: 'm', unit_price: 0.77, unit_price_external: null,
+      category: 'FNS > Gr. 04 Kabelzug/Einblasung',
+      operator_id: OP_TELEKOM, client_id: CLIENT_FNS, detail_form: 'soplado',
+      display_order: 1040, active: true, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK,
+    },
+    {
+      id: SI_FNS_HA_KOMPLETT, code: '10030360', description_de: 'Gf-Hausanschluss komplett herstellen',
+      description_es: 'Acometida de fibra completa', unit: 'Stück', unit_price: 388.75, unit_price_external: null,
+      category: 'FNS > Gr. 06 FTTH Hausanschluss',
+      operator_id: OP_TELEKOM, client_id: CLIENT_FNS, detail_form: 'alta',
+      display_order: 1050, active: true, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK,
+    },
+    {
+      id: SI_FNS_HA_SNR, code: '10030362', description_de: 'Gf-Hausanschluss nur SNR',
+      description_es: 'Acometida de fibra solo SNR', unit: 'Stück', unit_price: 228.06, unit_price_external: null,
+      category: 'FNS > Gr. 06 FTTH Hausanschluss',
+      operator_id: OP_TELEKOM, client_id: CLIENT_FNS, detail_form: 'alta',
+      display_order: 1055, active: true, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK,
+    },
+    {
+      id: SI_FNS_SAUGBAGGER_LE, code: '10081334', description_de: 'Einsatz Saugbagger',
+      description_es: 'Empleo de excavadora de succión', unit: 'LE', unit_price: null, unit_price_external: null,
+      category: 'FNS > Gr. 10 Verkehrssicherung',
+      operator_id: OP_TELEKOM, client_id: CLIENT_FNS, detail_form: null,
+      display_order: 1150, active: true,
+      notes: 'LE — durchlaufende Position, Abrechnung nach tatsächlichem Aufwand',
+      created_at: LAST_WEEK, updated_at: LAST_WEEK,
     },
   ],
 

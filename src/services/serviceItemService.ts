@@ -172,6 +172,62 @@ export async function deleteServiceItem(
   return { error: error?.message ?? null }
 }
 
+/**
+ * Client-conditioned catalog filter (spec: catálogo de servicios por cliente).
+ *
+ * Generic items (`client_id === null`) are offered to every order; items
+ * scoped to a client are only offered when the order belongs to that client.
+ * Orders without a client only see the generic items — the client filter is
+ * hard, never cross-client. Direct orders (client_id NULL in the DB) may pass
+ * a form-chosen catalog client here to unlock that client's items without
+ * persisting the choice.
+ *
+ * `keepItemId` keeps the currently selected item visible even when it does
+ * not match the filter, so editing a legacy order never blanks the selector.
+ */
+export function filterServiceItemsByClient<T extends ServiceItem>(
+  items: T[],
+  clientId: string | null,
+  keepItemId?: string | null,
+): T[] {
+  return items.filter(
+    (item) =>
+      item.client_id === null ||
+      item.client_id === clientId ||
+      (keepItemId != null && keepItemId !== '' && item.id === keepItemId),
+  )
+}
+
+/**
+ * Which client conditions the service catalog shown in the order form.
+ *
+ * Normal orders filter by the order's own client (usually derived from the
+ * project). Direct orders (Direktauftrag) ignore the project-derived client
+ * entirely and use only the explicitly chosen catalog client — otherwise a
+ * previously selected project would leak its client into the direct catalog
+ * filter. Empty strings normalize to null ("no client → generic items only").
+ */
+export function resolveEffectiveCatalogClient(
+  isDirectOrder: boolean,
+  orderClientId: string | null,
+  directCatalogClientId: string | null,
+): string | null {
+  const effective = isDirectOrder ? directCatalogClientId : orderClientId
+  return effective || null
+}
+
+/**
+ * Value persisted to work_orders.client_id. NULL is what makes an order a
+ * Direktauftrag for the DB state machine (migration 005), so direct orders
+ * always persist NULL — regardless of any catalog client chosen in the form.
+ */
+export function resolvePersistedClientId(
+  isDirectOrder: boolean,
+  orderClientId: string | null,
+): string | null {
+  return isDirectOrder ? null : orderClientId || null
+}
+
 export interface ServiceItemGroup<T extends ServiceItem> {
   category: string | null
   items: T[]
