@@ -18,7 +18,8 @@
     "pre-pr": "npm run preflight && npm run build",
     "feature:start": "bash scripts/start-feature.sh",
     "feature:check": "bash scripts/check-pr-ready.sh",
-    "manuals:generate": "node scripts/generate-manuals.mjs"
+    "manuals:generate": "node scripts/generate-manuals.mjs",
+    "diagrams:capture": "node scripts/generate-capture-diagrams.mjs"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
