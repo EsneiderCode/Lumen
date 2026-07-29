@@ -14,10 +14,16 @@ import { notifyTaskAssigned } from '@/services/notificationService'
 import type { TeamColor, WorkType } from '@/types/enums'
 import { useLabels } from '@/i18n/labels'
 import { TEAMS } from '@/constants/styles'
+import { orderSiteRef } from '@/lib/orderSiteRef'
 
 type AssignableOrder = {
   order_number: string
   work_type: string
+  // Referencia de obra (migración 064): el aviso de asignación tiene que decir
+  // a qué tramo va el equipo, no solo «Soplado».
+  segment_kind?: string | null
+  pop_code?: string | null
+  dp_code?: string | null
   address: string | null
   city: string | null
   project_id: string | null
@@ -202,7 +208,8 @@ export function WorkOrderAssignPage() {
           technicianName: techName,
           previousTeam: prevTeamLabel,
           previousTechnician: prevTechName,
-          workType: L.workType(order.work_type as WorkType),
+          workType: L.orderType({ ...order, work_type: order.work_type as WorkType }),
+          siteRef: orderSiteRef(order) ?? undefined,
           assignedDate: assignedDate || undefined,
           address: location,
           orderUrl: `${window.location.origin}/admin/orders/${id}`,
@@ -254,8 +261,16 @@ export function WorkOrderAssignPage() {
             </div>
             <div>
               <p className="text-xs text-fg-2">{t('assignment.workType')}</p>
-              <p className="font-medium text-fg-1">{L.workType(order.work_type as WorkType) || order.work_type}</p>
+              <p className="font-medium text-fg-1">
+                {L.orderType({ ...order, work_type: order.work_type as WorkType }) || order.work_type}
+              </p>
             </div>
+            {orderSiteRef(order) && (
+              <div>
+                <p className="text-xs text-fg-2">{t('workOrder.siteReference')}</p>
+                <p className="font-mono font-medium text-fg-1">{orderSiteRef(order)}</p>
+              </div>
+            )}
             <div>
               <p className="text-xs text-fg-2">{t('workOrder.address')}</p>
               <p className="font-medium text-fg-1">

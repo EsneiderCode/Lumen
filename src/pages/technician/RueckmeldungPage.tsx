@@ -80,6 +80,7 @@ import type {
   CaptureRepeaterItem,
 } from '@/types/capture-plan'
 import { useLabels } from '@/i18n/labels'
+import { orderSiteRef } from '@/lib/orderSiteRef'
 
 type ConsumptionDraftRow = ConsumptionDraft & { _key: string }
 
@@ -746,7 +747,8 @@ export function RueckmeldungPage() {
     return {
       orderNumber: order.order_number,
       techName: user.fullName || user.email || '',
-      workType: L.workType(order.work_type),
+      workType: L.orderType(order),
+      siteRef: orderSiteRef(order) ?? undefined,
       address: order.address ?? '',
       city: order.city ?? '',
       summary: notes,
@@ -912,7 +914,10 @@ export function RueckmeldungPage() {
         </button>
         <div>
           <h2 className="font-display text-lg font-bold text-fg-1">{t('rueckmeldung.title')}</h2>
-          <p className="text-xs text-fg-2 font-mono">{order.order_number} · {L.workType(order.work_type)}</p>
+          <p className="text-xs text-fg-2 font-mono">
+            {order.order_number}
+            {orderSiteRef(order) ? ` · ${orderSiteRef(order)}` : ''} · {L.orderType(order)}
+          </p>
         </div>
       </div>
 

@@ -54,6 +54,7 @@ import { buildCaptureMapData } from '@/lib/captureMapPoints'
 import type { CaptureAnswers, CapturePlan } from '@/types/capture-plan'
 import { ComplianceDot } from '@/components/compliance/ComplianceDot'
 import { complianceLevel } from '@/components/compliance/aptitudeLevel'
+import { orderSiteRef } from '@/lib/orderSiteRef'
 
 // MapLibre is ~200 KB gzip: it loads when an order that actually has located
 // evidence is opened, never as part of the admin bundle.
@@ -661,7 +662,10 @@ export function WorkOrderDetailPage() {
               )}
             </div>
             <p className="text-sm text-fg-2">
-              {L.workType(order.work_type)} · Linie {order.line}
+              {orderSiteRef(order) && (
+                <span className="font-mono font-semibold text-fg-1">{orderSiteRef(order)} · </span>
+              )}
+              {L.orderType(order)} · Linie {order.line}
             </p>
             {(order as { compliance_override?: boolean }).compliance_override && (
               <p className="mt-1 inline-flex items-center gap-1.5 text-xs text-warn">

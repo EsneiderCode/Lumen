@@ -4,9 +4,10 @@ import { useTranslation } from 'react-i18next'
 import { ClipboardList } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { fetchMyWorkOrders, type WorkOrderWithRelations } from '@/services/workOrderService'
-import type { WorkOrderStatus, WorkType, TeamColor } from '@/types/enums'
+import type { WorkOrderStatus, TeamColor } from '@/types/enums'
 import { useLabels } from '@/i18n/labels'
 import { STATUS_COLORS, TEAM_DOT } from '@/constants/styles'
+import { orderSiteRef } from '@/lib/orderSiteRef'
 
 const ACTIVE_STATUSES: WorkOrderStatus[] = ['assigned', 'in_progress', 'executed', 'rueckmeldung_pending']
 const DONE_STATUSES: WorkOrderStatus[] = ['rueckmeldung_sent', 'internally_certified', 'sent_to_client', 'client_accepted', 'invoiced', 'paid']
@@ -159,7 +160,12 @@ export function TechDashboard() {
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-medium text-fg-1">{L.workType(order.work_type as WorkType)}</span>
+                  <span className="text-xs font-medium text-fg-1">{L.orderType(order)}</span>
+                  {orderSiteRef(order) && (
+                    <span className="font-mono text-xs font-semibold text-fg-1">
+                      {orderSiteRef(order)}
+                    </span>
+                  )}
                   {order.assigned_team && (
                     <span className={`h-1.5 w-1.5 rounded-full ${TEAM_DOT[order.assigned_team as TeamColor]}`} />
                   )}

@@ -27,6 +27,7 @@ import {
 } from '@/services/telegramGroupService'
 import { fetchCapturePlanVariants } from '@/services/capturePlanService'
 import type { CapturePlan } from '@/types/capture-plan'
+import { normalizeSiteCode, orderSiteRef } from '@/lib/orderSiteRef'
 
 // Catalog detail_form values for infrastructure work (trenches, splice
 // boxes, POP central sites) rather than street-address-based customer
@@ -86,6 +87,12 @@ interface FormValues {
   service_item_id: string
   /** Capture plan override; '' = the default plan of the work type. */
   capture_plan_key: string
+  /** Tramo RA/RD; '' = sin especificar (migración 064). */
+  segment_kind: string
+  /** Código del POP dentro del proyecto, sin el prefijo del proyecto. */
+  pop_code: string
+  /** Código del DP dentro del proyecto, sin el prefijo 'DP'. */
+  dp_code: string
   priority: 'normal' | 'alta' | 'urgente'
   address: string
   postal_code: string
@@ -114,6 +121,19 @@ function withCatalogScope(next: FormValues, prev: FormValues): FormValues {
   return { ...next, service_item_id: '', work_type: '', capture_plan_key: '' }
 }
 
+/**
+ * La clase de trabajo del item elegido — lo que decide la forma del formulario
+ * (dirección o referencia de obra, qué documentos se piden). Se resuelve tanto
+ * al pintar como al guardar, así que vive fuera del componente.
+ */
+function detailFormOf(items: ServiceItemWithRelations[], serviceItemId: string): string | null {
+  return items.find((si) => si.id === serviceItemId)?.detail_form ?? null
+}
+
+function isInfraForm(detailForm: string | null): boolean {
+  return detailForm != null && INFRA_DETAIL_FORMS.has(detailForm)
+}
+
 const EMPTY_FORM: FormValues = {
   is_direct_order: false,
   client_id: '',
@@ -123,6 +143,9 @@ const EMPTY_FORM: FormValues = {
   work_type: '',
   service_item_id: '',
   capture_plan_key: '',
+  segment_kind: '',
+  pop_code: '',
+  dp_code: '',
   priority: 'normal',
   address: '',
   postal_code: '',
@@ -223,6 +246,9 @@ export function WorkOrderFormPage() {
         work_type: data.work_type,
         service_item_id: (data as { service_item_id?: string | null }).service_item_id ?? '',
         capture_plan_key: data.capture_plan_key ?? '',
+        segment_kind: data.segment_kind ?? '',
+        pop_code: data.pop_code ?? '',
+        dp_code: data.dp_code ?? '',
         priority: data.priority,
         address: data.address ?? '',
         postal_code: data.postal_code ?? '',
@@ -280,6 +306,8 @@ export function WorkOrderFormPage() {
     setSaveError(null)
     try {
 
+    const carriesSiteRef = isInfraForm(detailFormOf(serviceItems, form.service_item_id))
+
     const payload = {
       // Direct order = client_id IS NULL (per migration 005). DB FK is nullable.
       client_id: resolvePersistedClientId(form.is_direct_order, form.client_id),
@@ -291,6 +319,13 @@ export function WorkOrderFormPage() {
       service_item_id: form.service_item_id || null,
       // NULL = the plan named after the work type (migration 052).
       capture_plan_key: form.capture_plan_key || null,
+      // Referencia de obra (migración 064). Solo la lleva la obra de
+      // infraestructura; si el admin cambia el item de catálogo a un alta
+      // después de haberla rellenado, se limpia en vez de quedar colgando en
+      // una orden cuyo formulario ya no la muestra.
+      segment_kind: carriesSiteRef ? form.segment_kind || null : null,
+      pop_code: carriesSiteRef ? normalizeSiteCode(form.pop_code) : null,
+      dp_code: carriesSiteRef ? normalizeSiteCode(form.dp_code) : null,
       priority: form.priority,
       address: form.address || null,
       postal_code: form.postal_code || null,
@@ -365,8 +400,14 @@ export function WorkOrderFormPage() {
   // the UI shape (address visibility, detail fields, uploader visibility).
   const selectedServiceItem = serviceItems.find((si) => si.id === form.service_item_id) ?? null
   const selectedDetailForm = selectedServiceItem?.detail_form ?? null
-  const isInfra = selectedDetailForm ? INFRA_DETAIL_FORMS.has(selectedDetailForm) : false
+  const isInfra = isInfraForm(selectedDetailForm)
   const documentTypes = selectedDetailForm ? DOCUMENT_TYPES_BY_DETAIL_FORM[selectedDetailForm] ?? [] : []
+  const selectedProject = projects.find((project) => project.id === form.project_id)
+  const sitePreview = orderSiteRef({
+    pop_code: form.pop_code,
+    dp_code: form.dp_code,
+    projects: selectedProject ? { code: selectedProject.code } : null,
+  })
   const selectedClient = clients.find((client) => client.id === form.client_id)
   const selectedOperator = operators.find((operator) => operator.id === form.operator_id)
   const derivedSummary = [selectedClient?.code, selectedOperator?.code, form.line]
@@ -527,6 +568,9 @@ export function WorkOrderFormPage() {
                     // type drops it rather than carrying an invalid key over.
                     capture_plan_key:
                       derivedWorkType === f.work_type ? f.capture_plan_key : '',
+                    // Igual con el tramo: solo se pregunta en soplado, así que
+                    // salir de soplado no puede dejarlo puesto sin que se vea.
+                    segment_kind: selected?.detail_form === 'soplado' ? f.segment_kind : '',
                   }))
                   setErrors((er) => ({ ...er, service_item_id: undefined, work_type: undefined }))
                 }}
@@ -655,6 +699,77 @@ export function WorkOrderFormPage() {
                 />
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Referencia de obra — para la obra de infraestructura, que no tiene
+            dirección: el tramo (POP → DP) es lo que identifica el trabajo en
+            las listas y en los avisos de Telegram (migración 064). El tramo
+            RA/RD solo se pregunta en soplado, que es donde el tipo por sí solo
+            es ambiguo; en fusión y POP ya lo dice el propio tipo. */}
+        {isInfra && (
+          <div className="rounded-l border border-line bg-bg-1 p-5">
+            <h3 className="font-display text-sm font-semibold text-fg-1">
+              {t('workOrder.siteReference')}
+            </h3>
+            <p className="mt-0.5 mb-4 text-xs text-fg-2">{t('workOrder.siteReferenceDesc')}</p>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              {selectedDetailForm === 'soplado' && (
+                <div className="sm:col-span-3">
+                  <label className="mb-1 block text-xs font-medium text-fg-2">
+                    {t('workOrder.segmentKind')}
+                  </label>
+                  <select
+                    value={form.segment_kind}
+                    onChange={(e) => setField('segment_kind', e.target.value)}
+                    className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                  >
+                    <option value="">{t('workOrder.segmentKindNone')}</option>
+                    {L.segmentKindOptions().map(({ value, hint }) => (
+                      <option key={value} value={value}>{hint}</option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-fg-3">{t('workOrder.segmentKindHint')}</p>
+                </div>
+              )}
+
+              <div>
+                <label className="mb-1 block text-xs font-medium text-fg-2">
+                  {t('workOrder.popCode')}
+                </label>
+                <input
+                  type="text"
+                  value={form.pop_code}
+                  onChange={(e) => setField('pop_code', e.target.value)}
+                  placeholder={t('workOrder.popCodePlaceholder')}
+                  className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 font-mono text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-medium text-fg-2">
+                  {t('workOrder.dpCode')}
+                </label>
+                <input
+                  type="text"
+                  value={form.dp_code}
+                  onChange={(e) => setField('dp_code', e.target.value)}
+                  placeholder={t('workOrder.dpCodePlaceholder')}
+                  className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 font-mono text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                />
+              </div>
+
+              {/* La etiqueta compuesta, en vivo: es la única forma de que el
+                  admin vea que 'QFF' no hay que reteclearlo. */}
+              <div className="flex flex-col justify-end">
+                <span className="nx-label">{t('workOrder.siteReferencePreview')}</span>
+                <span className="mt-1 font-mono text-sm font-semibold text-accent">
+                  {sitePreview ?? '—'}
+                </span>
+              </div>
+            </div>
+            <p className="mt-3 text-xs text-fg-3">{t('workOrder.siteReferenceHint')}</p>
           </div>
         )}
 

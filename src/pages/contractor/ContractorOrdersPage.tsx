@@ -6,6 +6,7 @@ import { fetchContractorWorkOrders, type WorkOrderWithRelations } from '@/servic
 import type { WorkOrderStatus, TeamColor } from '@/types/enums'
 import { useLabels } from '@/i18n/labels'
 import { STATUS_COLORS, TEAM_DOT } from '@/constants/styles'
+import { orderSiteRef } from '@/lib/orderSiteRef'
 
 // Payment indicator based on status
 function PaymentBadge({ status }: { status: WorkOrderStatus }) {
@@ -74,7 +75,8 @@ export function ContractorOrdersPage() {
     ? orders.filter((o) =>
         o.order_number.toLowerCase().includes(search.toLowerCase()) ||
         (o.address ?? '').toLowerCase().includes(search.toLowerCase()) ||
-        (o.city ?? '').toLowerCase().includes(search.toLowerCase()),
+        (o.city ?? '').toLowerCase().includes(search.toLowerCase()) ||
+        (orderSiteRef(o) ?? '').toLowerCase().includes(search.toLowerCase()),
       )
     : orders
 
@@ -182,10 +184,16 @@ function OrderCard({ order }: { order: WorkOrderWithRelations }) {
         </span>
       </div>
 
+      {/* Site reference — the stretch (POP → DP), which is what identifies
+          infra work: it has no address (migration 064). */}
+      {orderSiteRef(order) && (
+        <p className="mb-1 font-mono text-sm font-semibold text-fg-1">{orderSiteRef(order)}</p>
+      )}
+
       {/* Work type + line + team dot */}
       <div className="mb-1 flex items-center gap-2">
         <span className="text-sm font-semibold text-fg-1">
-          {L.workType(order.work_type)}
+          {L.orderType(order)}
         </span>
         <span className="text-xs text-fg-2">{order.line}</span>
         {order.assigned_team && (

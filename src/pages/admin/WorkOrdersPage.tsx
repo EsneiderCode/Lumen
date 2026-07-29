@@ -21,6 +21,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { Can } from '@/components/ui/Can'
 import { notifyOrderDeleted } from '@/services/notificationService'
 import { fetchOrderGroupIds } from '@/services/telegramGroupService'
+import { orderSiteRef } from '@/lib/orderSiteRef'
 
 const PAGE_SIZE = 25
 
@@ -117,7 +118,10 @@ export function WorkOrdersPage() {
           orderNumber: order.order_number,
           teamName: order.assigned_team ? t(`teamColor.${order.assigned_team}`) : undefined,
           technicianName: order.assignedProfile?.full_name ?? undefined,
-          workType: order.work_type ? t(`workType.${order.work_type}`) : undefined,
+          workType: order.work_type ? L.orderType(order) : undefined,
+          // La orden ya no existe, así que el aviso no puede releerla: la
+          // referencia de obra viaja en el propio mensaje o se pierde.
+          siteRef: orderSiteRef(order) ?? undefined,
           address: order.address ?? undefined,
           adminName: user?.email ?? undefined,
           groupIds,
@@ -389,9 +393,16 @@ export function WorkOrdersPage() {
                           {order.order_number}
                         </span>
                       </span>
+                      {/* La referencia de obra: sin ella el número no dice de
+                          qué trabajo se trata (migración 064). */}
+                      {orderSiteRef(order) && (
+                        <div className="mt-0.5 font-mono text-xs text-fg-2">
+                          {orderSiteRef(order)}
+                        </div>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-fg-1">
-                      {L.workType(order.work_type)}
+                      {L.orderType(order)}
                       <div className="text-xs text-fg-2">{order.line}</div>
                     </td>
                     <td className="px-4 py-3">

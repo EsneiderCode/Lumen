@@ -2590,15 +2590,18 @@ export type Database = {
           compliance_override_reason: string | null
           created_at: string
           created_by: string | null
+          dp_code: string | null
           external_metadata: Json | null
           id: string
           internal_notes: string | null
           line: string
           operator_id: string
           order_number: string
+          pop_code: string | null
           postal_code: string | null
           priority: Database["public"]["Enums"]["priority_level"]
           project_id: string
+          segment_kind: string | null
           service_item_id: string | null
           source: string
           status: Database["public"]["Enums"]["work_order_status"]
@@ -2622,15 +2625,18 @@ export type Database = {
           compliance_override_reason?: string | null
           created_at?: string
           created_by?: string | null
+          dp_code?: string | null
           external_metadata?: Json | null
           id?: string
           internal_notes?: string | null
           line: string
           operator_id: string
           order_number: string
+          pop_code?: string | null
           postal_code?: string | null
           priority?: Database["public"]["Enums"]["priority_level"]
           project_id: string
+          segment_kind?: string | null
           service_item_id?: string | null
           source?: string
           status?: Database["public"]["Enums"]["work_order_status"]
@@ -2654,15 +2660,18 @@ export type Database = {
           compliance_override_reason?: string | null
           created_at?: string
           created_by?: string | null
+          dp_code?: string | null
           external_metadata?: Json | null
           id?: string
           internal_notes?: string | null
           line?: string
           operator_id?: string
           order_number?: string
+          pop_code?: string | null
           postal_code?: string | null
           priority?: Database["public"]["Enums"]["priority_level"]
           project_id?: string
+          segment_kind?: string | null
           service_item_id?: string | null
           source?: string
           status?: Database["public"]["Enums"]["work_order_status"]
@@ -2802,15 +2811,18 @@ export type Database = {
           compliance_override_reason: string | null
           created_at: string
           created_by: string | null
+          dp_code: string | null
           external_metadata: Json | null
           id: string
           internal_notes: string | null
           line: string
           operator_id: string
           order_number: string
+          pop_code: string | null
           postal_code: string | null
           priority: Database["public"]["Enums"]["priority_level"]
           project_id: string
+          segment_kind: string | null
           service_item_id: string | null
           source: string
           status: Database["public"]["Enums"]["work_order_status"]
@@ -2858,15 +2870,18 @@ export type Database = {
           compliance_override_reason: string | null
           created_at: string
           created_by: string | null
+          dp_code: string | null
           external_metadata: Json | null
           id: string
           internal_notes: string | null
           line: string
           operator_id: string
           order_number: string
+          pop_code: string | null
           postal_code: string | null
           priority: Database["public"]["Enums"]["priority_level"]
           project_id: string
+          segment_kind: string | null
           service_item_id: string | null
           source: string
           status: Database["public"]["Enums"]["work_order_status"]
@@ -2916,15 +2931,18 @@ export type Database = {
           compliance_override_reason: string | null
           created_at: string
           created_by: string | null
+          dp_code: string | null
           external_metadata: Json | null
           id: string
           internal_notes: string | null
           line: string
           operator_id: string
           order_number: string
+          pop_code: string | null
           postal_code: string | null
           priority: Database["public"]["Enums"]["priority_level"]
           project_id: string
+          segment_kind: string | null
           service_item_id: string | null
           source: string
           status: Database["public"]["Enums"]["work_order_status"]
@@ -2999,15 +3017,18 @@ export type Database = {
           compliance_override_reason: string | null
           created_at: string
           created_by: string | null
+          dp_code: string | null
           external_metadata: Json | null
           id: string
           internal_notes: string | null
           line: string
           operator_id: string
           order_number: string
+          pop_code: string | null
           postal_code: string | null
           priority: Database["public"]["Enums"]["priority_level"]
           project_id: string
+          segment_kind: string | null
           service_item_id: string | null
           source: string
           status: Database["public"]["Enums"]["work_order_status"]

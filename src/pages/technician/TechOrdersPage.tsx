@@ -7,6 +7,7 @@ import { fetchMyWorkOrders, type WorkOrderWithRelations } from '@/services/workO
 import type { TeamColor } from '@/types/enums'
 import { useLabels } from '@/i18n/labels'
 import { STATUS_COLORS, TEAM_DOT, PRIORITY_COLORS } from '@/constants/styles'
+import { orderSiteRef } from '@/lib/orderSiteRef'
 
 const PAGE_SIZE = 20
 
@@ -49,7 +50,9 @@ export function TechOrdersPage() {
         (o) =>
           o.order_number.toLowerCase().includes(search.toLowerCase()) ||
           (o.address ?? '').toLowerCase().includes(search.toLowerCase()) ||
-          (o.city ?? '').toLowerCase().includes(search.toLowerCase()),
+          (o.city ?? '').toLowerCase().includes(search.toLowerCase()) ||
+          // Buscar «QFF001» o «DP021» tal como se lee en la tarjeta.
+          (orderSiteRef(o) ?? '').toLowerCase().includes(search.toLowerCase()),
       )
     : orders
 
@@ -79,8 +82,14 @@ export function TechOrdersPage() {
           </span>
         </div>
 
+        {/* El tramo: en obra de infraestructura no hay dirección, y sin él la
+            tarjeta no dice a qué POP hay que ir (migración 064). */}
+        {orderSiteRef(order) && (
+          <p className="mb-1 font-mono text-sm font-semibold text-fg-1">{orderSiteRef(order)}</p>
+        )}
+
         <div className="mb-1 flex items-center gap-2">
-          <span className="text-sm font-semibold text-fg-1">{L.workType(order.work_type)}</span>
+          <span className="text-sm font-semibold text-fg-1">{L.orderType(order)}</span>
           <span className="text-xs text-fg-2">{order.line}</span>
           {order.assigned_team && (
             <span className={`h-2 w-2 rounded-full ${TEAM_DOT[order.assigned_team as TeamColor]}`} />

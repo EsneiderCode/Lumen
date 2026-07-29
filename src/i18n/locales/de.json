@@ -102,6 +102,14 @@
     "patchkabel": "Patchkabel",
     "pop": "POP-Installation"
   },
+  "segmentKind": {
+    "ra": "RA",
+    "rd": "RD"
+  },
+  "segmentKindLong": {
+    "ra": "RA — Zuführung (POP → DP)",
+    "rd": "RD — Verteilung (ab DP)"
+  },
   "priority": {
     "normal": "Normal",
     "alta": "Hoch",
@@ -236,6 +244,17 @@
     "capturePlanDefault": "Standard des Arbeitstyps",
     "capturePlanHint": "Legt fest, welche Fotos und Daten der Techniker in der Rückmeldung erfassen muss.",
     "streetAddress": "Straße / Hausnummer",
+    "siteReference": "Baustellenreferenz",
+    "siteReferenceDesc": "Bezeichnet den Abschnitt. Sie erscheint in den Listen und in den Telegram-Meldungen, damit man den Auftrag nicht öffnen muss, um zu wissen, welcher es ist.",
+    "segmentKind": "Abschnitt",
+    "segmentKindNone": "— nicht angegeben —",
+    "segmentKindHint": "Unterscheidet „Soplado RA“ von „Soplado RD“ in den Listen.",
+    "popCode": "POP",
+    "popCodePlaceholder": "001",
+    "dpCode": "DP",
+    "dpCodePlaceholder": "021",
+    "siteReferenceHint": "Codes innerhalb des Projekts, ohne Projektkürzel und ohne DP-Präfix. LUMEN setzt die Bezeichnung zusammen.",
+    "siteReferencePreview": "Wird angezeigt als",
     "supportingDocs": "Unterstützende Dokumente",
     "supportingDocsDesc": "Bei linearen Arbeiten (Soplado / Fusion) sind Plan und Spleißprotokolle anstelle einer Adresse relevant.",
     "notesPlaceholder": "Interne Hinweise für das Team…",

@@ -37,8 +37,14 @@ interface TelegramBody {
   previousTeam?: string
   /** task_assigned: previous technician (reassignment) */
   previousTechnician?: string
-  /** task_assigned: work type label */
+  /** task_assigned: work type label, tramo incluido («Soplado RA») */
   workType?: string
+  /**
+   * Referencia de obra ya compuesta por el cliente («QFF001-DP021»). Solo hace
+   * falta en `order_deleted`: en el resto de eventos la tarjeta se relee de la
+   * base y la compone `siteRefOf`, pero una orden borrada ya no se puede leer.
+   */
+  siteRef?: string
   /** task_assigned: assignment date */
   assignedDate?: string
   /** task_assigned: work order address */
@@ -89,6 +95,7 @@ const MAX = {
   previousTeam:       120,
   previousTechnician: 120,
   workType:           120,
+  siteRef:            120,
   assignedDate:       20,
   address:            200,
   orderUrl:           512,
@@ -119,6 +126,7 @@ function readBody(value: unknown): TelegramBody {
     previousTeam:       typeof b.previousTeam       === 'string' ? b.previousTeam       : undefined,
     previousTechnician: typeof b.previousTechnician === 'string' ? b.previousTechnician : undefined,
     workType:           typeof b.workType           === 'string' ? b.workType           : undefined,
+    siteRef:            typeof b.siteRef            === 'string' ? b.siteRef            : undefined,
     assignedDate:       typeof b.assignedDate       === 'string' ? b.assignedDate       : undefined,
     address:            typeof b.address            === 'string' ? b.address            : undefined,
     orderUrl:           typeof b.orderUrl           === 'string' ? b.orderUrl           : undefined,
@@ -206,6 +214,7 @@ function buildMessage(body: TelegramBody): string | null {
       const previousTeam       = trim(body.previousTeam,       MAX.previousTeam)
       const previousTechnician = trim(body.previousTechnician, MAX.previousTechnician)
       const workType           = trim(body.workType,           MAX.workType)
+      const siteRef            = trim(body.siteRef,            MAX.siteRef)
       const assignedDate       = trim(body.assignedDate,       MAX.assignedDate)
       const address            = trim(body.address,            MAX.address)
       const orderUrl           = trim(body.orderUrl,           MAX.orderUrl)
@@ -221,6 +230,7 @@ function buildMessage(body: TelegramBody): string | null {
         `🔖 OS: <b>${esc(orderNumber)}</b>`,
       ]
 
+      if (siteRef) lines.push(`🧭 Tramo: <b>${esc(siteRef)}</b>`)
       if (workType) lines.push(`🔧 Tipo: <b>${esc(workType)}</b>`)
       if (address) lines.push(`📍 Dirección: ${esc(address)}`)
       if (assignedDate) lines.push(`📅 Fecha: <b>${esc(assignedDate)}</b>`)
@@ -279,6 +289,7 @@ function buildMessage(body: TelegramBody): string | null {
       const summary   = trim(body.summary,   MAX.summary)
       const techNotes = trim(body.techNotes,  MAX.techNotes)
       const workType  = trim(body.workType,  MAX.workType)
+      const siteRef   = trim(body.siteRef,   MAX.siteRef)
       const orderUrl  = trim(body.orderUrl,  MAX.orderUrl)
       if (!orderNumber) return null
 
@@ -288,6 +299,7 @@ function buildMessage(body: TelegramBody): string | null {
         `🔖 OS: <b>${esc(orderNumber)}</b>`,
       ]
 
+      if (siteRef) lines.push(`🧭 Tramo: <b>${esc(siteRef)}</b>`)
       if (workType) lines.push(`🔧 Tipo: <b>${esc(workType)}</b>`)
       if (techName) lines.push(`👤 Técnico: <b>${esc(techName)}</b>`)
 
@@ -313,6 +325,7 @@ function buildMessage(body: TelegramBody): string | null {
       const assignedTo     = trim(body.assignedTo,     MAX.assignedTo)
       const technicianName = trim(body.technicianName, MAX.technicianName)
       const workType       = trim(body.workType,       MAX.workType)
+      const siteRef        = trim(body.siteRef,        MAX.siteRef)
       const address        = trim(body.address,        MAX.address)
 
       const lines: string[] = [
@@ -321,6 +334,7 @@ function buildMessage(body: TelegramBody): string | null {
         `🔖 OS: <b>${esc(orderNumber)}</b>`,
       ]
 
+      if (siteRef) lines.push(`🧭 Tramo: <b>${esc(siteRef)}</b>`)
       if (workType) lines.push(`🔧 Tipo: <b>${esc(workType)}</b>`)
       if (address) lines.push(`📍 Dirección: ${esc(address)}`)
       if (assignedTo) {
@@ -400,10 +414,47 @@ function label(map: Record<string, string>, value: string): string {
   return map[value] ?? value
 }
 
+const SEGMENT_LABELS: Record<string, string> = {
+  ra: 'RA',
+  rd: 'RD',
+}
+
+/**
+ * Copia manual de `src/lib/orderSiteRef.ts`: Deno no comparte módulos con el
+ * bundle de Vite. `orderSiteRef.test.ts` compara las dos implementaciones
+ * carácter a carácter para que no se separen — si tocas una, toca la otra.
+ */
+function normalizeSiteCode(raw: string | null | undefined): string | null {
+  if (raw == null) return null
+  const trimmed = raw.trim().toUpperCase()
+  if (!trimmed) return null
+  return /^\d+$/.test(trimmed) ? trimmed.padStart(3, '0') : trimmed
+}
+
+/** «QFF001-DP021» — la referencia de obra tal como se lee en LUMEN. */
+function siteRefOf(o: OrderCardRow): string | null {
+  const project = o.projects?.code?.trim() ?? ''
+  const pop = normalizeSiteCode(o.pop_code)
+  const dp = normalizeSiteCode(o.dp_code)
+  if (!pop && !dp) return null
+  return [`${project}${pop ?? ''}`, dp ? `DP${dp}` : ''].filter(Boolean).join('-')
+}
+
+/** «Soplado RA» — el tipo con su tramo, igual que en las listas. */
+function workTypeLabelOf(o: OrderCardRow): string {
+  const base = label(WORK_TYPE_LABELS, o.work_type)
+  const segment = o.segment_kind ? SEGMENT_LABELS[o.segment_kind] : undefined
+  return segment ? `${base} ${segment}` : base
+}
+
 interface OrderCardRow {
   id: string
   order_number: string
   work_type: string
+  /** Migración 064 — tramo y códigos que identifican la obra. */
+  segment_kind: string | null
+  pop_code: string | null
+  dp_code: string | null
   status: string
   priority: string
   line: string
@@ -440,7 +491,7 @@ async function fetchOrderCard(
     const rows = await supabaseFetch<OrderCardRow[]>(
       supabaseUrl,
       serviceRoleKey,
-      `work_orders?select=id,order_number,work_type,status,priority,line,address,postal_code,city,assigned_date,internal_notes,assigned_team,assigned_technician,clients(name,code),projects(name,code),operators(name,code)&id=eq.${encodeURIComponent(orderId)}&limit=1`,
+      `work_orders?select=id,order_number,work_type,segment_kind,pop_code,dp_code,status,priority,line,address,postal_code,city,assigned_date,internal_notes,assigned_team,assigned_technician,clients(name,code),projects(name,code),operators(name,code)&id=eq.${encodeURIComponent(orderId)}&limit=1`,
       { method: 'GET' },
     )
     const order = rows[0]
@@ -495,9 +546,14 @@ function buildCardText(card: OrderCard): string {
     .join(' · ')
   lines.push(`🏢 ${esc(context)}`)
 
+  // El tramo va justo debajo del proyecto: es lo que dice de qué obra se trata,
+  // y en la obra de infraestructura no hay dirección que lo supla.
+  const siteRef = siteRefOf(o)
+  if (siteRef) lines.push(`🧭 Tramo: <b>${esc(siteRef)}</b>`)
+
   const fire = o.priority === 'urgente' ? ' 🔥' : ''
   lines.push(
-    `🔧 Tipo: <b>${esc(label(WORK_TYPE_LABELS, o.work_type))}</b>` +
+    `🔧 Tipo: <b>${esc(workTypeLabelOf(o))}</b>` +
       ` · Prioridad: <b>${esc(label(PRIORITY_LABELS, o.priority))}</b>${fire}`,
   )
   lines.push(`📌 Estado: <b>${esc(label(STATUS_LABELS, o.status))}</b>`)

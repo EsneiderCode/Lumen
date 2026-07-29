@@ -15,6 +15,7 @@ import type { WorkOrderStatus } from '@/types/enums'
 import { useTranslation } from 'react-i18next'
 import { useLabels } from '@/i18n/labels'
 import { STATUS_COLORS, TEAM_DOT } from '@/constants/styles'
+import { orderSiteRef } from '@/lib/orderSiteRef'
 
 interface StateHistoryEntry {
   id: string
@@ -116,7 +117,12 @@ export function TechOrderDetailPage() {
               {L.status(order.status)}
             </span>
           </div>
-          <p className="text-xs text-fg-2">{L.workType(order.work_type)} · {order.line}</p>
+          <p className="text-xs text-fg-2">
+            {orderSiteRef(order) && (
+              <span className="font-mono font-semibold text-fg-1">{orderSiteRef(order)} · </span>
+            )}
+            {L.orderType(order)} · {order.line}
+          </p>
         </div>
       </div>
 

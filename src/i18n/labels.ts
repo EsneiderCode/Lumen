@@ -1,6 +1,12 @@
 import { useTranslation } from 'react-i18next'
 import i18n from '@/i18n'
 import type { WorkOrderStatus, WorkType, TeamColor } from '@/types/enums'
+import {
+  orderTypeLabel,
+  SEGMENT_KINDS,
+  type OrderTypeLabelSource,
+  type SegmentKind,
+} from '@/lib/orderSiteRef'
 
 type Priority = 'normal' | 'alta' | 'urgente'
 type PhotoType = 'before' | 'during' | 'after'
@@ -47,10 +53,14 @@ export function useLabels() {
   return {
     status:      (s: WorkOrderStatus) => t(`status.${s}`),
     workType:    (w: WorkType)        => t(`workType.${w}`),
+    segmentKind: (s: SegmentKind)     => t(`segmentKind.${s}`),
     priority:    (p: Priority)        => t(`priority.${p}`),
     team:        (c: TeamColor)       => t(`teamColor.${c}`),
     detailField: (k: string)          => t(`detailField.${k}`, { defaultValue: k.replace(/_/g, ' ') }),
     photo:       (p: PhotoType)       => t(`photo.${p}`),
+    /** «Soplado RA» — el tipo con su tramo, que es lo que distingue una orden de otra. */
+    orderType:   (o: OrderTypeLabelSource & { work_type: WorkType }) =>
+      orderTypeLabel(o, t(`workType.${o.work_type}`), (s) => t(`segmentKind.${s}`)),
     // Options helpers for dropdowns / filter lists
     statusOptions:   () => STATUS_KEYS.map((v) => ({ value: v, label: t(`status.${v}`) })),
     statusGroupOptions: () => [
@@ -61,6 +71,11 @@ export function useLabels() {
       { value: 'attention',   statuses: STATUS_GROUPS.attention,   label: t('statusGroup.attention') },
     ],
     workTypeOptions: () => WORK_TYPE_KEYS.map((v) => ({ value: v, label: t(`workType.${v}`) })),
+    segmentKindOptions: () => SEGMENT_KINDS.map((v) => ({
+      value: v,
+      label: t(`segmentKind.${v}`),
+      hint: t(`segmentKindLong.${v}`),
+    })),
     priorityOptions: () => PRIORITY_KEYS.map((v) => ({ value: v, label: t(`priority.${v}`) })),
     teamOptions:     () => TEAM_COLOR_KEYS.map((v) => ({ value: v, label: t(`teamColor.${v}`) })),
   }
@@ -74,6 +89,9 @@ export function useLabels() {
 export const labels = {
   status:      (s: WorkOrderStatus) => i18n.t(`status.${s}`),
   workType:    (w: WorkType)        => i18n.t(`workType.${w}`),
+  segmentKind: (s: SegmentKind)     => i18n.t(`segmentKind.${s}`),
+  orderType:   (o: OrderTypeLabelSource & { work_type: WorkType }) =>
+    orderTypeLabel(o, i18n.t(`workType.${o.work_type}`), (s) => i18n.t(`segmentKind.${s}`)),
   priority:    (p: Priority)        => i18n.t(`priority.${p}`),
   team:        (c: TeamColor)       => i18n.t(`teamColor.${c}`),
   detailField: (k: string)          => i18n.t(`detailField.${k}`, { defaultValue: k.replace(/_/g, ' ') }),

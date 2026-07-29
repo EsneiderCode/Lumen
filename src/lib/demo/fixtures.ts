@@ -600,6 +600,10 @@ export const initialFixtures = () => ({
       client_id: CLIENT_INSYTE, project_id: PROJECT_HXT, operator_id: OP_DGF,
       line: 'NE3', work_type: 'soplado', status: 'in_progress', priority: 'normal',
       capture_plan_key: 'soplado_ra',
+      // Referencia de obra (migración 064): la única orden de la demo que la
+      // lleva, para que se vea «HXT001-DP021» en las listas y «Soplado RA» en
+      // el tipo sin necesidad de credenciales.
+      segment_kind: 'ra', pop_code: '001', dp_code: '021',
       assigned_team: 'rot', assigned_technician: TECH_ID, assigned_date: '2026-04-28',
       address: 'Corveyer Allee 40', postal_code: '37671', city: 'Höxter',
       internal_notes: 'Demo: soplado de RA — plan de captura con catas e incidencias',

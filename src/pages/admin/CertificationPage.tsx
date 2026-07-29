@@ -34,6 +34,7 @@ import type { WorkOrderStatus, TeamColor, UserRole } from '@/types/enums'
 import { useTranslation } from 'react-i18next'
 import { useLabels } from '@/i18n/labels'
 import { TEAM_DOT } from '@/constants/styles'
+import { orderSiteRef } from '@/lib/orderSiteRef'
 import { Alert, Badge, Button, EmptyState, KPI, KPIGrid, Panel } from '@/components/ui/nexus'
 import { Can } from '@/components/ui/Can'
 
@@ -347,6 +348,7 @@ export function CertificationPage() {
     const selectedOrders = selected.size > 0 ? orders.filter((o) => selected.has(o.id)) : orders
     const headers = [
       'Auftragsnummer',
+      'Abschnitt',
       'Typ',
       'Status',
       'Kunde',
@@ -358,7 +360,8 @@ export function CertificationPage() {
 
     const rows = selectedOrders.map((o): Record<string, string | number> => ({
       Auftragsnummer: o.order_number,
-      Typ: L.workType(o.work_type),
+      Abschnitt: orderSiteRef(o) ?? '',
+      Typ: L.orderType(o),
       Status: L.status(o.status) || o.status,
       Kunde: o.clients?.name ?? '',
       Projekt: o.projects?.code ?? '',
@@ -737,7 +740,12 @@ export function CertificationPage() {
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="nx-cert-row-title">{order.order_number}</span>
-                            <Badge tone="neutral">{L.workType(order.work_type)}</Badge>
+                            {orderSiteRef(order) ? (
+                              <span className="font-mono text-xs font-semibold text-fg-1">
+                                {orderSiteRef(order)}
+                              </span>
+                            ) : null}
+                            <Badge tone="neutral">{L.orderType(order)}</Badge>
                             {isDirect ? <Badge tone="info">{t('certPage.direct')}</Badge> : null}
                             {isExternal ? <Badge tone="accent">{t('certPage.external')}</Badge> : null}
                           </div>

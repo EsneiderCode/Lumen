@@ -31,6 +31,10 @@ const migration025Sql = readFileSync(
   join(migrationsDir, '025_work_order_source.sql'),
   'utf8',
 )
+const migration064Sql = readFileSync(
+  join(migrationsDir, '064_work_order_site_reference.sql'),
+  'utf8',
+)
 
 describe('database migrations cover billing workflow schema', () => {
   it('allows direct orders without a client', () => {
@@ -460,6 +464,23 @@ describe('database migrations cover billing workflow schema', () => {
     expect(migrationSql).toMatch(
       /create\s+policy\s+"compliance_entities_own_worker_insert"[\s\S]*owns_compliance_entity\(parent_entity_id\)/,
     )
+  })
+
+  // Sin estas tres columnas la lista de órdenes solo puede decir «Soplado», que
+  // es exactamente lo que no distingue una orden de otra.
+  it('adds the site reference (tramo, POP, DP) to work orders (064)', () => {
+    expect(migration064Sql).toContain('Depends on: 025_work_order_source.sql')
+    expect(migration064Sql).toMatch(
+      /ALTER TABLE public\.work_orders[\s\S]*ADD COLUMN IF NOT EXISTS segment_kind TEXT/,
+    )
+    expect(migration064Sql).toContain('ADD COLUMN IF NOT EXISTS pop_code')
+    expect(migration064Sql).toContain('ADD COLUMN IF NOT EXISTS dp_code')
+    // El CHECK admite NULL a propósito: las órdenes que ya existen no tienen tramo.
+    expect(migration064Sql).toMatch(
+      /CHECK \(segment_kind IS NULL OR segment_kind IN \('ra', 'rd'\)\)/,
+    )
+    // Y se declara con DROP previo, o reaplicar la migración falla por duplicado.
+    expect(migration064Sql).toContain('DROP CONSTRAINT IF EXISTS work_orders_segment_kind_check')
   })
 
   it('rewrites admin-gated RLS policies to permission checks (035)', () => {

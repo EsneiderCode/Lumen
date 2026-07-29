@@ -296,7 +296,17 @@ export async function fetchWorkOrders(filters: WorkOrderFilters = {}, page = 0, 
   if (filters.search) {
     // Strip PostgREST operator characters to prevent filter-string injection
     const term = filters.search.replace(/[.,()]/g, '')
-    query = query.or(`order_number.ilike.%${term}%,address.ilike.%${term}%`)
+    // POP y DP se guardan sin el prefijo del proyecto ni el 'DP' (migración
+    // 064), así que buscar «QFF001-DP021» tal como se ve en la lista no casaría
+    // con ninguna de las dos columnas. Se buscan los números sueltos del término
+    // («QFF001-DP021» → 001, 021), que es lo que sí está guardado.
+    const siteFilters = [...new Set(term.match(/\d+/g) ?? [])].flatMap((part) => [
+      `pop_code.ilike.%${part}%`,
+      `dp_code.ilike.%${part}%`,
+    ])
+    query = query.or(
+      [`order_number.ilike.%${term}%`, `address.ilike.%${term}%`, ...siteFilters].join(','),
+    )
   }
   if (filters.date_from) query = query.gte('assigned_date', filters.date_from)
   if (filters.date_to) query = query.lte('assigned_date', filters.date_to)

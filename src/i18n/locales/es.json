@@ -102,6 +102,14 @@
     "patchkabel": "Patchkabel",
     "pop": "Instalación POP"
   },
+  "segmentKind": {
+    "ra": "RA",
+    "rd": "RD"
+  },
+  "segmentKindLong": {
+    "ra": "RA — ramal de alimentación (POP → DP)",
+    "rd": "RD — ramal de distribución (desde el DP)"
+  },
   "priority": {
     "normal": "Normal",
     "alta": "Alta",
@@ -236,6 +244,17 @@
     "capturePlanDefault": "Estándar del tipo de trabajo",
     "capturePlanHint": "Determina qué fotos y datos debe registrar el técnico en la Rückmeldung.",
     "streetAddress": "Calle / Número",
+    "siteReference": "Referencia de obra",
+    "siteReferenceDesc": "Identifica el tramo. Es lo que se muestra en las listas y en los avisos de Telegram, para no tener que abrir la orden para saber de cuál se trata.",
+    "segmentKind": "Tramo",
+    "segmentKindNone": "— sin especificar —",
+    "segmentKindHint": "Distingue «Soplado RA» de «Soplado RD» en las listas.",
+    "popCode": "POP",
+    "popCodePlaceholder": "001",
+    "dpCode": "DP",
+    "dpCodePlaceholder": "021",
+    "siteReferenceHint": "Códigos dentro del proyecto, sin repetir el proyecto ni el prefijo DP. LUMEN compone la etiqueta.",
+    "siteReferencePreview": "Se mostrará como",
     "supportingDocs": "Documentos de respaldo",
     "supportingDocsDesc": "Para trabajos lineales (Soplado / Fusión) el plano y los Spleißprotokolle reemplazan a la dirección.",
     "notesPlaceholder": "Notas internas para el equipo…",

@@ -54,6 +54,8 @@ export async function notifyTaskAssigned(opts: {
   previousTeam?: string
   previousTechnician?: string
   workType?: string
+  /** Referencia de obra («QFF001-DP021», migración 064). */
+  siteRef?: string
   assignedDate?: string
   address?: string
   orderUrl: string
@@ -69,6 +71,7 @@ export async function notifyTaskAssigned(opts: {
     previousTeam: opts.previousTeam ?? '',
     previousTechnician: opts.previousTechnician ?? '',
     workType: opts.workType ?? '',
+    siteRef: opts.siteRef ?? '',
     assignedDate: opts.assignedDate ?? '',
     address: opts.address ?? '',
     orderUrl: opts.orderUrl,
@@ -131,6 +134,8 @@ export interface ReportSubmittedNotification {
   orderNumber: string
   techName?: string
   workType?: string
+  /** Referencia de obra («QFF001-DP021», migración 064). */
+  siteRef?: string
   address?: string
   city?: string
   summary?: string
@@ -145,6 +150,7 @@ export async function notifyReportSubmitted(opts: ReportSubmittedNotification): 
     orderNumber: opts.orderNumber,
     techName: opts.techName ?? '',
     workType: opts.workType ?? '',
+    siteRef: opts.siteRef ?? '',
     address: opts.address ?? '',
     city: opts.city ?? '',
     summary: opts.summary ?? '',
@@ -165,6 +171,12 @@ export async function notifyOrderDeleted(opts: {
   teamName?: string
   technicianName?: string
   workType?: string
+  /**
+   * Referencia de obra. En este evento es obligatorio pasarla desde fuera: la
+   * orden ya no existe cuando llega el aviso, así que la Edge Function no puede
+   * releerla como hace con el resto.
+   */
+  siteRef?: string
   address?: string
   adminName?: string
   groupIds?: string[]
@@ -175,6 +187,7 @@ export async function notifyOrderDeleted(opts: {
     assignedTo: opts.teamName ?? '',
     technicianName: opts.technicianName ?? '',
     workType: opts.workType ?? '',
+    siteRef: opts.siteRef ?? '',
     address: opts.address ?? '',
     ...(opts.adminName ? { adminName: opts.adminName } : {}),
     ...(opts.groupIds?.length ? { groupIds: opts.groupIds.join(',') } : {}),
