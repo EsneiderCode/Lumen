@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
+import { isStaleChunkError, reloadForNewBuild } from '@/lib/staleChunk'
 
 interface Props {
   children: ReactNode
@@ -6,21 +7,34 @@ interface Props {
 
 interface State {
   error: Error | null
+  /** A reload is under way; showing the error screen would only flash. */
+  isReloading: boolean
 }
 
 export class ErrorBoundary extends Component<Props, State> {
-  state: State = { error: null }
+  state: State = { error: null, isReloading: false }
 
   static getDerivedStateFromError(error: Error): State {
-    return { error }
+    return { error, isReloading: false }
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
+    // A chunk missing after a deploy is not a crash: the tab is running an
+    // older build. Reload rather than blaming the user for a stale tab. This
+    // backs up the `vite:preloadError` handler for failures that reach React
+    // instead of Vite's preload helper.
+    if (isStaleChunkError(error) && reloadForNewBuild()) {
+      this.setState({ isReloading: true })
+      return
+    }
     console.error('[ErrorBoundary]', error, info.componentStack)
   }
 
   render() {
     if (!this.state.error) return this.props.children
+
+    // Reload already scheduled — hold the screen blank for the instant it takes.
+    if (this.state.isReloading) return null
 
     return (
       <div className="flex min-h-screen flex-col items-center justify-center nexus-bg p-6">
