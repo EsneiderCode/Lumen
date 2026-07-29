@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
-import { filterServiceItemsByClient, groupServiceItemsByCategory } from '@/services/serviceItemService'
+import {
+  filterServiceItemsByClient,
+  groupServiceItemsByCategory,
+  resolveEffectiveCatalogClient,
+  resolvePersistedClientId,
+} from '@/services/serviceItemService'
 import type { ServiceItem } from '@/types/service-items'
 
 // groupServiceItemsByCategory is a pure function, but the module imports
@@ -147,5 +152,67 @@ describe('filterServiceItemsByClient', () => {
 
   it('ignores an empty keepItemId', () => {
     expect(filterServiceItemsByClient(items, null, '').map((i) => i.id)).toEqual(['generic'])
+  })
+})
+
+describe('resolveEffectiveCatalogClient', () => {
+  const CLIENT_FNS = 'client-fns'
+  const CLIENT_INSYTE = 'client-insyte'
+
+  it('normal order: catalog follows the order client', () => {
+    expect(resolveEffectiveCatalogClient(false, CLIENT_FNS, null)).toBe(CLIENT_FNS)
+  })
+
+  it('normal order without client yet: generic-only catalog', () => {
+    expect(resolveEffectiveCatalogClient(false, null, null)).toBeNull()
+    expect(resolveEffectiveCatalogClient(false, '', null)).toBeNull()
+  })
+
+  it('direct order: uses only the explicit catalog client', () => {
+    expect(resolveEffectiveCatalogClient(true, null, CLIENT_INSYTE)).toBe(CLIENT_INSYTE)
+  })
+
+  it('direct order without a chosen catalog client: no filter client', () => {
+    expect(resolveEffectiveCatalogClient(true, null, null)).toBeNull()
+  })
+
+  it('no project→direct leakage: project-derived client is ignored on direct orders', () => {
+    // Bug scenario: a project set form.client_id = FNS, then the admin
+    // toggled direct order on. The FNS client must NOT filter the catalog.
+    expect(resolveEffectiveCatalogClient(true, CLIENT_FNS, null)).toBeNull()
+  })
+
+  it('direct order with explicit catalog client filters the catalog to that client', () => {
+    const items = [
+      makeItem({ id: 'generic', code: 'GEN-1', client_id: null }),
+      makeItem({ id: 'fns', code: '10030300', client_id: CLIENT_FNS }),
+      makeItem({ id: 'insyte', code: 'SOP-M', client_id: CLIENT_INSYTE }),
+    ]
+    // Even with a leftover project-derived order client (FNS), the direct
+    // catalog is scoped by the explicit catalog client (Insyte) only.
+    const effective = resolveEffectiveCatalogClient(true, CLIENT_FNS, CLIENT_INSYTE)
+    expect(filterServiceItemsByClient(items, effective).map((i) => i.id)).toEqual([
+      'generic',
+      'insyte',
+    ])
+  })
+})
+
+describe('resolvePersistedClientId', () => {
+  const CLIENT_FNS = 'client-fns'
+
+  it('normal order persists its client_id', () => {
+    expect(resolvePersistedClientId(false, CLIENT_FNS)).toBe(CLIENT_FNS)
+  })
+
+  it('normal order with empty client normalizes to null', () => {
+    expect(resolvePersistedClientId(false, '')).toBeNull()
+  })
+
+  it('direct order always persists client_id null (Direktauftrag = client_id IS NULL)', () => {
+    expect(resolvePersistedClientId(true, null)).toBeNull()
+    // Even if the form still carries a project-derived client, a direct
+    // order must persist NULL — that is what defines it in the DB.
+    expect(resolvePersistedClientId(true, CLIENT_FNS)).toBeNull()
   })
 })

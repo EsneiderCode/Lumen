@@ -198,6 +198,36 @@ export function filterServiceItemsByClient<T extends ServiceItem>(
   )
 }
 
+/**
+ * Which client conditions the service catalog shown in the order form.
+ *
+ * Normal orders filter by the order's own client (usually derived from the
+ * project). Direct orders (Direktauftrag) ignore the project-derived client
+ * entirely and use only the explicitly chosen catalog client — otherwise a
+ * previously selected project would leak its client into the direct catalog
+ * filter. Empty strings normalize to null ("no client → generic items only").
+ */
+export function resolveEffectiveCatalogClient(
+  isDirectOrder: boolean,
+  orderClientId: string | null,
+  directCatalogClientId: string | null,
+): string | null {
+  const effective = isDirectOrder ? directCatalogClientId : orderClientId
+  return effective || null
+}
+
+/**
+ * Value persisted to work_orders.client_id. NULL is what makes an order a
+ * Direktauftrag for the DB state machine (migration 005), so direct orders
+ * always persist NULL — regardless of any catalog client chosen in the form.
+ */
+export function resolvePersistedClientId(
+  isDirectOrder: boolean,
+  orderClientId: string | null,
+): string | null {
+  return isDirectOrder ? null : orderClientId || null
+}
+
 export interface ServiceItemGroup<T extends ServiceItem> {
   category: string | null
   items: T[]
