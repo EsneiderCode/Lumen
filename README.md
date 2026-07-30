@@ -90,6 +90,10 @@ Convenciones:
 
 - **Design system**: NEXUS.OS pure from `/Users/jarl/Desktop/📦 Archives/Nexus.zip`. No generic Tailwind colors, shadows, blur, gradients, `rounded-xl+`, or solid semantic status buttons.
 - **State machine**: never write to `work_orders.status` directly. Always go through `transitionWorkOrderStatus()` in `src/services/workOrderService.ts`. The SQL trigger `validate_work_order_status_transition()` in `rls_policies.sql` enforces the same — keep both in sync.
+- **Two DDL sources**: `supabase/migrations/*.sql` is not the whole schema. `supabase/rls_policies.sql` is a **second, hand-applied, idempotent script**, and some live objects exist *only* there — the `work_orders` RLS policies, the `work_order_photos` / `work_order_documents` table policies, every `storage.objects` policy for the private buckets, and the state-machine trigger. Consequences, all of them load-bearing:
+  - Grepping `migrations/` alone will make you believe a policy does not exist when it is live in production.
+  - A migration that changes one of those objects must `DROP POLICY IF EXISTS` by its exact name **and** the same change must be mirrored into `rls_policies.sql`. Otherwise re-running the script silently reverts the migration.
+  - Every `CREATE POLICY` in `rls_policies.sql` needs a matching `DROP POLICY IF EXISTS` above it, or the script stops being re-runnable.
 - **DB writes from this machine**: never apply migrations directly. Ship `.sql`, Alejandro applies in his Supabase, regenerates `src/types/database.types.ts`, ships in his merge.
 
 ---

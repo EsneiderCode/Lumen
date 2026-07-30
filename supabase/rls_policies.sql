@@ -108,6 +108,11 @@ CREATE POLICY "operators_admin"
 -- ============================================================
 -- WORK ORDERS
 -- ============================================================
+-- One order, one responsible person. `assigned_technician` is the ONLY column
+-- these policies may read for scoping. `assigned_team` and
+-- `assigned_team_roster` (migration 073) are documentation — the crew that was
+-- there when the order was assigned — and must never grant access, or two people
+-- end up able to manipulate the same order.
 DROP POLICY IF EXISTS "work_orders_select"  ON work_orders;
 DROP POLICY IF EXISTS "work_orders_insert"  ON work_orders;
 DROP POLICY IF EXISTS "work_orders_update"  ON work_orders;
@@ -174,6 +179,27 @@ CREATE POLICY "wo_history_technician_insert"
     AND EXISTS (
       SELECT 1 FROM work_orders wo
       WHERE wo.id = work_order_id AND wo.assigned_technician = auth.uid()
+    )
+  );
+
+
+-- ============================================================
+-- WORK ORDER DOCUMENTS
+-- ============================================================
+-- Mirrored here from migrations 020 + 073 so that re-running this script cannot
+-- leave documents on the old team-wide rule while photos are already scoped.
+-- Only the field-access policy is owned here; the permission-based office
+-- policies (wo_documents_select_perm / wo_documents_write_perm, migration 035)
+-- live in that migration and must NOT be dropped by this script.
+DROP POLICY IF EXISTS "tech_read_work_order_documents" ON work_order_documents;
+
+CREATE POLICY "tech_read_work_order_documents"
+  ON work_order_documents FOR SELECT TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM work_orders wo
+      WHERE wo.id = work_order_id
+        AND wo.assigned_technician = auth.uid()
     )
   );
 
@@ -507,23 +533,96 @@ ON CONFLICT (id) DO UPDATE SET public = false;
 
 -- Drop old policies
 DROP POLICY IF EXISTS "storage_photos_public_read"   ON storage.objects;
+DROP POLICY IF EXISTS "storage_photos_auth_read"     ON storage.objects;
 DROP POLICY IF EXISTS "storage_photos_auth_insert"   ON storage.objects;
 DROP POLICY IF EXISTS "storage_photos_owner_delete"  ON storage.objects;
 
 -- ── work-order-photos ────────────────────────────────────────
--- READ: authenticated only (prevents anonymous URL guessing; short-lived
---       signed URLs are used in the frontend via createSignedUrl)
+-- Scoped per order since migration 073. Before it, `bucket_id = 'work-order-photos'`
+-- was the whole rule: any authenticated user read and wrote every photo of every
+-- order. Now only the office (work_orders.view) and the order's single
+-- responsible technician get in.
+--
+-- Both upload paths in the app start with the work order id, so
+-- (storage.foldername(name))[1] is that id:
+--   - src/services/capturePlanService.ts → <workOrderId>/<section>/<slot>/<file>
+--   - src/services/workOrderService.ts   → <workOrderId>/<photoType>/<file>  (legacy)
+--
+-- Reads still go through short-lived signed URLs (createSignedUrl) in the frontend.
 CREATE POLICY "storage_photos_auth_read"
   ON storage.objects FOR SELECT TO authenticated
-  USING (bucket_id = 'work-order-photos');
+  USING (
+    bucket_id = 'work-order-photos'
+    AND (
+      public.has_permission('work_orders.view')
+      OR EXISTS (
+        SELECT 1 FROM public.work_orders wo
+        WHERE wo.id::text = (storage.foldername(name))[1]
+          AND wo.assigned_technician = auth.uid()
+      )
+    )
+  );
 
 CREATE POLICY "storage_photos_auth_insert"
   ON storage.objects FOR INSERT TO authenticated
-  WITH CHECK (bucket_id = 'work-order-photos');
+  WITH CHECK (
+    bucket_id = 'work-order-photos'
+    AND (
+      public.has_permission('work_orders.view')
+      OR EXISTS (
+        SELECT 1 FROM public.work_orders wo
+        WHERE wo.id::text = (storage.foldername(name))[1]
+          AND wo.assigned_technician = auth.uid()
+      )
+    )
+  );
 
 CREATE POLICY "storage_photos_owner_delete"
   ON storage.objects FOR DELETE TO authenticated
-  USING (bucket_id = 'work-order-photos' AND auth.uid() = owner);
+  USING (
+    bucket_id = 'work-order-photos'
+    AND (
+      public.has_permission('work_orders.view')
+      OR auth.uid() = owner
+    )
+  );
+
+-- ── work-order-documents ────────────────────────────────────
+-- Mirrored here from migrations 039 + 073. Before that mirroring, re-running
+-- this script tightened the photos bucket while leaving the documents bucket on
+-- the old team-wide rule — the two halves of the same fix, silently out of step.
+-- Bucket creation itself stays in migration 039; this block only owns the policies.
+DROP POLICY IF EXISTS "storage_wo_docs_read"   ON storage.objects;
+DROP POLICY IF EXISTS "storage_wo_docs_insert" ON storage.objects;
+DROP POLICY IF EXISTS "storage_wo_docs_delete" ON storage.objects;
+
+CREATE POLICY "storage_wo_docs_read"
+  ON storage.objects FOR SELECT TO authenticated
+  USING (
+    bucket_id = 'work-order-documents'
+    AND (
+      public.has_permission('work_orders.view')
+      OR EXISTS (
+        SELECT 1 FROM public.work_orders wo
+        WHERE wo.id::text = (storage.foldername(name))[1]
+          AND wo.assigned_technician = auth.uid()
+      )
+    )
+  );
+
+CREATE POLICY "storage_wo_docs_insert"
+  ON storage.objects FOR INSERT TO authenticated
+  WITH CHECK (
+    bucket_id = 'work-order-documents'
+    AND public.has_permission('work_orders.manage_documents')
+  );
+
+CREATE POLICY "storage_wo_docs_delete"
+  ON storage.objects FOR DELETE TO authenticated
+  USING (
+    bucket_id = 'work-order-documents'
+    AND public.has_permission('work_orders.manage_documents')
+  );
 
 -- ── contractor-documents ────────────────────────────────────
 CREATE POLICY "storage_contractor_docs_auth_read"
