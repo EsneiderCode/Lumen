@@ -1,7 +1,7 @@
 /// <reference types="node" />
 
 import { describe, expect, it } from 'vitest'
-import { readdirSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const migrationsDir = join(process.cwd(), 'supabase', 'migrations')
@@ -35,6 +35,19 @@ const migration064Sql = readFileSync(
   join(migrationsDir, '064_work_order_site_reference.sql'),
   'utf8',
 )
+const clientFirstMigrations = [
+  ['065_client_master_data.sql', '064_work_order_site_reference.sql'],
+  ['066_client_owned_service_catalog.sql', '065_client_master_data.sql'],
+  ['067_executor_master_data.sql', '066_client_owned_service_catalog.sql'],
+  ['068_client_first_work_order_routing.sql', '067_executor_master_data.sql'],
+  ['069_executor_certification_paths.sql', '068_client_first_work_order_routing.sql'],
+] as const
+
+function readRequiredMigration(file: string) {
+  const path = join(migrationsDir, file)
+  expect(existsSync(path), `${file} must exist`).toBe(true)
+  return readFileSync(path, 'utf8')
+}
 
 describe('database migrations cover billing workflow schema', () => {
   it('allows direct orders without a client', () => {
@@ -502,5 +515,107 @@ describe('database migrations cover billing workflow schema', () => {
     )
     // ownership/scope policies stay keyed on the base persona
     expect(migrationSql).toContain('appointments_scheduler_scope')
+  })
+
+  it.each(clientFirstMigrations)(
+    'ships %s with the correct sequential dependency',
+    (file, dependency) => {
+      const sql = readRequiredMigration(file)
+      expect(sql).toContain(`-- Depends on: ${dependency}`)
+    },
+  )
+
+  it('promotes clients and projects to safe client-owned master data (065)', () => {
+    const sql = readRequiredMigration('065_client_master_data.sql').toLowerCase()
+    expect(sql).not.toContain('alter column client_id set not null')
+    expect(sql).toContain('projects.client_id not null enforcement is deferred to migration 070')
+    expect(sql).toContain('projects_client_code_unique')
+    expect(sql).toContain('projects_null_client_code_unique')
+    expect(sql).toMatch(
+      /if\s+conflicting_projects\s+is\s+not\s+null\s+then[\s\S]*raise\s+exception[\s\S]*conflicting project/,
+    )
+    expect(sql).toMatch(/unresolved project[\s\S]*raise\s+notice/)
+    expect(sql).toMatch(
+      /revoke\s+select\s+on\s+public\.clients\s+from\s+anon,\s*authenticated/,
+    )
+    expect(sql).toMatch(
+      /has_permission\('projects\.view'\)[\s\S]*select\s+client\.notes/,
+    )
+    expect(sql).toContain('backfilled project client ownership rows: %')
+  })
+
+  it('makes selectable catalog rows client-owned while preserving legacy rows (066)', () => {
+    const sql = readRequiredMigration('066_client_owned_service_catalog.sql').toLowerCase()
+    expect(sql).toContain('legacy_only')
+    expect(sql).not.toContain('add constraint service_items_client_required_unless_legacy')
+    expect(sql).toContain('client-required check is deferred to migration 070')
+    expect(sql).toContain('service_items_client_code_unique')
+    expect(sql).toContain('owner-editable catalog cloning map')
+    expect(sql).toContain('si.legacy_only')
+    expect(sql).toContain('left join public.clients')
+    expect(sql).toMatch(/where\s+si\.active\s*=\s*true[\s\S]*si\.is_pass_through\s*=\s*false/)
+  })
+
+  it('normalizes teams and links both personnel sources (067)', () => {
+    const sql = readRequiredMigration('067_executor_master_data.sql').toLowerCase()
+    expect(sql).toContain('create table if not exists public.teams')
+    expect(sql).toMatch(/alter table public\.employees[\s\S]*add column if not exists team_id/)
+    expect(sql).toMatch(/alter table public\.profiles[\s\S]*add column if not exists team_id/)
+    expect(sql).toContain('teams_select')
+    expect(sql).toContain('teams_update_perm')
+    expect(sql).toContain('backfilled employee team rows: %')
+    expect(sql).toContain('backfilled profile team rows: %')
+    expect(sql).not.toContain('reuse compliance_entities')
+  })
+
+  it('adds the v2 executor contract and omits operator/line (068)', () => {
+    const sql = readRequiredMigration('068_client_first_work_order_routing.sql').toLowerCase()
+    expect(sql).toContain('work_order_executor_type')
+    expect(sql).toContain('flow_version')
+    expect(sql).toContain('executor_team_id')
+    expect(sql).toContain('executor_entity_id')
+    expect(sql).toMatch(/alter column operator_id drop not null/)
+    expect(sql).toMatch(/alter column line drop not null/)
+    expect(sql).toContain('validate_client_first_work_order')
+    expect(sql).toContain('routing is frozen from in_progress')
+    expect(sql).toContain('v1 work orders require operator_id and line')
+    expect(sql).toContain('v2 work orders omit operator_id and line')
+    expect(sql).toMatch(
+      /create\s+or\s+replace\s+function\s+public\.validate_client_first_work_order\(\)[\s\S]*security\s+definer[\s\S]*set\s+search_path\s*=\s*public,\s*pg_temp/,
+    )
+    expect(sql).toMatch(
+      /if\s+tg_op\s*=\s*'update'[\s\S]*new\.flow_version\s+is\s+not\s+distinct\s+from\s+old\.flow_version[\s\S]*new\.client_id\s+is\s+not\s+distinct\s+from\s+old\.client_id[\s\S]*new\.project_id\s+is\s+not\s+distinct\s+from\s+old\.project_id[\s\S]*new\.service_item_id\s+is\s+not\s+distinct\s+from\s+old\.service_item_id[\s\S]*new\.executor_type\s+is\s+not\s+distinct\s+from\s+old\.executor_type[\s\S]*new\.executor_team_id\s+is\s+not\s+distinct\s+from\s+old\.executor_team_id[\s\S]*new\.executor_entity_id\s+is\s+not\s+distinct\s+from\s+old\.executor_entity_id[\s\S]*new\.operator_id\s+is\s+not\s+distinct\s+from\s+old\.operator_id[\s\S]*new\.line\s+is\s+not\s+distinct\s+from\s+old\.line[\s\S]*new\.is_direct_order\s+is\s+not\s+distinct\s+from\s+old\.is_direct_order[\s\S]*return\s+new/,
+    )
+    expect(sql).toContain('backfilled external_contractor from assigned_collaborator_id: %')
+    expect(sql).toContain('backfilled external_contractor from assigned_technician: %')
+    expect(sql).toContain('backfilled own_team from internal employee: %')
+    expect(sql).toContain('backfilled own_team from legacy assigned_team: %')
+    expect(sql).toContain('rollback notes:')
+  })
+
+  it('branches v2 certification through checked RPCs while preserving v1 (069)', () => {
+    const sql = readRequiredMigration('069_executor_certification_paths.sql').toLowerCase()
+    expect(sql).toContain('new.flow_version = 1')
+    expect(sql).toContain('send_work_order_to_client_checked')
+    expect(sql).toContain('reject_work_order_client_checked')
+    expect(sql).toContain('reopen_rejected_work_order_checked')
+    expect(sql).toContain("executor_type <> 'external_contractor'")
+    expect(sql).toContain("executor_type = 'own_team'")
+    expect(sql).toContain("current_setting('lumen.certification_rpc', true)")
+    expect(sql).toContain('revoke all on function')
+    expect(sql).toContain('grant execute on function')
+    expect(sql).toMatch(
+      /old\.status\s*=\s*'rueckmeldung_sent'[\s\S]*new\.executor_type\s*=\s*'own_team'\s+and\s+new\.status\s*=\s*'sent_to_client'/,
+    )
+    expect(sql).not.toMatch(
+      /new\.executor_type\s*=\s*'own_team'\s+and\s+new\.status\s*=\s*'internally_certified'/,
+    )
+    expect(sql).toMatch(
+      /old\.status\s*=\s*'rueckmeldung_sent'[\s\S]*new\.executor_type\s*=\s*'external_contractor'\s+and\s+new\.status\s*=\s*'internally_certified'/,
+    )
+    expect(sql).toMatch(
+      /old\.status\s*=\s*'internally_certified'\s+and\s+new\.executor_type\s*=\s*'external_contractor'\s+and\s+new\.status\s+in\s*\(\s*'sent_to_client',\s*'cancelled'\s*\)/,
+    )
+    expect(sql).toContain('rollback notes:')
   })
 })
