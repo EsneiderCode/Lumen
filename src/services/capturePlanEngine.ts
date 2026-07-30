@@ -94,6 +94,7 @@ function isGeoPoint(value: unknown): value is CaptureGeoPoint {
  *   - checkbox    : must be checked (`has_measurement_cert`, `client_signature`)
  *   - yesno       : answered — "no" is a valid answer
  *   - geopoint    : finite lat/lng
+ *   - geoconfirm  : the instant the technician vouched for the pin, as ISO text
  */
 export function isFieldFilled(field: CaptureField, value: unknown): boolean {
   if (value === null || value === undefined) return false
@@ -114,6 +115,8 @@ export function isFieldFilled(field: CaptureField, value: unknown): boolean {
       return value === true || value === false
     case 'geopoint':
       return isGeoPoint(value)
+    case 'geoconfirm':
+      return typeof value === 'string' && value.trim().length > 0
     default:
       return false
   }

@@ -1,18 +1,18 @@
-// Revisión final de las catas: el mapa con los pines que el técnico ha puesto,
-// las fotos de cada una, y él acepta o corrige.
+// El plano de las catas: todas juntas y unidas por su recorrido.
 //
-// La posición no la deduce nadie — las fotos llegan sin EXIF y es él quien
-// coloca cada pin en el formulario. Lo que aporta esta pantalla es verlo todo
-// junto sobre el plano: la cata que quedó dos calles más allá salta a la vista
-// aquí, y no en una lista de coordenadas ni en la oficina tres días después.
+// Aquí ya no se valida nada — cada cata confirma su propio pin en su bloque del
+// formulario, nada más ponerle las coordenadas y las fotos, y esa confirmación
+// es la que exige la puerta SQL. Lo que aporta este mapa es lo que no cabe en un
+// bloque: ver las tres seguidas y juzgar si la línea que dibujan tiene sentido.
+// La cata que quedó dos calles más allá salta a la vista aquí, no en la oficina
+// tres días después.
 //
-// Aceptar deja constancia de QUÉ se aceptó. Si luego mueve un pin o le cambia
-// las fotos a una cata, la aceptación se cae sola: un sello que sobrevive a los
-// cambios no valida nada.
+// Se puede mover un pin desde aquí, y hacerlo retira la confirmación de esa
+// cata: un visto bueno vale para el punto que se confirmó, no para siempre.
 
 import { lazy, Suspense, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Check, MapPin, PenLine } from 'lucide-react'
+import { Check, MapPin } from 'lucide-react'
 import { farthestFromCentre, type ReviewTrench } from '@/lib/trenchReview'
 import type { CaptureGeoPoint } from '@/types/capture-plan'
 
@@ -28,10 +28,7 @@ export interface TrenchReviewProps {
   photoUrls: Record<string, string>
   /** Centro del proyecto (migración 060): delata un pin puesto en otro sitio. */
   projectCentre: CaptureGeoPoint | null
-  acceptedAt: string | null
   onMovePin: (itemId: string, point: CaptureGeoPoint) => void
-  onAccept: () => void
-  onReject: () => void
 }
 
 export function TrenchReview({
@@ -39,10 +36,7 @@ export function TrenchReview({
   photoPaths,
   photoUrls,
   projectCentre,
-  acceptedAt,
   onMovePin,
-  onAccept,
-  onReject,
 }: TrenchReviewProps) {
   const { t } = useTranslation()
   const located = trenches.filter((trench) => trench.location)
@@ -51,6 +45,7 @@ export function TrenchReview({
 
   const selected = trenches.find((trench) => trench.itemId === selectedId) ?? null
   const missing = trenches.length - located.length
+  const unconfirmed = trenches.filter((trench) => trench.location && !trench.confirmedAt).length
   const farthest = farthestFromCentre(trenches, projectCentre)
   const suspicious = farthest !== null && farthest > SUSPICIOUS_DISTANCE_M
 
@@ -77,15 +72,18 @@ export function TrenchReview({
             {t('capture.review.subtitle', { count: trenches.length })}
           </p>
         </div>
-        {acceptedAt ? (
-          <p className="shrink-0 rounded-s border border-ok/40 bg-ok/10 px-2 py-1 font-mono text-[11px] text-ok">
-            {t('capture.review.accepted')}
-          </p>
-        ) : (
-          <p className="shrink-0 rounded-s border border-accent/40 bg-accent/10 px-2 py-1 font-mono text-[11px] text-accent">
-            {t('capture.review.pending')}
-          </p>
-        )}
+        <p
+          className={`shrink-0 rounded-s border px-2 py-1 font-mono text-[11px] ${
+            missing === 0 && unconfirmed === 0
+              ? 'border-ok/40 bg-ok/10 text-ok'
+              : 'border-accent/40 bg-accent/10 text-accent'
+          }`}
+        >
+          {t('capture.review.confirmedCount', {
+            done: trenches.length - missing - unconfirmed,
+            total: trenches.length,
+          })}
+        </p>
       </div>
 
       {missing > 0 && (
@@ -143,14 +141,15 @@ export function TrenchReview({
                 setSelectedId(trench.itemId)
                 setAdjusting(false)
               }}
-              className={`rounded-m border px-3 py-2 font-mono text-[11px] transition-colors duration-200 ${
+              className={`inline-flex items-center gap-1.5 rounded-m border px-3 py-2 font-mono text-[11px] transition-colors duration-200 ${
                 trench.itemId === selectedId
                   ? 'border-accent text-accent'
                   : 'border-line text-fg-2 hover:border-line-s'
               }`}
             >
+              {trench.confirmedAt && <Check size={12} strokeWidth={1.5} className="text-ok" />}
               {t('capture.review.trench')} {trench.index}
-              <span className="ml-1.5 text-fg-3">
+              <span className="text-fg-3">
                 {trench.location ? `(${trench.photoIds.length})` : t('capture.review.noPin')}
               </span>
             </button>
@@ -171,6 +170,9 @@ export function TrenchReview({
                 : t('capture.geo.empty')}
               {selected.depthCm !== null && (
                 <span className="ml-2">{t('map.trenches.depth', { depth: selected.depthCm })}</span>
+              )}
+              {selected.location && !selected.confirmedAt && (
+                <span className="ml-2 text-accent">{t('capture.review.unconfirmed')}</span>
               )}
             </p>
             {selected.location && (
@@ -210,28 +212,7 @@ export function TrenchReview({
         </div>
       )}
 
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={onAccept}
-          disabled={located.length === 0}
-          className="inline-flex items-center gap-1.5 rounded-m border border-accent bg-accent/10 px-4 py-2 text-sm font-semibold text-accent transition-colors duration-200 hover:bg-accent/20 disabled:opacity-50"
-        >
-          <Check size={15} strokeWidth={1.5} />
-          {t('capture.review.accept')}
-        </button>
-        <button
-          type="button"
-          onClick={onReject}
-          className="inline-flex items-center gap-1.5 rounded-m border border-line px-3 py-2 text-xs font-semibold text-fg-2 transition-colors duration-200 hover:border-accent hover:text-accent"
-        >
-          <PenLine size={14} strokeWidth={1.5} />
-          {t('capture.review.correct')}
-        </button>
-      </div>
-      <p className="mt-2 text-xs text-fg-3">
-        {acceptedAt ? t('capture.review.acceptedHint') : t('capture.review.hint')}
-      </p>
+      <p className="mt-3 text-xs text-fg-3">{t('capture.review.hint')}</p>
     </div>
   )
 }

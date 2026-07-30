@@ -42,6 +42,10 @@ const migration059 = readFileSync(
   join(process.cwd(), 'supabase', 'migrations', '059_soplado_details_v2.sql'),
   'utf8',
 )
+const migration071 = readFileSync(
+  join(process.cwd(), 'supabase', 'migrations', '071_capture_plan_soplado_ra_v3.sql'),
+  'utf8',
+)
 
 /** Every `('key', version, $plan$…$plan$)` row of a seed migration. */
 const seededPlans = (sql: string): Map<string, unknown> => {
@@ -62,6 +66,7 @@ const CATALOG = new Map<string, unknown>([
   ...seededPlans(migration052),
   ...seededPlans(migration053),
   ...seededPlans(migration059),
+  ...seededPlans(migration071),
 ])
 
 const sectionOf = (plan: CapturePlan, key: string): CaptureSection => {
@@ -346,6 +351,14 @@ describe('evaluating the Soplado de RA plan', () => {
     details: { meters: 120, section: 'DP-12 → POP-2', tube_diameter: '7/3.5', result: 'OK' },
   })
 
+  /** A trench with everything v3 demands of it except its photos. */
+  const trenchData = () => ({
+    location: { lat: 51.77685, lng: 9.38042, accuracy_m: null },
+    left_open: false,
+    depth_cm: 60,
+    pin_confirmed: '2026-07-30T09:00:00.000Z',
+  })
+
   it('accepts a job with no trench at all', () => {
     const result = evaluateCapturePlan(SOPLADO_RA_PLAN, mandatoryPhotos(), baseAnswers())
     expect(result.canSubmit).toBe(true)
@@ -384,11 +397,14 @@ describe('evaluating the Soplado de RA plan', () => {
       'during_open',
       'closed',
     ])
-    // The position is not demanded: phones strip EXIF location often, and that
-    // must not strand the technician with a Rückmeldung they cannot send.
+    // Since v3 the position IS demanded, and so is the vouch for its pin: the
+    // technician copies the coordinates off the watermark of one of these very
+    // photos, which no gallery can strip, and then confirms the pin on the map.
     expect(result.missing.filter((node) => node.kind === 'field').map((node) => node.fieldKey)).toEqual([
+      'location',
       'left_open',
       'depth_cm',
+      'pin_confirmed',
     ])
   })
 
@@ -404,7 +420,7 @@ describe('evaluating the Soplado de RA plan', () => {
 
     const answers: CaptureAnswers = {
       ...baseAnswers(),
-      catas: [{ id: 'c1', values: { left_open: true, depth_cm: 60 } }],
+      catas: [{ id: 'c1', values: { ...trenchData(), left_open: true } }],
     }
     const result = evaluateCapturePlan(
       SOPLADO_RA_PLAN,
@@ -421,7 +437,7 @@ describe('evaluating the Soplado de RA plan', () => {
 
     const closed = evaluateCapturePlan(SOPLADO_RA_PLAN, [...mandatoryPhotos(), ...trenchPhotos('c1')], {
       ...answers,
-      catas: [{ id: 'c1', values: { left_open: false, depth_cm: 60 } }],
+      catas: [{ id: 'c1', values: { ...trenchData(), left_open: false } }],
     })
     expect(
       closed.sections
@@ -436,7 +452,7 @@ describe('evaluating the Soplado de RA plan', () => {
   it('describes what is missing in the same words as the SQL gate', () => {
     const answers: CaptureAnswers = {
       ...baseAnswers(),
-      catas: [{ id: 'c1', values: { left_open: false, depth_cm: 60 } }],
+      catas: [{ id: 'c1', values: trenchData() }],
     }
     const result = evaluateCapturePlan(
       SOPLADO_RA_PLAN,
@@ -458,8 +474,8 @@ describe('evaluating the Soplado de RA plan', () => {
     const answers: CaptureAnswers = {
       ...baseAnswers(),
       catas: [
-        { id: 'c1', values: { left_open: false, depth_cm: 60 } },
-        { id: 'c2', values: { left_open: false } },
+        { id: 'c1', values: trenchData() },
+        { id: 'c2', values: { ...trenchData(), depth_cm: undefined } },
       ],
     }
     const trenchPhotos = (itemId: string): CapturedPhotoRef[] =>
@@ -477,6 +493,46 @@ describe('evaluating the Soplado de RA plan', () => {
     )
 
     expect(describeMissingNodes(result)).toEqual(['Angabe catas[2].depth_cm'])
+  })
+})
+
+describe('migration 071 — the trench states where it was, and vouches for its pin', () => {
+  const catas = sectionOf(SOPLADO_RA_PLAN, 'catas')
+  const fields = 'fields' in catas ? catas.fields : []
+
+  it('asks for the coordinates before the photos and demands them', () => {
+    const location = fields.find((field) => field.key === 'location')
+
+    expect(location?.type).toBe('geopoint')
+    expect(location?.required).toBe(true)
+    expect(location?.lead).toBe(true)
+  })
+
+  it('closes the trench with the vouch for its pin', () => {
+    const confirmed = fields.find((field) => field.key === 'pin_confirmed')
+
+    expect(confirmed?.type).toBe('geoconfirm')
+    expect(confirmed?.required).toBe(true)
+    expect(confirmed?.lead).toBeUndefined()
+    // Last of the section: there is nothing to vouch for until the point is in.
+    expect(fields[fields.length - 1]?.key).toBe('pin_confirmed')
+  })
+
+  it('teaches the SQL gate the new field type', () => {
+    // Without this branch capture_field_filled() falls through to `false` and a
+    // confirmed trench would count as incomplete for ever.
+    expect(migration071).toContain("ELSIF v_type = 'geoconfirm' THEN")
+    expect(migration071.toLowerCase()).toContain(
+      'create or replace function public.capture_field_filled',
+    )
+  })
+
+  it('publishes a new version and leaves the old ones alone', () => {
+    expect([...seededPlans(migration071).keys()]).toEqual(['soplado_ra@3'])
+    expect(CATALOG.has('soplado_ra@1')).toBe(true)
+    expect(CATALOG.has('soplado_ra@2')).toBe(true)
+    expect(migration071.toLowerCase()).toContain('on conflict (key, version) do update')
+    expect(migration071.toLowerCase()).toMatch(/--\s*depends on:[\s\S]*054_capture_plan_gate\.sql/)
   })
 })
 

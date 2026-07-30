@@ -15,7 +15,8 @@
 
 import { Suspense, lazy, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ChevronDown, ChevronRight, ImagePlus, MapPin, Plus, Trash2 } from 'lucide-react'
+import { Check, ChevronDown, ChevronRight, ImagePlus, MapPin, Plus, Trash2 } from 'lucide-react'
+import { formatCoordinates, parseCoordinates } from '@/lib/geoCoordinates'
 import type {
   CaptureAnswers,
   CaptureField,
@@ -121,65 +122,110 @@ function YesNoField({
  */
 const GERMANY_CENTER: CaptureGeoPoint = { lat: 51.1657, lng: 10.4515, accuracy_m: null }
 
+function MapFallback({ heightClass = 'h-56' }: { heightClass?: string }) {
+  const { t } = useTranslation()
+  return (
+    <div
+      className={`flex ${heightClass} items-center justify-center rounded-l border border-line bg-bg-0 font-mono text-[11px] text-fg-3`}
+    >
+      {t('map.loading')}
+    </div>
+  )
+}
+
+/**
+ * The position is TYPED IN, from the watermark the camera app burnt into one of
+ * the photos of this trench. That is why the text box leads and the map is a
+ * secondary button: the technician is reading a number off a picture, not
+ * hunting for a rooftop on a map.
+ *
+ * There is deliberately no "use my current location" button. The Rückmeldung is
+ * filled after the job, so the device's position is the technician's sofa, not
+ * the trench — one tap would stamp a plausible, wrong coordinate.
+ */
 function GeoPointField({
   value,
   onChange,
   fallbackCenter,
+  placeholder,
 }: {
   value: unknown
   onChange: (value: CaptureGeoPoint | null) => void
   fallbackCenter: CaptureGeoPoint | null
+  placeholder?: string
 }) {
   const { t } = useTranslation()
   const [mapOpen, setMapOpen] = useState(false)
+  const [unreadable, setUnreadable] = useState(false)
   const point = value && typeof value === 'object' ? (value as CaptureGeoPoint) : null
   const center = point ?? fallbackCenter ?? GERMANY_CENTER
 
-  // There is deliberately no "use my current location" button. The Rückmeldung
-  // is filled after the job, so the device's position is the technician's sofa,
-  // not the trench — one tap would stamp a plausible, wrong coordinate. The
-  // position comes from the photo's own EXIF, or from this pin, placed by the
-  // one person who knows where the hole was.
+  const incoming = point ? formatCoordinates(point) : ''
+  const [text, setText] = useState(incoming)
+  // What this box last wrote out. Anything else arriving in `value` came from
+  // somewhere else — the pin dragged on the map, the EXIF of a photo — and the
+  // text has to follow it without stepping on what is being typed here.
+  const [mine, setMine] = useState(incoming)
+
+  if (incoming !== mine) {
+    setMine(incoming)
+    setText(incoming)
+    setUnreadable(false)
+  }
+
+  function handleText(raw: string) {
+    setText(raw)
+    setUnreadable(false)
+
+    if (raw.trim() === '') {
+      setMine('')
+      onChange(null)
+      return
+    }
+    // Half-typed text simply writes nothing yet — it is not an error until the
+    // technician moves on, which is what the blur below decides.
+    const parsed = parseCoordinates(raw)
+    if (!parsed) return
+    setMine(formatCoordinates(parsed))
+    onChange(parsed)
+  }
+
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between gap-3">
-        <p className="font-mono text-xs text-fg-2">
-          {point
-            ? t('capture.geo.reading', {
-                lat: point.lat.toFixed(5),
-                lng: point.lng.toFixed(5),
-                accuracy: Math.round(point.accuracy_m ?? 0),
-              })
-            : t('capture.geo.empty')}
-        </p>
-        <div className="flex shrink-0 items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setMapOpen((open) => !open)}
-            aria-expanded={mapOpen}
-            className="inline-flex items-center gap-1.5 rounded-m border border-line px-3 py-2 text-xs font-semibold text-fg-1 transition-colors duration-200 hover:border-accent hover:text-accent"
-          >
-            <MapPin size={14} strokeWidth={1.5} />
-            {mapOpen ? t('capture.geo.close') : point ? t('capture.geo.adjust') : t('capture.geo.place')}
-          </button>
-        </div>
+      <div className="flex items-start gap-2">
+        <input
+          type="text"
+          inputMode="decimal"
+          value={text}
+          onChange={(event) => handleText(event.target.value)}
+          onBlur={() => setUnreadable(text.trim() !== '' && !parseCoordinates(text))}
+          placeholder={placeholder ?? '51.77685, 9.38042'}
+          className={`w-full rounded-m border bg-bg-0 px-3 py-2.5 font-mono text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none ${
+            unreadable ? 'border-accent' : point ? 'border-line-s' : 'border-line'
+          }`}
+        />
+        <button
+          type="button"
+          onClick={() => setMapOpen((open) => !open)}
+          aria-expanded={mapOpen}
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-m border border-line px-3 py-2.5 text-xs font-semibold text-fg-1 transition-colors duration-200 hover:border-accent hover:text-accent"
+        >
+          <MapPin size={14} strokeWidth={1.5} />
+          {mapOpen ? t('capture.geo.close') : point ? t('capture.geo.adjust') : t('capture.geo.place')}
+        </button>
       </div>
+
+      {unreadable && <p className="text-xs text-accent">{t('capture.geo.unreadable')}</p>}
 
       {mapOpen && (
         <>
-          <Suspense
-            fallback={
-              <div className="flex h-56 items-center justify-center rounded-l border border-line bg-bg-0 font-mono text-[11px] text-fg-3">
-                {t('map.loading')}
-              </div>
-            }
-          >
+          <Suspense fallback={<MapFallback />}>
             <NexusMap
               heightClass="h-56"
               draggable={{ lat: center.lat, lng: center.lng }}
               onDragEnd={(position) =>
                 // A hand-placed pin is exact by definition: the accuracy radius
-                // of the EXIF fix it replaces would be a lie.
+                // of the reading it replaces would be a lie.
                 onChange({ lat: position.lat, lng: position.lng, accuracy_m: null })
               }
             />
@@ -193,6 +239,88 @@ function GeoPointField({
   )
 }
 
+/**
+ * The closing step of a trench: its pin on the map, and the technician either
+ * vouches for it or drags it. What is stored is the instant of the vouch —
+ * moving the pin afterwards clears it upstream, because a vouch is a vouch for
+ * one point and not for a field.
+ */
+function GeoConfirmField({
+  value,
+  point,
+  onChange,
+  onPointChange,
+}: {
+  value: unknown
+  point: CaptureGeoPoint | null
+  onChange: (value: string | null) => void
+  onPointChange: ((value: CaptureGeoPoint) => void) | null
+}) {
+  const { t } = useTranslation()
+  const [adjusting, setAdjusting] = useState(false)
+  const confirmedAt = typeof value === 'string' && value.trim() !== '' ? value : null
+
+  if (!point) {
+    return (
+      <p className="rounded-m border border-dashed border-line bg-bg-0 p-3 text-xs text-fg-3">
+        {t('capture.geo.confirm.needsPoint')}
+      </p>
+    )
+  }
+
+  const showMap = !confirmedAt || adjusting
+
+  return (
+    <div className="space-y-2">
+      {showMap && (
+        <Suspense fallback={<MapFallback />}>
+          <NexusMap
+            heightClass="h-56"
+            draggable={{ lat: point.lat, lng: point.lng }}
+            onDragEnd={(position) =>
+              onPointChange?.({ lat: position.lat, lng: position.lng, accuracy_m: null })
+            }
+          />
+        </Suspense>
+      )}
+
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="font-mono text-[11px] text-fg-3">{formatCoordinates(point)}</p>
+        {confirmedAt ? (
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1 rounded-s border border-ok/40 bg-ok/10 px-2 py-1 font-mono text-[11px] text-ok">
+              <Check size={12} strokeWidth={1.5} />
+              {t('capture.geo.confirm.done')}
+            </span>
+            <button
+              type="button"
+              onClick={() => setAdjusting((open) => !open)}
+              className="inline-flex items-center gap-1.5 rounded-m border border-line px-3 py-2 text-xs font-semibold text-fg-2 transition-colors duration-200 hover:border-accent hover:text-accent"
+            >
+              <MapPin size={14} strokeWidth={1.5} />
+              {adjusting ? t('capture.geo.close') : t('capture.geo.confirm.correct')}
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              onChange(new Date().toISOString())
+              setAdjusting(false)
+            }}
+            className="inline-flex items-center gap-1.5 rounded-m border border-accent bg-accent/10 px-4 py-2 text-sm font-semibold text-accent transition-colors duration-200 hover:bg-accent/20"
+          >
+            <Check size={15} strokeWidth={1.5} />
+            {t('capture.geo.confirm.accept')}
+          </button>
+        )}
+      </div>
+
+      {showMap && <p className="text-xs text-fg-3">{t('capture.geo.confirm.dragHint')}</p>}
+    </div>
+  )
+}
+
 function CaptureFieldControl({
   field,
   value,
@@ -202,6 +330,8 @@ function CaptureFieldControl({
   nodeId,
   onChange,
   fallbackCenter,
+  point,
+  onPointChange,
 }: {
   field: CaptureField
   value: unknown
@@ -212,6 +342,9 @@ function CaptureFieldControl({
   onChange: (value: unknown) => void
   /** Where a still-empty map should open. */
   fallbackCenter: CaptureGeoPoint | null
+  /** The position this section holds, for a `geoconfirm` field to vouch for. */
+  point?: CaptureGeoPoint | null
+  onPointChange?: (value: CaptureGeoPoint) => void
 }) {
   const { t } = useTranslation()
   const label = t(field.labelKey, { defaultValue: field.key.replace(/_/g, ' ') })
@@ -238,6 +371,9 @@ function CaptureFieldControl({
             {label}
             {required && <span className="ml-1 text-accent">*</span>}
           </label>
+          {field.hintKey && (
+            <p className="mb-1.5 text-xs text-fg-3">{t(field.hintKey, { defaultValue: '' })}</p>
+          )}
           {field.type === 'yesno' ? (
             <YesNoField
               value={value}
@@ -246,7 +382,21 @@ function CaptureFieldControl({
               no={t('capture.no')}
             />
           ) : field.type === 'geopoint' ? (
-            <GeoPointField value={value} onChange={onChange} fallbackCenter={fallbackCenter} />
+            <GeoPointField
+              value={value}
+              onChange={onChange}
+              fallbackCenter={fallbackCenter}
+              placeholder={
+                field.placeholderKey ? t(field.placeholderKey, { defaultValue: '' }) : undefined
+              }
+            />
+          ) : field.type === 'geoconfirm' ? (
+            <GeoConfirmField
+              value={value}
+              point={point ?? null}
+              onChange={onChange}
+              onPointChange={onPointChange ?? null}
+            />
           ) : field.type === 'select' ? (
             <select
               value={typeof value === 'string' ? value : ''}
@@ -432,6 +582,20 @@ function sectionFields(section: CaptureSection): CaptureField[] {
   return 'fields' in section ? section.fields : []
 }
 
+/** What is asked before the photos, and what is asked after them. */
+function leadFields(section: CaptureSection): CaptureField[] {
+  return sectionFields(section).filter((field) => field.lead)
+}
+
+function trailingFields(section: CaptureSection): CaptureField[] {
+  return sectionFields(section).filter((field) => !field.lead)
+}
+
+/** The position of the section, which a `geoconfirm` field vouches for. */
+function geoFieldKey(section: CaptureSection): string | undefined {
+  return sectionFields(section).find((field) => field.type === 'geopoint')?.key
+}
+
 export function CapturePlanForm(props: CapturePlanFormProps) {
   const { plan, answers, evaluation, photos } = props
   const { t } = useTranslation()
@@ -516,6 +680,9 @@ export function CapturePlanForm(props: CapturePlanFormProps) {
       ? item.values
       : ((answers[section.key] ?? {}) as CaptureFieldValues)
 
+    const geoKey = geoFieldKey(section)
+    const point = geoKey ? (values[geoKey] as CaptureGeoPoint | undefined) ?? null : null
+
     return (
       <CaptureFieldControl
         key={nodeId}
@@ -527,6 +694,12 @@ export function CapturePlanForm(props: CapturePlanFormProps) {
         highlighted={props.highlightedNodeId === nodeId}
         onChange={(value) => props.onFieldChange(section.key, field.key, value, itemId)}
         fallbackCenter={locatedPhotoPoint}
+        point={point}
+        onPointChange={
+          geoKey
+            ? (value) => props.onFieldChange(section.key, geoKey, value, itemId)
+            : undefined
+        }
       />
     )
   }
@@ -603,8 +776,11 @@ export function CapturePlanForm(props: CapturePlanFormProps) {
                               <Trash2 size={13} strokeWidth={1.5} />
                             </button>
                           </div>
+                          {/* Coordenadas, fotos, y al final el pin sobre el
+                              mapa: el orden en que ocurre el trabajo. */}
+                          {leadFields(section).map((field) => renderField(section, field, item))}
                           {section.slots.map((slot) => renderSlot(section, slot, item.id))}
-                          {section.fields.map((field) => renderField(section, field, item))}
+                          {trailingFields(section).map((field) => renderField(section, field, item))}
                         </div>
                       )
                     })}
@@ -619,8 +795,9 @@ export function CapturePlanForm(props: CapturePlanFormProps) {
                   </>
                 ) : (
                   <>
+                    {leadFields(section).map((field) => renderField(section, field, null))}
                     {sectionSlots(section).map((slot) => renderSlot(section, slot, null))}
-                    {sectionFields(section).map((field) => renderField(section, field, null))}
+                    {trailingFields(section).map((field) => renderField(section, field, null))}
                   </>
                 )}
               </div>

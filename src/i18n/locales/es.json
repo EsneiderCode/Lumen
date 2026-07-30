@@ -1667,27 +1667,32 @@
       "empty": "Sin posición registrada",
       "reading": "◎ {{lat}}, {{lng}} · ±{{accuracy}} m",
       "place": "Poner en el mapa",
-      "placeHint": "Arrastrá el pin hasta donde se hizo la cata."
+      "placeHint": "Arrastrá el pin hasta donde se hizo la cata.",
+      "unreadable": "No se entienden esas coordenadas. Escribilas como en la marca de agua: 51.77685, 9.38042",
+      "confirm": {
+        "needsPoint": "Primero escribí las coordenadas de esta cata, arriba.",
+        "accept": "El pin está bien",
+        "correct": "Corregir posición",
+        "done": "PIN CONFIRMADO",
+        "dragHint": "Mirá que el pin caiga donde estuvo la cata. Si no, arrastralo hasta el sitio."
+      }
     },
     "missing": {
       "summary": "Faltan {{count}} datos"
     },
     "review": {
-      "title": "Revisá las catas en el mapa",
-      "subtitle": "{{count}} cata(s) con su pin, sus fotos y su profundidad.",
-      "accepted": "REVISADO",
-      "pending": "SIN REVISAR",
-      "missingPins": "{{count}} cata(s) todavía sin pin. Ponéselo en el formulario de arriba y volvé aquí.",
-      "farFromProject": "Una cata queda a {{km}} km del proyecto. Comprobá su pin antes de aceptar.",
-      "noPins": "Ninguna cata tiene el pin puesto todavía. En cada cata, «Poner en el mapa».",
+      "title": "Las catas sobre el plano",
+      "subtitle": "{{count}} cata(s), en el orden en que las hiciste.",
+      "missingPins": "{{count}} cata(s) todavía sin coordenadas. Ponéselas en su bloque de arriba.",
+      "farFromProject": "Una cata queda a {{km}} km del proyecto. Comprobá su pin.",
+      "noPins": "Ninguna cata tiene coordenadas todavía. Se escriben en cada cata, arriba.",
       "noPin": "sin pin",
       "trench": "Cata",
       "adjustPin": "Mover el pin",
       "noPhotosInTrench": "Esta cata todavía no tiene fotos.",
-      "accept": "Está bien así",
-      "correct": "Corregir algo",
-      "hint": "Mirá que cada pin esté donde estuvo la cata de verdad. Al aceptar queda registrado qué revisaste; si después movés un pin o cambiás fotos, habrá que revisarlo otra vez.",
-      "acceptedHint": "Revisado. Si movés un pin o cambiás las fotos de una cata, esto vuelve a quedar pendiente."
+      "hint": "Cada cata ya confirmó su pin. Esto es para verlas juntas: si el recorrido no tiene sentido, movés el pin de la que se salga y volvés a confirmarla.",
+      "confirmedCount": "{{done}}/{{total}} CONFIRMADAS",
+      "unconfirmed": "sin confirmar"
     }
   },
   "map": {
@@ -1761,19 +1766,25 @@
       "field": {
         "leftOpen": "¿La cata queda abierta?",
         "depthCm": "Profundidad (cm)",
-        "location": "Ubicación de la cata",
+        "location": "Coordenadas de la cata",
         "incidentDescription": "Descripción",
         "ductAsPlanned": "¿Se usó el tubo previsto?",
         "trunkUsed": "Troncal utilizada",
         "ductUsed": "Tubo utilizado",
-        "changeReason": "Motivo del cambio"
+        "changeReason": "Motivo del cambio",
+        "pinConfirmed": "Confirmá el pin de la cata"
       },
       "placeholder": {
         "depthCm": "p. ej. 60",
         "incidentDescription": "¿Qué ha pasado?",
         "trunkUsed": "p. ej. troncal 3",
         "ductUsed": "p. ej. tubo 7 (verde)",
-        "changeReason": "p. ej. tubo previsto obstruido"
+        "changeReason": "p. ej. tubo previsto obstruido",
+        "location": "51.77685, 9.38042"
+      },
+      "hint": {
+        "location": "Copiá las coordenadas que salen en la marca de agua de una de las fotos de esta cata.",
+        "pinConfirmed": "Comprobá sobre el mapa que el pin cae donde estuvo la cata."
       }
     }
   }

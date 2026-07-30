@@ -24,8 +24,21 @@ export type CaptureFieldType =
   | 'checkbox'
   /** Two big buttons, not a select — gloved fingers. Required = answered, not "yes". */
   | 'yesno'
-  /** `{ lat, lng, accuracy_m }`, captured with the first photo of the item. */
+  /**
+   * `{ lat, lng, accuracy_m }`. Typed in by the technician from the watermark
+   * the camera app burnt into the photo, or placed by hand on the map.
+   */
   | 'geopoint'
+  /**
+   * The technician vouches for the pin of THIS item after seeing it on the map.
+   * Stores the ISO instant of the confirmation; empty = still to confirm.
+   *
+   * It is a field of its own and not a flag inside the geopoint because the SQL
+   * gate demands required fields one by one: this way "the pin is confirmed" is
+   * a business rule the server enforces, not a UI courtesy. Whoever moves the
+   * point must clear it — a vouch is a vouch for one point, not for a field.
+   */
+  | 'geoconfirm'
 
 /**
  * The single conditional primitive of the plan. It reveals photo slots (safety
@@ -44,6 +57,8 @@ export interface CaptureField {
   key: string
   type: CaptureFieldType
   labelKey: string
+  /** One line telling the technician where to get the value from. */
+  hintKey?: string
   placeholderKey?: string
   /** Canonical values as stored in the DB; the visible text is translated. */
   options?: string[]
@@ -60,6 +75,13 @@ export interface CaptureField {
    */
   legacyColumn?: string
   condition?: CaptureCondition
+  /**
+   * Rendered ABOVE the photo slots of its section instead of below them. The
+   * order is the order of the work: the coordinates of a trench are asked for
+   * before its photos, because they are what the technician reads off the
+   * watermark while looking at those very photos.
+   */
+  lead?: boolean
 }
 
 export interface CapturePhotoSlot {

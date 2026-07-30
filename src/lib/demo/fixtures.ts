@@ -830,8 +830,10 @@ export const initialFixtures = () => ({
     {
       work_order_id: WO_10_SOPLADO_RA,
       plan_key: 'soplado_ra',
-      plan_version: 2,
+      plan_version: 3,
       answers: {
+        // La primera cata está cerrada del todo; la segunda tiene su posición
+        // pero aún sin confirmar el pin, que es lo que hay que ver en la demo.
         catas: [
           {
             id: 'cata-demo-1',
@@ -839,6 +841,7 @@ export const initialFixtures = () => ({
               left_open: false,
               depth_cm: 62,
               location: { lat: 51.77685, lng: 9.38042, accuracy_m: 8 },
+              pin_confirmed: NOW,
             },
           },
           {

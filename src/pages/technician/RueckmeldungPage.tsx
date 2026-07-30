@@ -45,14 +45,7 @@ import {
   uploadCapturePhoto,
   type CapturePhotoRow,
 } from '@/services/capturePlanService'
-import {
-  clearReview,
-  firstRepeaterSection,
-  markReviewed,
-  reviewAcceptedAt,
-  setTrenchLocation,
-  trenchesForReview,
-} from '@/lib/trenchReview'
+import { pinResetKeys, setTrenchLocation, trenchesForReview } from '@/lib/trenchReview'
 import { TrenchReview } from '@/components/capture/TrenchReview'
 import { rueckmeldungSendPath } from '@/services/workOrderStateMachine'
 import { loadRueckmeldung } from '@/services/rueckmeldungLoader'
@@ -253,38 +246,17 @@ export function RueckmeldungPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [answers, reportedDrafts, isLoading, plan, id, user])
 
-  // ── Revisión de las catas ─────────────────────────────────────────────────
-  // El pin de cada cata lo pone el técnico en el formulario; aquí solo se le
-  // enseña el conjunto sobre el mapa para que lo dé por bueno. Cualquier cambio
-  // posterior tumba la aceptación (la huella deja de cuadrar), así que lo que
-  // queda registrado siempre describe lo que hay.
+  // ── Plano de las catas ────────────────────────────────────────────────────
+  // Cada cata confirma su pin en su propio bloque; este mapa solo las enseña
+  // juntas, para ver si la línea que dibujan tiene sentido.
   const reviewTrenches = useMemo(
     () => trenchesForReview(plan, answers, photos),
     [plan, answers, photos],
   )
-  const reviewAccepted = useMemo(
-    () => reviewAcceptedAt(answers, reviewTrenches),
-    [answers, reviewTrenches],
-  )
 
-  /** Mover el pin desde el mapa de revisión: lo mismo que moverlo en su cata. */
+  /** Mover el pin desde el plano: lo mismo que moverlo en su cata, confirmación incluida. */
   function handleTrenchPin(itemId: string, point: CaptureGeoPoint) {
     setAnswers((previous) => setTrenchLocation(plan, previous, itemId, point))
-  }
-
-  function handleTrenchAccept() {
-    setAnswers((previous) =>
-      markReviewed(previous, trenchesForReview(plan, previous, photos), new Date().toISOString()),
-    )
-  }
-
-  /** «Corregir algo»: se retira el visto bueno y se le sube a las catas. */
-  function handleTrenchReject() {
-    setAnswers((previous) => clearReview(previous))
-    const section = firstRepeaterSection(plan)
-    if (section) {
-      document.getElementById(section.key)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }
   }
 
   /**
@@ -445,20 +417,26 @@ export function RueckmeldungPage() {
     itemId?: string | null,
   ) {
     setHighlightedNodeId(null)
+    // Cambiar la posición retira el visto bueno de ese pin: se dio por bueno un
+    // punto, no un campo. Normalmente no hay nada que retirar.
+    const resets = pinResetKeys(plan, sectionKey, fieldKey)
+    const write = (previous: CaptureFieldValues): CaptureFieldValues => {
+      const next = { ...previous, [fieldKey]: value as never }
+      for (const key of resets) delete next[key]
+      return next
+    }
+
     setAnswers((previous) => {
       if (itemId) {
         const items = (previous[sectionKey] ?? []) as CaptureRepeaterItem[]
         return {
           ...previous,
           [sectionKey]: items.map((item) =>
-            item.id === itemId
-              ? { ...item, values: { ...item.values, [fieldKey]: value as never } }
-              : item,
+            item.id === itemId ? { ...item, values: write(item.values) } : item,
           ),
         }
       }
-      const values = (previous[sectionKey] ?? {}) as CaptureFieldValues
-      return { ...previous, [sectionKey]: { ...values, [fieldKey]: value as never } }
+      return { ...previous, [sectionKey]: write((previous[sectionKey] ?? {}) as CaptureFieldValues) }
     })
   }
 
@@ -577,12 +555,14 @@ export function RueckmeldungPage() {
    * The Rückmeldung is filled after the job — often at home, hours later — so
    * `navigator.geolocation` would stamp every trench with wherever the
    * technician is sitting. The camera already wrote the truth into the photo's
-   * EXIF; when it is there, the first photo of a trench also fills the item's
-   * geopoint so the trench lands on the map by itself.
+   * EXIF; when it is there, the first photo of a trench fills the item's
+   * geopoint for free.
    *
    * A photo with no EXIF position is the normal case, not a failure: phones
-   * strip it when a picture leaves the gallery. The technician then places the
-   * pin by hand on the map, which is the only other honest source.
+   * strip it when a picture leaves the gallery. That is why the trench asks for
+   * its coordinates BEFORE its photos — the technician copies them off the
+   * watermark, which no gallery can strip — and this stays a courtesy: it only
+   * writes into an empty field, never over what he typed.
    */
   async function metadataForCapture(
     target: SlotTarget,
@@ -1051,24 +1031,6 @@ export function RueckmeldungPage() {
         </div>
       )}
 
-      {/* Trench review — the positions come from each photo's watermark, so the
-          screen proposes the split and the technician confirms or corrects it.
-          Only for plans that actually have trenches (soplado_ra today). */}
-      {/* Trench review — the pins are the ones the technician placed; this only
-          shows them together on a map so he can vouch for them before sending. */}
-      {reviewTrenches.length > 0 && (
-        <TrenchReview
-          trenches={reviewTrenches}
-          photoPaths={Object.fromEntries(photos.map((photo) => [photo.id, photo.storage_path]))}
-          photoUrls={photoUrls}
-          projectCentre={projectCenter}
-          acceptedAt={reviewAccepted}
-          onMovePin={handleTrenchPin}
-          onAccept={handleTrenchAccept}
-          onReject={handleTrenchReject}
-        />
-      )}
-
       {/* Capture plan — photos and technical data, driven by the plan of this
           work order (its capture_plan_key, or its work type) */}
       {plan && evaluation ? (
@@ -1094,6 +1056,20 @@ export function RueckmeldungPage() {
         <div className="rounded-l border border-warn/40 bg-warn/10 px-4 py-3 text-sm text-warn">
           {t('capture.planMissing', { key: order.capture_plan_key ?? order.work_type })}
         </div>
+      )}
+
+      {/* Plano de las catas — va DESPUÉS del formulario: cada cata ya confirmó
+          su pin en su bloque, y esto las enseña juntas y unidas por su
+          recorrido, que es lo que delata a la que quedó en otra calle. Solo en
+          los planes que tienen catas (soplado_ra hoy). */}
+      {reviewTrenches.length > 0 && (
+        <TrenchReview
+          trenches={reviewTrenches}
+          photoPaths={Object.fromEntries(photos.map((photo) => [photo.id, photo.storage_path]))}
+          photoUrls={photoUrls}
+          projectCentre={projectCenter}
+          onMovePin={handleTrenchPin}
+        />
       )}
 
       {/* Material consumption */}

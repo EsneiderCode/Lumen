@@ -1,12 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
-  clearReview,
   farthestFromCentre,
   firstRepeaterSection,
   geoFieldKey,
-  markReviewed,
   metresBetween,
-  reviewAcceptedAt,
+  pinConfirmFieldKey,
+  pinResetKeys,
   setTrenchLocation,
   trenchesForReview,
 } from '@/lib/trenchReview'
@@ -21,7 +20,15 @@ const ROSSDORF = { lat: 49.8601, lng: 8.7536 }
 
 const ANSWERS: CaptureAnswers = {
   catas: [
-    { id: 'cata-1', values: { depth_cm: 40, left_open: true, location: { lat: 49.8601, lng: 8.7536, accuracy_m: null } } },
+    {
+      id: 'cata-1',
+      values: {
+        depth_cm: 40,
+        left_open: true,
+        location: { lat: 49.8601, lng: 8.7536, accuracy_m: null },
+        pin_confirmed: WHEN,
+      },
+    },
     { id: 'cata-2', values: { depth_cm: 20 } },
   ],
 }
@@ -37,11 +44,13 @@ describe('firstRepeaterSection / geoFieldKey', () => {
   it('encuentra las catas del plan de soplado de RA', () => {
     expect(firstRepeaterSection(PLAN)?.key).toBe('catas')
     expect(geoFieldKey(firstRepeaterSection(PLAN))).toBe('location')
+    expect(pinConfirmFieldKey(firstRepeaterSection(PLAN))).toBe('pin_confirmed')
   })
 
   it('no inventa nada cuando no hay plan', () => {
     expect(firstRepeaterSection(null)).toBeNull()
     expect(geoFieldKey(null)).toBeNull()
+    expect(pinConfirmFieldKey(null)).toBeNull()
   })
 })
 
@@ -79,6 +88,14 @@ describe('setTrenchLocation', () => {
     expect(primera.values.left_open).toBe(true)
   })
 
+  it('retira el visto bueno de la cata que se mueve, sin tocar el original', () => {
+    const next = setTrenchLocation(PLAN, ANSWERS, 'cata-1', { lat: 49.86, lng: 8.75, accuracy_m: null })
+
+    expect(trenchesForReview(PLAN, next, PHOTOS)[0].confirmedAt).toBeNull()
+    // Un visto bueno vale para el punto que se confirmó, no para el campo.
+    expect(trenchesForReview(PLAN, ANSWERS, PHOTOS)[0].confirmedAt).toBe(WHEN)
+  })
+
   it('no toca las demás catas', () => {
     const next = setTrenchLocation(PLAN, ANSWERS, 'cata-1', { lat: 49.86, lng: 8.75, accuracy_m: null })
     const segunda = (next.catas as Array<{ values: Record<string, unknown> }>)[1]
@@ -91,51 +108,31 @@ describe('setTrenchLocation', () => {
   })
 })
 
-describe('aceptación de la revisión', () => {
-  it('recuerda cuándo se aceptó', () => {
-    const trenches = trenchesForReview(PLAN, ANSWERS, PHOTOS)
-    const marked = markReviewed(ANSWERS, trenches, WHEN)
-    expect(reviewAcceptedAt(marked, trenches)).toBe(WHEN)
+describe('confirmación del pin, cata por cata', () => {
+  it('lleva al mapa cuál está confirmada y cuál no', () => {
+    const [confirmada, sinConfirmar] = trenchesForReview(PLAN, ANSWERS, PHOTOS)
+
+    expect(confirmada.confirmedAt).toBe(WHEN)
+    expect(sinConfirmar.confirmedAt).toBeNull()
   })
 
-  it('se cae sola al mover un pin', () => {
-    const trenches = trenchesForReview(PLAN, ANSWERS, PHOTOS)
-    const marked = markReviewed(ANSWERS, trenches, WHEN)
-    const moved = setTrenchLocation(PLAN, marked, 'cata-1', { lat: 49.87, lng: 8.76, accuracy_m: null })
-    expect(reviewAcceptedAt(moved, trenchesForReview(PLAN, moved, PHOTOS))).toBeNull()
+  it('no da por confirmada una marca vacía', () => {
+    const answers: CaptureAnswers = {
+      catas: [{ id: 'cata-1', values: { location: { lat: 49.86, lng: 8.75 }, pin_confirmed: '  ' } }],
+    }
+    expect(trenchesForReview(PLAN, answers, PHOTOS)[0].confirmedAt).toBeNull()
   })
 
-  it('se cae sola al añadir una foto a una cata', () => {
-    const trenches = trenchesForReview(PLAN, ANSWERS, PHOTOS)
-    const marked = markReviewed(ANSWERS, trenches, WHEN)
-    const conMas = [...PHOTOS, { id: 'f5', section_key: 'catas', item_id: 'cata-1' }]
-    expect(reviewAcceptedAt(marked, trenchesForReview(PLAN, marked, conMas))).toBeNull()
+  it('solo la posición tumba el visto bueno; lo demás de la cata no', () => {
+    expect(pinResetKeys(PLAN, 'catas', 'location')).toEqual(['pin_confirmed'])
+    expect(pinResetKeys(PLAN, 'catas', 'depth_cm')).toEqual([])
+    expect(pinResetKeys(PLAN, 'catas', 'left_open')).toEqual([])
   })
 
-  it('aguanta un temblor de pin de menos de un metro', () => {
-    const trenches = trenchesForReview(PLAN, ANSWERS, PHOTOS)
-    const marked = markReviewed(ANSWERS, trenches, WHEN)
-    const nudged = setTrenchLocation(PLAN, marked, 'cata-1', {
-      lat: 49.860100001,
-      lng: 8.753600001,
-      accuracy_m: null,
-    })
-    expect(reviewAcceptedAt(nudged, trenchesForReview(PLAN, nudged, PHOTOS))).toBe(WHEN)
-  })
-
-  it('«corregir algo» retira el visto bueno', () => {
-    const trenches = trenchesForReview(PLAN, ANSWERS, PHOTOS)
-    const marked = markReviewed(ANSWERS, trenches, WHEN)
-    expect(reviewAcceptedAt(clearReview(marked), trenches)).toBeNull()
-  })
-
-  it('sin aceptar no hay fecha', () => {
-    expect(reviewAcceptedAt(ANSWERS, trenchesForReview(PLAN, ANSWERS, PHOTOS))).toBeNull()
-  })
-
-  it('no ensucia las respuestas que se envían', () => {
-    const marked = markReviewed(ANSWERS, trenchesForReview(PLAN, ANSWERS, PHOTOS), WHEN)
-    expect(marked.catas).toEqual(ANSWERS.catas)
+  it('no opina sobre secciones que no existen ni sin plan', () => {
+    expect(pinResetKeys(PLAN, 'checklist', 'duct_as_planned')).toEqual([])
+    expect(pinResetKeys(PLAN, 'no_existe', 'location')).toEqual([])
+    expect(pinResetKeys(null, 'catas', 'location')).toEqual([])
   })
 })
 

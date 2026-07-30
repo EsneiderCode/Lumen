@@ -1667,27 +1667,32 @@
       "empty": "Keine Position erfasst",
       "reading": "◎ {{lat}}, {{lng}} · ±{{accuracy}} m",
       "place": "Auf der Karte setzen",
-      "placeHint": "Ziehe den Pin an die Stelle der Kata."
+      "placeHint": "Ziehe den Pin an die Stelle der Kata.",
+      "unreadable": "Diese Koordinaten sind nicht lesbar. So eingeben wie im Wasserzeichen: 51.77685, 9.38042",
+      "confirm": {
+        "needsPoint": "Zuerst oben die Koordinaten dieser Grube eintragen.",
+        "accept": "Pin sitzt richtig",
+        "correct": "Position korrigieren",
+        "done": "PIN BESTÄTIGT",
+        "dragHint": "Prüfen, ob der Pin dort sitzt, wo die Grube war. Wenn nicht, an die richtige Stelle ziehen."
+      }
     },
     "missing": {
       "summary": "Es fehlen {{count}} Angaben"
     },
     "review": {
-      "title": "Gruben auf der Karte prüfen",
-      "subtitle": "{{count}} Grube(n) mit Pin, Fotos und Tiefe.",
-      "accepted": "GEPRÜFT",
-      "pending": "UNGEPRÜFT",
-      "missingPins": "{{count}} Grube(n) noch ohne Pin. Oben im Formular setzen und hierher zurückkehren.",
-      "farFromProject": "Eine Grube liegt {{km}} km vom Projekt entfernt. Pin vor dem Bestätigen prüfen.",
-      "noPins": "Noch keine Grube hat einen Pin. Pro Grube «Auf der Karte setzen».",
+      "title": "Die Gruben auf der Karte",
+      "subtitle": "{{count}} Grube(n), in der Reihenfolge der Ausführung.",
+      "missingPins": "{{count}} Grube(n) noch ohne Koordinaten. Oben im jeweiligen Block eintragen.",
+      "farFromProject": "Eine Grube liegt {{km}} km vom Projekt entfernt. Pin prüfen.",
+      "noPins": "Noch keine Grube hat Koordinaten. Sie werden oben je Grube eingetragen.",
       "noPin": "ohne Pin",
       "trench": "Grube",
       "adjustPin": "Pin verschieben",
       "noPhotosInTrench": "Diese Grube hat noch keine Fotos.",
-      "accept": "So ist es richtig",
-      "correct": "Etwas korrigieren",
-      "hint": "Prüfen, ob jeder Pin dort sitzt, wo die Grube wirklich war. Beim Bestätigen wird festgehalten, was geprüft wurde; wird danach ein Pin verschoben oder Fotos geändert, ist erneut zu prüfen.",
-      "acceptedHint": "Geprüft. Wird ein Pin verschoben oder werden Fotos einer Grube geändert, gilt dies wieder als ungeprüft."
+      "hint": "Jede Grube hat ihren Pin bereits bestätigt. Hier stehen sie zusammen: ergibt der Verlauf keinen Sinn, den Pin der Ausreißerin verschieben und erneut bestätigen.",
+      "confirmedCount": "{{done}}/{{total}} BESTÄTIGT",
+      "unconfirmed": "nicht bestätigt"
     }
   },
   "map": {
@@ -1761,19 +1766,25 @@
       "field": {
         "leftOpen": "Bleibt die Grube offen?",
         "depthCm": "Tiefe (cm)",
-        "location": "Position der Grube",
+        "location": "Koordinaten der Grube",
         "incidentDescription": "Beschreibung",
         "ductAsPlanned": "Wurde das geplante Rohr verwendet?",
         "trunkUsed": "Verwendeter Strang",
         "ductUsed": "Verwendetes Rohr",
-        "changeReason": "Grund der Abweichung"
+        "changeReason": "Grund der Abweichung",
+        "pinConfirmed": "Pin der Grube bestätigen"
       },
       "placeholder": {
         "depthCm": "z. B. 60",
         "incidentDescription": "Was ist passiert?",
         "trunkUsed": "z. B. Strang 3",
         "ductUsed": "z. B. Rohr 7 (grün)",
-        "changeReason": "z. B. geplantes Rohr blockiert"
+        "changeReason": "z. B. geplantes Rohr blockiert",
+        "location": "51.77685, 9.38042"
+      },
+      "hint": {
+        "location": "Die Koordinaten aus dem Wasserzeichen eines Fotos dieser Grube übernehmen.",
+        "pinConfirmed": "Auf der Karte prüfen, ob der Pin dort sitzt, wo die Grube war."
       }
     }
   }

@@ -15,10 +15,15 @@
 //     blowing job may not require opening the ground at all;
 //   - answering "yes" to "does the trench stay open?" REVEALS the safety-signage
 //     slot but does not demand it (`min: 0`);
-//   - the trench's `location` is not required: it is filled from the EXIF of the
-//     first photo of the trench when the camera wrote one, and phones strip that
-//     often enough that demanding it would strand technicians. Without it the
-//     pin is placed by hand on the map;
+//   - a trench that DOES exist is documented in this order, and the order is the
+//     point (v3): first its `location`, typed off the watermark the camera burnt
+//     into one of its photos; then the photos; then, once there is a point to
+//     look at, `pin_confirmed` — the technician sees the pin on the map and
+//     vouches for it or drags it. Both are required: a trench whose position
+//     nobody vouched for is what the office cannot use.
+//     The v1/v2 reasoning for leaving the position optional (EXIF is stripped by
+//     the gallery, so demanding it would strand technicians) no longer applies:
+//     the watermark is legible on the photo itself and does not depend on EXIF;
 //   - incidents are never mandatory by design.
 
 import { legacyDetailsSection } from '@/constants/capture-plan-sections'
@@ -31,11 +36,12 @@ import type {
 
 export const SOPLADO_RA_PLAN_KEY = 'soplado_ra'
 /**
- * v2 (migration 059): the technical data leads the plan, `section` is gone and
- * the result comes first inside it. v1 stays in the catalog — a Rückmeldung
- * already sent under it is judged against the version it was captured under.
+ * v3 (migration 071): each trench now states where it was before its photos and
+ * confirms its own pin after them. v1 and v2 stay in the catalog — a Rückmeldung
+ * already sent under one of them is judged against the version it was captured
+ * under, so no order in flight becomes uncertifiable because of this.
  */
-export const SOPLADO_RA_PLAN_VERSION = 2
+export const SOPLADO_RA_PLAN_VERSION = 3
 
 const T = 'capturePlan.sopladoRa'
 
@@ -145,6 +151,18 @@ const SECTIONS: CaptureSection[] = [
       },
     ],
     fields: [
+      // `lead`: se pide ANTES que las fotos. El técnico las tiene delante en la
+      // galería y la marca de agua de cualquiera de ellas lleva escrita la
+      // posición de esta cata.
+      {
+        key: 'location',
+        type: 'geopoint',
+        labelKey: `${T}.field.location`,
+        hintKey: `${T}.hint.location`,
+        placeholderKey: `${T}.placeholder.location`,
+        required: true,
+        lead: true,
+      },
       {
         key: 'left_open',
         type: 'yesno',
@@ -158,10 +176,14 @@ const SECTIONS: CaptureSection[] = [
         placeholderKey: `${T}.placeholder.depthCm`,
         required: true,
       },
+      // Cierra la cata: con el punto ya escrito y las fotos subidas, se le
+      // enseña el pin sobre el mapa y él responde por él.
       {
-        key: 'location',
-        type: 'geopoint',
-        labelKey: `${T}.field.location`,
+        key: 'pin_confirmed',
+        type: 'geoconfirm',
+        labelKey: `${T}.field.pinConfirmed`,
+        hintKey: `${T}.hint.pinConfirmed`,
+        required: true,
       },
     ],
   },
