@@ -13,7 +13,9 @@ interface OrderData {
   work_type: string
   status: string
   priority: string
-  line: string
+  // Nullable desde la 068: el flujo v2 no pide línea NE3/NE4, el v1 la sigue
+  // exigiendo por trigger.
+  line: string | null
   address: string | null
   postal_code: string | null
   city: string | null
@@ -116,7 +118,7 @@ export function generateCertificatePdf(
   // ── Auftragsdaten ─────────────────────────────────────────────
   addSection('Auftragsdaten')
   addRow('Auftragstyp', labels.workType(order.work_type as WorkType) || order.work_type)
-  addRow('Linie', order.line)
+  addRow('Linie', order.line ?? '—')
   addRow('Priorität', order.priority)
   addRow('Kunde', `${order.clients?.name ?? '—'} (${order.clients?.code ?? '—'})`)
   addRow('Projekt', `${order.projects?.code ?? '—'} – ${order.projects?.name ?? '—'}`)

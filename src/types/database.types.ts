@@ -179,6 +179,8 @@ export type Database = {
           id: string
           is_active: boolean
           name: string
+          notes: string | null
+          updated_at: string
         }
         Insert: {
           code: string
@@ -186,6 +188,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           name: string
+          notes?: string | null
+          updated_at?: string
         }
         Update: {
           code?: string
@@ -193,6 +197,8 @@ export type Database = {
           id?: string
           is_active?: boolean
           name?: string
+          notes?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -764,6 +770,7 @@ export type Database = {
           steuerklasse: string | null
           sv_nummer: string | null
           team: Database["public"]["Enums"]["team_color"] | null
+          team_id: string | null
           updated_at: string
         }
         Insert: {
@@ -783,6 +790,7 @@ export type Database = {
           steuerklasse?: string | null
           sv_nummer?: string | null
           team?: Database["public"]["Enums"]["team_color"] | null
+          team_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -802,6 +810,7 @@ export type Database = {
           steuerklasse?: string | null
           sv_nummer?: string | null
           team?: Database["public"]["Enums"]["team_color"] | null
+          team_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -810,6 +819,13 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employees_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]
@@ -1164,6 +1180,7 @@ export type Database = {
           scheduler_line: string | null
           scheduler_operator: string | null
           team: Database["public"]["Enums"]["team_color"] | null
+          team_id: string | null
           updated_at: string
         }
         Insert: {
@@ -1180,6 +1197,7 @@ export type Database = {
           scheduler_line?: string | null
           scheduler_operator?: string | null
           team?: Database["public"]["Enums"]["team_color"] | null
+          team_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -1196,6 +1214,7 @@ export type Database = {
           scheduler_line?: string | null
           scheduler_operator?: string | null
           team?: Database["public"]["Enums"]["team_color"] | null
+          team_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1204,6 +1223,13 @@ export type Database = {
             columns: ["scheduler_operator"]
             isOneToOne: false
             referencedRelation: "operators"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
             referencedColumns: ["id"]
           },
         ]
@@ -1418,6 +1444,7 @@ export type Database = {
           display_order: number
           id: string
           is_pass_through: boolean
+          legacy_only: boolean
           notes: string | null
           operator_id: string | null
           unit: string | null
@@ -1437,6 +1464,7 @@ export type Database = {
           display_order?: number
           id?: string
           is_pass_through?: boolean
+          legacy_only?: boolean
           notes?: string | null
           operator_id?: string | null
           unit?: string | null
@@ -1456,6 +1484,7 @@ export type Database = {
           display_order?: number
           id?: string
           is_pass_through?: boolean
+          legacy_only?: boolean
           notes?: string | null
           operator_id?: string | null
           unit?: string | null
@@ -1658,6 +1687,36 @@ export type Database = {
           id?: string
           pin_hash?: string
           team_color?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      teams: {
+        Row: {
+          code: string
+          color_key: Database["public"]["Enums"]["team_color"]
+          created_at: string
+          display_name: string
+          id: string
+          is_active: boolean
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          color_key: Database["public"]["Enums"]["team_color"]
+          created_at?: string
+          display_name: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          color_key?: Database["public"]["Enums"]["team_color"]
+          created_at?: string
+          display_name?: string
+          id?: string
+          is_active?: boolean
           updated_at?: string
         }
         Relationships: []
@@ -2591,11 +2650,17 @@ export type Database = {
           created_at: string
           created_by: string | null
           dp_code: string | null
+          executor_entity_id: string | null
+          executor_team_id: string | null
+          executor_type:
+            | Database["public"]["Enums"]["work_order_executor_type"]
+            | null
           external_metadata: Json | null
+          flow_version: number
           id: string
           internal_notes: string | null
-          line: string
-          operator_id: string
+          line: string | null
+          operator_id: string | null
           order_number: string
           pop_code: string | null
           postal_code: string | null
@@ -2626,11 +2691,17 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           dp_code?: string | null
+          executor_entity_id?: string | null
+          executor_team_id?: string | null
+          executor_type?:
+            | Database["public"]["Enums"]["work_order_executor_type"]
+            | null
           external_metadata?: Json | null
+          flow_version?: number
           id?: string
           internal_notes?: string | null
-          line: string
-          operator_id: string
+          line?: string | null
+          operator_id?: string | null
           order_number: string
           pop_code?: string | null
           postal_code?: string | null
@@ -2661,11 +2732,17 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           dp_code?: string | null
+          executor_entity_id?: string | null
+          executor_team_id?: string | null
+          executor_type?:
+            | Database["public"]["Enums"]["work_order_executor_type"]
+            | null
           external_metadata?: Json | null
+          flow_version?: number
           id?: string
           internal_notes?: string | null
-          line?: string
-          operator_id?: string
+          line?: string | null
+          operator_id?: string | null
           order_number?: string
           pop_code?: string | null
           postal_code?: string | null
@@ -2715,6 +2792,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "work_orders_executor_entity_id_fkey"
+            columns: ["executor_entity_id"]
+            isOneToOne: false
+            referencedRelation: "compliance_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_orders_executor_team_id_fkey"
+            columns: ["executor_team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "work_orders_operator_id_fkey"
             columns: ["operator_id"]
             isOneToOne: false
@@ -2761,6 +2852,7 @@ export type Database = {
           display_order: number | null
           id: string | null
           is_pass_through: boolean | null
+          legacy_only: boolean | null
           notes: string | null
           operator_code: string | null
           operator_id: string | null
@@ -2812,11 +2904,17 @@ export type Database = {
           created_at: string
           created_by: string | null
           dp_code: string | null
+          executor_entity_id: string | null
+          executor_team_id: string | null
+          executor_type:
+            | Database["public"]["Enums"]["work_order_executor_type"]
+            | null
           external_metadata: Json | null
+          flow_version: number
           id: string
           internal_notes: string | null
-          line: string
-          operator_id: string
+          line: string | null
+          operator_id: string | null
           order_number: string
           pop_code: string | null
           postal_code: string | null
@@ -2839,6 +2937,10 @@ export type Database = {
       applicable_requirement_ids: {
         Args: { p_entity_id: string }
         Returns: string[]
+      }
+      assert_work_order_rpc_permission: {
+        Args: { p_changed_by: string; p_permission: string }
+        Returns: undefined
       }
       assert_work_order_rueckmeldung_complete: {
         Args: { p_work_order_id: string }
@@ -2871,11 +2973,17 @@ export type Database = {
           created_at: string
           created_by: string | null
           dp_code: string | null
+          executor_entity_id: string | null
+          executor_team_id: string | null
+          executor_type:
+            | Database["public"]["Enums"]["work_order_executor_type"]
+            | null
           external_metadata: Json | null
+          flow_version: number
           id: string
           internal_notes: string | null
-          line: string
-          operator_id: string
+          line: string | null
+          operator_id: string | null
           order_number: string
           pop_code: string | null
           postal_code: string | null
@@ -2907,6 +3015,7 @@ export type Database = {
         Args: { p_answers: Json; p_plan: Json; p_work_order_id: string }
         Returns: string[]
       }
+      certification_rpc_authorized: { Args: never; Returns: boolean }
       certify_work_order_internal: {
         Args: {
           p_changed_by: string
@@ -2932,11 +3041,17 @@ export type Database = {
           created_at: string
           created_by: string | null
           dp_code: string | null
+          executor_entity_id: string | null
+          executor_team_id: string | null
+          executor_type:
+            | Database["public"]["Enums"]["work_order_executor_type"]
+            | null
           external_metadata: Json | null
+          flow_version: number
           id: string
           internal_notes: string | null
-          line: string
-          operator_id: string
+          line: string | null
+          operator_id: string | null
           order_number: string
           pop_code: string | null
           postal_code: string | null
@@ -2987,6 +3102,7 @@ export type Database = {
         Returns: number
       }
       generate_order_number: { Args: never; Returns: string }
+      get_client_notes: { Args: { p_client_id: string }; Returns: string }
       get_my_permissions: { Args: never; Returns: string[] }
       get_user_role: {
         Args: never
@@ -3018,11 +3134,17 @@ export type Database = {
           created_at: string
           created_by: string | null
           dp_code: string | null
+          executor_entity_id: string | null
+          executor_team_id: string | null
+          executor_type:
+            | Database["public"]["Enums"]["work_order_executor_type"]
+            | null
           external_metadata: Json | null
+          flow_version: number
           id: string
           internal_notes: string | null
-          line: string
-          operator_id: string
+          line: string | null
+          operator_id: string | null
           order_number: string
           pop_code: string | null
           postal_code: string | null
@@ -3050,6 +3172,110 @@ export type Database = {
         Args: { p_folder: string }
         Returns: boolean
       }
+      reject_work_order_client_checked: {
+        Args: { p_changed_by: string; p_notes: string; p_work_order_id: string }
+        Returns: {
+          address: string | null
+          assigned_collaborator_id: string | null
+          assigned_date: string | null
+          assigned_detail_snapshot: Json | null
+          assigned_team: Database["public"]["Enums"]["team_color"] | null
+          assigned_technician: string | null
+          billing_reference: string | null
+          capture_plan_key: string | null
+          city: string | null
+          client_id: string | null
+          compliance_override: boolean
+          compliance_override_at: string | null
+          compliance_override_by: string | null
+          compliance_override_reason: string | null
+          created_at: string
+          created_by: string | null
+          dp_code: string | null
+          executor_entity_id: string | null
+          executor_team_id: string | null
+          executor_type:
+            | Database["public"]["Enums"]["work_order_executor_type"]
+            | null
+          external_metadata: Json | null
+          flow_version: number
+          id: string
+          internal_notes: string | null
+          line: string | null
+          operator_id: string | null
+          order_number: string
+          pop_code: string | null
+          postal_code: string | null
+          priority: Database["public"]["Enums"]["priority_level"]
+          project_id: string
+          segment_kind: string | null
+          service_item_id: string | null
+          source: string
+          status: Database["public"]["Enums"]["work_order_status"]
+          updated_at: string
+          work_type: Database["public"]["Enums"]["work_type"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "work_orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      reopen_rejected_work_order_checked: {
+        Args: {
+          p_changed_by: string
+          p_notes?: string
+          p_work_order_id: string
+        }
+        Returns: {
+          address: string | null
+          assigned_collaborator_id: string | null
+          assigned_date: string | null
+          assigned_detail_snapshot: Json | null
+          assigned_team: Database["public"]["Enums"]["team_color"] | null
+          assigned_technician: string | null
+          billing_reference: string | null
+          capture_plan_key: string | null
+          city: string | null
+          client_id: string | null
+          compliance_override: boolean
+          compliance_override_at: string | null
+          compliance_override_by: string | null
+          compliance_override_reason: string | null
+          created_at: string
+          created_by: string | null
+          dp_code: string | null
+          executor_entity_id: string | null
+          executor_team_id: string | null
+          executor_type:
+            | Database["public"]["Enums"]["work_order_executor_type"]
+            | null
+          external_metadata: Json | null
+          flow_version: number
+          id: string
+          internal_notes: string | null
+          line: string | null
+          operator_id: string | null
+          order_number: string
+          pop_code: string | null
+          postal_code: string | null
+          priority: Database["public"]["Enums"]["priority_level"]
+          project_id: string
+          segment_kind: string | null
+          service_item_id: string | null
+          source: string
+          status: Database["public"]["Enums"]["work_order_status"]
+          updated_at: string
+          work_type: Database["public"]["Enums"]["work_type"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "work_orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       run_compliance_expiry_sweep: {
         Args: never
         Returns: {
@@ -3068,6 +3294,60 @@ export type Database = {
       run_compliance_retention_sweep: {
         Args: { retain_days?: number }
         Returns: number
+      }
+      send_work_order_to_client_checked: {
+        Args: {
+          p_changed_by: string
+          p_notes?: string
+          p_work_order_id: string
+        }
+        Returns: {
+          address: string | null
+          assigned_collaborator_id: string | null
+          assigned_date: string | null
+          assigned_detail_snapshot: Json | null
+          assigned_team: Database["public"]["Enums"]["team_color"] | null
+          assigned_technician: string | null
+          billing_reference: string | null
+          capture_plan_key: string | null
+          city: string | null
+          client_id: string | null
+          compliance_override: boolean
+          compliance_override_at: string | null
+          compliance_override_by: string | null
+          compliance_override_reason: string | null
+          created_at: string
+          created_by: string | null
+          dp_code: string | null
+          executor_entity_id: string | null
+          executor_team_id: string | null
+          executor_type:
+            | Database["public"]["Enums"]["work_order_executor_type"]
+            | null
+          external_metadata: Json | null
+          flow_version: number
+          id: string
+          internal_notes: string | null
+          line: string | null
+          operator_id: string | null
+          order_number: string
+          pop_code: string | null
+          postal_code: string | null
+          priority: Database["public"]["Enums"]["priority_level"]
+          project_id: string
+          segment_kind: string | null
+          service_item_id: string | null
+          source: string
+          status: Database["public"]["Enums"]["work_order_status"]
+          updated_at: string
+          work_type: Database["public"]["Enums"]["work_type"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "work_orders"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       sync_permissions: { Args: { perms: Json }; Returns: Json }
       user_has_permission: {
@@ -3129,6 +3409,7 @@ export type Database = {
         | "report_submitted"
       telegram_group_purpose: "tareas" | "alertas" | "notificaciones"
       user_role: "admin" | "technician" | "contractor" | "scheduler"
+      work_order_executor_type: "own_team" | "external_contractor"
       work_order_status:
         | "created"
         | "assigned"
@@ -3334,6 +3615,7 @@ export const Constants = {
       ],
       telegram_group_purpose: ["tareas", "alertas", "notificaciones"],
       user_role: ["admin", "technician", "contractor", "scheduler"],
+      work_order_executor_type: ["own_team", "external_contractor"],
       work_order_status: [
         "created",
         "assigned",
