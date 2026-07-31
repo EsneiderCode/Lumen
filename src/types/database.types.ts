@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       appointments: {
@@ -2638,6 +2663,7 @@ export type Database = {
           assigned_date: string | null
           assigned_detail_snapshot: Json | null
           assigned_team: Database["public"]["Enums"]["team_color"] | null
+          assigned_team_roster: Json | null
           assigned_technician: string | null
           billing_reference: string | null
           capture_plan_key: string | null
@@ -2679,6 +2705,7 @@ export type Database = {
           assigned_date?: string | null
           assigned_detail_snapshot?: Json | null
           assigned_team?: Database["public"]["Enums"]["team_color"] | null
+          assigned_team_roster?: Json | null
           assigned_technician?: string | null
           billing_reference?: string | null
           capture_plan_key?: string | null
@@ -2720,6 +2747,7 @@ export type Database = {
           assigned_date?: string | null
           assigned_detail_snapshot?: Json | null
           assigned_team?: Database["public"]["Enums"]["team_color"] | null
+          assigned_team_roster?: Json | null
           assigned_technician?: string | null
           billing_reference?: string | null
           capture_plan_key?: string | null
@@ -2892,6 +2920,7 @@ export type Database = {
           assigned_date: string | null
           assigned_detail_snapshot: Json | null
           assigned_team: Database["public"]["Enums"]["team_color"] | null
+          assigned_team_roster: Json | null
           assigned_technician: string | null
           billing_reference: string | null
           capture_plan_key: string | null
@@ -2961,6 +2990,7 @@ export type Database = {
           assigned_date: string | null
           assigned_detail_snapshot: Json | null
           assigned_team: Database["public"]["Enums"]["team_color"] | null
+          assigned_team_roster: Json | null
           assigned_technician: string | null
           billing_reference: string | null
           capture_plan_key: string | null
@@ -3029,6 +3059,7 @@ export type Database = {
           assigned_date: string | null
           assigned_detail_snapshot: Json | null
           assigned_team: Database["public"]["Enums"]["team_color"] | null
+          assigned_team_roster: Json | null
           assigned_technician: string | null
           billing_reference: string | null
           capture_plan_key: string | null
@@ -3122,6 +3153,7 @@ export type Database = {
           assigned_date: string | null
           assigned_detail_snapshot: Json | null
           assigned_team: Database["public"]["Enums"]["team_color"] | null
+          assigned_team_roster: Json | null
           assigned_technician: string | null
           billing_reference: string | null
           capture_plan_key: string | null
@@ -3180,6 +3212,7 @@ export type Database = {
           assigned_date: string | null
           assigned_detail_snapshot: Json | null
           assigned_team: Database["public"]["Enums"]["team_color"] | null
+          assigned_team_roster: Json | null
           assigned_technician: string | null
           billing_reference: string | null
           capture_plan_key: string | null
@@ -3234,6 +3267,7 @@ export type Database = {
           assigned_date: string | null
           assigned_detail_snapshot: Json | null
           assigned_team: Database["public"]["Enums"]["team_color"] | null
+          assigned_team_roster: Json | null
           assigned_technician: string | null
           billing_reference: string | null
           capture_plan_key: string | null
@@ -3307,6 +3341,7 @@ export type Database = {
           assigned_date: string | null
           assigned_detail_snapshot: Json | null
           assigned_team: Database["public"]["Enums"]["team_color"] | null
+          assigned_team_roster: Json | null
           assigned_technician: string | null
           billing_reference: string | null
           capture_plan_key: string | null
@@ -3558,6 +3593,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       compliance_assignment_status: [
