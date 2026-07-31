@@ -867,3 +867,50 @@ describe('README documents the two-DDL-source trap', () => {
     expect(readme).toMatch(/mirror|silently revert/)
   })
 })
+
+// Migration 068 wrote `NEW.is_direct_order` into the guard of
+// validate_client_first_work_order(). That column does not exist on
+// public.work_orders and never has: `is_direct_order` is form state in
+// WorkOrderFormPage and persists as `client_id IS NULL` (migration 005).
+// plpgsql resolves record fields when it PLANS an expression, so CREATE
+// FUNCTION accepted it and every INSERT/UPDATE on work_orders failed at
+// runtime with `record "new" has no field "is_direct_order"`.
+describe('migration 074 removes the phantom column from the routing trigger', () => {
+  const raw = readRequiredMigration('074_fix_validate_client_first_phantom_column.sql')
+  const sql = raw.toLowerCase()
+  const body = sql.slice(sql.indexOf('\nbegin;'))
+
+  it('declares its place in the sequence', () => {
+    expect(raw).toContain('-- Depends on: 073_work_order_access_scope.sql')
+    expect(sql).toContain('begin;')
+    expect(sql).toContain('commit;')
+  })
+
+  it('replaces the function without ever naming the phantom column', () => {
+    expect(body).toContain('create or replace function public.validate_client_first_work_order()')
+    expect(body).not.toContain('is_direct_order')
+  })
+
+  it('keeps the guard checking client_id, which is what direct-order really means', () => {
+    expect(body).toMatch(
+      /if\s+tg_op\s*=\s*'update'[\s\S]*new\.client_id\s+is\s+not\s+distinct\s+from\s+old\.client_id[\s\S]*return\s+new/,
+    )
+  })
+
+  // The rest of the body must be migration 068's, character for character.
+  // Anything else in this diff is an unreviewed behaviour change riding along
+  // with a hotfix.
+  it('changes nothing else in the function', () => {
+    const fnOf = (text: string) => {
+      const start = text.indexOf('CREATE OR REPLACE FUNCTION public.validate_client_first_work_order()')
+      return text.slice(start, text.indexOf('\n$$;', start))
+    }
+    const original = fnOf(readRequiredMigration('068_client_first_work_order_routing.sql'))
+    const fixed = fnOf(raw)
+    const dropped = original
+      .split('\n')
+      .filter((l) => !fixed.split('\n').includes(l))
+      .map((l) => l.trim())
+    expect(dropped).toEqual(['AND NEW.is_direct_order IS NOT DISTINCT FROM OLD.is_direct_order'])
+  })
+})
