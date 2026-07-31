@@ -106,27 +106,32 @@ signature image alongside the order's photos, and inclusion in the certificate P
 (`src/services/pdfService.ts:40-215`). **Interim**: ship section 9 as the existing
 checkbox so the plan is usable, and swap it for the real signature when C lands.
 
-**D. Attachments.** Two changes, both small, one of them security-relevant:
+**D. Attachments.** The security prerequisite is already handled; two changes remain:
 1. Allow images outside `diagrama_routing` — today PNG/JPG are only accepted for that
    type (`src/types/work-order-documents.ts:29-41`).
-2. Surface attachments to the technician. The DB already grants read
-   (`tech_read_work_order_documents`, `020_...:62-77`) but `DocumentUploader` is mounted
-   only on admin pages. **Before exposing it, narrow that policy**: it is scoped by
-   *team*, not by assignee — broader than the `work_orders` read policy itself — and it
-   never checks the role, so an assigned contractor matches it too.
+2. Surface attachments to the technician by mounting `DocumentUploader` (read-only) on
+   the field pages; it lives only on admin pages today.
+
+The blocker that used to sit here — `tech_read_work_order_documents` being scoped by
+*team* rather than by assignee, and ignoring the role — was fixed in **PR #24**
+(migration `073_work_order_access_scope.sql`), together with the `work-order-documents`
+bucket and `work-order-photos`, which was readable and writable by any authenticated
+user. **Do not mount the field attachment view until PR #24 is merged and applied.**
 
 ## Migrations
 
 Verified against `upstream/develop` on 2026-07-31: `065`–`069` are **merged** (PR #23,
 merged 2026-07-30), `071_capture_plan_soplado_ra_v3.sql` and
-`072_revoke_anon_assign_work_order.sql` are taken, and `070` stays reserved for the
-post-cutover cleanup of plan 010. Next free number is therefore **073**. Re-check with
-`git ls-tree upstream/develop supabase/migrations/` before writing any SQL.
+`072_revoke_anon_assign_work_order.sql` are taken, `073_work_order_access_scope.sql` is
+claimed by **PR #24** (open at the time of writing), and `070` stays reserved for the
+post-cutover cleanup of plan 010. Next free number is therefore **074**. Re-check with
+`git ls-tree upstream/develop supabase/migrations/` before writing any SQL — this plan
+has already had to be renumbered once.
 
-1. `073_insyte_bohrung_capture_plan.sql` — seed the plan; add
+1. `074_insyte_bohrung_capture_plan.sql` — seed the plan; add
    `service_items.capture_plan_key` and extend `work_order_capture_plan_key()`.
-2. `074_client_signature.sql` — signature storage/column (Gap C).
-3. Attachment policy narrowing (Gap D2) rides with whichever of the two lands first.
+2. `075_client_signature.sql` — signature storage/column (Gap C).
+Gap D needs no migration of its own any more — the policy work landed in `073`.
 
 Note: `071_capture_plan_soplado_ra_v3.sql` is a worked example of publishing a new
 plan version rather than editing one in place — follow its shape.
@@ -160,8 +165,9 @@ Ship `.sql` only; the repo owner applies them and regenerates `database.types.ts
 
 ## STOP conditions
 
-- STOP if `git ls-tree upstream/develop supabase/migrations/` shows `073`/`074` taken.
-- STOP before mounting the technician attachment view while
-  `tech_read_work_order_documents` is still team-scoped and role-agnostic.
+- STOP if `git ls-tree upstream/develop supabase/migrations/` shows `074`/`075` taken.
+- STOP before mounting the technician attachment view until PR #24 (migration `073`) is
+  merged AND applied — until then the document policy is still team-scoped and
+  role-agnostic, and the photo bucket is world-readable to any authenticated user.
 - Never edit an existing `(key, version)` plan in place — publish a new version.
 - Never hand-edit `database.types.ts`.
