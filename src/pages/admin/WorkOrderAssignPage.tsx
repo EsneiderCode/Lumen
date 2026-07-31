@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/hooks/useAuth'
 import { usePermissions } from '@/hooks/usePermissions'
 import {
+  ASSIGNMENT_REQUIRES_TECHNICIAN,
   assignWorkOrder,
   fetchTechnicians,
   fetchWorkOrder,
@@ -168,10 +169,22 @@ export function WorkOrderAssignPage() {
   )
   const effectiveBlocked = Boolean(compliance?.isBlocked) && !overrideActive
 
+  // Every order gets exactly one responsible person. The team only documents who
+  // else was on the crew — it can never stand in for the assignee.
+  const canSubmit = Boolean(selectedTechnicianId)
+
+  // The crew that will be written to the order as documentation — the same list
+  // the technician picker is narrowed to. It is a record, not a permission: only
+  // the selected person can open and work the order.
+  const documentedRoster = useMemo(
+    () => (selectedTeam && selectedTechnicianId ? availableTechnicians : []),
+    [selectedTeam, selectedTechnicianId, availableTechnicians],
+  )
+
   async function handleAssign(e: React.FormEvent) {
     e.preventDefault()
-    // At least one target is required: a team, a specific technician, or both.
-    if (!id || !user || (!selectedTeam && !selectedTechnicianId) || effectiveBlocked || isCheckingDocuments) return
+    // A responsible technician is mandatory; a team alone is not an assignment.
+    if (!id || !user || !canSubmit || effectiveBlocked || isCheckingDocuments) return
 
     setIsSaving(true)
     setError(null)
@@ -187,7 +200,13 @@ export function WorkOrderAssignPage() {
     )
 
     if (error) {
-      setError(error)
+      // The service is i18n-free, so its own rule violations come back as codes
+      // and get their wording here. Anything else is a DB message, passed through.
+      setError(
+        error === ASSIGNMENT_REQUIRES_TECHNICIAN
+          ? t('assignment.technicianRequiredError')
+          : error,
+      )
       setIsSaving(false)
     } else {
       if (order) {
@@ -307,7 +326,8 @@ export function WorkOrderAssignPage() {
             <p className="mt-0.5 text-xs text-fg-2">{t('assignment.targetHint')}</p>
           </div>
 
-          {/* Team selection (optional — a direct technician assignment is also valid) */}
+          {/* Team selection — optional, and purely documentary: it picks the crew
+              that gets recorded on the order, never who may work it. */}
           <div>
             <label className="mb-2 block text-xs font-medium text-fg-2">
               {t('assignment.teamOptional')}
@@ -331,15 +351,16 @@ export function WorkOrderAssignPage() {
             </div>
           </div>
 
-          {/* Technician selection — always available; without a team it lists
+          {/* Responsible technician — mandatory. Without a team the list shows
               every active technician/contractor for a direct assignment. */}
           <div>
             <label className="mb-1 block text-xs font-medium text-fg-2">
-              {selectedTeam ? t('assignment.technicianOptional') : t('assignment.technicianDirect')}
+              {t('assignment.technicianRequired')}
             </label>
             <select
               value={selectedTechnicianId}
               onChange={(e) => handleTechnicianSelect(e.target.value)}
+              required
               className="w-full rounded-s border border-line bg-bg-0 px-3 py-2 text-sm text-fg-1 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
             >
               <option value="">{t('assignment.chooseProfile')}</option>
@@ -351,10 +372,41 @@ export function WorkOrderAssignPage() {
                 </option>
               ))}
             </select>
+            <p className="mt-1 text-xs text-fg-3">{t('assignment.singleResponsibleHint')}</p>
             {selectedTeam && availableTechnicians.length === 0 && (
               <p className="mt-2 text-xs text-fg-2">{t('assignment.noAssigneesForTeam')}</p>
             )}
           </div>
+
+          {/* Documented crew — a record on the order, never an access key. */}
+          {documentedRoster.length > 0 && (
+            <div className="rounded-s border border-line bg-bg-0 p-3">
+              <p className="text-xs font-medium text-fg-2">{t('assignment.rosterTitle')}</p>
+              <p className="mt-0.5 text-xs text-fg-3">{t('assignment.rosterHint')}</p>
+              <ul className="mt-2 space-y-1">
+                {documentedRoster.map((profile) => {
+                  const isResponsible = profile.id === selectedTechnicianId
+                  return (
+                    <li
+                      key={profile.id}
+                      className="flex items-center justify-between gap-2 text-sm text-fg-1"
+                    >
+                      <span className={isResponsible ? 'font-medium' : 'text-fg-2'}>
+                        {profile.full_name}
+                      </span>
+                      <span
+                        className={`font-mono text-xs ${isResponsible ? 'text-accent' : 'text-fg-3'}`}
+                      >
+                        {isResponsible
+                          ? t('assignment.rosterResponsible')
+                          : t('assignment.rosterDocumented')}
+                      </span>
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+          )}
 
           {/* Assigned date */}
           <div>
@@ -454,7 +506,7 @@ export function WorkOrderAssignPage() {
           </button>
           <button
             type="submit"
-            disabled={(!selectedTeam && !selectedTechnicianId) || isSaving || isCheckingDocuments || effectiveBlocked}
+            disabled={!canSubmit || isSaving || isCheckingDocuments || effectiveBlocked}
             className="flex-1 rounded-s bg-accent px-4 py-2.5 text-sm font-semibold text-ink hover:bg-accent disabled:opacity-50 transition-colors"
           >
             {isSaving ? t('assignment.assigning') : overrideActive ? t('assignment.overrideSubmit') : isReassignment ? t('assignment.reassignSubmit') : t('assignment.assignSubmit')}

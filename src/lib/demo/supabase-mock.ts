@@ -789,16 +789,44 @@ function makeRpc() {
       const order = store.work_orders.find((item) => item.id === workOrderId)
       if (!order) return { data: null, error: { message: 'Work order not found' } }
 
+      // Migration 073: exactly one responsible person per order. A team on its own
+      // is not an assignment — it only documents who else was on the crew.
+      if (!assigneeId) {
+        return { data: null, error: { message: 'assignment requires a responsible technician' } }
+      }
+
       const assignee = store.profiles.find((profile) => profile.id === assigneeId)
       if (assignee?.role === 'contractor') {
         const block = contractorComplianceBlock(store, assigneeId, order.project_id as string | null)
         if (block) return { data: null, error: { message: block } }
       }
 
+      const team = (params.p_team as string | null | undefined) ?? null
+      // Documentary snapshot of the crew, never an access key.
+      const roster = team
+        ? store.profiles
+            .filter((profile) => profile.team === team && profile.is_active)
+            .map((profile) => ({
+              profile_id: profile.id,
+              full_name: profile.full_name,
+              role: profile.role,
+              is_responsible: profile.id === assigneeId,
+            }))
+        : null
+      if (roster && !roster.some((entry) => entry.is_responsible) && assignee) {
+        roster.unshift({
+          profile_id: assignee.id,
+          full_name: assignee.full_name,
+          role: assignee.role,
+          is_responsible: true,
+        })
+      }
+
       const fromStatus = order.status
       Object.assign(order as Row, {
-        assigned_team: (params.p_team as string | null | undefined) ?? null,
-        assigned_technician: assigneeId || null,
+        assigned_team: team,
+        assigned_technician: assigneeId,
+        assigned_team_roster: roster,
         assigned_date: assignedDate,
         status: 'assigned',
         updated_at: new Date().toISOString(),
