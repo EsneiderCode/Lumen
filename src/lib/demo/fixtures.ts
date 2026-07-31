@@ -12,6 +12,10 @@ const ADMIN_ID = '00000000-0000-0000-0000-000000000001'
 const TECH_ID = '00000000-0000-0000-0000-000000000002'
 const CONTRACTOR_ID = '00000000-0000-0000-0000-000000000003'
 const SCHEDULER_ID = '00000000-0000-0000-0000-000000000004'
+// Second member of team Rot. He never owns an order — he exists so the demo can
+// show the rule from migration 073: the crew is documented on the order, but only
+// the one responsible technician can open it.
+const TECH2_ID = '00000000-0000-0000-0000-000000000005'
 
 const CLIENT_INSYTE = '10000000-0000-0000-0000-000000000001'
 const CLIENT_VANCOM = '10000000-0000-0000-0000-000000000002'
@@ -150,6 +154,21 @@ export const initialFixtures = () => ({
       role: 'technician',
       team: 'rot',
       pin_login_code: 'tech-demo',
+      pin_set_at: LAST_WEEK,
+      last_pin_login_at: null,
+      is_active: true,
+      scheduler_line: null,
+      scheduler_operator: null,
+      created_at: LAST_WEEK,
+      updated_at: LAST_WEEK,
+    },
+    {
+      id: TECH2_ID,
+      email: 'tech2@demo.lumen',
+      full_name: 'Demo Técnico 2',
+      role: 'technician',
+      team: 'rot',
+      pin_login_code: 'tech2-demo',
       pin_set_at: LAST_WEEK,
       last_pin_login_at: null,
       is_active: true,
@@ -491,6 +510,12 @@ export const initialFixtures = () => ({
       client_id: CLIENT_INSYTE, project_id: PROJECT_RSD, operator_id: OP_DGF,
       line: 'NE4', work_type: 'fusion_ap', status: 'in_progress', priority: 'alta',
       assigned_team: 'rot', assigned_technician: TECH_ID, assigned_date: '2026-04-28',
+      // Migración 073: la cuadrilla queda documentada, el responsable es uno solo.
+      // Demo Técnico 2 aparece aquí y aun así no puede abrir la orden.
+      assigned_team_roster: [
+        { profile_id: TECH_ID, full_name: 'Demo Técnico', role: 'technician', is_responsible: true },
+        { profile_id: TECH2_ID, full_name: 'Demo Técnico 2', role: 'technician', is_responsible: false },
+      ],
       address: 'Kirchplatz 5', postal_code: '64380', city: 'Roßdorf',
       internal_notes: 'Demo: fusión AP en curso', assigned_detail_snapshot: { cabinet_code: 'NE4-S-007' },
       service_item_id: SI_FUSION_AP, created_by: ADMIN_ID,
@@ -605,6 +630,10 @@ export const initialFixtures = () => ({
       // el tipo sin necesidad de credenciales.
       segment_kind: 'ra', pop_code: '001', dp_code: '021',
       assigned_team: 'rot', assigned_technician: TECH_ID, assigned_date: '2026-04-28',
+      assigned_team_roster: [
+        { profile_id: TECH_ID, full_name: 'Demo Técnico', role: 'technician', is_responsible: true },
+        { profile_id: TECH2_ID, full_name: 'Demo Técnico 2', role: 'technician', is_responsible: false },
+      ],
       address: 'Corveyer Allee 40', postal_code: '37671', city: 'Höxter',
       internal_notes: 'Demo: soplado de RA — plan de captura con catas e incidencias',
       assigned_detail_snapshot: null,

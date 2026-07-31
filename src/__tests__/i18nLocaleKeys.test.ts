@@ -29,7 +29,21 @@ const AUTH_PIN_KEYS = [
 // Breadcrumb keys added for /admin/projects
 const BREADCRUMB_KEYS = ['breadcrumb.projects']
 
-const REQUIRED_KEYS = [...AUTH_PIN_KEYS, ...BREADCRUMB_KEYS]
+// Keys the assignment screen needs after migration 073 made the responsible
+// technician mandatory and the crew merely documented. A missing one shows the
+// admin a raw key on the screen where access to the order is decided.
+const ASSIGNMENT_KEYS = [
+  'assignment.technicianRequired',
+  'assignment.technicianRequiredError',
+  'assignment.singleResponsibleHint',
+  'assignment.rosterTitle',
+  'assignment.rosterHint',
+  'assignment.rosterReadOnlyHint',
+  'assignment.rosterResponsible',
+  'assignment.rosterDocumented',
+]
+
+const REQUIRED_KEYS = [...AUTH_PIN_KEYS, ...BREADCRUMB_KEYS, ...ASSIGNMENT_KEYS]
 
 describe('i18n locale key parity — de.json and es.json', () => {
   for (const key of REQUIRED_KEYS) {
@@ -153,6 +167,12 @@ describe('i18n locale key parity — de.json and es.json', () => {
     expect(flatten((de as Record<string, unknown>).capturePlan).sort()).toEqual(
       flatten((es as Record<string, unknown>).capturePlan).sort(),
     )
+  })
+
+  it('de.json and es.json have the same assignment keys', () => {
+    const deAssignment = (de as Record<string, unknown>).assignment as Record<string, unknown>
+    const esAssignment = (es as Record<string, unknown>).assignment as Record<string, unknown>
+    expect(Object.keys(deAssignment).sort()).toEqual(Object.keys(esAssignment).sort())
   })
 
   it('de.json and es.json have the same breadcrumb keys', () => {

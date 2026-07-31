@@ -586,7 +586,11 @@ import {
   certifyWorkOrderInternal,
   getCollaboratorType,
   invoiceWorkOrder,
+  parseAssignedTeamRoster,
+  ASSIGNMENT_REQUIRES_TECHNICIAN,
 } from '@/services/workOrderService'
+import de from '@/i18n/locales/de.json'
+import es from '@/i18n/locales/es.json'
 
 describe('getCollaboratorType', () => {
   it('returns external for contractor role', () => {
@@ -754,55 +758,102 @@ describe('single-order lifecycle RPC adapters', () => {
   })
 })
 
-describe('assignWorkOrder — team-based assignment', () => {
-  it('assigns a work order to a team and clears the individual technician', async () => {
+/**
+ * Assignment stub. `crew` is what a `profiles` query filtered by team returns —
+ * the people the roster is built from; `updateSpy` captures the row written to
+ * `work_orders`.
+ */
+function setupSupabaseForRosterAssignment(args: {
+  crew?: Array<{ id: string; full_name: string | null; role: string | null }>
+  responsible?: { id: string; full_name: string | null; role: string | null } | null
+  /** Failure of the crew lookup — not the same thing as an empty team. */
+  crewError?: { message: string }
+  /** Failure of the fallback lookup for a responsible person outside the crew. */
+  responsibleError?: { message: string }
+}) {
+  const updateSpy = vi.fn((_payload: Record<string, unknown>) => ({
+    eq: () => ({
+      select: () => ({
+        single: () => Promise.resolve({ data: { id: 'wo-1', status: 'assigned' }, error: null }),
+      }),
+    }),
+  }))
+
+  mockSupabase.from = vi.fn((table: string) => {
+    if (table === 'profiles') {
+      return {
+        select: () => ({
+          // Crew lookup: .eq('team').eq('is_active').in('role').order('full_name')
+          eq: () => ({
+            eq: () => ({
+              in: () => ({
+                order: () =>
+                  Promise.resolve({
+                    data: args.crewError ? null : args.crew ?? [],
+                    error: args.crewError ?? null,
+                  }),
+              }),
+            }),
+            // Fallback lookup for the responsible person: .eq('id').single()
+            single: () =>
+              Promise.resolve({
+                data: args.responsibleError ? null : args.responsible ?? null,
+                error: args.responsibleError ?? null,
+              }),
+          }),
+        }),
+      }
+    }
+    return {
+      select: () => ({
+        eq: () => ({ single: () => Promise.resolve({ data: { status: 'created' }, error: null }) }),
+      }),
+      update: table === 'work_orders' ? updateSpy : vi.fn(),
+      insert: () => Promise.resolve({ data: null, error: null }),
+    }
+  })
+
+  return updateSpy
+}
+
+// The owner's rule, at the only place the app writes an assignment: exactly one
+// responsible person per order, and the rest of the crew merely documented.
+describe('assignWorkOrder — one responsible technician, the crew documented', () => {
+  it('refuses a team-only assignment instead of leaving the order ownerless', async () => {
     setupSupabaseForAssignment({ profileRole: 'technician' })
 
     const result = await assignWorkOrder('wo-1', 'rot', '2026-05-15', 'admin-1')
 
-    expect(result.error).toBeNull()
-    expect(result.data).toEqual({ id: 'wo-1', status: 'assigned' })
+    expect(result.data).toBeNull()
+    expect(result.reasons).toEqual([expect.objectContaining({ code: 'invalid_transition' })])
   })
 
+  // The service carries no i18next — no service in this repo does — so its own
+  // rule violations come back as a code the screen translates. A literal English
+  // sentence here would be rendered verbatim to a German-speaking admin.
+  it('reports the missing technician as a translatable code, not English prose', async () => {
+    setupSupabaseForAssignment({ profileRole: 'technician' })
 
-  it('writes null assigned_technician when no person is selected', async () => {
-    const updateSpy = vi.fn(() => ({
-      eq: () => ({
-        select: () => ({
-          single: () => Promise.resolve({ data: { id: 'wo-1', status: 'assigned' }, error: null }),
-        }),
-      }),
-    }))
-    mockSupabase.from = vi.fn((table: string) => ({
-      select: () => ({
-        eq: () => ({ single: () => Promise.resolve({ data: { status: 'created' }, error: null }) }),
-      }),
-      update: table === 'work_orders' ? updateSpy : vi.fn(),
-      insert: () => Promise.resolve({ data: null, error: null }),
-    }))
+    const result = await assignWorkOrder('wo-1', 'rot', '2026-05-15', 'admin-1')
 
-    await assignWorkOrder('wo-1', 'rot', '2026-05-15', 'admin-1')
+    expect(result.error).toBe(ASSIGNMENT_REQUIRES_TECHNICIAN)
+    expect(result.error).not.toMatch(/\s/)
+    expect(de.assignment).toHaveProperty('technicianRequiredError')
+    expect(es.assignment).toHaveProperty('technicianRequiredError')
+  })
 
-    expect(updateSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ assigned_technician: null }),
-    )
+  it('never reaches the database when no technician was chosen', async () => {
+    const updateSpy = setupSupabaseForRosterAssignment({})
+
+    await assignWorkOrder('wo-1', 'rot', '2026-05-15', 'admin-1', null)
+
+    expect(updateSpy).not.toHaveBeenCalled()
   })
 
   it('writes the selected technician id when a person is selected', async () => {
-    const updateSpy = vi.fn(() => ({
-      eq: () => ({
-        select: () => ({
-          single: () => Promise.resolve({ data: { id: 'wo-1', status: 'assigned' }, error: null }),
-        }),
-      }),
-    }))
-    mockSupabase.from = vi.fn((table: string) => ({
-      select: () => ({
-        eq: () => ({ single: () => Promise.resolve({ data: { status: 'created' }, error: null }) }),
-      }),
-      update: table === 'work_orders' ? updateSpy : vi.fn(),
-      insert: () => Promise.resolve({ data: null, error: null }),
-    }))
+    const updateSpy = setupSupabaseForRosterAssignment({
+      crew: [{ id: 'tech-1', full_name: 'Ana', role: 'technician' }],
+    })
 
     await assignWorkOrder('wo-1', 'rot', '2026-05-15', 'admin-1', 'tech-1')
 
@@ -811,34 +862,115 @@ describe('assignWorkOrder — team-based assignment', () => {
     )
   })
 
-  it('assigns directly to a technician with no team (assigned_team null)', async () => {
-    const updateSpy = vi.fn(() => ({
-      eq: () => ({
-        select: () => ({
-          single: () => Promise.resolve({ data: { id: 'wo-1', status: 'assigned' }, error: null }),
-        }),
-      }),
-    }))
-    mockSupabase.from = vi.fn((table: string) => ({
-      select: () => ({
-        eq: () => ({ single: () => Promise.resolve({ data: { status: 'created' }, error: null }) }),
-      }),
-      update: table === 'work_orders' ? updateSpy : vi.fn(),
-      insert: () => Promise.resolve({ data: null, error: null }),
-    }))
+  it('snapshots the whole active crew and marks the single responsible member', async () => {
+    const updateSpy = setupSupabaseForRosterAssignment({
+      crew: [
+        { id: 'tech-1', full_name: 'Ana', role: 'technician' },
+        { id: 'tech-2', full_name: 'Bruno', role: 'technician' },
+      ],
+    })
+
+    await assignWorkOrder('wo-1', 'rot', '2026-05-15', 'admin-1', 'tech-1')
+
+    const payload = updateSpy.mock.calls[0][0]
+    expect(payload.assigned_team_roster).toEqual([
+      { profile_id: 'tech-1', full_name: 'Ana', role: 'technician', is_responsible: true },
+      { profile_id: 'tech-2', full_name: 'Bruno', role: 'technician', is_responsible: false },
+    ])
+    // Migration 068 still reads assigned_team, so it keeps being written.
+    expect(payload.assigned_team).toBe('rot')
+  })
+
+  // Prices are never visible to technicians or contractors; the roster is shown
+  // to them, so it must not carry a single monetary field.
+  it('keeps money out of the documented roster', async () => {
+    const updateSpy = setupSupabaseForRosterAssignment({
+      crew: [{ id: 'tech-1', full_name: 'Ana', role: 'technician' }],
+    })
+
+    await assignWorkOrder('wo-1', 'rot', '2026-05-15', 'admin-1', 'tech-1')
+
+    const roster = updateSpy.mock.calls[0][0].assigned_team_roster as Array<
+      Record<string, unknown>
+    >
+    for (const entry of roster) {
+      expect(Object.keys(entry).sort()).toEqual([
+        'full_name',
+        'is_responsible',
+        'profile_id',
+        'role',
+      ])
+    }
+  })
+
+  // A crew list that omits the person actually holding the order would document
+  // a lie — it happens when the assignee was moved out of the team.
+  it('documents the responsible person even when they are not on the crew list', async () => {
+    const updateSpy = setupSupabaseForRosterAssignment({
+      crew: [{ id: 'tech-2', full_name: 'Bruno', role: 'technician' }],
+      responsible: { id: 'tech-1', full_name: 'Ana', role: 'contractor' },
+    })
+
+    await assignWorkOrder('wo-1', 'rot', '2026-05-15', 'admin-1', 'tech-1')
+
+    expect(
+      updateSpy.mock.calls[0][0].assigned_team_roster,
+    ).toEqual([
+      { profile_id: 'tech-1', full_name: 'Ana', role: 'contractor', is_responsible: true },
+      { profile_id: 'tech-2', full_name: 'Bruno', role: 'technician', is_responsible: false },
+    ])
+  })
+
+  // A failed crew query and an empty team are indistinguishable if you only
+  // destructure `data`. Writing [] there stamps "this order had no crew" on the
+  // order and still reports success.
+  it('abandons the assignment rather than documenting a crew it could not read', async () => {
+    const updateSpy = setupSupabaseForRosterAssignment({
+      crewError: { message: 'profiles unreachable' },
+    })
+
+    const result = await assignWorkOrder('wo-1', 'rot', '2026-05-15', 'admin-1', 'tech-1')
+
+    expect(result.data).toBeNull()
+    expect(result.error).toBe('profiles unreachable')
+    expect(result.reasons).toEqual([expect.objectContaining({ code: 'server_error' })])
+    expect(updateSpy).not.toHaveBeenCalled()
+  })
+
+  it('also fails when the responsible person cannot be looked up', async () => {
+    const updateSpy = setupSupabaseForRosterAssignment({
+      crew: [{ id: 'tech-2', full_name: 'Bruno', role: 'technician' }],
+      responsibleError: { message: 'profile lookup failed' },
+    })
+
+    const result = await assignWorkOrder('wo-1', 'rot', '2026-05-15', 'admin-1', 'tech-1')
+
+    expect(result.error).toBe('profile lookup failed')
+    expect(updateSpy).not.toHaveBeenCalled()
+  })
+
+  it('assigns directly to a technician with no team and documents nobody else', async () => {
+    const updateSpy = setupSupabaseForRosterAssignment({})
 
     const result = await assignWorkOrder('wo-1', null, '2026-05-15', 'admin-1', 'tech-1')
 
     expect(result.error).toBeNull()
     expect(updateSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ assigned_team: null, assigned_technician: 'tech-1' }),
+      expect.objectContaining({
+        assigned_team: null,
+        assigned_technician: 'tech-1',
+        assigned_team_roster: null,
+      }),
     )
   })
 
   it('returns an error when Supabase update fails', async () => {
     mockSupabase.from = vi.fn(() => ({
       select: () => ({
-        eq: () => ({ single: () => Promise.resolve({ data: { status: 'created' }, error: null }) }),
+        eq: () => ({
+          single: () => Promise.resolve({ data: { status: 'created' }, error: null }),
+          eq: () => ({ in: () => ({ order: () => Promise.resolve({ data: [], error: null }) }) }),
+        }),
       }),
       update: () => ({
         eq: () => ({
@@ -847,11 +979,46 @@ describe('assignWorkOrder — team-based assignment', () => {
           }),
         }),
       }),
+      insert: () => Promise.resolve({ data: null, error: null }),
     }))
 
-    const result = await assignWorkOrder('wo-1', 'gruen', '2026-05-15', 'admin-1')
+    const result = await assignWorkOrder('wo-1', 'gruen', '2026-05-15', 'admin-1', 'tech-1')
 
     expect(result.data).toBeNull()
     expect(result.error).toBe('DB error')
+  })
+})
+
+// A stored roster is read back on screens a technician can see; a half-parsed
+// entry there would render as a blank row next to a real crew member.
+describe('parseAssignedTeamRoster', () => {
+  it('returns nothing for anything that is not a roster array', () => {
+    expect(parseAssignedTeamRoster(null)).toEqual([])
+    expect(parseAssignedTeamRoster(undefined)).toEqual([])
+    expect(parseAssignedTeamRoster('rot')).toEqual([])
+    expect(parseAssignedTeamRoster({ profile_id: 'tech-1' })).toEqual([])
+  })
+
+  it('drops entries with no profile id and normalizes the rest', () => {
+    expect(
+      parseAssignedTeamRoster([
+        { profile_id: 'tech-1', full_name: 'Ana', role: 'technician', is_responsible: true },
+        { full_name: 'Ghost' },
+        { profile_id: '' },
+        null,
+        { profile_id: 'tech-2' },
+      ]),
+    ).toEqual([
+      { profile_id: 'tech-1', full_name: 'Ana', role: 'technician', is_responsible: true },
+      { profile_id: 'tech-2', full_name: '', role: '', is_responsible: false },
+    ])
+  })
+
+  // `is_responsible` decides who the UI calls the owner of the order — only a
+  // literal true may do that.
+  it('treats a truthy non-boolean as not responsible', () => {
+    expect(
+      parseAssignedTeamRoster([{ profile_id: 'tech-1', is_responsible: 'yes' }])[0].is_responsible,
+    ).toBe(false)
   })
 })

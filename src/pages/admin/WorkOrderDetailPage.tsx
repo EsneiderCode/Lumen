@@ -31,6 +31,7 @@ import {
   fetchCertificationAudits,
   upsertBillingLines,
   getCollaboratorType,
+  parseAssignedTeamRoster,
   type CollaboratorType,
   type WorkOrderWithRelations,
 } from '@/services/workOrderService'
@@ -229,6 +230,17 @@ export function WorkOrderDetailPage() {
   // Full aptitude result for the assigned contractor — drives the header semáforo.
   const [contractorCompliance, setContractorCompliance] = useState<ProfileComplianceResult | null>(
     null,
+  )
+
+  // The crew documented on the order when it was assigned (migration 073).
+  // Read-only by construction: it records who was on the team, and marks the one
+  // person allowed to work the order. It grants nothing.
+  const documentedRoster = useMemo(
+    () =>
+      parseAssignedTeamRoster(
+        (order as { assigned_team_roster?: unknown } | null)?.assigned_team_roster,
+      ),
+    [order],
   )
 
   // Where the work happened, from the trenches' own fixes and the coordinates
@@ -1103,6 +1115,35 @@ export function WorkOrderDetailPage() {
               <span className="font-medium capitalize text-fg-1">{order.assigned_team ?? '—'}</span>
             </div>
           </div>
+          {documentedRoster.length > 0 && (
+            <div className="col-span-2 sm:col-span-3">
+              <p className="text-xs text-fg-2">{t('assignment.rosterTitle')}</p>
+              <p className="mt-0.5 text-xs text-fg-3">{t('assignment.rosterReadOnlyHint')}</p>
+              <ul className="mt-2 space-y-1">
+                {documentedRoster.map((member) => (
+                  <li
+                    key={member.profile_id}
+                    className="flex items-center justify-between gap-2 border-b border-line py-1 last:border-b-0"
+                  >
+                    <span
+                      className={
+                        member.is_responsible ? 'font-medium text-fg-1' : 'text-fg-2'
+                      }
+                    >
+                      {member.full_name || member.profile_id}
+                    </span>
+                    <span
+                      className={`font-mono text-xs ${member.is_responsible ? 'text-accent' : 'text-fg-3'}`}
+                    >
+                      {member.is_responsible
+                        ? t('assignment.rosterResponsible')
+                        : t('assignment.rosterDocumented')}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div>
             <p className="text-xs text-fg-2">Priorität</p>
             <p className="font-medium capitalize text-fg-1">{order.priority}</p>

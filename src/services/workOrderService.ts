@@ -386,6 +386,117 @@ export async function deleteWorkOrder(id: string) {
 
 // ── Assignment (LUM-010) ──────────────────────────────────────
 
+/**
+ * One entry of {@link WorkOrderRow.assigned_team_roster} — the crew documented on
+ * the order at assignment time (migration 073). Documentation only: it carries no
+ * price (technicians and contractors never see money) and no policy, view or RPC
+ * may read it to grant access. The single person who can work the order is
+ * `assigned_technician`, flagged here as `is_responsible`.
+ */
+export interface AssignedTeamRosterEntry {
+  profile_id: string
+  full_name: string
+  role: string
+  is_responsible: boolean
+}
+
+/**
+ * Reads the documented roster off a work order row. The column is JSONB and
+ * `database.types.ts` is not regenerated on every machine, so the value arrives
+ * untyped; anything that is not a well-formed entry list is dropped rather than
+ * rendered half-parsed.
+ */
+export function parseAssignedTeamRoster(value: unknown): AssignedTeamRosterEntry[] {
+  if (!Array.isArray(value)) return []
+  return value.flatMap((entry) => {
+    if (!entry || typeof entry !== 'object') return []
+    const record = entry as Record<string, unknown>
+    const profileId = record.profile_id
+    if (typeof profileId !== 'string' || !profileId) return []
+    return [
+      {
+        profile_id: profileId,
+        full_name: typeof record.full_name === 'string' ? record.full_name : '',
+        role: typeof record.role === 'string' ? record.role : '',
+        is_responsible: record.is_responsible === true,
+      },
+    ]
+  })
+}
+
+/**
+ * Machine-readable marker for "an assignment needs a responsible technician".
+ * The service layer carries no i18next (no other service imports it); the screen
+ * translates this code, so the user never sees an English literal.
+ */
+export const ASSIGNMENT_REQUIRES_TECHNICIAN = 'assignment.requires_technician'
+
+/**
+ * Snapshot of the crew that was active in `team` when the order was assigned,
+ * with `responsibleId` marked. Returns `{ roster: null }` when there is no team —
+ * a direct personal assignment documents nobody else.
+ *
+ * A failed query is NOT an empty team. Returning `[]` there would write a
+ * document claiming the order has no crew, and `assignWorkOrder` would report
+ * success — so the error is propagated and the assignment is abandoned instead.
+ */
+async function buildAssignedTeamRoster(
+  team: TeamColor | null,
+  responsibleId: string,
+): Promise<{ roster: AssignedTeamRosterEntry[] | null; error: string | null }> {
+  if (!team) return { roster: null, error: null }
+
+  // Same population the assign screen previews (fetchTechnicians): the field
+  // crew, not every profile that happens to carry a team.
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, full_name, role, is_active')
+    .eq('team', team)
+    .eq('is_active', true)
+    .in('role', ['technician', 'contractor'])
+    .order('full_name')
+
+  if (error) return { roster: null, error: error.message }
+
+  const members = (data ?? []) as unknown as {
+    id: string
+    full_name: string | null
+    role: string | null
+  }[]
+
+  const roster: AssignedTeamRosterEntry[] = members.map((member) => ({
+    profile_id: member.id,
+    full_name: member.full_name ?? '',
+    role: member.role ?? '',
+    is_responsible: member.id === responsibleId,
+  }))
+
+  // The responsible person is documented even when they are not (or no longer) a
+  // member of the crew — a roster that omits them would document a lie.
+  if (!roster.some((entry) => entry.is_responsible)) {
+    const { data: responsible, error: responsibleError } = await supabase
+      .from('profiles')
+      .select('id, full_name, role')
+      .eq('id', responsibleId)
+      .single()
+
+    if (responsibleError) return { roster: null, error: responsibleError.message }
+    const person = responsible as unknown as {
+      id: string
+      full_name: string | null
+      role: string | null
+    } | null
+    roster.unshift({
+      profile_id: responsibleId,
+      full_name: person?.full_name ?? '',
+      role: person?.role ?? '',
+      is_responsible: true,
+    })
+  }
+
+  return { roster, error: null }
+}
+
 export async function assignWorkOrder(
   id: string,
   team: TeamColor | null,
@@ -404,6 +515,20 @@ export async function assignWorkOrder(
   error: string | null
   reasons?: WorkOrderActionReason[]
 }> {
+  // Every order gets exactly ONE responsible person (migration 073). A team-only
+  // assignment used to leave assigned_technician null, which under the real RLS
+  // meant nobody could open the order — and, before 073, meant the whole crew
+  // could reach its documents and photos.
+  if (!technicianId) {
+    return {
+      data: null,
+      error: ASSIGNMENT_REQUIRES_TECHNICIAN,
+      reasons: [
+        { code: 'invalid_transition', message: ASSIGNMENT_REQUIRES_TECHNICIAN },
+      ],
+    }
+  }
+
   const { data: current } = await supabase
     .from('work_orders')
     .select('status')
@@ -428,9 +553,24 @@ export async function assignWorkOrder(
         compliance_override_at: null,
       }
 
+  // Documentary snapshot of the crew present at assignment time (migration 073).
+  // `assigned_team` keeps being written for migration 068, which still reads it.
+  const { roster, error: rosterError } = await buildAssignedTeamRoster(team, technicianId)
+
+  // Assigning with a roster we could not read would stamp a false document on
+  // the order. Better no assignment than a wrong record of who was there.
+  if (rosterError) {
+    return {
+      data: null,
+      error: rosterError,
+      reasons: [{ code: 'server_error', message: rosterError }],
+    }
+  }
+
   const payload: Record<string, unknown> = {
     assigned_team: team,
     assigned_technician: technicianId,
+    assigned_team_roster: roster,
     assigned_date: assignedDate,
     status: 'assigned',
     updated_at: new Date().toISOString(),
@@ -455,7 +595,7 @@ export async function assignWorkOrder(
     from_status: fromStatus,
     to_status: 'assigned',
     changed_by: changedBy,
-    notes: `Zugewiesen an ${team ? `Team ${team}` : 'Techniker (direkt)'}${team && technicianId ? ' · Techniker zugewiesen' : ''}${reassignmentNote ? ` · Grund: ${reassignmentNote}` : ''}${overrideNote}`,
+    notes: `Zugewiesen an ${team ? `Team ${team}` : 'Techniker (direkt)'}${team ? ` · Verantwortlich: 1 Person · Team dokumentiert: ${roster?.length ?? 0}` : ''}${reassignmentNote ? ` · Grund: ${reassignmentNote}` : ''}${overrideNote}`,
   })
 
   return { data, error: null }
@@ -558,16 +698,26 @@ export async function fetchWorkOrderDetail(table: DetailTable, workOrderId: stri
 
 // ── Technician / Sprint 4 ──────────────────────────────────────
 
+/**
+ * Orders the signed-in field user is responsible for.
+ *
+ * `team` is kept in the signature so callers do not have to change, but it is
+ * deliberately unused: an order reaches exactly one person, its
+ * `assigned_technician`. The old `.or(assigned_team.eq...)` branch was dead code
+ * — RLS (`work_orders_technician_select`) has always required
+ * `assigned_technician = auth.uid()`, so team-matched rows never came back — and
+ * since migration 073 it would also misdescribe the rule.
+ */
 export async function fetchMyWorkOrders(
   userId: string,
-  team: string | null,
+  _team: string | null,
   page = 0,
   pageSize = 20,
 ) {
   const from = page * pageSize
   const to = from + pageSize - 1
 
-  let query = supabase
+  const query = supabase
     .from('work_orders')
     .select(
       `
@@ -578,17 +728,10 @@ export async function fetchMyWorkOrders(
     `,
       { count: 'exact' },
     )
+    .eq('assigned_technician', userId)
     .not('status', 'in', '("cancelled","paid")')
     .order('assigned_date', { ascending: true, nullsFirst: false })
     .range(from, to)
-
-  // An order reaches a technician either through their team or through a
-  // direct personal assignment (assigned_technician), which may carry no team.
-  if (team) {
-    query = query.or(`assigned_team.eq.${team},assigned_technician.eq.${userId}`)
-  } else {
-    query = query.eq('assigned_technician', userId)
-  }
 
   const { data, error, count } = await query
   return {
@@ -885,8 +1028,12 @@ export async function fetchStateHistory(workOrderId: string) {
 
 // ── Contractor (LUM-019) ──────────────────────────────────────
 
-export async function fetchContractorWorkOrders(userId: string, team: string | null) {
-  let query = supabase
+/**
+ * Same rule as {@link fetchMyWorkOrders}: one order, one responsible person.
+ * `team` is unused on purpose — see that function for why the team branch went.
+ */
+export async function fetchContractorWorkOrders(userId: string, _team: string | null) {
+  const query = supabase
     .from('work_orders')
     .select(
       `
@@ -896,14 +1043,8 @@ export async function fetchContractorWorkOrders(userId: string, team: string | n
       operators ( name, code )
     `,
     )
+    .eq('assigned_technician', userId)
     .order('assigned_date', { ascending: false, nullsFirst: false })
-
-  // Same rule as fetchMyWorkOrders: team membership or direct personal assignment.
-  if (team) {
-    query = query.or(`assigned_team.eq.${team},assigned_technician.eq.${userId}`)
-  } else {
-    query = query.eq('assigned_technician', userId)
-  }
 
   const { data, error } = await query
   return {

@@ -43,6 +43,14 @@ const clientFirstMigrations = [
   ['069_executor_certification_paths.sql', '068_client_first_work_order_routing.sql'],
 ] as const
 
+// `supabase/rls_policies.sql` is the second hand-applied DDL source (see README):
+// the work_orders policies and every work-order-photos storage policy live there,
+// not in a migration. Migration 073 rewrites both, so both have to be asserted.
+const rlsPoliciesSql = readFileSync(
+  join(process.cwd(), 'supabase', 'rls_policies.sql'),
+  'utf8',
+).toLowerCase()
+
 function readRequiredMigration(file: string) {
   const path = join(migrationsDir, file)
   expect(existsSync(path), `${file} must exist`).toBe(true)
@@ -617,5 +625,245 @@ describe('database migrations cover billing workflow schema', () => {
       /old\.status\s*=\s*'internally_certified'\s+and\s+new\.executor_type\s*=\s*'external_contractor'\s+and\s+new\.status\s+in\s*\(\s*'sent_to_client',\s*'cancelled'\s*\)/,
     )
     expect(sql).toContain('rollback notes:')
+  })
+})
+
+// ── Migration 073 — one order, one responsible technician ───────────────────
+//
+// The owner's rule: a technician may only ever see what belongs to the order
+// assigned to them, and every order has exactly ONE responsible person. What
+// made that false was never `work_orders` itself — that table has always been
+// scoped to `assigned_technician = auth.uid()` — but everything hanging off it:
+// documents, the documents bucket and, worst of all, the photos bucket, which
+// let any authenticated user read and write every photo of every order.
+describe('migration 073 scopes work order access to the single assignee', () => {
+  const sql = readRequiredMigration('073_work_order_access_scope.sql').toLowerCase()
+  // The header quotes the OLD policies verbatim so the rollback notes can be
+  // pasted and run. Assertions about what this migration *does* must therefore
+  // read the executable body only, or they match the rollback snippets instead.
+  const body = sql.slice(sql.indexOf('\nbegin;'))
+
+  it('declares its place in the sequence', () => {
+    expect(readRequiredMigration('073_work_order_access_scope.sql')).toContain(
+      '-- Depends on: 072_revoke_anon_assign_work_order.sql',
+    )
+    expect(sql).toContain('rollback notes:')
+    expect(sql).toContain('begin;')
+    expect(sql).toContain('commit;')
+  })
+
+  // Migration 020 let anyone whose profiles.team matched work_orders.assigned_team
+  // read the order's planos and cartas de empalme. That branch is the bug.
+  it('drops the team branch from the work_order_documents read policy', () => {
+    expect(body).toContain('drop policy if exists "tech_read_work_order_documents"')
+    expect(body).toMatch(
+      /create policy "tech_read_work_order_documents"[\s\S]*wo\.assigned_technician = auth\.uid\(\)/,
+    )
+    // No policy this migration writes may key off the team.
+    expect(body).not.toMatch(/wo\.assigned_team in \(/)
+    expect(body).not.toMatch(/select team from public\.profiles/)
+  })
+
+  // Migration 039 mirrored the same team branch onto storage.objects.
+  it('rescopes the work-order-documents bucket to the assignee only', () => {
+    expect(body).toContain('drop policy if exists "storage_wo_docs_read"')
+    expect(body).toMatch(
+      /create policy "storage_wo_docs_read"[\s\S]*has_permission\('work_orders\.view'\)[\s\S]*wo\.assigned_technician = auth\.uid\(\)/,
+    )
+  })
+
+  // The big one: before this, `bucket_id = 'work-order-photos'` was the entire
+  // rule for both reading and writing.
+  it('closes the open read and write on the work-order-photos bucket', () => {
+    expect(body).toContain('drop policy if exists "storage_photos_auth_read"')
+    expect(body).toContain('drop policy if exists "storage_photos_auth_insert"')
+
+    for (const policy of ['storage_photos_auth_read', 'storage_photos_auth_insert']) {
+      const policyBody = body.split(`create policy "${policy}"`)[1]?.split('create policy')[0] ?? ''
+      expect(policyBody, policy).toContain("bucket_id = 'work-order-photos'")
+      expect(policyBody, policy).toContain("has_permission('work_orders.view')")
+      expect(policyBody, policy).toMatch(
+        /wo\.id::text = \(storage\.foldername\(name\)\)\[1\][\s\S]*wo\.assigned_technician = auth\.uid\(\)/,
+      )
+    }
+
+    // Delete stays reachable for the office and for whoever uploaded the object.
+    expect(body).toMatch(/create policy "storage_photos_owner_delete"[\s\S]*auth\.uid\(\) = owner/)
+    // The capture-plan example bucket (058) is out of scope: it may be named in
+    // prose, but no policy here may target it.
+    expect(sql).not.toMatch(/bucket_id\s*=\s*'capture-examples'/)
+    expect(sql).not.toMatch(/(create|drop) policy[^\n]*capture[_-]example/)
+  })
+
+  it('adds the roster as documentation, never as an access key', () => {
+    expect(sql).toContain('add column if not exists assigned_team_roster jsonb')
+    const comment = sql.split('comment on column public.work_orders.assigned_team_roster is')[1] ?? ''
+    expect(comment).toContain('documentación, nunca control de acceso')
+    // The roster is rewritten on every assignment (a reassignment is one), so the
+    // comment must not claim it is immutable — assignWorkOrder would contradict it.
+    expect(comment).not.toContain('inmutable')
+    expect(comment).toContain('se reescribe entera en cada asignación')
+    // Prices never reach a technician or a contractor, so the roster carries none.
+    expect(comment).not.toContain('price')
+    expect(comment).not.toContain('unit_price')
+  })
+
+  // work_orders_technician_update is row-scoped but column-agnostic, so without a
+  // trigger the documented technician can rewrite the document — is_responsible
+  // included.
+  it('stops the documented technician from rewriting their own roster', () => {
+    expect(sql).toContain('create or replace function public.guard_assigned_team_roster()')
+    expect(sql).toMatch(
+      /new\.assigned_team_roster is distinct from old\.assigned_team_roster[\s\S]*has_permission\('work_orders\.edit'\)[\s\S]*raise exception/,
+    )
+    expect(sql).toMatch(
+      /create trigger guard_assigned_team_roster\s+before update of assigned_team_roster on public\.work_orders/,
+    )
+    // service_role / cron / edge functions have no auth.uid() and must stay able
+    // to write — the NE4 bridge upserts through that path.
+    expect(sql).toContain('auth.uid() is not null and not public.has_permission')
+  })
+
+  it('requires a responsible technician wherever a team is set, without killing history', () => {
+    expect(sql).toMatch(
+      /add constraint work_orders_team_requires_technician[\s\S]*not valid/,
+    )
+    // The historical rows that violate it are reported, not silently rewritten.
+    expect(sql).toContain('raise notice')
+    expect(sql).toContain('work_orders de lumen con equipo y sin responsable')
+  })
+
+  // BLOCKER guard. The NE4 bridge (ne4-work-manager, edge function lumen-bridge)
+  // upserts LUMEN work_orders with assigned_team and NO assigned_technician —
+  // imported orders arrive already executed in rueckmeldung_sent and nobody
+  // assigns them here. NOT VALID only spares rows that already exist, so an
+  // unqualified CHECK would break every future sync the day 073 is applied.
+  it('exempts imported orders from the check so the NE4 bridge keeps syncing', () => {
+    expect(sql).toContain(
+      "check (source <> 'lumen' or assigned_team is null or assigned_technician is not null)",
+    )
+    const comment =
+      sql.split('comment on constraint work_orders_team_requires_technician')[1] ?? ''
+    expect(comment).toContain('source <> lumen')
+    expect(comment).toContain('ne4')
+    // The cross-repo follow-up is written down where the next reader will find it.
+    expect(sql).toContain('lumen-bridge')
+    expect(sql).toContain('seguimiento entre repos')
+  })
+
+  // assign_work_order_checked is SECURITY DEFINER and granted to `authenticated`,
+  // and 016 gave it no identity check at all. Once being the assignee is what
+  // buys you the order's photos and documents, that is a file-access escalation.
+  it('closes the privilege escalation in assign_work_order_checked', () => {
+    expect(sql).toContain('create or replace function public.assign_work_order_checked(')
+    expect(sql).toMatch(
+      /perform public\.assert_work_order_rpc_permission\(\s*p_changed_by,\s*'work_orders\.assign'\s*\)/,
+    )
+    // The signature must stay byte-identical or 072's REVOKE/GRANT stops matching.
+    expect(sql).toMatch(
+      /public\.assign_work_order_checked\(\s*p_work_order_id uuid,\s*p_team public\.team_color,\s*p_assignee_id uuid,\s*p_assigned_date date,\s*p_changed_by uuid,\s*p_notes text default null\s*\)/,
+    )
+    expect(sql).toContain('from public, anon')
+    expect(sql).toContain('to authenticated, service_role')
+  })
+
+  // A rollback note that errors when pasted is not a rollback note. Migration 020
+  // ships a bare CREATE POLICY with no DROP, so "re-apply 020" does not work.
+  it('documents a rollback that runs as written', () => {
+    const rollback = sql.split('rollback notes')[1]?.split('begin;')[0] ?? ''
+    expect(rollback).toContain('drop policy if exists "tech_read_work_order_documents"')
+    expect(rollback).toContain('drop policy if exists "storage_wo_docs_read"')
+    expect(rollback).toContain('drop policy if exists "storage_photos_auth_read"')
+    expect(rollback).toContain('drop trigger if exists guard_assigned_team_roster')
+    expect(rollback).toContain('drop constraint if exists work_orders_team_requires_technician')
+    // Every CREATE it suggests must be preceded by its own DROP.
+    const creates = rollback.match(/create policy "([a-z_]+)"/g) ?? []
+    expect(creates.length).toBeGreaterThan(0)
+    for (const create of creates) {
+      const name = create.replace('create policy ', '')
+      expect(rollback, name).toContain(`drop policy if exists ${name}`)
+    }
+  })
+
+  // Migration 068 reads assigned_team and 072 re-declares assign_work_order_checked
+  // with a p_team parameter — dropping the column would break both.
+  it('keeps assigned_team alive and only changes what it means', () => {
+    expect(sql).not.toMatch(/drop column[\s\S]{0,40}assigned_team\b/)
+    expect(sql).not.toMatch(/rename column assigned_team/)
+    expect(sql).toContain('comment on column public.work_orders.assigned_team is')
+  })
+})
+
+// The idempotent hand-applied script has to describe the same live state as the
+// migration; if it drifts, re-running it silently reopens the photos bucket.
+describe('rls_policies.sql stays coherent with migration 073', () => {
+  it('scopes the work-order-photos policies the same way the migration does', () => {
+    for (const policy of ['storage_photos_auth_read', 'storage_photos_auth_insert']) {
+      const body =
+        rlsPoliciesSql.split(`create policy "${policy}"`)[1]?.split('create policy')[0] ?? ''
+      expect(body, policy).toContain("has_permission('work_orders.view')")
+      expect(body, policy).toMatch(
+        /wo\.id::text = \(storage\.foldername\(name\)\)\[1\][\s\S]*wo\.assigned_technician = auth\.uid\(\)/,
+      )
+    }
+  })
+
+  // Re-running the script must not trip over a policy it already created.
+  it('drops every work-order-photos policy it recreates', () => {
+    for (const policy of [
+      'storage_photos_auth_read',
+      'storage_photos_auth_insert',
+      'storage_photos_owner_delete',
+    ]) {
+      expect(rlsPoliciesSql, policy).toContain(`drop policy if exists "${policy}"`)
+    }
+  })
+
+  it('never lets a work_orders policy key off the team', () => {
+    const workOrders =
+      rlsPoliciesSql.split('-- work orders')[1]?.split('-- work order state history')[0] ?? ''
+    expect(workOrders).toContain('assigned_technician = auth.uid()')
+    expect(workOrders).not.toMatch(/using \([\s\S]*assigned_team\s*=/)
+  })
+
+  // Half a mirror is worse than none: re-running this script used to tighten the
+  // photos bucket while leaving documents on the old team-wide rule, so the two
+  // halves of the same fix drifted apart with nothing to say so.
+  it('mirrors the document policies too, not just the photo ones', () => {
+    expect(rlsPoliciesSql).toContain('drop policy if exists "tech_read_work_order_documents"')
+    expect(rlsPoliciesSql).toMatch(
+      /create policy "tech_read_work_order_documents"[\s\S]*wo\.assigned_technician = auth\.uid\(\)/,
+    )
+    expect(rlsPoliciesSql).toContain('drop policy if exists "storage_wo_docs_read"')
+    expect(rlsPoliciesSql).toMatch(
+      /create policy "storage_wo_docs_read"[\s\S]*wo\.assigned_technician = auth\.uid\(\)/,
+    )
+    // No mirrored policy may bring the team branch back with it.
+    expect(rlsPoliciesSql).not.toMatch(/select team from public\.profiles/)
+    expect(rlsPoliciesSql).not.toMatch(/wo\.assigned_team in \(/)
+  })
+
+  // Migration 035's permission policies live only in that migration; dropping
+  // them here would quietly cut the office off from work order documents.
+  it('leaves the migration-035 permission policies alone', () => {
+    // Naming them in a comment is fine — dropping or recreating them is not.
+    for (const policy of ['wo_documents_select_perm', 'wo_documents_write_perm']) {
+      expect(rlsPoliciesSql, policy).not.toMatch(
+        new RegExp(`(drop|create) policy[^\\n]*${policy}`),
+      )
+    }
+  })
+})
+
+// The convention that made all of this dangerous — two DDL sources, one of them
+// invisible to anyone grepping `migrations/` — was nowhere in the docs.
+describe('README documents the two-DDL-source trap', () => {
+  const readme = readFileSync(join(process.cwd(), 'README.md'), 'utf8').toLowerCase()
+
+  it('warns that rls_policies.sql is a second hand-applied source', () => {
+    expect(readme).toContain('rls_policies.sql')
+    expect(readme).toContain('second')
+    expect(readme).toMatch(/hand-applied|hand applied/)
+    expect(readme).toMatch(/mirror|silently revert/)
   })
 })
