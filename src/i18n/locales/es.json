@@ -1709,15 +1709,20 @@
       "title": "Mapa de catas",
       "subtitle": "{{count}} puntos localizados de la Rückmeldung",
       "unlocated": "{{count}} sin ubicación",
-      "depth": "Profundidad: {{depth}} cm"
+      "depth": "Profundidad: {{depth}} cm",
+      "photoCount": "{{count}} fotos en la galería de abajo"
     }
   },
   "capturePlan": {
     "sopladoRa": {
       "title": "Soplado de RA",
-      "mandatory": {
-        "title": "Fotos obligatorias",
-        "description": "Cuatro fotos que hay que hacer en todo soplado."
+      "dp": {
+        "title": "Fotos del DP",
+        "description": "Todo lo del DP: fibra soplada y gasblock colocado."
+      },
+      "pop": {
+        "title": "Fotos del POP",
+        "description": "Todo lo del POP: etiqueta de la fibra y globo en el tubo."
       },
       "catas": {
         "title": "Catas",

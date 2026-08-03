@@ -432,10 +432,10 @@ const slotPhoto = (sectionKey: string, slotKey: string, itemId: string | null = 
 })
 
 const SOPLADO_RA_PHOTOS = [
-  slotPhoto('mandatory', 'fiber_dp'),
-  slotPhoto('mandatory', 'fiber_dp_gasblock'),
-  slotPhoto('mandatory', 'fiber_pop_label'),
-  slotPhoto('mandatory', 'balloon_pop'),
+  slotPhoto('dp', 'fiber_dp'),
+  slotPhoto('dp', 'fiber_dp_gasblock'),
+  slotPhoto('pop', 'fiber_pop_label'),
+  slotPhoto('pop', 'balloon_pop'),
 ]
 
 const SOPLADO_RA_ANSWERS = {
@@ -463,7 +463,7 @@ describe('validateTransitionPrerequisites — capture plan gate', () => {
     })
     const result = await validateTransitionPrerequisites('id-1', 'internally_certified')
     expect(result).toMatch(/Rückmeldung unvollständig \(soplado_ra\)/)
-    expect(result).toContain('Fotos mandatory.balloon_pop (1)')
+    expect(result).toContain('Fotos pop.balloon_pop (1)')
   })
 
   it('names the field a conditional checklist answer just made mandatory', async () => {

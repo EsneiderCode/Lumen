@@ -1709,15 +1709,20 @@
       "title": "Karte der Gruben",
       "subtitle": "{{count}} verortete Punkte aus der Rückmeldung",
       "unlocated": "{{count}} ohne Position",
-      "depth": "Tiefe: {{depth}} cm"
+      "depth": "Tiefe: {{depth}} cm",
+      "photoCount": "{{count}} Fotos in der Galerie unten"
     }
   },
   "capturePlan": {
     "sopladoRa": {
       "title": "Einblasen RA (Soplado de RA)",
-      "mandatory": {
-        "title": "Pflichtfotos",
-        "description": "Vier Fotos, die bei jedem Einblasvorgang gemacht werden müssen."
+      "dp": {
+        "title": "Fotos am DP",
+        "description": "Alles am DP: Faser eingeblasen und Gasblock gesetzt."
+      },
+      "pop": {
+        "title": "Fotos am POP",
+        "description": "Alles am POP: Faserbeschriftung und Ballon im Rohr."
       },
       "catas": {
         "title": "Gruben (Catas)",

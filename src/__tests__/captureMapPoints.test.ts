@@ -91,16 +91,16 @@ describe('capture map points', () => {
   it('marks the incident gallery apart from the ordinary evidence', () => {
     const photos: DemoPhoto[] = [
       photo({ id: 'i1', section_key: 'incidents', slot_key: 'photo', lat: 51.777, lng: 9.381 }),
-      photo({ id: 'm1', section_key: 'mandatory', slot_key: 'fiber_dp', lat: 51.776, lng: 9.379 }),
+      photo({ id: 'm1', section_key: 'dp', slot_key: 'fiber_dp', lat: 51.776, lng: 9.379 }),
     ]
     const { points } = buildCaptureMapData(SOPLADO_RA_PLAN, {}, photos)
 
     const byKind = Object.fromEntries(points.map((point) => [point.kind, point.sectionKey]))
-    expect(byKind).toEqual({ incident: 'incidents', slot: 'mandatory' })
+    expect(byKind).toEqual({ incident: 'incidents', slot: 'dp' })
   })
 
   it('ignores photos with no coordinates at all', () => {
-    const photos: DemoPhoto[] = [photo({ id: 'm1', section_key: 'mandatory', slot_key: 'fiber_dp' })]
+    const photos: DemoPhoto[] = [photo({ id: 'm1', section_key: 'dp', slot_key: 'fiber_dp' })]
     expect(buildCaptureMapData(SOPLADO_RA_PLAN, {}, photos).points).toEqual([])
   })
 

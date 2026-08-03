@@ -36,12 +36,17 @@ import type {
 
 export const SOPLADO_RA_PLAN_KEY = 'soplado_ra'
 /**
+ * v4 (migration 076): the four mandatory photos are no longer one undifferentiated
+ * block. They are split by WHERE they are taken — the DP and the POP — because
+ * that is how the work is done and how the office reads the evidence back. See
+ * MANDATORY_SLOTS below for why they were lumped together until now.
+ *
  * v3 (migration 071): each trench now states where it was before its photos and
  * confirms its own pin after them. v1 and v2 stay in the catalog — a Rückmeldung
  * already sent under one of them is judged against the version it was captured
  * under, so no order in flight becomes uncertifiable because of this.
  */
-export const SOPLADO_RA_PLAN_VERSION = 3
+export const SOPLADO_RA_PLAN_VERSION = 4
 
 const T = 'capturePlan.sopladoRa'
 
@@ -49,21 +54,27 @@ const T = 'capturePlan.sopladoRa'
 const EXAMPLE_DIR = 'soplado_ra'
 
 /**
- * The four mandatory photos deliberately cover all three legacy buckets. Until
- * the phase-5 gate reads the plan, `assert_work_order_rueckmeldung_complete`
- * still demands one photo of each of before/during/after, and the trenches —
- * which would otherwise supply them — are optional. Without this spread a
- * technician could send a Rückmeldung the plan calls complete and the admin
- * could not certify it.
+ * All four mandatory photos record a FINISHED state — fibre already blown into
+ * the DP, gasblock already sealed, label and balloon already in place. So all
+ * four are `after`, and none of them is a "before".
+ *
+ * Until v4 they were deliberately spread across before/during/after instead,
+ * which is why a photo of the DP with the cable already inside was filed under
+ * "Antes". That spread existed for one reason: the old
+ * `assert_work_order_rueckmeldung_complete` demanded one photo of each legacy
+ * bucket, and the trenches that would otherwise supply them are optional.
+ * The gate now reads the plan (`capture_plan_missing_nodes`) and only falls
+ * back to the buckets for photos with no `section_key` — i.e. those uploaded
+ * before migration 052. Nothing is holding the lie up any more, so it goes.
  */
-const MANDATORY_SLOTS: CapturePhotoSlot[] = [
+const DP_SLOTS: CapturePhotoSlot[] = [
   {
     key: 'fiber_dp',
     min: 1,
     labelKey: `${T}.slot.fiberDp.label`,
     hintKey: `${T}.slot.fiberDp.hint`,
     example: `${EXAMPLE_DIR}/fiber_dp.jpg`,
-    legacyType: 'before',
+    legacyType: 'after',
   },
   {
     key: 'fiber_dp_gasblock',
@@ -71,8 +82,11 @@ const MANDATORY_SLOTS: CapturePhotoSlot[] = [
     labelKey: `${T}.slot.fiberDpGasblock.label`,
     hintKey: `${T}.slot.fiberDpGasblock.hint`,
     example: `${EXAMPLE_DIR}/fiber_dp_gasblock.jpg`,
-    legacyType: 'during',
+    legacyType: 'after',
   },
+]
+
+const POP_SLOTS: CapturePhotoSlot[] = [
   {
     key: 'fiber_pop_label',
     min: 1,
@@ -101,12 +115,23 @@ const SECTIONS: CaptureSection[] = [
   // Opens the plan since v2: the result and the metres are what the office is
   // waiting for, and they are the fastest thing to fill in the van.
   legacyDetailsSection('soplado'),
+  // Split in two since v4, by WHERE the photo is taken. The office reads the
+  // evidence back place by place — everything about the DP together, everything
+  // about the POP together — not phase by phase, which for these four is a
+  // distinction without a difference: all of them are finished states.
   {
-    key: 'mandatory',
+    key: 'dp',
     kind: 'photos',
-    titleKey: `${T}.mandatory.title`,
-    descriptionKey: `${T}.mandatory.description`,
-    slots: MANDATORY_SLOTS,
+    titleKey: `${T}.dp.title`,
+    descriptionKey: `${T}.dp.description`,
+    slots: DP_SLOTS,
+  },
+  {
+    key: 'pop',
+    kind: 'photos',
+    titleKey: `${T}.pop.title`,
+    descriptionKey: `${T}.pop.description`,
+    slots: POP_SLOTS,
   },
   {
     key: 'catas',

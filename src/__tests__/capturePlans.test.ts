@@ -47,6 +47,11 @@ const migration071 = readFileSync(
   'utf8',
 )
 
+const migration076 = readFileSync(
+  join(process.cwd(), 'supabase', 'migrations', '076_capture_plan_soplado_ra_v4.sql'),
+  'utf8',
+)
+
 /** Every `('key', version, $plan$…$plan$)` row of a seed migration. */
 const seededPlans = (sql: string): Map<string, unknown> => {
   const rowPattern = /\('([a-z_]+)',\s*(\d+),\s*\$plan\$([\s\S]*?)\$plan\$::jsonb\)/g
@@ -67,6 +72,7 @@ const CATALOG = new Map<string, unknown>([
   ...seededPlans(migration053),
   ...seededPlans(migration059),
   ...seededPlans(migration071),
+  ...seededPlans(migration076),
 ])
 
 const sectionOf = (plan: CapturePlan, key: string): CaptureSection => {
@@ -275,24 +281,33 @@ describe('the Soplado de RA plan', () => {
     expect(compiledVariantsForWorkType('alta')).toEqual([])
   })
 
-  // The plan's own completeness is not the only gate: assert_work_order_
-  // rueckmeldung_complete (016) still demands one photo of each legacy bucket
-  // until phase 5, and the trenches that would supply them are optional. If the
-  // mandatory photos stop covering all three, a technician can send a
-  // Rückmeldung the plan calls complete that the admin cannot certify.
-  it('covers all three legacy photo buckets with the mandatory photos alone', () => {
-    const mandatory = slotsOf(SOPLADO_RA_PLAN, 'mandatory')
+  // Since v4 the four mandatory photos are split by WHERE they are taken, and
+  // all four are `after` — every one of them records a finished state. They
+  // used to be spread across the three legacy buckets to satisfy the old
+  // assert_work_order_rueckmeldung_complete, which is why a DP with the fibre
+  // already inside was filed under "before"; the gate reads the plan now.
+  it('splits the mandatory photos by place and calls them all finished states', () => {
+    const dp = slotsOf(SOPLADO_RA_PLAN, 'dp')
+    const pop = slotsOf(SOPLADO_RA_PLAN, 'pop')
 
-    expect(mandatory.map((slot) => slot.key)).toEqual([
-      'fiber_dp',
-      'fiber_dp_gasblock',
-      'fiber_pop_label',
-      'balloon_pop',
-    ])
-    expect(mandatory.every((slot) => slot.min === 1)).toBe(true)
-    expect(new Set(mandatory.map((slot) => slot.legacyType))).toEqual(
-      new Set(['before', 'during', 'after']),
-    )
+    expect(dp.map((slot) => slot.key)).toEqual(['fiber_dp', 'fiber_dp_gasblock'])
+    expect(pop.map((slot) => slot.key)).toEqual(['fiber_pop_label', 'balloon_pop'])
+    expect([...dp, ...pop].every((slot) => slot.min === 1)).toBe(true)
+    expect([...dp, ...pop].every((slot) => slot.legacyType === 'after')).toBe(true)
+  })
+
+  // A renamed section orphans the photos already stored under the old name, so
+  // the migration has to move them. Without this the technician of an order in
+  // flight watches work he already uploaded disappear.
+  it('backfills the photos of the orders in flight into the new sections', () => {
+    expect(migration076).toMatch(/update\s+public\.work_order_photos/i)
+    expect(migration076).toContain("WHEN 'fiber_dp'          THEN 'dp'")
+    expect(migration076).toContain("WHEN 'balloon_pop'       THEN 'pop'")
+    expect(migration076).toContain("p.section_key = 'mandatory'")
+    // Both statements or neither: a seeded plan whose photos never moved is the
+    // exact hole this migration exists to avoid.
+    expect(migration076.toLowerCase()).toContain('begin;')
+    expect(migration076.toLowerCase()).toContain('commit;')
   })
 
   it('never blocks submission on trenches or incidents', () => {
@@ -338,13 +353,16 @@ describe('the Soplado de RA plan', () => {
 })
 
 describe('evaluating the Soplado de RA plan', () => {
+  // Since v4 the mandatory four live in two sections, by place.
   const mandatoryPhotos = (): CapturedPhotoRef[] =>
-    slotsOf(SOPLADO_RA_PLAN, 'mandatory').map((slot, index) => ({
-      id: `m${index}`,
-      section_key: 'mandatory',
-      slot_key: slot.key,
-      photo_type: slot.legacyType,
-    }))
+    (['dp', 'pop'] as const).flatMap((sectionKey) =>
+      slotsOf(SOPLADO_RA_PLAN, sectionKey).map((slot, index) => ({
+        id: `${sectionKey}${index}`,
+        section_key: sectionKey,
+        slot_key: slot.key,
+        photo_type: slot.legacyType,
+      })),
+    )
 
   const baseAnswers = (): CaptureAnswers => ({
     checklist: { duct_as_planned: true },
@@ -464,7 +482,7 @@ describe('evaluating the Soplado de RA plan', () => {
     )
 
     expect(describeMissingNodes(result)).toEqual([
-      'Fotos mandatory.balloon_pop (1)',
+      'Fotos pop.balloon_pop (1)',
       'Fotos catas[1].during_open (1)',
       'Fotos catas[1].closed (1)',
     ])

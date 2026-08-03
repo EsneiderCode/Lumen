@@ -52,6 +52,7 @@ import { fetchProfileCompliance, type ProfileComplianceResult } from '@/services
 import { fetchCapturePlanForOrder, fetchCaptureReport } from '@/services/capturePlanService'
 import { captureDetailEntries, captureDetailRecord } from '@/services/capturePlanEngine'
 import { buildCaptureMapData } from '@/lib/captureMapPoints'
+import { buildCapturePhotoGroups } from '@/lib/capturePhotoGroups'
 import type { CaptureAnswers, CapturePlan } from '@/types/capture-plan'
 import { ComplianceDot } from '@/components/compliance/ComplianceDot'
 import { complianceLevel } from '@/components/compliance/aptitudeLevel'
@@ -248,6 +249,12 @@ export function WorkOrderDetailPage() {
   // re-frames itself on every new `points` array.
   const captureMap = useMemo(
     () => buildCaptureMapData(capturePlan, captureAnswers, photos),
+    [capturePlan, captureAnswers, photos],
+  )
+
+  // The gallery, grouped by place: the DP, the POP, one box per trench.
+  const photoGroups = useMemo(
+    () => buildCapturePhotoGroups(capturePlan, captureAnswers, photos),
     [capturePlan, captureAnswers, photos],
   )
 
@@ -624,7 +631,6 @@ export function WorkOrderDetailPage() {
   }
 
   const hasDetail = Object.keys(detail).length > 0
-  const photosByType = (type: PhotoType) => photos.filter((p) => p.photo_type === type)
   const selectedPoint = captureMap.points.find((point) => point.id === selectedPointId) ?? null
   const showPdfButton = PDF_VISIBLE_STATUSES.includes(order.status)
   const snapshot = order.assigned_detail_snapshot
@@ -1330,24 +1336,14 @@ export function WorkOrderDetailPage() {
                   {t('map.trenches.depth', { depth: selectedPoint.depthCm })}
                 </p>
               )}
+              {/* No thumbnails here on purpose: this trench already has its own
+                  box in the gallery below, and showing them twice is what made
+                  the same photo appear in two places on one screen. The pin
+                  panel answers "which trench is this"; the gallery shows it. */}
               {selectedPoint.photos.length > 0 && (
-                <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
-                  {selectedPoint.photos.map((photo) => (
-                    <a
-                      key={photo.id}
-                      href={photoUrls[photo.storage_path] ?? '#'}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="aspect-square overflow-hidden rounded-s bg-bg-1 ring-1 ring-line transition-all hover:ring-accent"
-                    >
-                      <img
-                        src={photoUrls[photo.storage_path] ?? ''}
-                        alt=""
-                        className="h-full w-full object-cover"
-                      />
-                    </a>
-                  ))}
-                </div>
+                <p className="mt-2 font-mono text-[11px] text-fg-3">
+                  {t('map.trenches.photoCount', { count: selectedPoint.photos.length })}
+                </p>
               )}
             </div>
           )}
@@ -1360,17 +1356,20 @@ export function WorkOrderDetailPage() {
           <h3 className="mb-4 font-display text-sm font-semibold text-fg-1">
             Fotos ({photos.length})
           </h3>
+          {/* By place, not by phase: everything about the DP together, the POP
+              together, one box per trench. See src/lib/capturePhotoGroups.ts. */}
           <div className="space-y-4">
-            {(['before', 'during', 'after'] as PhotoType[]).map((type) => {
-              const typePhotos = photosByType(type)
-              if (typePhotos.length === 0) return null
+            {photoGroups.map((group) => {
+              const heading = `${t(group.labelKey, { defaultValue: group.id })}${
+                group.index !== null ? ` ${group.index}` : ''
+              }`
               return (
-                <div key={type}>
+                <div key={group.id}>
                   <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-fg-2">
-                    {L.photo(type)} ({typePhotos.length})
+                    {heading} ({group.photos.length})
                   </p>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                    {typePhotos.map((photo) => (
+                    {group.photos.map((photo) => (
                       <a
                         key={photo.id}
                         href={photoUrls[photo.storage_path] ?? '#'}
@@ -1380,7 +1379,7 @@ export function WorkOrderDetailPage() {
                       >
                         <img
                           src={photoUrls[photo.storage_path] ?? ''}
-                          alt={photo.caption ?? L.photo(type)}
+                          alt={photo.caption ?? heading}
                           className="h-full w-full object-cover"
                         />
                       </a>
