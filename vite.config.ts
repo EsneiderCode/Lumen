@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
+import { BASEMAP_CACHE } from './src/constants/basemap'
 
 export default defineConfig({
   plugins: [
@@ -38,6 +39,36 @@ export default defineConfig({
         navigateFallbackDenylist: [/^\/api\//],
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
         runtimeCaching: [
+          // The basemap archive. Must come before the generic Supabase rule,
+          // which would otherwise swallow it: first match wins.
+          //
+          // `rangeRequests` is what makes this correct — PMTiles never asks for
+          // the whole file, it asks for byte ranges of it, and this plugin
+          // slices them out of the one full copy in the cache. Hence
+          // `statuses: [200]`: a 206 must NEVER be stored, because it would be
+          // keyed by URL alone and the next range would be served the previous
+          // range's bytes. The full copy is put there deliberately, once, by
+          // warmBasemapCache() in NexusMap.
+          {
+            urlPattern: /\/storage\/v1\/object\/public\/basemap\/.*\.pmtiles$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: BASEMAP_CACHE,
+              rangeRequests: true,
+              cacheableResponse: { statuses: [200] },
+              expiration: { maxEntries: 4, maxAgeSeconds: 60 * 60 * 24 * 180 },
+            },
+          },
+          // Glyphs are ordinary immutable GETs; without them the map draws but
+          // every street and town is unlabelled.
+          {
+            urlPattern: /\/storage\/v1\/object\/public\/basemap\/fonts\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'basemap-glyphs',
+              expiration: { maxEntries: 300, maxAgeSeconds: 60 * 60 * 24 * 180 },
+            },
+          },
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
             handler: 'NetworkFirst',

@@ -13,24 +13,27 @@
 //
 // Default export on purpose: that is what React.lazy() wants.
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   MapLibreMap,
   Marker,
   NavigationControl,
+  addProtocol,
   setWorkerUrl,
   type GeoJSONSourceSpecification,
   type GeoJSONSource,
   type LngLatBoundsLike,
 } from 'maplibre-gl'
+import { Protocol } from 'pmtiles'
 import 'maplibre-gl/dist/maplibre-gl.css'
 // MapLibre 6 resolves its worker from `import.meta.url` at runtime, which no
 // bundler can see: the file is never emitted and the map renders an empty
 // canvas with a silent 404 for maplibre-gl-worker.mjs. Handing Vite the worker
 // explicitly makes it a real bundled chunk in dev and in the build alike.
 import maplibreWorkerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
-import { buildNexusMapStyle, nexusToken } from '@/lib/mapStyle'
+import { TILE_URL, buildNexusMapStyle, nexusToken } from '@/lib/mapStyle'
+import { warmBasemapCache } from '@/lib/basemapCache'
 import { boundsOf, type CaptureMapPoint } from '@/lib/captureMapPoints'
 
 export interface NexusMapProps {
@@ -46,6 +49,11 @@ export interface NexusMapProps {
 }
 
 setWorkerUrl(maplibreWorkerUrl)
+
+// MapLibre cannot read a PMTiles archive by itself: the protocol is what turns
+// one `pmtiles://` URL into the range requests that fetch individual tiles out
+// of it. Registered once, at module scope, like the worker above.
+addProtocol('pmtiles', new Protocol().tile)
 
 const ROUTE_SOURCE = 'capture-route'
 
@@ -110,6 +118,11 @@ export default function NexusMap({
   heightClass = 'h-72',
 }: NexusMapProps) {
   const { t } = useTranslation()
+  // A basemap that fails to load is otherwise indistinguishable from an empty
+  // field: the pins still draw, on a flat coloured rectangle, and the technician
+  // is left to guess whether the position is wrong or the map is missing. It is
+  // never a rendering detail — say it out loud.
+  const [basemapFailed, setBasemapFailed] = useState(!TILE_URL)
   const containerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<MapLibreMap | null>(null)
   const markersRef = useRef<Marker[]>([])
@@ -138,6 +151,18 @@ export default function NexusMap({
       scrollZoom: false,
     })
     map.addControl(new NavigationControl({ showCompass: false }), 'top-right')
+    // MapLibre reports a failed archive or tile here and nowhere else: without
+    // this listener the failure is completely silent, in the console and on
+    // screen alike. `sourcedata` is what takes the message back down once the
+    // tiles do arrive, so a blip on a moving vehicle does not leave a stale
+    // warning pinned over a perfectly good map.
+    map.on('error', () => setBasemapFailed(true))
+    map.on('sourcedata', (event) => {
+      if (event.sourceId === 'protomaps' && event.isSourceLoaded) setBasemapFailed(false)
+    })
+    // Only once the map is proven to work: warming the cache from a broken URL
+    // would just store an error page for six months.
+    map.once('load', () => void warmBasemapCache(TILE_URL.replace(/^pmtiles:\/\//, '')))
     // Fires on the first style and on every repaint after a theme switch, which
     // is when the route layer has to be put back: setStyle drops custom layers.
     map.on('styledata', () => ensureRouteLayer(map, routeRef.current))
@@ -232,10 +257,23 @@ export default function NexusMap({
   }, [draggable])
 
   return (
-    <div
-      ref={containerRef}
-      className={`nx-map ${heightClass} w-full overflow-hidden rounded-l border border-line`}
-      aria-label={t('map.label')}
-    />
+    <div className={`relative ${heightClass} w-full`}>
+      <div
+        ref={containerRef}
+        className="nx-map h-full w-full overflow-hidden rounded-l border border-line"
+        aria-label={t('map.label')}
+      />
+      {/* Over the map, not instead of it: the pins are still worth reading when
+          the basemap is missing, and hiding them would lose the only positions
+          the technician recorded. */}
+      {basemapFailed && (
+        <p
+          role="status"
+          className="pointer-events-none absolute left-3 top-3 rounded-m border border-line-s bg-bg-1 px-2 py-1 font-mono text-[11px] text-warn"
+        >
+          {t('map.offline')}
+        </p>
+      )}
+    </div>
   )
 }

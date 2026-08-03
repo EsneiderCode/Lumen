@@ -1704,6 +1704,7 @@
   "map": {
     "label": "Mapa",
     "loading": "[CARGANDO MAPA]",
+    "offline": "[MAPA SIN CONEXIÓN]",
     "trenches": {
       "title": "Mapa de catas",
       "subtitle": "{{count}} puntos localizados de la Rückmeldung",
