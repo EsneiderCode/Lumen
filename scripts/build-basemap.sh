@@ -102,7 +102,11 @@ if [[ "$MODE" == "all" || "$MODE" == "--fonts" || "$MODE" == "--dry-run" ]]; the
   for start in $(seq 0 256 65280); do
     range="$start-$((start + 255))"
     if curl -fsS "$ASSETS/$encoded/$range.pbf" -o "$WORK/glyph.pbf" 2>/dev/null; then
-      upload "$WORK/glyph.pbf" "fonts/$FONTSTACK/$range.pbf"
+      # Percent-encoded, because the fontstack has spaces in it and curl will
+      # not take a raw one in a URL. Storage decodes it back, so the object key
+      # is "Noto Sans Regular" — which is what MapLibre asks for, since it
+      # builds the glyph URL out of the `text-font` name in the style.
+      upload "$WORK/glyph.pbf" "fonts/$encoded/$range.pbf"
     fi
   done
   echo "▶ glyphs done"
