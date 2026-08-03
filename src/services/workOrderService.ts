@@ -523,9 +523,7 @@ export async function assignWorkOrder(
     return {
       data: null,
       error: ASSIGNMENT_REQUIRES_TECHNICIAN,
-      reasons: [
-        { code: 'invalid_transition', message: ASSIGNMENT_REQUIRES_TECHNICIAN },
-      ],
+      reasons: [{ code: 'invalid_transition', message: ASSIGNMENT_REQUIRES_TECHNICIAN }],
     }
   }
 
@@ -676,9 +674,10 @@ export async function upsertWorkOrderDetail(
       .eq('id', existing.id)
     return { error: error?.message ?? null }
   } else {
-    const { error } = await supabase
-      .from(table as 'wo_detail_soplado')
-      .insert({ ...detail, work_order_id: workOrderId } as Database['public']['Tables']['wo_detail_soplado']['Insert'])
+    const { error } = await supabase.from(table as 'wo_detail_soplado').insert({
+      ...detail,
+      work_order_id: workOrderId,
+    } as Database['public']['Tables']['wo_detail_soplado']['Insert'])
     return { error: error?.message ?? null }
   }
 }
@@ -874,6 +873,15 @@ export async function certifyWorkOrderInternal(
   )
   if (prerequisiteError) {
     return toFailureResult([mapLifecycleValidationError(prerequisiteError)])
+  }
+
+  // Supabase's browser client cannot wrap this insert and the lifecycle RPC in
+  // one transaction. Materialize first: a later transition failure may leave a
+  // harmless draft line on a still-pending order, but we must never seal an
+  // order that has no immutable price snapshot.
+  const billingResult = await materializeBillingLinesForInternalCertification(args.workOrderId)
+  if (billingResult.error) {
+    return toFailureResult([{ code: 'server_error', message: billingResult.error }])
   }
 
   return callLifecycleRpc('certify_work_order_internal', {
@@ -1302,6 +1310,192 @@ export interface BillingLineDraft {
   notes?: string | null
 }
 
+export interface BillingMaterializationResult {
+  /** True only when this call inserted the immutable snapshots. */
+  created: boolean
+  error: string | null
+}
+
+function positiveBillingQuantity(value: unknown): number | null {
+  const quantity = Number(value)
+  return Number.isFinite(quantity) && quantity > 0 ? quantity : null
+}
+
+/**
+ * The primary service represented by most work orders is a discrete unit. The
+ * technical counts in those capture plans document the work but are not the
+ * catalog multiplier: e.g. DP installation is priced per UDS, fusion AP per
+ * cabinet, patch cable per connection, NT per device and POP per installation.
+ * Soplado is the exception in the current catalog — it is explicitly priced by
+ * linear metre, so its submitted `details.meters` is the billable quantity.
+ * Alta remains multi-line and carries explicit quantities in
+ * `reported_service_items`.
+ */
+function derivePrimaryBillingQuantity(
+  workType: string,
+  answers: Record<string, unknown>,
+): { quantity: number | null; error: string | null } {
+  if (
+    workType === 'fusion_ap' ||
+    workType === 'fusion_dp' ||
+    workType === 'nt_installation' ||
+    workType === 'patchkabel' ||
+    workType === 'pop'
+  ) {
+    return { quantity: 1, error: null }
+  }
+  if (workType !== 'soplado') {
+    return {
+      quantity: null,
+      error: `Keine Abrechnungsregel für Auftragstyp ${workType} vorhanden — interne Zertifizierung abgebrochen.`,
+    }
+  }
+
+  const details = answers.details
+  const meters =
+    details && typeof details === 'object'
+      ? positiveBillingQuantity((details as Record<string, unknown>).meters)
+      : null
+  if (meters === null) {
+    return {
+      quantity: null,
+      error:
+        'Keine gültige Abrechnungsmenge: In der Rückmeldung fehlen die geleisteten Meter (Wert muss größer als 0 sein).',
+    }
+  }
+  return { quantity: meters, error: null }
+}
+
+/**
+ * Create immutable billing snapshots immediately before internal
+ * certification. Existing lines win unchanged: retrying certification must
+ * neither duplicate them nor silently apply a newer catalog price.
+ */
+export async function materializeBillingLinesForInternalCertification(
+  workOrderId: string,
+): Promise<BillingMaterializationResult> {
+  const { data: order, error: orderError } = await supabase
+    .from('work_orders')
+    .select('work_type, service_item_id')
+    .eq('id', workOrderId)
+    .single()
+  if (orderError || !order) {
+    return { created: false, error: 'Auftrag nicht gefunden — Abrechnung nicht möglich.' }
+  }
+  if (!order.service_item_id) {
+    return {
+      created: false,
+      error: 'Kein Service-Posten am Auftrag hinterlegt — interne Zertifizierung abgebrochen.',
+    }
+  }
+
+  const { data: existing, error: existingError } = await supabase
+    .from('work_order_billing_lines')
+    .select('id')
+    .eq('work_order_id', workOrderId)
+  if (existingError) return { created: false, error: existingError.message }
+  if ((existing ?? []).length > 0) return { created: false, error: null }
+
+  const { data: report, error: reportError } = await fetchCaptureReport(workOrderId)
+  if (reportError) return { created: false, error: reportError }
+  if (!report) {
+    return {
+      created: false,
+      error: 'Keine Rückmeldung vorhanden — Abrechnungsmenge kann nicht ermittelt werden.',
+    }
+  }
+
+  let reportedItems: ReportedServiceItemDraft[]
+  if (order.work_type === 'alta') {
+    const rawReportedItems = report.reported_service_items
+    reportedItems = normalizeReportedServiceItems(rawReportedItems)
+    if (!Array.isArray(rawReportedItems) || reportedItems.length === 0) {
+      return {
+        created: false,
+        error: 'Keine geleisteten Service-Posten für diese Alta-Rückmeldung vorhanden.',
+      }
+    }
+    if (reportedItems.length !== rawReportedItems.length) {
+      return {
+        created: false,
+        error:
+          'Ein oder mehrere gemeldete Service-Posten haben keine gültige Menge (Wert muss größer als 0 sein).',
+      }
+    }
+  } else {
+    const quantityResult = derivePrimaryBillingQuantity(
+      order.work_type,
+      report.answers as Record<string, unknown>,
+    )
+    if (quantityResult.error || quantityResult.quantity === null) {
+      return { created: false, error: quantityResult.error }
+    }
+    reportedItems = [
+      {
+        service_item_id: order.service_item_id,
+        qty: quantityResult.quantity,
+        notes: null,
+      },
+    ]
+  }
+
+  const serviceItemIds = [...new Set(reportedItems.map((item) => item.service_item_id))]
+  const { data: catalogRows, error: catalogError } = await supabase
+    .from('service_items')
+    .select('id, code, unit_price, unit_price_external')
+    .in('id', serviceItemIds)
+  if (catalogError) return { created: false, error: catalogError.message }
+
+  const catalogById = new Map(
+    (catalogRows ?? []).map((item) => [
+      item.id,
+      item as {
+        id: string
+        code: string
+        unit_price: number | null
+        unit_price_external: number | null
+      },
+    ]),
+  )
+  const drafts: BillingLineDraft[] = []
+  for (const reportedItem of reportedItems) {
+    const catalogItem = catalogById.get(reportedItem.service_item_id)
+    if (!catalogItem) {
+      return {
+        created: false,
+        error: `Gemeldeter Service-Posten ${reportedItem.service_item_id} wurde im Katalog nicht gefunden.`,
+      }
+    }
+    if (catalogItem.unit_price == null) {
+      return {
+        created: false,
+        error: `Service-Posten ${catalogItem.code} hat keinen internen Preis — interne Zertifizierung abgebrochen.`,
+      }
+    }
+    drafts.push({
+      service_item_id: reportedItem.service_item_id,
+      qty: reportedItem.qty,
+      unit_price_snapshot: Number(catalogItem.unit_price),
+      unit_price_external_snapshot: catalogItem.unit_price_external,
+      notes: reportedItem.notes ?? null,
+    })
+  }
+
+  const { error: insertError } = await supabase.from('work_order_billing_lines').insert(
+    drafts.map((draft) => ({
+      work_order_id: workOrderId,
+      service_item_id: draft.service_item_id,
+      qty: draft.qty,
+      unit_price_snapshot: draft.unit_price_snapshot,
+      unit_price_external_snapshot: draft.unit_price_external_snapshot ?? null,
+      notes: draft.notes ?? null,
+    })) as never,
+  )
+  if (insertError) return { created: false, error: insertError.message }
+
+  return { created: true, error: null }
+}
+
 export async function fetchBillingLines(workOrderId: string) {
   const { data, error } = await supabase
     .from('work_order_billing_lines')
@@ -1349,10 +1543,7 @@ export async function upsertBillingLines(workOrderId: string, drafts: BillingLin
 
   const toDelete = [...existingIds].filter((id) => !draftIds.has(id))
   if (toDelete.length > 0) {
-    const { error } = await supabase
-      .from('work_order_billing_lines')
-      .delete()
-      .in('id', toDelete)
+    const { error } = await supabase.from('work_order_billing_lines').delete().in('id', toDelete)
     if (error) return { error: error.message }
   }
 

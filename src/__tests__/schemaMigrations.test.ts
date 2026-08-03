@@ -19,18 +19,16 @@ const supabaseConfig = readFileSync(
   join(process.cwd(), 'supabase', 'config.toml'),
   'utf8',
 ).toLowerCase()
-const migration022Sql = readFileSync(
-  join(migrationsDir, '022_service_item_categories.sql'),
-  'utf8',
-)
+const migration022Sql = readFileSync(join(migrationsDir, '022_service_item_categories.sql'), 'utf8')
 const migration024Sql = readFileSync(
   join(migrationsDir, '024_employee_teams.sql'),
   'utf8',
 ).toLowerCase()
-const migration025Sql = readFileSync(
-  join(migrationsDir, '025_work_order_source.sql'),
+const migration025Sql = readFileSync(join(migrationsDir, '025_work_order_source.sql'), 'utf8')
+const migration014Sql = readFileSync(
+  join(migrationsDir, '014_lock_down_service_pricing.sql'),
   'utf8',
-)
+).toLowerCase()
 const migration064Sql = readFileSync(
   join(migrationsDir, '064_work_order_site_reference.sql'),
   'utf8',
@@ -181,8 +179,10 @@ describe('database migrations cover billing workflow schema', () => {
     expect(migrationSql).toContain('migration 014')
     expect(migrationSql).toContain('drop policy if exists "si_read_active"')
     expect(migrationSql).toContain('create view public.service_items_public')
-    expect(migrationSql).not.toContain('si.unit_price')
-    expect(migrationSql).not.toContain('si.unit_price_external')
+    const publicCatalogView =
+      migration014Sql.split('create view public.service_items_public')[1]?.split(';')[0] ?? ''
+    expect(publicCatalogView).not.toContain('si.unit_price')
+    expect(publicCatalogView).not.toContain('si.unit_price_external')
     expect(migrationSql).toContain('drop policy if exists "wobl_assignee_select"')
     expect(migrationSql).toMatch(
       /create\s+policy\s+"wobl_admin_all"[\s\S]*with check \(public\.get_user_role\(\) = 'admin'\)/,
@@ -262,9 +262,7 @@ describe('database migrations cover billing workflow schema', () => {
 
   it('adds NE4 bridge provenance columns to work_orders', () => {
     expect(migration025Sql).toContain('Depends on: 024_employee_teams.sql')
-    expect(migration025Sql).toMatch(
-      /source TEXT NOT NULL DEFAULT 'lumen'/,
-    )
+    expect(migration025Sql).toMatch(/source TEXT NOT NULL DEFAULT 'lumen'/)
     expect(migration025Sql).toContain('external_metadata JSONB')
   })
 
@@ -301,9 +299,15 @@ describe('database migrations cover billing workflow schema', () => {
     expect(migrationSql).toMatch(
       /create\s+or\s+replace\s+function\s+public\.user_has_permission\(uid\s+uuid,\s*perm\s+text\)/,
     )
-    expect(migrationSql).toMatch(/create\s+or\s+replace\s+function\s+public\.has_permission\(perm\s+text\)/)
-    expect(migrationSql).toMatch(/create\s+or\s+replace\s+function\s+public\.get_my_permissions\(\)/)
-    expect(migrationSql).toMatch(/create\s+or\s+replace\s+function\s+public\.sync_permissions\(perms\s+jsonb\)/)
+    expect(migrationSql).toMatch(
+      /create\s+or\s+replace\s+function\s+public\.has_permission\(perm\s+text\)/,
+    )
+    expect(migrationSql).toMatch(
+      /create\s+or\s+replace\s+function\s+public\.get_my_permissions\(\)/,
+    )
+    expect(migrationSql).toMatch(
+      /create\s+or\s+replace\s+function\s+public\.sync_permissions\(perms\s+jsonb\)/,
+    )
     // system roles seeded and protected; profiles.role stays synced into user_roles
     expect(migrationSql).toContain('roles_protect_system')
     expect(migrationSql).toContain('role_permissions_protect_admin')
@@ -328,8 +332,12 @@ describe('database migrations cover billing workflow schema', () => {
     expect(migrationSql).toContain('create table public.project_assignments')
     // aptitude engine mirrors src/services/complianceRequirementEngine.ts
     expect(migrationSql).toMatch(/create\s+or\s+replace\s+function\s+public\.country_origin_bucket/)
-    expect(migrationSql).toMatch(/create\s+or\s+replace\s+function\s+public\.applicable_requirement_ids/)
-    expect(migrationSql).toMatch(/create\s+or\s+replace\s+function\s+public\.compute_entity_aptitude/)
+    expect(migrationSql).toMatch(
+      /create\s+or\s+replace\s+function\s+public\.applicable_requirement_ids/,
+    )
+    expect(migrationSql).toMatch(
+      /create\s+or\s+replace\s+function\s+public\.compute_entity_aptitude/,
+    )
     expect(migrationSql).toContain('project_assignments_enforce_aptitude')
     expect(migrationSql).toContain('run_compliance_expiry_sweep')
     // JSONB containment drives conditional requirements (hires_workers etc.)
@@ -543,12 +551,8 @@ describe('database migrations cover billing workflow schema', () => {
       /if\s+conflicting_projects\s+is\s+not\s+null\s+then[\s\S]*raise\s+exception[\s\S]*conflicting project/,
     )
     expect(sql).toMatch(/unresolved project[\s\S]*raise\s+notice/)
-    expect(sql).toMatch(
-      /revoke\s+select\s+on\s+public\.clients\s+from\s+anon,\s*authenticated/,
-    )
-    expect(sql).toMatch(
-      /has_permission\('projects\.view'\)[\s\S]*select\s+client\.notes/,
-    )
+    expect(sql).toMatch(/revoke\s+select\s+on\s+public\.clients\s+from\s+anon,\s*authenticated/)
+    expect(sql).toMatch(/has_permission\('projects\.view'\)[\s\S]*select\s+client\.notes/)
     expect(sql).toContain('backfilled project client ownership rows: %')
   })
 
@@ -697,7 +701,8 @@ describe('migration 073 scopes work order access to the single assignee', () => 
 
   it('adds the roster as documentation, never as an access key', () => {
     expect(sql).toContain('add column if not exists assigned_team_roster jsonb')
-    const comment = sql.split('comment on column public.work_orders.assigned_team_roster is')[1] ?? ''
+    const comment =
+      sql.split('comment on column public.work_orders.assigned_team_roster is')[1] ?? ''
     expect(comment).toContain('documentación, nunca control de acceso')
     // The roster is rewritten on every assignment (a reassignment is one), so the
     // comment must not claim it is immutable — assignWorkOrder would contradict it.
@@ -725,9 +730,7 @@ describe('migration 073 scopes work order access to the single assignee', () => 
   })
 
   it('requires a responsible technician wherever a team is set, without killing history', () => {
-    expect(sql).toMatch(
-      /add constraint work_orders_team_requires_technician[\s\S]*not valid/,
-    )
+    expect(sql).toMatch(/add constraint work_orders_team_requires_technician[\s\S]*not valid/)
     // The historical rows that violate it are reported, not silently rewritten.
     expect(sql).toContain('raise notice')
     expect(sql).toContain('work_orders de lumen con equipo y sin responsable')
@@ -742,8 +745,7 @@ describe('migration 073 scopes work order access to the single assignee', () => 
     expect(sql).toContain(
       "check (source <> 'lumen' or assigned_team is null or assigned_technician is not null)",
     )
-    const comment =
-      sql.split('comment on constraint work_orders_team_requires_technician')[1] ?? ''
+    const comment = sql.split('comment on constraint work_orders_team_requires_technician')[1] ?? ''
     expect(comment).toContain('source <> lumen')
     expect(comment).toContain('ne4')
     // The cross-repo follow-up is written down where the next reader will find it.
@@ -848,9 +850,7 @@ describe('rls_policies.sql stays coherent with migration 073', () => {
   it('leaves the migration-035 permission policies alone', () => {
     // Naming them in a comment is fine — dropping or recreating them is not.
     for (const policy of ['wo_documents_select_perm', 'wo_documents_write_perm']) {
-      expect(rlsPoliciesSql, policy).not.toMatch(
-        new RegExp(`(drop|create) policy[^\\n]*${policy}`),
-      )
+      expect(rlsPoliciesSql, policy).not.toMatch(new RegExp(`(drop|create) policy[^\\n]*${policy}`))
     }
   })
 })
@@ -902,7 +902,9 @@ describe('migration 074 removes the phantom column from the routing trigger', ()
   // with a hotfix.
   it('changes nothing else in the function', () => {
     const fnOf = (text: string) => {
-      const start = text.indexOf('CREATE OR REPLACE FUNCTION public.validate_client_first_work_order()')
+      const start = text.indexOf(
+        'CREATE OR REPLACE FUNCTION public.validate_client_first_work_order()',
+      )
       return text.slice(start, text.indexOf('\n$$;', start))
     }
     const original = fnOf(readRequiredMigration('068_client_first_work_order_routing.sql'))
@@ -912,5 +914,37 @@ describe('migration 074 removes the phantom column from the routing trigger', ()
       .filter((l) => !fixed.split('\n').includes(l))
       .map((l) => l.trim())
     expect(dropped).toEqual(['AND NEW.is_direct_order IS NOT DISTINCT FROM OLD.is_direct_order'])
+  })
+})
+
+describe('migration 077 repairs certified Soplado billing snapshots safely', () => {
+  const raw = readRequiredMigration('077_repair_certified_soplado_billing_lines.sql')
+  const sql = raw.toLowerCase()
+
+  it('declares its dependencies and remains transactional', () => {
+    expect(raw).toContain(
+      '-- Depends on: 076_capture_plan_soplado_ra_v4.sql, 018_fix_billing_external_price_snapshot.sql',
+    )
+    expect(sql).toContain('begin;')
+    expect(sql).toContain('commit;')
+  })
+
+  it('derives quantity and prices instead of hardcoding production amounts', () => {
+    expect(sql).toContain("cr.answers #>> '{details,meters}'")
+    expect(sql).toContain('si.unit_price')
+    expect(sql).toContain('si.unit_price_external')
+    expect(sql).not.toContain('595.82')
+    expect(sql).not.toContain('704.94')
+    expect(sql).not.toContain('961')
+    expect(sql).not.toContain('1137')
+  })
+
+  it('touches only internally certified Soplado orders that still have zero lines', () => {
+    expect(sql).toContain("wo.work_type = 'soplado'")
+    expect(sql).toContain("ca.cert_type = 'internal'")
+    expect(sql).toMatch(
+      /not exists \([\s\S]*from public\.work_order_billing_lines existing[\s\S]*existing\.work_order_id = wo\.id/,
+    )
+    expect(sql).toContain('where qty > 0')
   })
 })

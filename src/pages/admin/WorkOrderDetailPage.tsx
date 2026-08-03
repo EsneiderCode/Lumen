@@ -18,9 +18,6 @@ import {
   fetchWorkOrder,
   fetchWorkOrderPhotos,
   fetchStateHistory,
-  fetchBillingLines,
-  buildBillingDraftsFromReportedItems,
-  normalizeReportedServiceItems,
   transitionWorkOrderStatus,
   certifyWorkOrderInternal,
   acceptWorkOrderClient,
@@ -29,7 +26,6 @@ import {
   generateDataHash,
   insertCertificationAudit,
   fetchCertificationAudits,
-  upsertBillingLines,
   getCollaboratorType,
   parseAssignedTeamRoster,
   type CollaboratorType,
@@ -46,7 +42,6 @@ import {
   notifyOrderReturnedForCorrection,
   notifyOrderStatusChanged,
 } from '@/services/notificationService'
-import { fetchServiceItems } from '@/services/serviceItemService'
 import { InvoicePreviewModal } from '@/components/admin/InvoicePreviewModal'
 import { fetchProfileCompliance, type ProfileComplianceResult } from '@/services/complianceService'
 import { fetchCapturePlanForOrder, fetchCaptureReport } from '@/services/capturePlanService'
@@ -196,7 +191,6 @@ export function WorkOrderDetailPage() {
   // technical data below and the certificate PDF (phase 7).
   const [capturePlan, setCapturePlan] = useState<CapturePlan | null>(null)
   const [captureAnswers, setCaptureAnswers] = useState<CaptureAnswers>({})
-  const [reportedServiceItems, setReportedServiceItems] = useState<unknown>([])
   const [selectedPointId, setSelectedPointId] = useState<string | null>(null)
   const [certAudits, setCertAudits] = useState<
     Array<{
@@ -338,7 +332,6 @@ export function WorkOrderDetailPage() {
           ])
           setCapturePlan(plan)
           setCaptureAnswers(report?.answers ?? {})
-          setReportedServiceItems(report?.reported_service_items ?? [])
         } catch {
           setError('Verbindungsfehler. Bitte Seite neu laden.')
         } finally {
@@ -451,61 +444,6 @@ export function WorkOrderDetailPage() {
 
   async function handleCertify() {
     if (!order || !user) return
-    // Prices belong to admin certification, not to the service order visible
-    // in the field. Before sealing an Alta order, refresh price snapshots from
-    // the admin-only billing/catalog query so technicians never need to carry
-    // or see amounts.
-    if (order.work_type === 'alta') {
-      const reportedItems = normalizeReportedServiceItems(reportedServiceItems)
-      let drafts = []
-
-      if (reportedItems.length > 0) {
-        const { data: catalog, error: catalogErr } = await fetchServiceItems({
-          includeInactive: true,
-          includePrices: true,
-        })
-        if (catalogErr) {
-          setError(catalogErr)
-          return
-        }
-
-        drafts = buildBillingDraftsFromReportedItems(reportedItems, catalog)
-        if (drafts.length !== reportedItems.length) {
-          setError(
-            'Ein oder mehrere gemeldete Service-Posten fehlen im Katalog oder haben keinen internen Preis.',
-          )
-          return
-        }
-      } else {
-        // Backward compatibility for Alta orders reported before migration 015.
-        const { data: lines, error: lineErr } = await fetchBillingLines(order.id)
-        if (lineErr) {
-          setError(lineErr)
-          return
-        }
-        if (lines.length === 0) {
-          setError('Keine geleisteten Posten für diese Alta-Rückmeldung vorhanden.')
-          return
-        }
-        drafts = lines.map((line) => ({
-          id: line.id,
-          service_item_id: line.service_item_id,
-          qty: Number(line.qty),
-          unit_price_snapshot: Number(
-            line.service_items?.unit_price ?? line.unit_price_snapshot ?? 0,
-          ),
-          unit_price_external_snapshot:
-            line.service_items?.unit_price_external ?? line.unit_price_external_snapshot ?? null,
-          notes: line.notes,
-        }))
-      }
-
-      const { error: priceErr } = await upsertBillingLines(order.id, drafts)
-      if (priceErr) {
-        setError(priceErr)
-        return
-      }
-    }
     // LUM-024: generate audit hash before transitioning.
     // Include sorted photo paths so swapping a photo post-certification
     // invalidates the hash — photos are load-bearing evidence, they must
@@ -711,7 +649,9 @@ export function WorkOrderDetailPage() {
               onClick={() => navigate(`/admin/orders/${id}/assign`)}
               className="rounded-s border border-accent/50 px-3 py-1.5 text-xs font-medium text-accent hover:bg-accent/10 transition-colors"
             >
-              {order.status === 'assigned' ? t('workOrder.actionReassign') : t('workOrder.actionAssign')}
+              {order.status === 'assigned'
+                ? t('workOrder.actionReassign')
+                : t('workOrder.actionAssign')}
             </button>
           )}
           <button
@@ -1131,11 +1071,7 @@ export function WorkOrderDetailPage() {
                     key={member.profile_id}
                     className="flex items-center justify-between gap-2 border-b border-line py-1 last:border-b-0"
                   >
-                    <span
-                      className={
-                        member.is_responsible ? 'font-medium text-fg-1' : 'text-fg-2'
-                      }
-                    >
+                    <span className={member.is_responsible ? 'font-medium text-fg-1' : 'text-fg-2'}>
                       {member.full_name || member.profile_id}
                     </span>
                     <span
@@ -1186,14 +1122,18 @@ export function WorkOrderDetailPage() {
         const meta = ext.external_metadata
         return (
           <div className="rounded-l border border-info/40 bg-bg-1 p-5">
-            <h3 className="mb-3 font-display text-sm font-semibold text-fg-1">{t('workOrder.ne4Panel.title')}</h3>
+            <h3 className="mb-3 font-display text-sm font-semibold text-fg-1">
+              {t('workOrder.ne4Panel.title')}
+            </h3>
             <dl className="grid grid-cols-2 gap-2 text-sm">
-              {Object.entries(meta).filter(([, v]) => v != null && v !== '').map(([k, v]) => (
-                <div key={k}>
-                  <dt className="text-xs text-fg-3 font-mono">{k}</dt>
-                  <dd className="text-fg-1">{Array.isArray(v) ? v.join(', ') : String(v)}</dd>
-                </div>
-              ))}
+              {Object.entries(meta)
+                .filter(([, v]) => v != null && v !== '')
+                .map(([k, v]) => (
+                  <div key={k}>
+                    <dt className="text-xs text-fg-3 font-mono">{k}</dt>
+                    <dd className="text-fg-1">{Array.isArray(v) ? v.join(', ') : String(v)}</dd>
+                  </div>
+                ))}
             </dl>
           </div>
         )
@@ -1285,7 +1225,9 @@ export function WorkOrderDetailPage() {
         <div className="rounded-l border border-line bg-bg-1 p-5">
           <div className="mb-4 flex items-start justify-between gap-3">
             <div>
-              <h3 className="font-display text-sm font-semibold text-fg-1">{t('map.trenches.title')}</h3>
+              <h3 className="font-display text-sm font-semibold text-fg-1">
+                {t('map.trenches.title')}
+              </h3>
               <p className="mt-0.5 text-xs text-fg-2">
                 {t('map.trenches.subtitle', { count: captureMap.points.length })}
               </p>
@@ -1585,9 +1527,7 @@ export function WorkOrderDetailPage() {
                   </select>
                 </div>
                 <div className="mb-2">
-                  <label className="mb-1.5 block text-xs font-medium text-fg-2">
-                    Beschreibung
-                  </label>
+                  <label className="mb-1.5 block text-xs font-medium text-fg-2">Beschreibung</label>
                   <textarea
                     value={modal.inputValue}
                     onChange={(e) => setModal((m) => ({ ...m, inputValue: e.target.value }))}
