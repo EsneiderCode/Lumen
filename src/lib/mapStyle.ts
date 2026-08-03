@@ -1,14 +1,26 @@
 // The NEXUS basemap style for MapLibre.
 //
-// TILES — free, no account, no key: OpenFreeMap (https://openfreemap.org),
-// OpenStreetMap data in the OpenMapTiles schema, explicitly free for commercial
-// use with attribution. It is the only provider evaluated that costs nothing
-// recurring AND needs no signup: MapTiler's free tier caps loads and needs a
-// key, CARTO's free tier is non-commercial (HMR Nexus is a company), and
-// self-hosted Protomaps means uploading a ~1.5 GB extract before anything
-// renders. Everything here is driven by one URL, so switching provider later is
-// a single env var: VITE_MAP_TILES_URL (a TileJSON endpoint) — nothing else in
-// the app knows where tiles come from.
+// TILES — self-hosted. A single PMTiles archive in our own Supabase Storage
+// bucket, served straight to the browser over HTTP range requests. No API key,
+// no quota, no third-party host that can take the map down.
+//
+// That last point is the whole reason this file changed. The map used to read
+// from OpenFreeMap, which is free and unlimited but is run by one person on
+// donations and states plainly that it offers no SLA. When it is unreachable —
+// no signal, an ad blocker, a corporate DNS — every tile request fails and the
+// map renders as a flat coloured rectangle with the pins floating on it. That
+// happened, and nothing in the app said why (see NexusMap's error handling).
+//
+// Self-hosting sounded expensive and is not: `pmtiles extract` clips a bounding
+// box out of the 128 GB remote planet build over range requests, without
+// downloading it. The Roßdorf work area is 3.5 MB and takes 11 seconds. All the
+// project towns together are tens of megabytes. See scripts/build-basemap.sh.
+//
+// SCHEMA — Protomaps basemaps v4, NOT OpenMapTiles. The layer names and fields
+// are different (`roads` not `transportation`, `kind` not `class`), so this
+// style only works against a Protomaps archive: pointing VITE_MAP_TILES_URL at
+// an OpenMapTiles endpoint renders an empty map, which is exactly the failure
+// this file exists to avoid. Full schema: https://docs.protomaps.com/basemaps/layers
 //
 // COLORS — read from the live CSS custom properties, never hardcoded. That is
 // what keeps the basemap inside the design system and makes it follow the
@@ -18,15 +30,32 @@
 
 import type { StyleSpecification } from 'maplibre-gl'
 
-const TILE_JSON_URL = import.meta.env.VITE_MAP_TILES_URL || 'https://tiles.openfreemap.org/planet'
-const GLYPHS_URL =
-  import.meta.env.VITE_MAP_GLYPHS_URL || 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf'
+/**
+ * The basemap lives in the same Supabase project as everything else, so both
+ * URLs derive from the one credential the app already has. Each environment
+ * therefore gets its own bucket for free, and the explicit overrides remain the
+ * single switch for moving to another provider — the reason they exist.
+ */
+const BUCKET = 'basemap'
+const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL || '').replace(/\/+$/, '')
+const bucketUrl = supabaseUrl ? `${supabaseUrl}/storage/v1/object/public/${BUCKET}` : ''
 
-/** ODbL requires it, and OpenFreeMap asks for its own line next to it. */
+/**
+ * `pmtiles://` is resolved by the protocol NexusMap registers; MapLibre cannot
+ * read a PMTiles archive on its own.
+ */
+export const TILE_URL =
+  import.meta.env.VITE_MAP_TILES_URL || (bucketUrl ? `pmtiles://${bucketUrl}/de-zonas.pmtiles` : '')
+
+export const GLYPHS_URL =
+  import.meta.env.VITE_MAP_GLYPHS_URL ||
+  (bucketUrl ? `${bucketUrl}/fonts/{fontstack}/{range}.pbf` : '')
+
+/** ODbL requires it; Protomaps asks for its own line next to it. */
 export const MAP_ATTRIBUTION =
-  '<a href="https://openfreemap.org" target="_blank" rel="noreferrer">OpenFreeMap</a> · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a>'
+  '<a href="https://protomaps.com" target="_blank" rel="noreferrer">Protomaps</a> · © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a>'
 
-/** The only font stack OpenFreeMap serves glyphs for. */
+/** The only font stack we ship glyphs for. */
 const LABEL_FONT = ['Noto Sans Regular']
 
 /** Live value of a NEXUS token, with the dark-theme default as fallback. */
@@ -36,13 +65,8 @@ export function nexusToken(name: string, fallback: string): string {
   return value || fallback
 }
 
-/** Label text: German name first — this is a German field tool — then latin. */
-const NAME_FIELD = [
-  'coalesce',
-  ['get', 'name:de'],
-  ['get', 'name:latin'],
-  ['get', 'name'],
-] as unknown as string
+/** Label text: German name first — this is a German field tool — then the default. */
+const NAME_FIELD = ['coalesce', ['get', 'name:de'], ['get', 'name']] as unknown as string
 
 export function buildNexusMapStyle(): StyleSpecification {
   const bg0 = nexusToken('--color-bg-0', '#07080A')
@@ -58,51 +82,62 @@ export function buildNexusMapStyle(): StyleSpecification {
     version: 8,
     glyphs: GLYPHS_URL,
     sources: {
-      openmaptiles: {
+      protomaps: {
         type: 'vector',
-        url: TILE_JSON_URL,
+        url: TILE_URL,
         attribution: MAP_ATTRIBUTION,
       },
     },
     layers: [
       { id: 'background', type: 'background', paint: { 'background-color': bg0 } },
+      // Land. Drawn explicitly so a half-loaded archive still reads as a map
+      // rather than as the void the background layer would otherwise leave.
+      {
+        id: 'earth',
+        type: 'fill',
+        source: 'protomaps',
+        'source-layer': 'earth',
+        paint: { 'fill-color': bg0 },
+      },
       {
         id: 'landuse',
         type: 'fill',
-        source: 'openmaptiles',
+        source: 'protomaps',
         'source-layer': 'landuse',
-        filter: ['in', 'class', 'residential', 'commercial', 'industrial'],
+        filter: ['in', 'kind', 'residential', 'commercial', 'industrial', 'park', 'cemetery'],
         paint: { 'fill-color': bg1 },
       },
       {
         id: 'landcover',
         type: 'fill',
-        source: 'openmaptiles',
+        source: 'protomaps',
         'source-layer': 'landcover',
-        filter: ['in', 'class', 'wood', 'grass', 'farmland'],
+        filter: ['in', 'kind', 'forest', 'grassland', 'farmland', 'scrub'],
         paint: { 'fill-color': bg1 },
       },
       {
         id: 'water',
         type: 'fill',
-        source: 'openmaptiles',
+        source: 'protomaps',
         'source-layer': 'water',
         paint: { 'fill-color': bg2 },
       },
       {
         id: 'building',
         type: 'fill',
-        source: 'openmaptiles',
-        'source-layer': 'building',
+        source: 'protomaps',
+        'source-layer': 'buildings',
         minzoom: 14,
         paint: { 'fill-color': bg2, 'fill-outline-color': bg3 },
       },
+      // `minor_road` carries the residential streets a trench actually sits on,
+      // so it is the one road layer that must survive to the highest zooms.
       {
         id: 'road-minor',
         type: 'line',
-        source: 'openmaptiles',
-        'source-layer': 'transportation',
-        filter: ['in', 'class', 'minor', 'service', 'track', 'path'],
+        source: 'protomaps',
+        'source-layer': 'roads',
+        filter: ['in', 'kind', 'minor_road', 'path'],
         minzoom: 12,
         layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: {
@@ -113,9 +148,9 @@ export function buildNexusMapStyle(): StyleSpecification {
       {
         id: 'road-major',
         type: 'line',
-        source: 'openmaptiles',
-        'source-layer': 'transportation',
-        filter: ['in', 'class', 'primary', 'secondary', 'tertiary', 'trunk'],
+        source: 'protomaps',
+        'source-layer': 'roads',
+        filter: ['==', 'kind', 'major_road'],
         layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: {
           'line-color': fg4,
@@ -125,9 +160,9 @@ export function buildNexusMapStyle(): StyleSpecification {
       {
         id: 'road-motorway',
         type: 'line',
-        source: 'openmaptiles',
-        'source-layer': 'transportation',
-        filter: ['==', 'class', 'motorway'],
+        source: 'protomaps',
+        'source-layer': 'roads',
+        filter: ['==', 'kind', 'highway'],
         layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: {
           'line-color': fg3,
@@ -137,25 +172,25 @@ export function buildNexusMapStyle(): StyleSpecification {
       {
         id: 'railway',
         type: 'line',
-        source: 'openmaptiles',
-        'source-layer': 'transportation',
-        filter: ['==', 'class', 'rail'],
+        source: 'protomaps',
+        'source-layer': 'roads',
+        filter: ['==', 'kind', 'rail'],
         minzoom: 11,
         paint: { 'line-color': bg4, 'line-width': 1, 'line-dasharray': [3, 2] },
       },
       {
         id: 'boundary',
         type: 'line',
-        source: 'openmaptiles',
-        'source-layer': 'boundary',
-        filter: ['<=', 'admin_level', 4],
+        source: 'protomaps',
+        'source-layer': 'boundaries',
+        filter: ['in', 'kind', 'country', 'region'],
         paint: { 'line-color': fg4, 'line-width': 0.8, 'line-dasharray': [2, 2] },
       },
       {
         id: 'road-name',
         type: 'symbol',
-        source: 'openmaptiles',
-        'source-layer': 'transportation_name',
+        source: 'protomaps',
+        'source-layer': 'roads',
         minzoom: 14,
         layout: {
           'text-field': NAME_FIELD,
@@ -165,12 +200,15 @@ export function buildNexusMapStyle(): StyleSpecification {
         },
         paint: { 'text-color': fg3, 'text-halo-color': bg0, 'text-halo-width': 1.2 },
       },
+      // Towns and neighbourhoods. In this schema a city, a town and a village
+      // are all `locality`, told apart by `kind_detail` — which is why there is
+      // no list of settlement sizes to filter on here.
       {
         id: 'place-label',
         type: 'symbol',
-        source: 'openmaptiles',
-        'source-layer': 'place',
-        filter: ['in', 'class', 'city', 'town', 'village', 'suburb', 'neighbourhood'],
+        source: 'protomaps',
+        'source-layer': 'places',
+        filter: ['in', 'kind', 'locality', 'neighbourhood', 'macrohood'],
         layout: {
           'text-field': NAME_FIELD,
           'text-font': LABEL_FONT,

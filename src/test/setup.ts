@@ -1,5 +1,11 @@
 import '@testing-library/jest-dom'
 
+// The basemap URLs are derived from the Supabase URL at module load, so without
+// one the map style comes out with empty tile and glyph URLs — a real state
+// (NexusMap shows [KARTE OFFLINE] for it), but not the one worth asserting on.
+// Give the suite a project so it exercises the configured path.
+import.meta.env.VITE_SUPABASE_URL ||= 'https://test.supabase.co'
+
 // jsdom under newer Node does not expose window.localStorage unless the runner
 // is started with --localstorage-file. The demo store persists to localStorage,
 // so without it the demo persistence layer is never actually exercised (tests

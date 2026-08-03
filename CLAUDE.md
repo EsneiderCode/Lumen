@@ -41,6 +41,7 @@ The system is built around 7 core modules:
 - `npm run lint` / `npm run format`
 - `npm run preflight` — run typecheck, lint, and test
 - `npm run pre-pr` — run preflight and build
+- `npm run basemap:build` — rebuild and publish the self-hosted map basemap (see `scripts/build-basemap.sh`)
 - `npm run feature:start <branch>` — create a feature branch from `upstream/develop` with full pre-flight (see `scripts/start-feature.sh`)
 - `npm run feature:check` — pre-PR validation (see `scripts/check-pr-ready.sh`)
 
@@ -92,6 +93,23 @@ Run with `npm run dev:demo`. The Supabase client is replaced by an in-memory moc
 - **Limits**: the mock implements only what the existing app uses. If a query returns weird empty data, check `src/lib/demo/supabase-mock.ts` — extend the chain method or filter handling there.
 
 When adding a new feature that touches Supabase, **also extend the demo store** (fixtures + any new chain method) so Jarl can demo it without credentials. Mark the PR template's "Demo-mode coverage" checkbox.
+
+## Map basemap (self-hosted)
+
+The trench map does **not** use a third-party tile service. The basemap is a
+single PMTiles archive in the public `basemap` bucket of our own Supabase
+project, built by `npm run basemap:build`.
+
+- **Adding a work area**: add a bbox to `ZONES` in `scripts/build-basemap.sh`
+  and re-run it. Roßdorf + Höxter together are 6.1 MB; never ship all of Germany.
+- **Schema**: the style in `src/lib/mapStyle.ts` is written against the
+  **Protomaps basemaps v4** schema (`roads`/`kind`), not OpenMapTiles
+  (`transportation`/`class`). Pointing `VITE_MAP_TILES_URL` at an OpenMapTiles
+  endpoint renders a blank map until that file is remapped.
+- **Never let a tile failure be silent.** A basemap that does not load is
+  indistinguishable from an empty field: `NexusMap` listens on `map.on('error')`
+  and shows `[KARTE OFFLINE]` over the pins. That listener is the whole reason
+  the failure is diagnosable.
 
 ## Key Business Logic
 

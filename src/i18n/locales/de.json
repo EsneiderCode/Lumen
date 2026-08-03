@@ -1704,6 +1704,7 @@
   "map": {
     "label": "Karte",
     "loading": "[KARTE LÄDT]",
+    "offline": "[KARTE OFFLINE]",
     "trenches": {
       "title": "Karte der Gruben",
       "subtitle": "{{count}} verortete Punkte aus der Rückmeldung",
