@@ -160,13 +160,112 @@ vi.mock('@/lib/supabase', () => {
 })
 
 // Import after mock so the module picks up the mock
-import { fetchWorkOrder, fetchWorkOrders } from '@/services/workOrderService'
+import {
+  fetchWorkOrder,
+  fetchWorkOrders,
+  transitionWorkOrderStatus,
+  upsertWorkOrderDetail,
+} from '@/services/workOrderService'
 import { supabase } from '@/lib/supabase'
 
 const mockSupabase = supabase as unknown as Record<string, ReturnType<typeof vi.fn>>
 
 beforeEach(() => {
   vi.clearAllMocks()
+})
+
+describe('upsertWorkOrderDetail', () => {
+  it('updates atomically when a hidden existing row would make insert fail with 23505', async () => {
+    const upsert = vi.fn().mockResolvedValue({ data: null, error: null })
+    const insert = vi.fn().mockResolvedValue({
+      data: null,
+      error: { code: '23505', message: 'duplicate key value violates unique constraint' },
+    })
+
+    mockSupabase.from = vi.fn().mockReturnValue({
+      select: () => ({
+        eq: () => ({
+          maybeSingle: () => Promise.resolve({ data: null, error: null }),
+        }),
+      }),
+      insert,
+      upsert,
+    })
+
+    const result = await upsertWorkOrderDetail('wo_detail_soplado', 'work-order-1', {
+      meters: 120,
+      result: 'ok',
+    })
+
+    expect(result.error).toBeNull()
+    expect(upsert).toHaveBeenCalledWith(
+      { work_order_id: 'work-order-1', meters: 120, result: 'ok' },
+      { onConflict: 'work_order_id' },
+    )
+    expect(insert).not.toHaveBeenCalled()
+  })
+})
+
+describe('transitionWorkOrderStatus', () => {
+  it('returns the committed transition with a warning when state-history insertion fails', async () => {
+    const committedOrder = {
+      id: 'work-order-1',
+      status: 'in_progress',
+      client_id: 'client-1',
+    }
+    const historyError = {
+      code: '42501',
+      message: 'new row violates row-level security policy',
+    }
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+
+    mockSupabase.from = vi.fn((table: string) => {
+      if (table === 'work_order_state_history') {
+        return {
+          insert: vi.fn().mockResolvedValue({ data: null, error: historyError }),
+        }
+      }
+
+      return {
+        select: () => ({
+          eq: () => ({
+            single: () => Promise.resolve({
+              data: { status: 'assigned', client_id: 'client-1' },
+              error: null,
+            }),
+          }),
+        }),
+        update: () => ({
+          eq: () => ({
+            select: () => ({
+              single: () => Promise.resolve({ data: committedOrder, error: null }),
+            }),
+          }),
+        }),
+      }
+    })
+
+    const result = await transitionWorkOrderStatus(
+      'work-order-1',
+      'in_progress',
+      'technician-1',
+      undefined,
+      'technician',
+    )
+
+    expect(result).toMatchObject({
+      data: committedOrder,
+      error: null,
+      warning: historyError.message,
+      warningCode: historyError.code,
+      warningContext: 'state_history',
+    })
+    expect(consoleError).toHaveBeenCalledWith(
+      'Work-order status transition succeeded but state history insert failed',
+      expect.objectContaining({ workOrderId: 'work-order-1', code: '42501' }),
+    )
+    consoleError.mockRestore()
+  })
 })
 
 describe('fetchWorkOrder — error path', () => {

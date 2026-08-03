@@ -206,6 +206,7 @@
     "stateHistory": "Historial de estado",
     "notFound": "Orden no encontrada",
     "rueckmeldungPresent": "Rückmeldung recibida",
+    "stateHistoryWarning": "El estado de la orden se actualizó, pero no se pudo guardar la entrada del historial. Informá a coordinación.",
     "internallyCertified": "Certificada internamente",
     "invoiced": "Facturada",
     "orderRejected": "Orden rechazada",
@@ -380,7 +381,12 @@
       }
     },
     "errors": {
-      "notSendable": "No se puede enviar la Rückmeldung desde el estado «{{status}}»"
+      "notSendable": "No se puede enviar la Rückmeldung desde el estado «{{status}}»",
+      "duplicateData": "Ya existen datos modificados para esta orden. Recargá la página e intentá de nuevo.",
+      "invalidReference": "La orden o el perfil de usuario ya no son válidos. Recargá la página o contactá con coordinación.",
+      "permissionDenied": "No tenés permiso para guardar esta Rückmeldung. Iniciá sesión de nuevo o contactá con coordinación.",
+      "ambiguousResponse": "No se pudo cargar o confirmar la orden de forma inequívoca. Recargá la página y comprobá su estado actual.",
+      "saveFailed": "No se pudo guardar la Rückmeldung. Intentá de nuevo o contactá con coordinación."
     }
   },
   "certification": {

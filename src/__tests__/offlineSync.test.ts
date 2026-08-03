@@ -161,6 +161,33 @@ describe('draining the offline queue', () => {
     expect(await pendingSubmissions()).toHaveLength(0)
   })
 
+  it('dequeues a committed transition when only its state-history insert warns', async () => {
+    const consoleWarning = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    transitionWorkOrderStatus.mockImplementation(async (_id: string, status: string) => {
+      calls.push(`status:${status}`)
+      return {
+        error: null,
+        warning: 'state history rejected',
+        warningCode: '42501',
+      }
+    })
+    fetchWorkOrder.mockResolvedValue({
+      data: { status: 'rueckmeldung_pending' },
+      error: null,
+    })
+    await queueSubmission(WO_A)
+
+    const result = await syncOfflineQueue()
+
+    expect(result).toMatchObject({ submissionsSent: 1, submissionsFailed: 0, error: null })
+    expect(await pendingSubmissions()).toHaveLength(0)
+    expect(consoleWarning).toHaveBeenCalledWith(
+      'Offline transition committed without state history',
+      expect.objectContaining({ workOrderId: WO_A, code: '42501' }),
+    )
+    consoleWarning.mockRestore()
+  })
+
   // The technician shot the trench, the network was gone, and they closed the
   // app without sending. The photos are still evidence of the job.
   it('uploads photos of an order that was never sent', async () => {

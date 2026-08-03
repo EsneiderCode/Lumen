@@ -203,7 +203,7 @@ function attachRelations(
 
 interface BuilderState {
   table: keyof DemoStore
-  mode: 'select' | 'insert' | 'update' | 'delete'
+  mode: 'select' | 'insert' | 'upsert' | 'update' | 'delete'
   selectStr: string
   countMode: 'exact' | null
   filters: Filter[]
@@ -214,6 +214,7 @@ interface BuilderState {
   rangeTo: number | null
   limit: number | null
   payload: Row | Row[] | null
+  onConflict: string[]
 }
 
 function makeBuilder(table: keyof DemoStore): MockBuilder {
@@ -230,6 +231,7 @@ function makeBuilder(table: keyof DemoStore): MockBuilder {
     rangeTo: null,
     limit: null,
     payload: null,
+    onConflict: [],
   }
 
   const builder: MockBuilder = {
@@ -241,6 +243,12 @@ function makeBuilder(table: keyof DemoStore): MockBuilder {
     insert(rows: Row | Row[]) {
       state.mode = 'insert'
       state.payload = rows
+      return builder
+    },
+    upsert(rows: Row | Row[], opts?: { onConflict?: string }) {
+      state.mode = 'upsert'
+      state.payload = rows
+      state.onConflict = opts?.onConflict?.split(',').map((column) => column.trim()) ?? []
       return builder
     },
     update(payload: Row) {
@@ -322,6 +330,7 @@ function makeBuilder(table: keyof DemoStore): MockBuilder {
 interface MockBuilder {
   select: (cols?: string, opts?: { count?: 'exact' }) => MockBuilder
   insert: (rows: Row | Row[]) => MockBuilder
+  upsert: (rows: Row | Row[], opts?: { onConflict?: string }) => MockBuilder
   update: (payload: Row) => MockBuilder
   delete: () => MockBuilder
   eq: (col: string, val: unknown) => MockBuilder
@@ -416,6 +425,36 @@ async function execute(
     saveStore(store)
     if (kind === 'single') return { data: inserted[0] ?? null, error: null }
     return { data: inserted, error: null }
+  }
+
+  if (state.mode === 'upsert') {
+    const list = store[table] as unknown as Row[]
+    const rows = Array.isArray(state.payload) ? state.payload : [state.payload!]
+    const now = new Date().toISOString()
+    const upserted = rows.map((payload) => {
+      const existingIndex = state.onConflict.length === 0
+        ? -1
+        : list.findIndex((row) =>
+          state.onConflict.every((column) => row[column] === payload[column]),
+        )
+
+      if (existingIndex >= 0) {
+        list[existingIndex] = { ...list[existingIndex], ...payload, updated_at: now }
+        return list[existingIndex]
+      }
+
+      const inserted = {
+        ...payload,
+        id: payload.id ?? demoUuid(),
+        created_at: payload.created_at ?? now,
+        updated_at: payload.updated_at ?? now,
+      }
+      list.push(inserted)
+      return inserted
+    })
+    saveStore(store)
+    if (kind === 'single') return { data: upserted[0] ?? null, error: null }
+    return { data: upserted, error: null }
   }
 
   if (state.mode === 'update') {

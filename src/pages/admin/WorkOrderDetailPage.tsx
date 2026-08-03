@@ -361,7 +361,7 @@ export function WorkOrderDetailPage() {
     if (!id || !user || !order) return
     setIsTransitioning(true)
     setError(null)
-    const { data: updated, error: err } = await transitionWorkOrderStatus(
+    const { data: updated, error: err, warningContext } = await transitionWorkOrderStatus(
       id,
       toStatus,
       user.id,
@@ -373,6 +373,7 @@ export function WorkOrderDetailPage() {
     } else {
       setOrder((prev) => (prev ? { ...prev, status: updated!.status } : prev))
       await refreshLifecycleEvidence(id)
+      if (warningContext === 'state_history') window.alert(t('workOrders.stateHistoryWarning'))
       setModal({ type: null, inputValue: '', categoryValue: '' })
       // Skip 'returned' — notifyOrderReturnedForCorrection is called at the call site
       const orderUrl = `${window.location.origin}/admin/orders/${id}`

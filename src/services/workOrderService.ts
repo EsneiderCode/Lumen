@@ -658,28 +658,28 @@ export function workTypeToDetailTable(workType: WorkType): DetailTable {
   return map[workType]
 }
 
+export interface WorkOrderDetailMutationResult {
+  error: string | null
+  errorCode: string | null
+  errorContext: 'detail_upsert' | null
+}
+
 export async function upsertWorkOrderDetail(
   table: DetailTable,
   workOrderId: string,
   detail: Record<string, unknown>,
-) {
-  const { data: existing } = await supabase
+): Promise<WorkOrderDetailMutationResult> {
+  const { error } = await supabase
     .from(table as 'wo_detail_soplado')
-    .select('id')
-    .eq('work_order_id', workOrderId)
-    .maybeSingle()
+    .upsert(
+      { ...detail, work_order_id: workOrderId } as Database['public']['Tables']['wo_detail_soplado']['Insert'],
+      { onConflict: 'work_order_id' },
+    )
 
-  if (existing?.id) {
-    const { error } = await supabase
-      .from(table as 'wo_detail_soplado')
-      .update(detail as Database['public']['Tables']['wo_detail_soplado']['Update'])
-      .eq('id', existing.id)
-    return { error: error?.message ?? null }
-  } else {
-    const { error } = await supabase
-      .from(table as 'wo_detail_soplado')
-      .insert({ ...detail, work_order_id: workOrderId } as Database['public']['Tables']['wo_detail_soplado']['Insert'])
-    return { error: error?.message ?? null }
+  return {
+    error: error?.message ?? null,
+    errorCode: error?.code ?? null,
+    errorContext: error ? 'detail_upsert' : null,
   }
 }
 
@@ -741,18 +741,54 @@ export async function fetchMyWorkOrders(
   }
 }
 
+type WorkOrderTransitionErrorContext =
+  | 'status_read'
+  | 'transition_validation'
+  | 'transition_prerequisite'
+  | 'status_update'
+
+export interface WorkOrderTransitionResult {
+  data: WorkOrderRow | null
+  error: string | null
+  errorCode: string | null
+  errorContext: WorkOrderTransitionErrorContext | null
+  warning: string | null
+  warningCode: string | null
+  warningContext: 'state_history' | null
+}
+
+function transitionFailure(
+  message: string,
+  code: string | null,
+  context: WorkOrderTransitionErrorContext,
+): WorkOrderTransitionResult {
+  return {
+    data: null,
+    error: message,
+    errorCode: code,
+    errorContext: context,
+    warning: null,
+    warningCode: null,
+    warningContext: null,
+  }
+}
+
 export async function transitionWorkOrderStatus(
   id: string,
   toStatus: WorkOrderStatus,
   changedBy: string,
   notes?: string,
   userRole?: UserRole,
-) {
-  const { data: current } = await supabase
+): Promise<WorkOrderTransitionResult> {
+  const { data: current, error: currentError } = await supabase
     .from('work_orders')
     .select('status, client_id')
     .eq('id', id)
     .single()
+
+  if (currentError) {
+    return transitionFailure(currentError.message, currentError.code, 'status_read')
+  }
 
   const fromStatus = current?.status ?? null
   const isDirectOrder = current ? isDirectWorkOrder(current) : false
@@ -764,11 +800,11 @@ export async function transitionWorkOrderStatus(
       userRole,
       isDirectOrder,
     )
-    if (validationError) return { data: null, error: validationError }
+    if (validationError) return transitionFailure(validationError, null, 'transition_validation')
   }
 
   const prereqError = await validateTransitionPrerequisites(id, toStatus)
-  if (prereqError) return { data: null, error: prereqError }
+  if (prereqError) return transitionFailure(prereqError, null, 'transition_prerequisite')
 
   const { data, error } = await supabase
     .from('work_orders')
@@ -777,9 +813,9 @@ export async function transitionWorkOrderStatus(
     .select()
     .single()
 
-  if (error) return { data: null, error: error.message }
+  if (error) return transitionFailure(error.message, error.code, 'status_update')
 
-  await supabase.from('work_order_state_history').insert({
+  const { error: historyError } = await supabase.from('work_order_state_history').insert({
     work_order_id: id,
     from_status: fromStatus,
     to_status: toStatus,
@@ -787,7 +823,24 @@ export async function transitionWorkOrderStatus(
     notes: notes ?? null,
   })
 
-  return { data, error: null }
+  if (historyError) {
+    console.error('Work-order status transition succeeded but state history insert failed', {
+      workOrderId: id,
+      toStatus,
+      code: historyError.code,
+      message: historyError.message,
+    })
+  }
+
+  return {
+    data,
+    error: null,
+    errorCode: null,
+    errorContext: null,
+    warning: historyError?.message ?? null,
+    warningCode: historyError?.code ?? null,
+    warningContext: historyError ? 'state_history' : null,
+  }
 }
 
 interface LifecycleRpcArgs {
