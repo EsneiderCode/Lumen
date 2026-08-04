@@ -379,6 +379,7 @@ interface PrereqScenario {
     work_type: string
     client_id: string | null
     capture_plan_key?: string | null
+    service_item_id?: string | null
   } | null
   detail?: Record<string, unknown> | null
   photoTypes?: string[]
@@ -390,6 +391,11 @@ interface PrereqScenario {
     plan_key: string
     plan_version: number
     answers: Record<string, unknown>
+    reported_service_items?: Array<{
+      service_item_id: string
+      qty: number
+      notes?: string | null
+    }>
   } | null
   /** Plans reachable in the catalog; absent keys resolve to the compiled defaults. */
   plans?: CapturePlan[]
@@ -459,6 +465,30 @@ function setupSupabaseFor(scenarios: PrereqScenario) {
       return {
         select: () => ({
           eq: () => Promise.resolve({ data: photos, error: null }),
+        }),
+      }
+    }
+    if (table === 'work_order_billing_lines') {
+      return {
+        select: () => ({
+          eq: () => Promise.resolve({ data: [], error: null }),
+        }),
+        insert: () => Promise.resolve({ data: null, error: null }),
+      }
+    }
+    if (table === 'service_items') {
+      return {
+        select: () => ({
+          in: (_column: string, ids: string[]) =>
+            Promise.resolve({
+              data: ids.map((id) => ({
+                id,
+                code: 'ALT-TEST',
+                unit_price: 100,
+                unit_price_external: 70,
+              })),
+              error: null,
+            }),
         }),
       }
     }
@@ -547,7 +577,11 @@ describe('validateTransitionPrerequisites — capture plan gate', () => {
     setupSupabaseFor({
       order: { work_type: 'soplado', client_id: 'client-1', capture_plan_key: 'soplado_ra' },
       plans: [SOPLADO_RA_PLAN],
-      report: { plan_key: 'soplado_ra', plan_version: SOPLADO_RA_PLAN.version, answers: SOPLADO_RA_ANSWERS },
+      report: {
+        plan_key: 'soplado_ra',
+        plan_version: SOPLADO_RA_PLAN.version,
+        answers: SOPLADO_RA_ANSWERS,
+      },
       photos: SOPLADO_RA_PHOTOS,
     })
     expect(await validateTransitionPrerequisites('id-1', 'internally_certified')).toBeNull()
@@ -557,7 +591,11 @@ describe('validateTransitionPrerequisites — capture plan gate', () => {
     setupSupabaseFor({
       order: { work_type: 'soplado', client_id: 'client-1', capture_plan_key: 'soplado_ra' },
       plans: [SOPLADO_RA_PLAN],
-      report: { plan_key: 'soplado_ra', plan_version: SOPLADO_RA_PLAN.version, answers: SOPLADO_RA_ANSWERS },
+      report: {
+        plan_key: 'soplado_ra',
+        plan_version: SOPLADO_RA_PLAN.version,
+        answers: SOPLADO_RA_ANSWERS,
+      },
       photos: SOPLADO_RA_PHOTOS.slice(0, 3),
     })
     const result = await validateTransitionPrerequisites('id-1', 'internally_certified')
@@ -791,8 +829,17 @@ describe('single-order lifecycle RPC adapters', () => {
 
   it('certifies internally through the atomic internal certification RPC', async () => {
     setupSupabaseFor({
-      order: { work_type: 'alta', client_id: 'client-1' },
-      report: { plan_key: 'alta', plan_version: 1, answers: { details: COMPLETE_ALTA_DETAIL } },
+      order: {
+        work_type: 'alta',
+        client_id: 'client-1',
+        service_item_id: 'service-1',
+      },
+      report: {
+        plan_key: 'alta',
+        plan_version: 1,
+        answers: { details: COMPLETE_ALTA_DETAIL },
+        reported_service_items: [{ service_item_id: 'service-1', qty: 1 }],
+      },
       photoTypes: ALL_PHOTOS,
     })
     mockSupabase.rpc = vi
@@ -888,7 +935,7 @@ function setupSupabaseForRosterAssignment(args: {
               in: () => ({
                 order: () =>
                   Promise.resolve({
-                    data: args.crewError ? null : args.crew ?? [],
+                    data: args.crewError ? null : (args.crew ?? []),
                     error: args.crewError ?? null,
                   }),
               }),
@@ -896,7 +943,7 @@ function setupSupabaseForRosterAssignment(args: {
             // Fallback lookup for the responsible person: .eq('id').single()
             single: () =>
               Promise.resolve({
-                data: args.responsibleError ? null : args.responsible ?? null,
+                data: args.responsibleError ? null : (args.responsible ?? null),
                 error: args.responsibleError ?? null,
               }),
           }),
@@ -989,9 +1036,7 @@ describe('assignWorkOrder — one responsible technician, the crew documented', 
 
     await assignWorkOrder('wo-1', 'rot', '2026-05-15', 'admin-1', 'tech-1')
 
-    const roster = updateSpy.mock.calls[0][0].assigned_team_roster as Array<
-      Record<string, unknown>
-    >
+    const roster = updateSpy.mock.calls[0][0].assigned_team_roster as Array<Record<string, unknown>>
     for (const entry of roster) {
       expect(Object.keys(entry).sort()).toEqual([
         'full_name',
@@ -1012,9 +1057,7 @@ describe('assignWorkOrder — one responsible technician, the crew documented', 
 
     await assignWorkOrder('wo-1', 'rot', '2026-05-15', 'admin-1', 'tech-1')
 
-    expect(
-      updateSpy.mock.calls[0][0].assigned_team_roster,
-    ).toEqual([
+    expect(updateSpy.mock.calls[0][0].assigned_team_roster).toEqual([
       { profile_id: 'tech-1', full_name: 'Ana', role: 'contractor', is_responsible: true },
       { profile_id: 'tech-2', full_name: 'Bruno', role: 'technician', is_responsible: false },
     ])
