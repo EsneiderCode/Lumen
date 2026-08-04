@@ -132,10 +132,40 @@ interface SlotAddress {
 }
 
 /**
+ * A photo whose stamped address this plan version does not have, matched by the
+ * only thing about it that is stable: its slot.
+ *
+ * A section is where a photo is SHOWN — presentation, regrouped whenever the
+ * office reads the evidence better another way. The slot is what the photo IS:
+ * `fiber_dp` is the fibre in the DP under v2 and under v4 alike. Since a report
+ * is judged against the version it was captured under, keying photos on
+ * `section:slot` meant that regrouping a section (076 split `mandatory` into
+ * `dp`/`pop`) silently emptied every slot of every order still pinned to an
+ * older version — four uploaded photos read back as four missing ones.
+ *
+ * Only an unambiguous name is rescued: two slots called the same in one plan
+ * are a real ambiguity, and the photo counts for nothing, exactly as before.
+ */
+function rescueBySlotKey(
+  slotAddresses: SlotAddress[],
+  slotKey: string,
+  itemId: string | null,
+): SlotAddress | null {
+  let found: SlotAddress | null = null
+  for (const address of slotAddresses) {
+    if (address.slotKey !== slotKey || address.itemId !== itemId) continue
+    if (found) return null
+    found = address
+  }
+  return found
+}
+
+/**
  * Each photo is counted for at most one slot. Photos stamped with section/slot
- * go to that slot; photos without them — everything uploaded before the plans
- * existed — fall back to the first visible slot with a matching `legacyType`, so
- * old work orders do not suddenly read as incomplete.
+ * go to that slot — or, when this version files that slot elsewhere, to the slot
+ * of that name (see `rescueBySlotKey`); photos without them — everything
+ * uploaded before the plans existed — fall back to the first visible slot with a
+ * matching `legacyType`, so old work orders do not suddenly read as incomplete.
  */
 function countPhotosPerSlot(
   photos: CapturedPhotoRef[],
@@ -156,14 +186,15 @@ function countPhotosPerSlot(
       continue
     }
     const itemId = photo.item_id ?? null
-    const match = slotAddresses.find(
-      (address) =>
-        address.sectionKey === sectionKey &&
-        address.slotKey === slotKey &&
-        address.itemId === itemId,
-    )
-    // A photo pointing at a slot the current plan version no longer has is kept
-    // in storage but counts for nothing.
+    const match =
+      slotAddresses.find(
+        (address) =>
+          address.sectionKey === sectionKey &&
+          address.slotKey === slotKey &&
+          address.itemId === itemId,
+      ) ?? rescueBySlotKey(slotAddresses, slotKey, itemId)
+    // A photo pointing at a slot the current plan version no longer has — not
+    // merely at another section — is kept in storage but counts for nothing.
     if (match) bump(match)
   }
 

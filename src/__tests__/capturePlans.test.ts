@@ -51,6 +51,10 @@ const migration076 = readFileSync(
   join(process.cwd(), 'supabase', 'migrations', '076_capture_plan_soplado_ra_v4.sql'),
   'utf8',
 )
+const migration078 = readFileSync(
+  join(process.cwd(), 'supabase', 'migrations', '078_capture_plan_slot_key_rescue.sql'),
+  'utf8',
+)
 
 /** Every `('key', version, $plan$…$plan$)` row of a seed migration. */
 const seededPlans = (sql: string): Map<string, unknown> => {
@@ -511,6 +515,128 @@ describe('evaluating the Soplado de RA plan', () => {
     )
 
     expect(describeMissingNodes(result)).toEqual(['Angabe catas[2].depth_cm'])
+  })
+})
+
+describe('migration 078 — a photo is its slot, not the section that shows it', () => {
+  // The v2 plan, exactly as migration 059 seeded it: its four mandatory photos
+  // live in a section called `mandatory`, the name 076 split into `dp`/`pop`.
+  const planV2 = CATALOG.get('soplado_ra@2') as CapturePlan
+  const answersV2 = (): CaptureAnswers => ({
+    checklist: { duct_as_planned: true },
+    details: { meters: 1220, tube_diameter: '7/14', result: 'Abgeschlossen' },
+  })
+
+  /** Where migration 076 left the four photos of every order, whatever its version. */
+  const photosWhere076LeftThem = (): CapturedPhotoRef[] => [
+    { id: 'a', section_key: 'dp', slot_key: 'fiber_dp', photo_type: 'after' },
+    { id: 'b', section_key: 'dp', slot_key: 'fiber_dp_gasblock', photo_type: 'after' },
+    { id: 'c', section_key: 'pop', slot_key: 'fiber_pop_label', photo_type: 'after' },
+    { id: 'd', section_key: 'pop', slot_key: 'balloon_pop', photo_type: 'after' },
+  ]
+
+  it('is the v2 plan that files these four under `mandatory`', () => {
+    expect(slotsOf(planV2, 'mandatory').map((slot) => slot.key)).toEqual([
+      'fiber_dp',
+      'fiber_dp_gasblock',
+      'fiber_pop_label',
+      'balloon_pop',
+    ])
+  })
+
+  // The regression itself. LUM-20260727-1016, -1017 and -1018 are pinned to v2
+  // and had their photos moved to `dp`/`pop` by 076, so the gate looked for them
+  // under `mandatory`, found nothing, and refused to certify four photos that
+  // were sitting right there.
+  it('counts photos moved to another section for the version that still names it `mandatory`', () => {
+    const result = evaluateCapturePlan(planV2, photosWhere076LeftThem(), answersV2())
+
+    expect(describeMissingNodes(result)).toEqual([])
+    expect(result.canSubmit).toBe(true)
+  })
+
+  it('still demands a photo that was never taken', () => {
+    const result = evaluateCapturePlan(planV2, photosWhere076LeftThem().slice(0, 2), answersV2())
+
+    expect(describeMissingNodes(result)).toEqual([
+      'Fotos mandatory.fiber_pop_label (1)',
+      'Fotos mandatory.balloon_pop (1)',
+    ])
+  })
+
+  it('keeps a photo of a slot this version does not have at all counting for nothing', () => {
+    const photos = [
+      ...photosWhere076LeftThem(),
+      { id: 'z', section_key: 'pop', slot_key: 'slot_from_the_future', photo_type: 'after' },
+    ] as CapturedPhotoRef[]
+    const result = evaluateCapturePlan(planV2, photos, answersV2())
+
+    // It neither breaks the evaluation nor is credited to any slot.
+    expect(result.canSubmit).toBe(true)
+    const mandatory = result.sections.find((section) => section.key === 'mandatory')
+    expect(mandatory?.slots.every((slot) => slot.count === 1)).toBe(true)
+  })
+
+  it('never rescues a slot name two sections claim', () => {
+    const ambiguous: CapturePlan = {
+      key: 'ambiguous',
+      version: 1,
+      workType: 'soplado',
+      titleKey: 'x',
+      sections: [
+        {
+          key: 'left',
+          kind: 'photos',
+          titleKey: 'x',
+          slots: [{ key: 'shot', min: 1, labelKey: 'x', legacyType: 'before' }],
+        },
+        {
+          key: 'right',
+          kind: 'photos',
+          titleKey: 'x',
+          slots: [{ key: 'shot', min: 1, labelKey: 'x', legacyType: 'after' }],
+        },
+      ],
+    }
+    const result = evaluateCapturePlan(
+      ambiguous,
+      [{ id: 'a', section_key: 'gone', slot_key: 'shot' }] as CapturedPhotoRef[],
+      {},
+    )
+
+    // Two candidates is a real ambiguity: guessing would credit the photo to a
+    // slot nobody took it for, so it counts for neither.
+    expect(describeMissingNodes(result)).toEqual(['Fotos left.shot (1)', 'Fotos right.shot (1)'])
+  })
+
+  it('lets the exact address win, so one photo is never counted twice', () => {
+    const result = evaluateCapturePlan(
+      SOPLADO_RA_PLAN,
+      [{ id: 'a', section_key: 'dp', slot_key: 'fiber_dp', photo_type: 'after' }],
+      { checklist: { duct_as_planned: true }, details: {} },
+    )
+    const dp = result.sections.find((section) => section.key === 'dp')
+
+    expect(dp?.slots.find((slot) => slot.slotKey === 'fiber_dp')?.count).toBe(1)
+    expect(dp?.slots.find((slot) => slot.slotKey === 'fiber_dp_gasblock')?.count).toBe(0)
+  })
+
+  it('teaches the SQL twin the same two-step match', () => {
+    const sql = migration078.toLowerCase()
+
+    expect(sql).toContain('create or replace function public.capture_plan_missing_nodes')
+    // Step one: the address the photo was sealed with…
+    expect(sql).toContain('a.section = p.section_key')
+    // …step two: the only slot of that name in the version being evaluated.
+    expect(sql).toContain('having count(*) = 1')
+    // The item still pins a trench photo to its own trench, in both steps.
+    expect(sql.match(/a\.item is not distinct from p\.item_id/g)).toHaveLength(2)
+    expect(sql).toMatch(/--\s*depends on:[\s\S]*054_capture_plan_gate\.sql/)
+  })
+
+  it('changes no data — the photos stay where 076 put them', () => {
+    expect(migration078).not.toMatch(/update\s+public\.work_order_photos/i)
+    expect(migration078).not.toMatch(/update\s+public\.work_order_capture_reports/i)
   })
 })
 
