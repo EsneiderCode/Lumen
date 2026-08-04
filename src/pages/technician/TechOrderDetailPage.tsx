@@ -68,7 +68,13 @@ export function TechOrderDetailPage() {
     if (!id || !user) return
     setIsTransitioning(true)
     setError(null)
-    const { data: updated, error } = await transitionWorkOrderStatus(id, toStatus, user.id, notes, user.role)
+    const { data: updated, error, warningContext } = await transitionWorkOrderStatus(
+      id,
+      toStatus,
+      user.id,
+      notes,
+      user.role,
+    )
     if (error) {
       setError(error)
       setIsTransitioning(false)
@@ -77,6 +83,7 @@ export function TechOrderDetailPage() {
       // Refresh history
       const { data: histData } = await fetchStateHistory(id)
       setHistory(histData as StateHistoryEntry[])
+      if (warningContext === 'state_history') window.alert(t('workOrders.stateHistoryWarning'))
       setIsTransitioning(false)
     }
   }

@@ -143,7 +143,7 @@ async function sendSubmission(submission: QueuedSubmission): Promise<string | nu
   if (!path) return `not_sendable_from_${order.status}`
 
   for (const [index, step] of path.entries()) {
-    const { error } = await transitionWorkOrderStatus(
+    const { error, warning, warningCode } = await transitionWorkOrderStatus(
       submission.workOrderId,
       step,
       submission.userId,
@@ -151,6 +151,16 @@ async function sendSubmission(submission: QueuedSubmission): Promise<string | nu
       submission.userRole,
     )
     if (error) return error
+    // The status write already committed. Retrying this queue item would repeat
+    // successful transitions forever merely because the audit row was rejected.
+    if (warning) {
+      console.warn('Offline transition committed without state history', {
+        workOrderId: submission.workOrderId,
+        step,
+        code: warningCode,
+        warning,
+      })
+    }
   }
 
   if (submission.notification) {

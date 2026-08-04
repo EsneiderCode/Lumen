@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { AlertTriangle, Package, Plus, Trash2 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -76,6 +77,31 @@ import { useLabels } from '@/i18n/labels'
 import { orderSiteRef } from '@/lib/orderSiteRef'
 
 type ConsumptionDraftRow = ConsumptionDraft & { _key: string }
+
+function getRueckmeldungErrorMessage(
+  t: TFunction,
+  error: string,
+  errorCode: string | null,
+  errorContext?: string | null,
+): string {
+  if (errorContext === 'transition_validation' || errorContext === 'transition_prerequisite') {
+    return error
+  }
+  const normalized = `${errorCode ?? ''} ${error}`.toLowerCase()
+  if (errorCode === '23505' || normalized.includes('duplicate key')) {
+    return t('rueckmeldung.errors.duplicateData')
+  }
+  if (errorCode === '23503' || normalized.includes('foreign key')) {
+    return t('rueckmeldung.errors.invalidReference')
+  }
+  if (errorCode === '42501' || normalized.includes('row-level security') || normalized.includes('permission denied')) {
+    return t('rueckmeldung.errors.permissionDenied')
+  }
+  if (errorCode === 'PGRST116' || normalized.includes('json object requested')) {
+    return t('rueckmeldung.errors.ambiguousResponse')
+  }
+  return t('rueckmeldung.errors.saveFailed')
+}
 
 /** A pending photo plus what it needs to be uploaded again after a failure. */
 type PendingUpload = PendingPhoto & {
@@ -665,9 +691,11 @@ export function RueckmeldungPage() {
   }
 
   /** The single write of the Rückmeldung: answers plus the reported services. */
-  async function persistCaptureReport(submitted: boolean): Promise<string | null> {
-    if (!plan || !id || !user) return null
-    const { error } = await saveCaptureReport({
+  async function persistCaptureReport(
+    submitted: boolean,
+  ): Promise<{ error: string | null; errorCode: string | null }> {
+    if (!plan || !id || !user) return { error: null, errorCode: null }
+    return saveCaptureReport({
       workOrderId: id,
       plan,
       answers,
@@ -675,7 +703,6 @@ export function RueckmeldungPage() {
       submitted,
       reportedServiceItems: reportedServiceItems(),
     })
-    return error
   }
 
   async function handleSave() {
@@ -694,9 +721,9 @@ export function RueckmeldungPage() {
       return
     }
 
-    const reportError = await persistCaptureReport(false)
-    if (reportError) {
-      setError(reportError)
+    const reportResult = await persistCaptureReport(false)
+    if (reportResult.error) {
+      setError(getRueckmeldungErrorMessage(t, reportResult.error, reportResult.errorCode, 'report_upsert'))
       setIsSaving(false)
       return
     }
@@ -814,9 +841,9 @@ export function RueckmeldungPage() {
       return
     }
 
-    const reportError = await persistCaptureReport(true)
-    if (reportError) {
-      setError(reportError)
+    const reportResult = await persistCaptureReport(true)
+    if (reportResult.error) {
+      setError(getRueckmeldungErrorMessage(t, reportResult.error, reportResult.errorCode, 'report_upsert'))
       setIsSending(false)
       return
     }
@@ -835,7 +862,7 @@ export function RueckmeldungPage() {
         return
       }
       if (result.error) {
-        setError(result.error)
+        setError(getRueckmeldungErrorMessage(t, result.error, null, 'material_write'))
         setIsSending(false)
         return
       }
@@ -845,8 +872,14 @@ export function RueckmeldungPage() {
     // is. Usually one or two hops (executed → rueckmeldung_pending → sent), but
     // the screen is reachable by link from earlier statuses too. Only the last
     // hop carries the notes: it is the one the admin reads.
+    let stateHistoryWarning = false
     for (const [index, step] of sendPath.entries()) {
-      const { error: stepError } = await transitionWorkOrderStatus(
+      const {
+        error: stepError,
+        errorCode: stepErrorCode,
+        errorContext: stepErrorContext,
+        warningContext,
+      } = await transitionWorkOrderStatus(
         id,
         step,
         user.id,
@@ -854,14 +887,16 @@ export function RueckmeldungPage() {
         user.role,
       )
       if (stepError) {
-        setError(stepError)
+        setError(getRueckmeldungErrorMessage(t, stepError, stepErrorCode, stepErrorContext))
         setIsSending(false)
         return
       }
+      stateHistoryWarning ||= warningContext === 'state_history'
     }
 
     const notification = buildNotification(notes)
     if (notification) notifyReportSubmitted(notification)
+    if (stateHistoryWarning) window.alert(t('workOrders.stateHistoryWarning'))
     navigate(`/tech/orders/${id}`)
   }
 

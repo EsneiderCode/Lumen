@@ -165,10 +165,6 @@ export async function fetchCaptureReport(
   return { data: row, error: error?.message ?? null }
 }
 
-/**
- * Upsert by hand — the same select-then-write shape as upsertWorkOrderDetail,
- * which the demo mock also understands (it has no .upsert()).
- */
 export async function saveCaptureReport(params: {
   workOrderId: string
   /** Only the identity is stored; the offline queue replays it without the sections. */
@@ -178,7 +174,7 @@ export async function saveCaptureReport(params: {
   submitted?: boolean
   /** Alta orders only; left alone when omitted. */
   reportedServiceItems?: ReportedServiceItemDraft[]
-}): Promise<{ error: string | null }> {
+}): Promise<{ error: string | null; errorCode: string | null }> {
   const { workOrderId, plan, answers, userId, submitted, reportedServiceItems } = params
 
   const payload: CaptureReportInsert = {
@@ -194,22 +190,11 @@ export async function saveCaptureReport(params: {
   if (reportedServiceItems) payload.reported_service_items = reportedServiceItems as unknown as Json
   if (submitted) payload.submitted_at = new Date().toISOString()
 
-  const { data: existing } = await supabase
+  const { error } = await supabase
     .from('work_order_capture_reports')
-    .select('work_order_id')
-    .eq('work_order_id', workOrderId)
-    .limit(1)
+    .upsert(payload, { onConflict: 'work_order_id' })
 
-  if (existing?.length) {
-    const { error } = await supabase
-      .from('work_order_capture_reports')
-      .update(payload)
-      .eq('work_order_id', workOrderId)
-    return { error: error?.message ?? null }
-  }
-
-  const { error } = await supabase.from('work_order_capture_reports').insert(payload)
-  return { error: error?.message ?? null }
+  return { error: error?.message ?? null, errorCode: error?.code ?? null }
 }
 
 export interface CapturePhotoRow extends CapturedPhotoRef {

@@ -206,6 +206,7 @@
     "stateHistory": "Statusverlauf",
     "notFound": "Auftrag nicht gefunden",
     "rueckmeldungPresent": "Rückmeldung liegt vor",
+    "stateHistoryWarning": "Der Auftragsstatus wurde aktualisiert, aber der Verlaufseintrag konnte nicht gespeichert werden. Bitte informieren Sie die Disposition.",
     "internallyCertified": "Intern zertifiziert",
     "invoiced": "Fakturiert",
     "orderRejected": "Auftrag abgelehnt",
@@ -380,7 +381,12 @@
       }
     },
     "errors": {
-      "notSendable": "Rückmeldung aus dem Status \"{{status}}\" nicht möglich"
+      "notSendable": "Rückmeldung aus dem Status \"{{status}}\" nicht möglich",
+      "duplicateData": "Für diesen Auftrag sind bereits geänderte Daten vorhanden. Bitte laden Sie die Seite neu und versuchen Sie es erneut.",
+      "invalidReference": "Der Auftrag oder das Benutzerprofil ist nicht mehr gültig. Bitte laden Sie die Seite neu oder wenden Sie sich an die Disposition.",
+      "permissionDenied": "Sie haben keine Berechtigung, diese Rückmeldung zu speichern. Bitte melden Sie sich erneut an oder wenden Sie sich an die Disposition.",
+      "ambiguousResponse": "Der Auftrag konnte nicht eindeutig geladen oder bestätigt werden. Bitte laden Sie die Seite neu und prüfen Sie den aktuellen Status.",
+      "saveFailed": "Die Rückmeldung konnte nicht gespeichert werden. Bitte versuchen Sie es erneut oder wenden Sie sich an die Disposition."
     }
   },
   "certification": {
