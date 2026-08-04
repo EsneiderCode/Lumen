@@ -1684,7 +1684,14 @@
       }
     },
     "missing": {
-      "summary": "Faltan {{count}} datos"
+      "summary": "Faltan {{count}} datos",
+      "title": "Rückmeldung incompleta — faltan los siguientes requisitos:",
+      "photos": "Fotos obligatorias ({{count}})",
+      "fields": "Datos obligatorios ({{count}})",
+      "items": "Entradas pendientes ({{count}})",
+      "itemContext": "{{item}} {{index}} — {{label}}",
+      "count": "({{count}}×)",
+      "more": "… y {{count}} requisitos más"
     },
     "review": {
       "title": "Las catas sobre el plano",

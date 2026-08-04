@@ -60,7 +60,12 @@ import { refreshPendingCounts } from '@/services/offlineSyncState'
 import { useOfflineSync } from '@/hooks/useOfflineSync'
 import { scalePhotoForUpload } from '@/lib/photoScaling'
 import { readPhotoMetadata } from '@/lib/exif'
-import { captureExamplePaths, evaluateCapturePlan, slotNodeId } from '@/services/capturePlanEngine'
+import {
+  captureExamplePaths,
+  describeMissingNodesForPeople,
+  evaluateCapturePlan,
+  slotNodeId,
+} from '@/services/capturePlanEngine'
 import { CapturePlanForm, type PendingPhoto, type SlotTarget } from '@/components/capture/CapturePlanForm'
 import type { ServiceItemWithRelations } from '@/types/service-items'
 import type { ConsumptionCorrectionRequired, ConsumptionDraft, InventoryVehicle, VehicleStockRow } from '@/types/material-inventory'
@@ -744,6 +749,7 @@ export function RueckmeldungPage() {
     // The button is never greyed out: an incomplete Rückmeldung answers by
     // jumping to what is missing.
     if (evaluation && !evaluation.canSubmit) {
+      if (plan) setError(describeMissingNodesForPeople(plan, evaluation))
       focusFirstMissing()
       return
     }
@@ -1231,7 +1237,7 @@ export function RueckmeldungPage() {
 
       {/* Error / success */}
       {error && (
-        <div className="rounded-s border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
+        <div className="whitespace-pre-line rounded-s border border-err/30 bg-err/10 px-4 py-3 text-sm text-err">
           {error}
         </div>
       )}

@@ -462,8 +462,10 @@ describe('validateTransitionPrerequisites — capture plan gate', () => {
       photos: SOPLADO_RA_PHOTOS.slice(0, 3),
     })
     const result = await validateTransitionPrerequisites('id-1', 'internally_certified')
-    expect(result).toMatch(/Rückmeldung unvollständig \(soplado_ra\)/)
-    expect(result).toContain('Fotos pop.balloon_pop (1)')
+    expect(result).toContain('Rückmeldung unvollständig')
+    expect(result).toContain('Pflichtfotos (1)')
+    expect(result).toContain('• Ballon im POP')
+    expect(result).not.toContain('pop.balloon_pop')
   })
 
   it('names the field a conditional checklist answer just made mandatory', async () => {
@@ -478,9 +480,10 @@ describe('validateTransitionPrerequisites — capture plan gate', () => {
       photos: SOPLADO_RA_PHOTOS,
     })
     const result = await validateTransitionPrerequisites('id-1', 'internally_certified')
-    expect(result).toContain('Angabe checklist.trunk_used')
-    expect(result).toContain('Angabe checklist.duct_used')
-    expect(result).toContain('Angabe checklist.change_reason')
+    expect(result).toContain('• Verwendeter Strang')
+    expect(result).toContain('• Verwendetes Rohr')
+    expect(result).toContain('• Grund der Abweichung')
+    expect(result).not.toContain('checklist.trunk_used')
   })
 
   it('numbers the trench whose photos are missing', async () => {
@@ -498,9 +501,9 @@ describe('validateTransitionPrerequisites — capture plan gate', () => {
       photos: [...SOPLADO_RA_PHOTOS, slotPhoto('catas', 'before_open', 'c1')],
     })
     const result = await validateTransitionPrerequisites('id-1', 'internally_certified')
-    expect(result).toContain('Fotos catas[1].during_open (1)')
-    expect(result).toContain('Fotos catas[1].closed (1)')
-    expect(result).not.toContain('catas[1].before_open')
+    expect(result).toContain('• Grube 1 — Grube offen')
+    expect(result).toContain('• Grube 1 — Wiederhergestellt')
+    expect(result).not.toContain('Grube 1 — Vor dem Öffnen')
   })
 
   it('caps the list so the admin gets a sentence, not a wall', async () => {
@@ -511,8 +514,8 @@ describe('validateTransitionPrerequisites — capture plan gate', () => {
       photos: [],
     })
     const result = await validateTransitionPrerequisites('id-1', 'internally_certified')
-    expect(result).toMatch(/… \(\+\d+\)$/)
-    expect((result ?? '').split('; ')).toHaveLength(7)
+    expect(result).toMatch(/… und \d+ weitere Anforderungen$/)
+    expect((result ?? '').split('\n').filter((line) => line.startsWith('• '))).toHaveLength(6)
   })
 
   it('still counts photos uploaded before the plans existed', async () => {
@@ -734,6 +737,56 @@ describe('single-order lifecycle RPC adapters', () => {
     expect(result.ok).toBe(false)
     expect(result.reasons).toEqual([expect.objectContaining({ code: 'incomplete_rueckmeldung' })])
     expect(mockSupabase.rpc).not.toHaveBeenCalled()
+  })
+
+  it('recomputes a readable message when the database completeness gate rejects the RPC', async () => {
+    setupSupabaseFor({
+      order: { work_type: 'soplado', client_id: 'client-1', capture_plan_key: 'soplado_ra' },
+      plans: [SOPLADO_RA_PLAN],
+      report: {
+        plan_key: 'soplado_ra',
+        plan_version: SOPLADO_RA_PLAN.version,
+        answers: SOPLADO_RA_ANSWERS,
+      },
+      photos: SOPLADO_RA_PHOTOS,
+    })
+    const baseFrom = mockSupabase.from as unknown as (table: string) => unknown
+    let photoRead = 0
+    mockSupabase.from = vi.fn((table: string) => {
+      if (table === 'work_order_photos') {
+        const currentPhotos = photoRead++ === 0 ? SOPLADO_RA_PHOTOS : []
+        return {
+          select: () => ({
+            eq: () => Promise.resolve({ data: currentPhotos, error: null }),
+          }),
+        }
+      }
+      return baseFrom(table)
+    })
+    mockSupabase.rpc = vi.fn().mockResolvedValue({
+      data: null,
+      error: {
+        message:
+          'Rückmeldung unvollständig (soplado_ra): Fotos mandatory.fiber_dp (1)',
+      },
+    })
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+
+    const result = await certifyWorkOrderInternal({
+      workOrderId: 'wo-1',
+      changedBy: 'admin-1',
+      dataHash: 'hash-2',
+    })
+
+    expect(result.ok).toBe(false)
+    expect(result.reasons[0]?.message).toContain('Pflichtfotos (4)')
+    expect(result.reasons[0]?.message).toContain('Faser im DP')
+    expect(result.reasons[0]?.message).not.toContain('mandatory.fiber_dp')
+    expect(consoleError).toHaveBeenCalledWith(
+      'Internal certification rejected by database completeness gate',
+      expect.objectContaining({ rawMessage: expect.stringContaining('mandatory.fiber_dp') }),
+    )
+    consoleError.mockRestore()
   })
 
   it('rejects empty lifecycle audit hashes before calling RPCs', async () => {

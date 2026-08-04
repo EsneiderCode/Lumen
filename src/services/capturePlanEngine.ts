@@ -12,6 +12,7 @@
 // complete`, phase 5). Keep both in sync: the SQL side is authoritative for
 // enforcement, this one for the UI.
 
+import i18n from '@/i18n'
 import type {
   CaptureAnswers,
   CaptureCondition,
@@ -340,12 +341,10 @@ function evaluateField(
 }
 
 /**
- * What the Rückmeldung still owes its plan, in plan order, one line per node:
- * `Fotos catas[2].closed (1)`, `Angabe details.meters`, `Einträge catas (1)`.
- *
- * These are the exact tokens `capture_plan_missing_nodes()` builds in migration
- * 054, so the admin reads the same sentence whether the client-side check or the
- * certification gate rejected the order.
+ * Technical description of what the Rückmeldung still owes its plan, in the
+ * exact token format emitted by `capture_plan_missing_nodes()` in migration 054.
+ * Keep this for logs, audit records, SQL parity checks and debugging; people
+ * should read {@link describeMissingNodesForPeople} instead.
  */
 export function describeMissingNodes(evaluation: CapturePlanEvaluation): string[] {
   const itemIndex = new Map<string, number>()
@@ -362,6 +361,96 @@ export function describeMissingNodes(evaluation: CapturePlanEvaluation): string[
     if (node.kind === 'field') return `Angabe ${path}.${node.fieldKey}`
     return `Einträge ${node.sectionKey} (${node.count})`
   })
+}
+
+export interface MissingNodesDescriptionOptions {
+  /** Limit visible nodes while preserving the total count in each group. */
+  maxNodes?: number
+}
+
+function translatedLabel(key: string): string {
+  const translated = i18n.t(key, { defaultValue: key })
+  return typeof translated === 'string' && translated.trim().length > 0 ? translated : key
+}
+
+function missingNodeLabel(
+  plan: CapturePlan,
+  evaluation: CapturePlanEvaluation,
+  node: CaptureMissingNode,
+): string {
+  const section = plan.sections.find((candidate) => candidate.key === node.sectionKey)
+  let labelKey = node.sectionKey
+
+  if (node.kind === 'photos') {
+    const slot = section && 'slots' in section
+      ? section.slots.find((candidate) => candidate.key === node.slotKey)
+      : undefined
+    labelKey = slot?.labelKey ?? node.slotKey ?? node.sectionKey
+  } else if (node.kind === 'field') {
+    const field = section && 'fields' in section
+      ? section.fields.find((candidate) => candidate.key === node.fieldKey)
+      : undefined
+    labelKey = field?.labelKey ?? node.fieldKey ?? node.sectionKey
+  } else if (section?.kind === 'repeater') {
+    labelKey = section.itemLabelKey
+  } else if (section) {
+    labelKey = section.titleKey
+  }
+
+  const label = translatedLabel(labelKey)
+  if (!node.itemId || section?.kind !== 'repeater') return label
+
+  const itemIndex = evaluation.sections
+    .find((candidate) => candidate.key === node.sectionKey)
+    ?.items.find((item) => item.itemId === node.itemId)?.index
+  if (itemIndex === undefined) return label
+
+  return i18n.t('capture.missing.itemContext', {
+    item: translatedLabel(section.itemLabelKey),
+    index: itemIndex + 1,
+    label,
+  })
+}
+
+/**
+ * Human-facing, translated completeness message. Requirements are grouped by
+ * audience concept (photos, fields and repeater entries), while repeater nodes
+ * identify the same one-based item the technician sees on the form.
+ */
+export function describeMissingNodesForPeople(
+  plan: CapturePlan,
+  evaluation: CapturePlanEvaluation,
+  options: MissingNodesDescriptionOptions = {},
+): string {
+  const visible = options.maxNodes === undefined
+    ? evaluation.missing
+    : evaluation.missing.slice(0, Math.max(0, options.maxNodes))
+  const lines = [i18n.t('capture.missing.title')]
+  const kinds: CaptureMissingNode['kind'][] = ['photos', 'field', 'items']
+  const groupKeys: Record<CaptureMissingNode['kind'], string> = {
+    photos: 'capture.missing.photos',
+    field: 'capture.missing.fields',
+    items: 'capture.missing.items',
+  }
+
+  for (const kind of kinds) {
+    const allInGroup = evaluation.missing.filter((node) => node.kind === kind)
+    const shownInGroup = visible.filter((node) => node.kind === kind)
+    if (shownInGroup.length === 0) continue
+
+    const count = allInGroup.reduce((total, node) => total + node.count, 0)
+    lines.push(`${i18n.t(groupKeys[kind], { count })}:`)
+    for (const node of shownInGroup) {
+      const countSuffix = node.count > 1
+        ? ` ${i18n.t('capture.missing.count', { count: node.count })}`
+        : ''
+      lines.push(`• ${missingNodeLabel(plan, evaluation, node)}${countSuffix}`)
+    }
+  }
+
+  const hiddenCount = evaluation.missing.length - visible.length
+  if (hiddenCount > 0) lines.push(i18n.t('capture.missing.more', { count: hiddenCount }))
+  return lines.join('\n')
 }
 
 export function evaluateCapturePlan(

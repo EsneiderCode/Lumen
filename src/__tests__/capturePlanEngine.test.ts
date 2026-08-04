@@ -1,6 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
+import i18n from '@/i18n'
 import {
   conditionMet,
+  describeMissingNodesForPeople,
   evaluateCapturePlan,
   fieldNodeId,
   isFieldFilled,
@@ -15,6 +17,7 @@ import type {
   CaptureSection,
   CapturedPhotoRef,
 } from '@/types/capture-plan'
+import { SOPLADO_RA_PLAN } from '@/constants/capture-plans-soplado-ra'
 
 let photoCounter = 0
 const photo = (overrides: Partial<CapturedPhotoRef> = {}): CapturedPhotoRef => ({
@@ -51,6 +54,100 @@ const fieldsSection = (fields: CaptureField[], key = 'details'): CaptureSection 
   kind: 'fields',
   titleKey: 'x',
   fields,
+})
+
+describe('describeMissingNodesForPeople', () => {
+  beforeEach(async () => {
+    await i18n.changeLanguage('de')
+  })
+
+  it('renders the four mandatory Soplado RA photos with their German labels', () => {
+    const evaluation = evaluateCapturePlan(SOPLADO_RA_PLAN, [], {
+      details: { result: 'OK', meters: 120, tube_diameter: '7/4' },
+      checklist: { duct_as_planned: true },
+    })
+
+    const message = describeMissingNodesForPeople(SOPLADO_RA_PLAN, evaluation)
+
+    expect(message).toContain('Pflichtfotos (4)')
+    expect(message).toContain('• Faser im DP')
+    expect(message).toContain('• Gasblock am DP')
+    expect(message).toContain('• Faserbeschriftung im POP')
+    expect(message).toContain('• Ballon im POP')
+    expect(message).not.toContain('mandatory.fiber_dp')
+    expect(message).not.toContain('fiber_dp')
+  })
+
+  it('renders a required field and a missing repeater entry readably', () => {
+    const customPlan = plan([
+      fieldsSection([
+        { key: 'result', type: 'text', labelKey: 'detailField.result', required: true },
+      ]),
+      {
+        key: 'catas',
+        kind: 'repeater',
+        titleKey: 'capturePlan.sopladoRa.catas.title',
+        itemLabelKey: 'capturePlan.sopladoRa.catas.item',
+        min: 1,
+        slots: [],
+        fields: [],
+      },
+    ])
+
+    const message = describeMissingNodesForPeople(
+      customPlan,
+      evaluateCapturePlan(customPlan, [], {}),
+    )
+
+    expect(message).toContain('Pflichtangaben (1)')
+    expect(message).toContain('• Ergebnis')
+    expect(message).toContain('Fehlende Einträge (1)')
+    expect(message).toContain('• Grube')
+  })
+
+  it('falls back to an untranslated label key without crashing', () => {
+    const customPlan = plan([
+      photosSection([
+        slot({ key: 'unknown', labelKey: 'capturePlan.test.missingSlot', min: 2 }),
+      ]),
+    ])
+
+    const message = describeMissingNodesForPeople(
+      customPlan,
+      evaluateCapturePlan(customPlan, [], {}),
+    )
+
+    expect(message).toContain('• capturePlan.test.missingSlot (2×)')
+    expect(message).not.toContain('undefined')
+  })
+
+  it('includes the translated repeater item name and one-based index', () => {
+    const customPlan = plan([
+      {
+        key: 'catas',
+        kind: 'repeater',
+        titleKey: 'capturePlan.sopladoRa.catas.title',
+        itemLabelKey: 'capturePlan.sopladoRa.catas.item',
+        min: 0,
+        slots: [
+          slot({
+            key: 'before_open',
+            labelKey: 'capturePlan.sopladoRa.slot.beforeOpen.label',
+          }),
+        ],
+        fields: [],
+      },
+    ])
+
+    const message = describeMissingNodesForPeople(
+      customPlan,
+      evaluateCapturePlan(customPlan, [], {
+        catas: [{ id: 'cata-1', values: {} }],
+      }),
+    )
+
+    expect(message).toContain('• Grube 1 — Vor dem Öffnen')
+  })
 })
 
 describe('isFieldFilled', () => {

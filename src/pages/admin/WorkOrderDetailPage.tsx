@@ -1027,7 +1027,7 @@ export function WorkOrderDetailPage() {
       {error && (
         <div
           role="alert"
-          className="rounded-s border border-err/30 bg-err/10 px-4 py-3 text-sm text-err"
+          className="whitespace-pre-line rounded-s border border-err/30 bg-err/10 px-4 py-3 text-sm text-err"
         >
           {error}
         </div>
