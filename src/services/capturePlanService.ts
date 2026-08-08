@@ -90,6 +90,7 @@ export async function fetchCapturePlanVersion(
 export function fetchCapturePlanForOrder(order: {
   work_type: string
   capture_plan_key?: string | null
+  service_items?: { capture_plan_key?: string | null } | null
 }): Promise<CapturePlan | null> {
   return fetchCapturePlan(capturePlanKeyForOrder(order))
 }

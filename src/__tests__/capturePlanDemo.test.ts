@@ -63,11 +63,14 @@ describe('capture plans in demo mode', () => {
     expect((await fetchCapturePlanForOrder(order))?.key).toBe('soplado_ra')
   })
 
-  it('offers the variant to the admin form, and only for soplado', async () => {
+  it('offers each variant to the admin form of its own work type only', async () => {
     expect((await fetchCapturePlanVariants('soplado')).map((plan) => plan.key)).toEqual([
       'soplado_ra',
     ])
-    expect(await fetchCapturePlanVariants('alta')).toEqual([])
+    expect((await fetchCapturePlanVariants('alta')).map((plan) => plan.key)).toEqual([
+      'insyte_bohrung_aktivierung',
+    ])
+    expect(await fetchCapturePlanVariants('pop')).toEqual([])
   })
 
   it('reports a key nobody seeded and nobody compiled in', async () => {

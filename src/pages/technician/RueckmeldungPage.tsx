@@ -62,6 +62,7 @@ import { useOfflineSync } from '@/hooks/useOfflineSync'
 import { scalePhotoForUpload } from '@/lib/photoScaling'
 import { readPhotoMetadata } from '@/lib/exif'
 import { captureExamplePaths, evaluateCapturePlan, slotNodeId } from '@/services/capturePlanEngine'
+import { capturePlanKeyForOrder } from '@/constants/capture-plans'
 import { CapturePlanForm, type PendingPhoto, type SlotTarget } from '@/components/capture/CapturePlanForm'
 import type { ServiceItemWithRelations } from '@/types/service-items'
 import type { ConsumptionCorrectionRequired, ConsumptionDraft, InventoryVehicle, VehicleStockRow } from '@/types/material-inventory'
@@ -807,7 +808,7 @@ export function RueckmeldungPage() {
     // nothing coherent to queue.
     if (!navigator.onLine) {
       if (!plan) {
-        setError(t('capture.planMissing', { key: order.capture_plan_key ?? order.work_type }))
+        setError(t('capture.planMissing', { key: capturePlanKeyForOrder(order) }))
         setIsSending(false)
         return
       }
@@ -1089,7 +1090,7 @@ export function RueckmeldungPage() {
         />
       ) : (
         <div className="rounded-l border border-warn/40 bg-warn/10 px-4 py-3 text-sm text-warn">
-          {t('capture.planMissing', { key: order.capture_plan_key ?? order.work_type })}
+          {t('capture.planMissing', { key: capturePlanKeyForOrder(order) })}
         </div>
       )}
 
