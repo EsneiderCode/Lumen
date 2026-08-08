@@ -1,6 +1,7 @@
 # Plan 011 — Insyte "Bohrung + Aktivierung" capture plan (230 € position)
 
-Status: IN PROGRESS (slice 1 — Gap A + Gap B shipped as migration 079)
+Status: IN PROGRESS (slice 1 — Gap A + Gap B shipped as migration 079; slice 2 —
+Gap C signature shipped as migration 080)
 Priority: P1 · Effort: L
 Source: field requirements from Jeisson Romero (Slack, 2026-07-29), transcribed
 and reconciled against the code by the coordinator.
@@ -98,13 +99,15 @@ resolution in both twins — `public.work_order_capture_plan_key()` and
 **order override → service item → work type**. Without this, someone has to pick the
 variant by hand on every order (`src/pages/admin/WorkOrderFormPage.tsx:230,631-632`).
 
-**C. Real client signature.** Nothing exists today: only the boolean
-`wo_detail_alta.client_signature` (`001_initial_schema.sql:157`,
-`src/constants/detail-fields.ts:62`), rendered as a plain checkbox
-(`CapturePlanForm.tsx:224-227`). Needs a canvas capture component, storage of the
-signature image alongside the order's photos, and inclusion in the certificate PDF
-(`src/services/pdfService.ts:40-215`). **Interim**: ship section 9 as the existing
-checkbox so the plan is usable, and swap it for the real signature when C lands.
+**C. Real client signature.** ~~Nothing exists today~~ **Shipped (slice 2,
+migration 080).** `SignatureField` (pointer-event canvas, ink-on-paper tokens)
+replaces the plain control behind any `client_signature` field — the yesno of
+this plan and the checkbox of the alta default alike. The PNG lives in the
+`work-order-photos` bucket under `<orderId>/signature/` (the 073 path scoping is
+the whole access rule — no storage DDL), referenced from
+`work_order_capture_reports.client_signature_path`; the boolean answer flips to
+true only after the image is stored, so the gate and the plan JSONB are
+untouched. The certificate PDF embeds the image as its closing section.
 
 **D. Attachments.** The security prerequisite is already handled; two changes remain:
 1. Allow images outside `diagrama_routing` — today PNG/JPG are only accepted for that
@@ -131,7 +134,9 @@ before writing any SQL — this plan has now been renumbered three times
    plan; adds `service_items.capture_plan_key`, binds the INSYTE rows of the
    position, and extends `work_order_capture_plan_key()` with the precedence
    order override → service item → work type.
-2. `080_client_signature.sql` — signature storage/column (Gap C).
+2. `080_client_signature.sql` — **shipped in slice 2**: adds
+   `work_order_capture_reports.client_signature_path`. No storage DDL — the
+   image reuses the `<orderId>/…` prefix the 073 policies already scope.
 Gap D needs no migration of its own any more — the policy work landed in `073`.
 
 Note: `071_capture_plan_soplado_ra_v3.sql` is a worked example of publishing a new
