@@ -19,7 +19,7 @@ with person-level assignment, and NE4-bridge hardening.
 | 003  | Personnel teams + person-level assignment | P2 | L | 002 committed; 005 recommended first (refreshed 2026-06-11, see plan's Preconditions) | DONE (commit `f92ca0a`; preflight green; demo smoke passed) |
 | 004  | NE4 bridge: provenance, metadata, sync log | P2 | M | — (migration `025` confirmed free; preconditions refreshed 2026-06-11) | DONE (LUMEN `0682e53` on `feat/ne4-bridge-provenance` + ne4 `369cfe1` on `feat/lumen-sync-observability`; preflight green; demo visual check pending; deploy order: LUMEN migration → redeploy lumen-bridge → ne4 migration) |
 | 010  | Client-first order form, client-owned catalogs, executor-driven certification | P1 | L | 001–003 (all DONE) | Slice A DONE (migrations `065`–`069` merged via PR #23 on 2026-07-30); slices B–E (services/RLS, form, admin CRUD, i18n+demo) still TODO; migration `070` post-cutover pending |
-| 011  | Insyte "Bohrung + Aktivierung" capture plan (230 € position) | P1 | L | 010 slice A (merged); Gap D needs PR #24 applied; Gap B needs `service_items.capture_plan_key` | TODO (plan written 2026-07-31; next free migration `074`) |
+| 011  | Insyte "Bohrung + Aktivierung" capture plan (230 € position) | P1 | L | 010 slice A (merged); Gap D needs PR #24 applied (merged as migration `073`) | IN PROGRESS (slice 1 — plan + catalogue binding shipped as migration `079` on `feat/insyte-bohrung-capture-impl`; Gap C signature is migration `080`, pending; migrations renumbered 074/075 → 079/080) |
 
 Status values: TODO | IN PROGRESS | DONE | BLOCKED (with one-line reason) | REJECTED (with one-line rationale)
 
