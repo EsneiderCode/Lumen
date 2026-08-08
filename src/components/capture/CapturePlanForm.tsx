@@ -382,8 +382,10 @@ function CaptureFieldControl({
         <SignatureField
           control={signature}
           signed={value === true}
+          declined={value === false}
           onSigned={() => onChange(true)}
           onCleared={() => onChange(null)}
+          onDeclined={() => onChange(false)}
         />
       </div>
     )

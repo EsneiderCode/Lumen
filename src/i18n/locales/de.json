@@ -1717,7 +1717,10 @@
       "cancel": "Abbrechen",
       "signed": "Unterschrieben",
       "redo": "Neu unterschreiben",
-      "error": "Unterschrift konnte nicht gespeichert werden. Bitte erneut versuchen."
+      "error": "Unterschrift konnte nicht gespeichert werden. Bitte erneut versuchen.",
+      "decline": "Kunde lehnt Unterschrift ab",
+      "declined": "Unterschrift abgelehnt",
+      "undo": "Rückgängig"
     }
   },
   "map": {

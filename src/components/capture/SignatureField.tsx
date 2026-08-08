@@ -167,16 +167,22 @@ function SignatureCanvas({
 export function SignatureField({
   control,
   signed,
+  declined,
   onSigned,
   onCleared,
+  onDeclined,
 }: {
   control: SignatureControl
   /** Current boolean value of the `client_signature` field. */
   signed: boolean
+  /** True when the field holds an explicit `false` — the client refused. */
+  declined: boolean
   /** Sets the field once the image is safely stored — never before. */
   onSigned: () => void
   /** Clears the field once the image is gone. */
   onCleared: () => void
+  /** Records the refusal (`false`): an answer the office sees, no upload. */
+  onDeclined: () => void
 }) {
   const { t } = useTranslation()
   const [drawing, setDrawing] = useState(false)
@@ -243,16 +249,44 @@ export function SignatureField({
     )
   }
 
+  if (declined) {
+    return (
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="inline-flex items-center gap-1 rounded-s border border-warn/40 bg-warn/10 px-2 py-1 font-mono text-[11px] text-warn">
+          <X size={12} strokeWidth={1.5} />
+          {t('capture.signature.declined')}
+        </span>
+        <button
+          type="button"
+          onClick={onCleared}
+          className="inline-flex items-center gap-1.5 rounded-m border border-line px-3 py-2 text-xs font-semibold text-fg-2 transition-colors duration-200 hover:border-accent hover:text-accent"
+        >
+          {t('capture.signature.undo')}
+        </button>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-2">
-      <button
-        type="button"
-        onClick={() => setDrawing(true)}
-        className="inline-flex items-center gap-1.5 rounded-m border border-accent bg-accent/10 px-4 py-2.5 text-sm font-semibold text-accent transition-colors duration-200 hover:bg-accent/20"
-      >
-        <PenLine size={15} strokeWidth={1.5} />
-        {t('capture.signature.action')}
-      </button>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => setDrawing(true)}
+          className="inline-flex items-center gap-1.5 rounded-m border border-accent bg-accent/10 px-4 py-2.5 text-sm font-semibold text-accent transition-colors duration-200 hover:bg-accent/20"
+        >
+          <PenLine size={15} strokeWidth={1.5} />
+          {t('capture.signature.action')}
+        </button>
+        <button
+          type="button"
+          onClick={onDeclined}
+          className="inline-flex items-center gap-1.5 rounded-m border border-line px-3 py-2.5 text-xs font-semibold text-fg-2 transition-colors duration-200 hover:border-accent hover:text-accent"
+        >
+          <X size={14} strokeWidth={1.5} />
+          {t('capture.signature.decline')}
+        </button>
+      </div>
       {control.error && <p className="text-xs text-accent">{control.error}</p>}
     </div>
   )
