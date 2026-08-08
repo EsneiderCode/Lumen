@@ -383,6 +383,7 @@ function CaptureFieldControl({
           control={signature}
           signed={value === true}
           declined={value === false}
+          allowDecline={field.type === 'yesno'}
           onSigned={() => onChange(true)}
           onCleared={() => onChange(null)}
           onDeclined={() => onChange(false)}

@@ -168,6 +168,7 @@ export function SignatureField({
   control,
   signed,
   declined,
+  allowDecline,
   onSigned,
   onCleared,
   onDeclined,
@@ -177,6 +178,12 @@ export function SignatureField({
   signed: boolean
   /** True when the field holds an explicit `false` — the client refused. */
   declined: boolean
+  /**
+   * Whether refusing is offered at all. Only `yesno`-typed fields count `false`
+   * as answered; on a checkbox field the same `false` stays unfilled, so a
+   * decline there would show as recorded while blocking submission forever.
+   */
+  allowDecline: boolean
   /** Sets the field once the image is safely stored — never before. */
   onSigned: () => void
   /** Clears the field once the image is gone. */
@@ -249,7 +256,7 @@ export function SignatureField({
     )
   }
 
-  if (declined) {
+  if (declined && allowDecline) {
     return (
       <div className="flex flex-wrap items-center gap-2">
         <span className="inline-flex items-center gap-1 rounded-s border border-warn/40 bg-warn/10 px-2 py-1 font-mono text-[11px] text-warn">
@@ -278,14 +285,16 @@ export function SignatureField({
           <PenLine size={15} strokeWidth={1.5} />
           {t('capture.signature.action')}
         </button>
-        <button
-          type="button"
-          onClick={onDeclined}
-          className="inline-flex items-center gap-1.5 rounded-m border border-line px-3 py-2.5 text-xs font-semibold text-fg-2 transition-colors duration-200 hover:border-accent hover:text-accent"
-        >
-          <X size={14} strokeWidth={1.5} />
-          {t('capture.signature.decline')}
-        </button>
+        {allowDecline && (
+          <button
+            type="button"
+            onClick={onDeclined}
+            className="inline-flex items-center gap-1.5 rounded-m border border-line px-3 py-2.5 text-xs font-semibold text-fg-2 transition-colors duration-200 hover:border-accent hover:text-accent"
+          >
+            <X size={14} strokeWidth={1.5} />
+            {t('capture.signature.decline')}
+          </button>
+        )}
       </div>
       {control.error && <p className="text-xs text-accent">{control.error}</p>}
     </div>

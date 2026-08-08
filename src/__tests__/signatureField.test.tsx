@@ -12,7 +12,7 @@ import { SignatureField, type SignatureControl } from '@/components/capture/Sign
 const onCapture = vi.fn(async () => true)
 const control: SignatureControl = { url: null, uploading: false, onCapture, onClear: async () => true }
 
-function Harness() {
+function Harness({ allowDecline }: { allowDecline: boolean }) {
   const [value, setValue] = useState<boolean | null>(null)
   return (
     <>
@@ -20,6 +20,7 @@ function Harness() {
         control={control}
         signed={value === true}
         declined={value === false}
+        allowDecline={allowDecline}
         onSigned={() => setValue(true)}
         onCleared={() => setValue(null)}
         onDeclined={() => setValue(false)}
@@ -32,7 +33,7 @@ function Harness() {
 describe('SignatureField refusal (plan 011)', () => {
   it('reaches client_signature = false through the rendered control, undoably', async () => {
     const container = document.body.appendChild(document.createElement('div'))
-    await act(async () => createRoot(container).render(<Harness />))
+    await act(async () => createRoot(container).render(<Harness allowDecline />))
     const button = (label: string): HTMLButtonElement => {
       const found = [...container.querySelectorAll('button')].find((b) => b.textContent?.trim() === label)
       if (!found) throw new Error(`No button labelled "${label}"`)
@@ -49,5 +50,23 @@ describe('SignatureField refusal (plan 011)', () => {
     await act(async () => button(i18n.t('capture.signature.undo')).click())
     expect(value()).toBe('null')
     expect(button(i18n.t('capture.signature.action'))).toBeTruthy()
+  })
+
+  it('offers no decline on a checkbox-typed field, while signing still works', async () => {
+    const container = document.body.appendChild(document.createElement('div'))
+    await act(async () => createRoot(container).render(<Harness allowDecline={false} />))
+    const labels = () =>
+      [...container.querySelectorAll('button')].map((b) => b.textContent?.trim())
+
+    // Checkbox counts `false` as unanswered: offering "decline" would deadlock.
+    expect(labels()).not.toContain(i18n.t('capture.signature.decline'))
+
+    // The canvas swap stays available — signing is how a checkbox field is filled.
+    const action = [...container.querySelectorAll('button')].find(
+      (b) => b.textContent?.trim() === i18n.t('capture.signature.action'),
+    )
+    if (!action) throw new Error('No sign action button')
+    await act(async () => action.click())
+    expect(container.querySelector('canvas')).toBeTruthy()
   })
 })

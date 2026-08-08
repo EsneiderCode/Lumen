@@ -282,7 +282,7 @@ export function RueckmeldungPage() {
 
     const timer = setTimeout(() => {
       persistedRef.current = snapshot
-      void cacheAnswers(id, answers, reportedServiceItems())
+      void cacheAnswers(id, answers, reportedServiceItems(), signaturePath)
       // Sin cobertura basta la copia del dispositivo; la de servidor irá cuando
       // vuelva la red o cuando el técnico guarde a mano.
       if (navigator.onLine) void persistCaptureReport(false)
