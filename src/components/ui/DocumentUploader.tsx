@@ -18,19 +18,9 @@ import {
 import {
   ALLOWED_DOCUMENT_EXTENSIONS,
   ALLOWED_DOCUMENT_MIME_TYPES,
-  ALLOWED_DIAGRAM_EXTENSIONS,
-  ALLOWED_DIAGRAM_MIME_TYPES,
   type DocumentType,
   type WorkOrderDocument,
 } from '@/types/work-order-documents'
-
-/** Diagrams accept images too (rack layouts are often PNG/JPG). */
-function allowedMimesFor(type: DocumentType): readonly string[] {
-  return type === 'diagrama_routing' ? ALLOWED_DIAGRAM_MIME_TYPES : ALLOWED_DOCUMENT_MIME_TYPES
-}
-function allowedExtensionsFor(type: DocumentType): readonly string[] {
-  return type === 'diagrama_routing' ? ALLOWED_DIAGRAM_EXTENSIONS : ALLOWED_DOCUMENT_EXTENSIONS
-}
 
 /**
  * Two modes:
@@ -108,8 +98,9 @@ export function DocumentUploader(props: DocumentUploaderProps) {
     return () => { cancelled = true }
   }, [isStaged, readOnly, documentType, workOrderId])
 
-  const allowedMimes = allowedMimesFor(documentType)
-  const allowedExtensions = allowedExtensionsFor(documentType)
+  // One list for every type since plan 011 Gap D: PDF, Excel or image.
+  const allowedMimes: readonly string[] = ALLOWED_DOCUMENT_MIME_TYPES
+  const allowedExtensions: readonly string[] = ALLOWED_DOCUMENT_EXTENSIONS
 
   function validateFile(file: File): string | null {
     if (!allowedMimes.includes(file.type)) {

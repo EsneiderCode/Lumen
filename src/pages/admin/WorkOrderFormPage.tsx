@@ -46,16 +46,16 @@ const DOCUMENT_TYPES_BY_DETAIL_FORM: Record<string, Array<{
   hint: string
 }>> = {
   soplado: [
-    { type: 'plano',          label: 'Plan / Trassenplan',                       hint: 'PDF oder Excel' },
-    { type: 'cartas_empalme', label: 'Spleißprotokolle (Cartas de empalme)',     hint: 'PDF oder Excel' },
+    { type: 'plano',          label: 'Plan / Trassenplan',                       hint: 'PDF, Excel oder Bild' },
+    { type: 'cartas_empalme', label: 'Spleißprotokolle (Cartas de empalme)',     hint: 'PDF, Excel oder Bild' },
   ],
   fusion_ap: [
-    { type: 'plano',          label: 'Plan / Trassenplan',                       hint: 'PDF oder Excel' },
-    { type: 'cartas_empalme', label: 'Spleißprotokolle (Cartas de empalme)',     hint: 'PDF oder Excel' },
+    { type: 'plano',          label: 'Plan / Trassenplan',                       hint: 'PDF, Excel oder Bild' },
+    { type: 'cartas_empalme', label: 'Spleißprotokolle (Cartas de empalme)',     hint: 'PDF, Excel oder Bild' },
   ],
   fusion_dp: [
-    { type: 'plano',          label: 'Plan / Trassenplan',                       hint: 'PDF oder Excel' },
-    { type: 'cartas_empalme', label: 'Spleißprotokolle (Cartas de empalme)',     hint: 'PDF oder Excel' },
+    { type: 'plano',          label: 'Plan / Trassenplan',                       hint: 'PDF, Excel oder Bild' },
+    { type: 'cartas_empalme', label: 'Spleißprotokolle (Cartas de empalme)',     hint: 'PDF, Excel oder Bild' },
   ],
   pop: [
     { type: 'diagrama_routing', label: 'Diagramm Routing-Pipes',                 hint: 'PDF, Excel oder Bild' },

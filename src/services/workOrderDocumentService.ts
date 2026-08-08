@@ -1,7 +1,9 @@
 import { supabase } from '@/lib/supabase'
-import type {
-  DocumentType,
-  WorkOrderDocument,
+import {
+  ALLOWED_DOCUMENT_EXTENSIONS,
+  ALLOWED_DOCUMENT_MIME_TYPES,
+  type DocumentType,
+  type WorkOrderDocument,
 } from '@/types/work-order-documents'
 
 const BUCKET = 'work-order-documents'
@@ -22,6 +24,15 @@ export async function uploadWorkOrderDocument(
   file: File,
   uploadedBy: string,
 ): Promise<{ data: WorkOrderDocument | null; error: string | null }> {
+  // The uploader validates too, but the service is the door every caller
+  // walks through — a file type the UI never offered still gets refused here.
+  if (!(ALLOWED_DOCUMENT_MIME_TYPES as readonly string[]).includes(file.type)) {
+    return {
+      data: null,
+      error: `Unsupported file type: ${file.name}. Allowed: ${ALLOWED_DOCUMENT_EXTENSIONS.join(', ')}.`,
+    }
+  }
+
   const safeName = sanitize(file.name)
   const path = `${workOrderId}/${Date.now()}-${safeName}`
 
