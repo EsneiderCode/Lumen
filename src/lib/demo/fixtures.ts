@@ -47,6 +47,7 @@ const SI_FNS_EINBLAS_GF = '40000000-0000-0000-0000-000000000011'
 const SI_FNS_HA_KOMPLETT = '40000000-0000-0000-0000-000000000012'
 const SI_FNS_HA_SNR = '40000000-0000-0000-0000-000000000013'
 const SI_FNS_SAUGBAGGER_LE = '40000000-0000-0000-0000-000000000014'
+const SI_INSYTE_BOHRUNG = '40000000-0000-0000-0000-000000000015'
 
 const VEHICLE_ROT_COMBO = '41000000-0000-0000-0000-000000000001'
 const MAT_GFP_HUEP_48 = '42000000-0000-0000-0000-000000000001'
@@ -64,6 +65,7 @@ const WO_7_EXTERNAL = '50000000-0000-0000-0000-000000000007'
 const WO_8_NE4 = '50000000-0000-0000-0000-000000000008'
 const WO_9_DIRECT_TECH = '50000000-0000-0000-0000-000000000009'
 const WO_10_SOPLADO_RA = '50000000-0000-0000-0000-000000000010'
+const WO_11_INSYTE_BOHRUNG = '50000000-0000-0000-0000-000000000011'
 
 const APPT_1 = '70000000-0000-0000-0000-000000000001'
 const APPT_2 = '70000000-0000-0000-0000-000000000002'
@@ -411,6 +413,20 @@ export const initialFixtures = () => ({
       notes: 'LE — durchlaufende Position, Abrechnung nach tatsächlichem Aufwand',
       created_at: LAST_WEEK, updated_at: LAST_WEEK,
     },
+    // INSYTE Bohrung + Aktivierung position (migration 079): the only fixture
+    // with a capture_plan_key of its own — an order picks the plan through the
+    // catalogue position, no per-order override needed. Demo prices, not the
+    // real rate card.
+    {
+      id: SI_INSYTE_BOHRUNG, code: 'DGF_ACT_001',
+      description_de: 'HÜP-GFTA-ONT, Fusion + Aktivierung + Bohrung',
+      description_es: 'HÜP-GFTA-ONT, Fusión + Activación + Perforación',
+      unit: 'UDS', unit_price: 120.00, unit_price_external: 80.00,
+      category: 'NE3 > Aktivierung',
+      operator_id: OP_DGF, client_id: CLIENT_INSYTE, detail_form: 'alta',
+      capture_plan_key: 'insyte_bohrung_aktivierung',
+      display_order: 11, active: true, is_pass_through: false, notes: null, created_at: LAST_WEEK, updated_at: LAST_WEEK,
+    },
   ],
 
   materials: [
@@ -638,6 +654,22 @@ export const initialFixtures = () => ({
       internal_notes: 'Demo: soplado de RA — plan de captura con catas e incidencias',
       assigned_detail_snapshot: null,
       service_item_id: SI_SOPLADO_M, created_by: ADMIN_ID,
+      created_at: YESTERDAY, updated_at: NOW,
+    },
+    // 11 — Insyte Bohrung + Aktivierung: an 'alta' order whose plan comes from
+    // its catalogue position (service_items.capture_plan_key, migration 079),
+    // NOT from a per-order override — the order's capture_plan_key stays null.
+    // Demoes the branching plan: execution type, HÜP, NT/TA, service pack,
+    // closing photos and the interim signature.
+    {
+      id: WO_11_INSYTE_BOHRUNG, order_number: 'LUM-20260429-0011',
+      client_id: CLIENT_INSYTE, project_id: PROJECT_HXT, operator_id: OP_DGF,
+      line: 'NE3', work_type: 'alta', status: 'in_progress', priority: 'normal',
+      assigned_team: 'rot', assigned_technician: TECH_ID, assigned_date: '2026-04-29',
+      address: 'Brenkhäuser Straße 14', postal_code: '37671', city: 'Höxter',
+      internal_notes: 'Demo: Bohrung + Aktivierung — plan de captura por posición de catálogo',
+      assigned_detail_snapshot: null,
+      service_item_id: SI_INSYTE_BOHRUNG, created_by: ADMIN_ID,
       created_at: YESTERDAY, updated_at: NOW,
     },
   ],
