@@ -1939,5 +1939,15 @@
         "spHours": "z. B. 2"
       }
     }
+  },
+  "fieldAttachments": {
+    "title": "Anhänge zum Auftrag",
+    "hint": "Vom Büro angehängte Unterlagen — nur Ansicht.",
+    "type": {
+      "plano": "Plan / Trassenplan",
+      "cartas_empalme": "Spleißprotokoll",
+      "diagrama_routing": "Routing-Diagramm",
+      "other": "Sonstiges"
+    }
   }
 }

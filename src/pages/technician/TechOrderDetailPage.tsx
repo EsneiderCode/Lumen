@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next'
 import { useLabels } from '@/i18n/labels'
 import { STATUS_COLORS, TEAM_DOT } from '@/constants/styles'
 import { orderSiteRef } from '@/lib/orderSiteRef'
+import { WorkOrderAttachments } from '@/components/capture/WorkOrderAttachments'
 
 interface StateHistoryEntry {
   id: string
@@ -215,6 +216,9 @@ export function TechOrderDetailPage() {
           {error}
         </div>
       )}
+
+      {/* Files the office attached for this job (plan 011 Gap D, read-only) */}
+      {id && <WorkOrderAttachments workOrderId={id} />}
 
       {/* Order info */}
       <div className="rounded-l border border-line bg-bg-1 p-4">

@@ -1939,5 +1939,15 @@
         "spHours": "p. ej. 2"
       }
     }
+  },
+  "fieldAttachments": {
+    "title": "Adjuntos de la orden",
+    "hint": "Documentos adjuntados por la oficina — solo lectura.",
+    "type": {
+      "plano": "Plano / Trassenplan",
+      "cartas_empalme": "Protocolo de empalme",
+      "diagrama_routing": "Diagrama de routing",
+      "other": "Otro"
+    }
   }
 }

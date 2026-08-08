@@ -67,6 +67,7 @@ import { readPhotoMetadata } from '@/lib/exif'
 import { captureExamplePaths, evaluateCapturePlan, slotNodeId } from '@/services/capturePlanEngine'
 import { capturePlanKeyForOrder } from '@/constants/capture-plans'
 import { CapturePlanForm, type PendingPhoto, type SlotTarget } from '@/components/capture/CapturePlanForm'
+import { WorkOrderAttachments } from '@/components/capture/WorkOrderAttachments'
 import type { ServiceItemWithRelations } from '@/types/service-items'
 import type { ConsumptionCorrectionRequired, ConsumptionDraft, InventoryVehicle, VehicleStockRow } from '@/types/material-inventory'
 import type { TeamColor } from '@/types/enums'
@@ -1117,6 +1118,11 @@ export function RueckmeldungPage() {
           )}
         </div>
       )}
+
+      {/* Files the office attached for this job (plan 011 Gap D) — context to
+          read BEFORE working, so it sits above the form. Renders nothing when
+          the order has no attachments. */}
+      {id && !offlineSince && <WorkOrderAttachments workOrderId={id} />}
 
       {/* Capture plan — photos and technical data, driven by the plan of this
           work order (its capture_plan_key, or its work type) */}
