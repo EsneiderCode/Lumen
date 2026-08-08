@@ -1,7 +1,8 @@
 # Plan 011 — Insyte "Bohrung + Aktivierung" capture plan (230 € position)
 
 Status: IN PROGRESS (slice 1 — Gap A + Gap B shipped as migration 079; slice 2 —
-Gap C signature shipped as migration 080)
+Gap C signature shipped as migration 080; slice 3 — Gap D field attachments
+shipped, no migration needed)
 Priority: P1 · Effort: L
 Source: field requirements from Jeisson Romero (Slack, 2026-07-29), transcribed
 and reconciled against the code by the coordinator.
@@ -109,17 +110,18 @@ the whole access rule — no storage DDL), referenced from
 true only after the image is stored, so the gate and the plan JSONB are
 untouched. The certificate PDF embeds the image as its closing section.
 
-**D. Attachments.** The security prerequisite is already handled; two changes remain:
-1. Allow images outside `diagrama_routing` — today PNG/JPG are only accepted for that
-   type (`src/types/work-order-documents.ts:29-41`).
-2. Surface attachments to the technician by mounting `DocumentUploader` (read-only) on
-   the field pages; it lives only on admin pages today.
+**D. Attachments.** **Shipped (slice 3, no migration).** Every document type now
+accepts PDF, Excel or an image (one allow-list, validated in the service as well
+as the uploader), and the technician pages (Rückmeldung + order detail) mount
+`WorkOrderAttachments` — a lean read-only list that fetches its own rows and
+signed URLs, renders nothing when the order has no attachments, and shows name,
+type and size only. Admin upload UI is unchanged apart from the widened hints.
 
 The blocker that used to sit here — `tech_read_work_order_documents` being scoped by
 *team* rather than by assignee, and ignoring the role — was fixed in **PR #24**
-(migration `073_work_order_access_scope.sql`), together with the `work-order-documents`
-bucket and `work-order-photos`, which was readable and writable by any authenticated
-user. **Do not mount the field attachment view until PR #24 is merged and applied.**
+(migration `073_work_order_access_scope.sql`, merged AND applied), together with the
+`work-order-documents` bucket and `work-order-photos`, which was readable and writable
+by any authenticated user. That is what made mounting the field view safe.
 
 ## Migrations
 
