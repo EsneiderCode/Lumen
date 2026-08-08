@@ -50,6 +50,12 @@ export function generateCertificatePdf(
   photos: PhotoItem[],
   history: StateEntry[],
   getPhotoUrl: (path: string) => string,
+  /**
+   * The client's hand-drawn signature (plan 011 Gap C), already fetched and
+   * decoded by the caller — this function stays synchronous. Width/height are
+   * the image's natural pixels, used only to keep its aspect ratio.
+   */
+  signature?: { dataUrl: string; width: number; height: number } | null,
 ): void {
   const doc = new jsPDF()
   const pageW = doc.internal.pageSize.getWidth()
@@ -194,6 +200,34 @@ export function generateCertificatePdf(
         y += noteLines.length * 4.5 + 1
       }
     }
+  }
+
+  // ── Unterschrift des Kunden ───────────────────────────────────
+  // Last on purpose: the signature closes the certificate.
+  if (signature) {
+    y += 4
+    addSection('Unterschrift des Kunden')
+    const boxW = 70
+    const boxH = 25
+    checkPage(boxH + 8)
+    const ratio =
+      signature.width > 0 && signature.height > 0
+        ? signature.width / signature.height
+        : boxW / boxH
+    let imgW = boxW - 2
+    let imgH = imgW / ratio
+    if (imgH > boxH - 2) {
+      imgH = boxH - 2
+      imgW = imgH * ratio
+    }
+    doc.setDrawColor(180, 200, 220)
+    doc.rect(16, y, boxW, boxH)
+    try {
+      doc.addImage(signature.dataUrl, 'PNG', 17, y + 1, imgW, imgH)
+    } catch {
+      // An undecodable image leaves the frame empty rather than no PDF at all.
+    }
+    y += boxH + 6
   }
 
   doc.save(`${order.order_number}_Zertifikat.pdf`)

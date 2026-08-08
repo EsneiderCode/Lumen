@@ -44,7 +44,11 @@ import {
 } from '@/services/notificationService'
 import { InvoicePreviewModal } from '@/components/admin/InvoicePreviewModal'
 import { fetchProfileCompliance, type ProfileComplianceResult } from '@/services/complianceService'
-import { fetchCapturePlanForOrder, fetchCaptureReport } from '@/services/capturePlanService'
+import {
+  fetchCapturePlanForOrder,
+  fetchCaptureReport,
+  fetchClientSignatureUrl,
+} from '@/services/capturePlanService'
 import { captureDetailEntries, captureDetailRecord } from '@/services/capturePlanEngine'
 import { buildCaptureMapData } from '@/lib/captureMapPoints'
 import { buildCapturePhotoGroups } from '@/lib/capturePhotoGroups'
@@ -191,6 +195,8 @@ export function WorkOrderDetailPage() {
   // technical data below and the certificate PDF (phase 7).
   const [capturePlan, setCapturePlan] = useState<CapturePlan | null>(null)
   const [captureAnswers, setCaptureAnswers] = useState<CaptureAnswers>({})
+  /** Signature image path from the capture report (migration 080), for the PDF. */
+  const [captureSignaturePath, setCaptureSignaturePath] = useState<string | null>(null)
   const [selectedPointId, setSelectedPointId] = useState<string | null>(null)
   const [certAudits, setCertAudits] = useState<
     Array<{
@@ -332,6 +338,7 @@ export function WorkOrderDetailPage() {
           ])
           setCapturePlan(plan)
           setCaptureAnswers(report?.answers ?? {})
+          setCaptureSignaturePath(report?.client_signature_path ?? null)
         } catch {
           setError('Verbindungsfehler. Bitte Seite neu laden.')
         } finally {
@@ -479,12 +486,52 @@ export function WorkOrderDetailPage() {
     setIsTransitioning(false)
   }
 
+  /**
+   * Fetches and decodes the signature PNG so the (synchronous) PDF builder can
+   * embed it with its real aspect ratio. Any failure — no path, expired URL,
+   * undecodable bytes — degrades to a certificate without the image.
+   */
+  async function loadSignatureForPdf(): Promise<{
+    dataUrl: string
+    width: number
+    height: number
+  } | null> {
+    if (!captureSignaturePath) return null
+    try {
+      const url = await fetchClientSignatureUrl(captureSignaturePath)
+      if (!url) return null
+      const blob = await (await fetch(url)).blob()
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result as string)
+        reader.onerror = () => reject(reader.error)
+        reader.readAsDataURL(blob)
+      })
+      const image = new Image()
+      image.src = dataUrl
+      await image.decode()
+      return { dataUrl, width: image.naturalWidth, height: image.naturalHeight }
+    } catch {
+      return null
+    }
+  }
+
   async function handlePdfDownload() {
     if (!order) return
     const paths = photos.map((p) => p.storage_path)
-    const urls = paths.length > 0 ? await getPhotoSignedUrls(paths) : {}
+    const [urls, signature] = await Promise.all([
+      paths.length > 0 ? getPhotoSignedUrls(paths) : Promise.resolve({}),
+      loadSignatureForPdf(),
+    ])
     const { generateCertificatePdf } = await import('@/services/pdfService')
-    generateCertificatePdf(order, detailEntries, photos, history, (path) => urls[path] ?? '')
+    generateCertificatePdf(
+      order,
+      detailEntries,
+      photos,
+      history,
+      (path) => (urls as Record<string, string>)[path] ?? '',
+      signature,
+    )
   }
 
   function openModal(type: ModalType) {
