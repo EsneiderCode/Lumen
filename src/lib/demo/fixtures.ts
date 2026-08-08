@@ -744,6 +744,24 @@ export const initialFixtures = () => ({
     { id: 'd4000000-0000-0000-0000-000000000004', work_order_id: WO_4_DIRECT, connected_section: 'POP→Rack-3', cable_length: 2.5, connector_type: 'LC/APC', test_result: 'OK', created_at: LAST_WEEK },
   ],
 
+  // Files the office attached as job context (plan 011 Gap D). The demo
+  // Insyte order carries one PDF and one photo so the technician's read-only
+  // attachment list can be shown without credentials.
+  work_order_documents: [
+    {
+      id: 'e0000000-0000-0000-0000-000000000001', work_order_id: WO_11_INSYTE_BOHRUNG,
+      document_type: 'plano', file_name: 'Trassenplan_Brenkhaeuser_14.pdf',
+      storage_path: 'demo/wo11-trassenplan.pdf', mime_type: 'application/pdf',
+      size_bytes: 245760, uploaded_by: ADMIN_ID, uploaded_at: YESTERDAY,
+    },
+    {
+      id: 'e0000000-0000-0000-0000-000000000002', work_order_id: WO_11_INSYTE_BOHRUNG,
+      document_type: 'other', file_name: 'HUEP_Zugang_Foto.png',
+      storage_path: 'demo/wo11-huep-zugang.png', mime_type: 'image/png',
+      size_bytes: 98304, uploaded_by: ADMIN_ID, uploaded_at: NOW,
+    },
+  ],
+
   work_order_photos: [
     { id: 'p0000000-0000-0000-0000-000000000031', work_order_id: WO_3, storage_path: 'demo/wo3-before.jpg', photo_type: 'before', section_key: 'photos', slot_key: 'before', item_id: null, caption: null, uploaded_by: TECH_ID, created_at: NOW },
     { id: 'p0000000-0000-0000-0000-000000000032', work_order_id: WO_3, storage_path: 'demo/wo3-during.jpg', photo_type: 'during', section_key: 'photos', slot_key: 'during', item_id: null, caption: null, uploaded_by: TECH_ID, created_at: NOW },
