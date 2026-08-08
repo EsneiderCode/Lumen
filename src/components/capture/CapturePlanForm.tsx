@@ -31,6 +31,10 @@ import type {
 } from '@/types/capture-plan'
 import type { CapturePhotoRow } from '@/services/capturePlanService'
 import { slotNodeId, fieldNodeId } from '@/services/capturePlanEngine'
+import { SignatureField, type SignatureControl } from '@/components/capture/SignatureField'
+
+/** The field the signature widget replaces, wherever a plan asks for it. */
+const CLIENT_SIGNATURE_FIELD_KEY = 'client_signature'
 
 // ~200 KB gzip of map library that a technician who never opens the pin editor
 // must not download.
@@ -75,6 +79,12 @@ export interface CapturePlanFormProps {
   onDeletePhoto: (photo: CapturePhotoRow) => void
   onAddItem: (sectionKey: string) => void
   onRemoveItem: (sectionKey: string, itemId: string) => void
+  /**
+   * The signature round-trip for the `client_signature` field (plan 011 Gap C).
+   * Absent = the field renders as the plain control its type declares, which is
+   * what read-only mounts and older flows still expect.
+   */
+  signature?: SignatureControl | null
 }
 
 // ── Field control ────────────────────────────────────────────────────────────
@@ -332,6 +342,7 @@ function CaptureFieldControl({
   fallbackCenter,
   point,
   onPointChange,
+  signature,
 }: {
   field: CaptureField
   value: unknown
@@ -345,12 +356,38 @@ function CaptureFieldControl({
   /** The position this section holds, for a `geoconfirm` field to vouch for. */
   point?: CaptureGeoPoint | null
   onPointChange?: (value: CaptureGeoPoint) => void
+  signature?: SignatureControl | null
 }) {
   const { t } = useTranslation()
   const label = t(field.labelKey, { defaultValue: field.key.replace(/_/g, ' ') })
   const inputClass = `w-full rounded-m border bg-bg-0 px-3 py-2.5 text-sm text-fg-1 placeholder:text-fg-4 focus:border-accent focus:outline-none ${
     missing ? 'border-accent/60' : 'border-line'
   }`
+
+  // The signature widget replaces whatever plain control the plan declared for
+  // `client_signature` — yesno on insyte_bohrung_aktivierung, checkbox on the
+  // alta default. The stored answer stays that boolean: the image is set to
+  // true only AFTER the PNG is safely in storage, so the gate can keep judging
+  // the field it already knows.
+  if (field.key === CLIENT_SIGNATURE_FIELD_KEY && signature) {
+    return (
+      <div id={nodeId} className={highlighted ? 'rounded-m border border-accent p-2' : ''}>
+        <label className="mb-1.5 block text-xs font-medium text-fg-2">
+          {label}
+          {required && <span className="ml-1 text-accent">*</span>}
+        </label>
+        {field.hintKey && (
+          <p className="mb-1.5 text-xs text-fg-3">{t(field.hintKey, { defaultValue: '' })}</p>
+        )}
+        <SignatureField
+          control={signature}
+          signed={value === true}
+          onSigned={() => onChange(true)}
+          onCleared={() => onChange(null)}
+        />
+      </div>
+    )
+  }
 
   return (
     <div id={nodeId} className={highlighted ? 'rounded-m border border-accent p-2' : ''}>
@@ -700,6 +737,7 @@ export function CapturePlanForm(props: CapturePlanFormProps) {
             ? (value) => props.onFieldChange(section.key, geoKey, value, itemId)
             : undefined
         }
+        signature={props.signature}
       />
     )
   }

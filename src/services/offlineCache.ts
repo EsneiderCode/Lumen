@@ -30,6 +30,8 @@ export interface CachedOrderSnapshot {
   catalog: ServiceItemWithRelations[]
   vehicles: InventoryVehicle[]
   returnedNote: string | null
+  /** Signature image path (080). The signed URL itself is never cached. */
+  clientSignaturePath?: string | null
   cachedAt: string
 }
 

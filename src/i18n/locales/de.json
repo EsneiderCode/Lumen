@@ -1707,6 +1707,17 @@
       "hint": "Jede Grube hat ihren Pin bereits bestätigt. Hier stehen sie zusammen: ergibt der Verlauf keinen Sinn, den Pin der Ausreißerin verschieben und erneut bestätigen.",
       "confirmedCount": "{{done}}/{{total}} BESTÄTIGT",
       "unconfirmed": "nicht bestätigt"
+    },
+    "signature": {
+      "action": "Unterschreiben",
+      "hint": "Der Kunde unterschreibt hier mit dem Finger oder einem Stift.",
+      "save": "Unterschrift übernehmen",
+      "saving": "Wird gespeichert…",
+      "clear": "Löschen",
+      "cancel": "Abbrechen",
+      "signed": "Unterschrieben",
+      "redo": "Neu unterschreiben",
+      "error": "Unterschrift konnte nicht gespeichert werden. Bitte erneut versuchen."
     }
   },
   "map": {

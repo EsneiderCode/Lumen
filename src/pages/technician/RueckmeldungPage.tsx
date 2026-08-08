@@ -42,8 +42,11 @@ import {
 import { notifyReportSubmitted, type ReportSubmittedNotification } from '@/services/notificationService'
 import {
   fetchCaptureExampleUrls,
+  fetchClientSignatureUrl,
+  removeClientSignature,
   saveCaptureReport,
   uploadCapturePhoto,
+  uploadClientSignature,
   type CapturePhotoRow,
 } from '@/services/capturePlanService'
 import { pinResetKeys, setTrenchLocation, trenchesForReview } from '@/lib/trenchReview'
@@ -149,6 +152,12 @@ export function RueckmeldungPage() {
   const [error, setError] = useState<string | null>(null)
   const [savedOk, setSavedOk] = useState(false)
   const [returnedNote, setReturnedNote] = useState<string | null>(null)
+  // The client signature (plan 011 Gap C): the stored PNG's path travels with
+  // the capture report; the boolean answer only turns true once the image is up.
+  const [signaturePath, setSignaturePath] = useState<string | null>(null)
+  const [signatureUrl, setSignatureUrl] = useState<string | null>(null)
+  const [signatureUploading, setSignatureUploading] = useState(false)
+  const [signatureError, setSignatureError] = useState<string | null>(null)
   /** `cachedAt` of the snapshot on screen when it came from the device, else null. */
   const [offlineSince, setOfflineSince] = useState<string | null>(null)
   const [queuedNotice, setQueuedNotice] = useState<string | null>(null)
@@ -216,6 +225,7 @@ export function RueckmeldungPage() {
         setPlan(data.plan)
         setAnswers(data.answers)
         setReturnedNote(data.returnedNote)
+        setSignaturePath(data.clientSignaturePath)
         setCatalog(data.catalog)
         setVehicles(data.vehicles)
         setReportedDrafts(
@@ -234,6 +244,9 @@ export function RueckmeldungPage() {
           getPhotoSignedUrls(data.photos.map((photo) => photo.storage_path)).then(setPhotoUrls)
           if (data.plan) {
             fetchCaptureExampleUrls(captureExamplePaths(data.plan)).then(setExampleUrls)
+          }
+          if (data.clientSignaturePath) {
+            fetchClientSignatureUrl(data.clientSignaturePath).then(setSignatureUrl)
           }
         }
       },
@@ -254,7 +267,11 @@ export function RueckmeldungPage() {
   const persistedRef = useRef<string | null>(null)
   useEffect(() => {
     if (isLoading || !plan || !id || !user) return
-    const snapshot = JSON.stringify({ answers, reported: reportedServiceItems() })
+    const snapshot = JSON.stringify({
+      answers,
+      reported: reportedServiceItems(),
+      signature: signaturePath,
+    })
     // La primera pasada es lo recién cargado: no hay nada que guardar todavía.
     if (persistedRef.current === null) {
       persistedRef.current = snapshot
@@ -271,7 +288,7 @@ export function RueckmeldungPage() {
     }, 2500)
     return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [answers, reportedDrafts, isLoading, plan, id, user])
+  }, [answers, reportedDrafts, signaturePath, isLoading, plan, id, user])
 
   // ── Plano de las catas ────────────────────────────────────────────────────
   // Cada cata confirma su pin en su propio bloque; este mapa solo las enseña
@@ -703,7 +720,41 @@ export function RueckmeldungPage() {
       userId: user.id,
       submitted,
       reportedServiceItems: reportedServiceItems(),
+      clientSignaturePath: signaturePath,
     })
+  }
+
+  // ── Client signature (plan 011 Gap C) ─────────────────────────────────────
+  // The image goes up first; only a successful upload lets the form flip the
+  // `client_signature` answer to true. Signing needs a network — a signature
+  // captured into the void would vouch for evidence that does not exist.
+
+  async function handleSignatureCapture(blob: Blob): Promise<boolean> {
+    if (!id) return false
+    setSignatureUploading(true)
+    setSignatureError(null)
+    const previous = signaturePath
+    const { path } = await uploadClientSignature(id, blob)
+    if (!path) {
+      setSignatureError(t('capture.signature.error'))
+      setSignatureUploading(false)
+      return false
+    }
+    // Preview from the local blob: no reason to wait for a signed URL of the
+    // very bytes that are still in hand.
+    setSignaturePath(path)
+    setSignatureUrl(URL.createObjectURL(blob))
+    if (previous) void removeClientSignature(previous)
+    setSignatureUploading(false)
+    return true
+  }
+
+  async function handleSignatureClear(): Promise<boolean> {
+    if (signaturePath) void removeClientSignature(signaturePath)
+    setSignaturePath(null)
+    setSignatureUrl(null)
+    setSignatureError(null)
+    return true
   }
 
   async function handleSave() {
@@ -1087,6 +1138,13 @@ export function RueckmeldungPage() {
           onDeletePhoto={(photo) => handlePhotoDelete(photo.id, photo.storage_path)}
           onAddItem={handleAddItem}
           onRemoveItem={handleRemoveItem}
+          signature={{
+            url: signatureUrl,
+            uploading: signatureUploading,
+            error: signatureError,
+            onCapture: handleSignatureCapture,
+            onClear: handleSignatureClear,
+          }}
         />
       ) : (
         <div className="rounded-l border border-warn/40 bg-warn/10 px-4 py-3 text-sm text-warn">

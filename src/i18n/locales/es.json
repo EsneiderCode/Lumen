@@ -1707,6 +1707,17 @@
       "hint": "Cada cata ya confirmó su pin. Esto es para verlas juntas: si el recorrido no tiene sentido, movés el pin de la que se salga y volvés a confirmarla.",
       "confirmedCount": "{{done}}/{{total}} CONFIRMADAS",
       "unconfirmed": "sin confirmar"
+    },
+    "signature": {
+      "action": "Firmar",
+      "hint": "El cliente firma aquí con el dedo o con un lápiz táctil.",
+      "save": "Guardar firma",
+      "saving": "Guardando…",
+      "clear": "Borrar",
+      "cancel": "Cancelar",
+      "signed": "Firmado",
+      "redo": "Repetir firma",
+      "error": "No se pudo guardar la firma. Inténtalo de nuevo."
     }
   },
   "map": {
