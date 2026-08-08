@@ -768,7 +768,7 @@ export function RueckmeldungPage() {
     // No network: the draft lives on the device. Nothing is queued for upload —
     // a draft is not a submission, and re-saving it later replaces it.
     if (!navigator.onLine) {
-      await cacheAnswers(id, answers, reportedServiceItems())
+      await cacheAnswers(id, answers, reportedServiceItems(), signaturePath)
       setQueuedNotice(t('offline.savedLocally'))
       setIsSaving(false)
       return
@@ -783,7 +783,7 @@ export function RueckmeldungPage() {
 
     // Keep the offline copy current, so reopening without coverage shows what
     // was just saved rather than what was loaded.
-    await cacheAnswers(id, answers, reportedServiceItems())
+    await cacheAnswers(id, answers, reportedServiceItems(), signaturePath)
 
     setSavedOk(true)
     setTimeout(() => setSavedOk(false), 3000)
@@ -871,6 +871,7 @@ export function RueckmeldungPage() {
         planVersion: plan.version,
         answers,
         reportedServiceItems: reportedServiceItems(),
+        clientSignaturePath: signaturePath,
         notes,
         consumption:
           consumptionDraftValues.length > 0
@@ -887,7 +888,7 @@ export function RueckmeldungPage() {
         return
       }
 
-      await cacheAnswers(id, answers, reportedServiceItems())
+      await cacheAnswers(id, answers, reportedServiceItems(), signaturePath)
       void refreshPendingCounts()
       setIsSending(false)
       navigate(`/tech/orders/${id}`)

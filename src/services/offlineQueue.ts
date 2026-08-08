@@ -84,6 +84,8 @@ export interface QueuedSubmission {
   detailTable?: string
   detail?: Record<string, unknown>
   notes: string
+  /** Client signature PNG path (080); `undefined` on pre-080 queue entries. */
+  clientSignaturePath: string | null
   consumption: QueuedConsumption | null
   /** Telegram card, sent after the transition lands. */
   notification: ReportSubmittedNotification | null

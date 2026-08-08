@@ -65,10 +65,13 @@ export async function cacheAnswers(
   workOrderId: string,
   answers: CaptureAnswers,
   reportedDrafts: ReportedServiceItemDraft[],
+  /** Omitted = keep what the snapshot already holds (pre-080 callers). */
+  clientSignaturePath?: string | null,
 ): Promise<void> {
   const snapshot = await readOrderSnapshot(workOrderId)
   if (!snapshot) return
-  await cacheOrderSnapshot({ ...snapshot, answers, reportedDrafts })
+  const patch = clientSignaturePath === undefined ? {} : { clientSignaturePath }
+  await cacheOrderSnapshot({ ...snapshot, answers, reportedDrafts, ...patch })
 }
 
 export async function forgetOrderSnapshot(workOrderId: string): Promise<void> {
