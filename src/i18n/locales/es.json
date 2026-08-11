@@ -185,7 +185,9 @@
     "Erdgeschoss": "Planta baja",
     "Obergeschoss": "Planta superior",
     "Dach": "Tejado",
-    "Außen": "Exterior"
+    "Außen": "Exterior",
+    "tiefbau": "Tiefbau (zanja)",
+    "lanze": "Lanze (lanza)"
   },
   "workOrder": {
     "title": "Órdenes",
@@ -1712,6 +1714,20 @@
       "hint": "Cada cata ya confirmó su pin. Esto es para verlas juntas: si el recorrido no tiene sentido, movés el pin de la que se salga y volvés a confirmarla.",
       "confirmedCount": "{{done}}/{{total}} CONFIRMADAS",
       "unconfirmed": "sin confirmar"
+    },
+    "signature": {
+      "action": "Firmar",
+      "hint": "El cliente firma aquí con el dedo o con un lápiz táctil.",
+      "save": "Guardar firma",
+      "saving": "Guardando…",
+      "clear": "Borrar",
+      "cancel": "Cancelar",
+      "signed": "Firmado",
+      "redo": "Repetir firma",
+      "error": "No se pudo guardar la firma. Inténtalo de nuevo.",
+      "decline": "El cliente rechaza firmar",
+      "declined": "Firma rechazada",
+      "undo": "Deshacer"
     }
   },
   "map": {
@@ -1811,6 +1827,137 @@
         "location": "Copiá las coordenadas que salen en la marca de agua de una de las fotos de esta cata.",
         "pinConfirmed": "Comprobá sobre el mapa que el pin cae donde estuvo la cata."
       }
+    },
+    "insyteBohrung": {
+      "title": "Perforación + Activación (Insyte)",
+      "externalMethod": {
+        "title": "Ejecución exterior",
+        "description": "¿Cómo se ejecutó la acometida hasta la casa?"
+      },
+      "externalPhotos": {
+        "title": "Fotos exteriores",
+        "description": "Speedpipe (microducto) y acometida, según el tipo de ejecución."
+      },
+      "huep": {
+        "title": "HÜP",
+        "description": "Punto de entrega en la casa: abierto, cerrado, entorno y registro de la fibra."
+      },
+      "ntTa": {
+        "title": "NT / TA",
+        "description": "Confirmar instalación y sincronización."
+      },
+      "ntTaPhotos": {
+        "title": "Fotos NT / TA",
+        "description": "NT conectado, número de serie y entorno."
+      },
+      "servicePack": {
+        "title": "Service-Pack",
+        "description": "Rellenar solo si se realizó trabajo adicional como Service-Pack."
+      },
+      "servicePackPhotos": {
+        "title": "Fotos Service-Pack",
+        "description": "Evidencia del trabajo realizado como Service-Pack."
+      },
+      "closing": {
+        "title": "Cierre",
+        "description": "Documentar la activación y las mediciones."
+      },
+      "closingSignature": {
+        "title": "Firma del cliente"
+      },
+      "slot": {
+        "speedpipe": {
+          "label": "Speedpipe (microducto)",
+          "hint": "Speedpipe (microducto) instalado, recorrido visible en la foto."
+        },
+        "excavationOpen": {
+          "label": "Zanja abierta",
+          "hint": "Zanja abierta con el Speedpipe visible."
+        },
+        "muffe": {
+          "label": "Manguito (Muffe)",
+          "hint": "Manguito colocado en la zanja abierta."
+        },
+        "excavationClosed": {
+          "label": "Zanja cerrada",
+          "hint": "Superficie restaurada tras el Tiefbau."
+        },
+        "beforeWork": {
+          "label": "Antes del trabajo",
+          "hint": "Estado antes de usar la lanza (Lanze)."
+        },
+        "afterWork": {
+          "label": "Después del trabajo",
+          "hint": "Estado después de usar la lanza, superficie restaurada."
+        },
+        "huepOpen": {
+          "label": "HÜP abierto",
+          "hint": "HÜP abierto con el guiado de la fibra visible."
+        },
+        "huepClosed": {
+          "label": "HÜP cerrado",
+          "hint": "HÜP cerrado al terminar el trabajo."
+        },
+        "huepPanorama": {
+          "label": "HÜP panorámica",
+          "hint": "HÜP con su entorno, para ubicarlo en el edificio."
+        },
+        "faserAnmeldung": {
+          "label": "Registro de la fibra (Faser anmelden)",
+          "hint": "Evidencia del registro de la fibra (pantalla de la app o etiqueta)."
+        },
+        "ntConnected": {
+          "label": "NT conectado",
+          "hint": "NT conectado con el cableado visible."
+        },
+        "ntSerial": {
+          "label": "Número de serie del NT",
+          "hint": "Etiqueta con el número de serie, texto legible."
+        },
+        "taFront": {
+          "label": "TA vista frontal",
+          "hint": "TA instalada, vista de frente."
+        },
+        "ntPanorama": {
+          "label": "NT panorámica",
+          "hint": "NT con su entorno, para ubicarlo en la habitación."
+        },
+        "spEvidence": {
+          "label": "Evidencia del Service-Pack",
+          "hint": "El trabajo adicional realizado, visible en la foto."
+        },
+        "activation": {
+          "label": "Activación",
+          "hint": "Conexión activada, p. ej. LEDs de estado encendidos."
+        },
+        "measurements": {
+          "label": "Mediciones",
+          "hint": "Resultado de la medición de la activación, valores legibles."
+        }
+      },
+      "field": {
+        "executionType": "Tipo de ejecución",
+        "taInstalled": "¿TA instalada?",
+        "ntSynchronized": "¿NT sincronizado?",
+        "syncIssueNote": "Problema de sincronización",
+        "spPerformed": "¿Se realizó Service-Pack?",
+        "spHours": "Horas",
+        "clientSignature": "¿El cliente firmó?"
+      },
+      "placeholder": {
+        "syncIssueNote": "¿Qué impide la sincronización?",
+        "spHours": "p. ej. 2"
+      }
+    }
+  },
+  "fieldAttachments": {
+    "title": "Adjuntos de la orden",
+    "hint": "Documentos adjuntados por la oficina — solo lectura.",
+    "type": {
+      "plano": "Plano / Trassenplan",
+      "cartas_empalme": "Protocolo de empalme",
+      "diagrama_routing": "Diagrama de routing",
+      "other": "Otro"
     }
   }
 }

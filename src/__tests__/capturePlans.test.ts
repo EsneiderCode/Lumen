@@ -10,6 +10,7 @@ import {
   compiledVariantsForWorkType,
   defaultCapturePlanFor,
 } from '@/constants/capture-plans'
+import { INSYTE_BOHRUNG_PLAN } from '@/constants/capture-plans-insyte-bohrung'
 import { SOPLADO_RA_PLAN } from '@/constants/capture-plans-soplado-ra'
 import { DETAIL_FIELDS } from '@/constants/detail-fields'
 import {
@@ -55,6 +56,10 @@ const migration078 = readFileSync(
   join(process.cwd(), 'supabase', 'migrations', '078_capture_plan_slot_key_rescue.sql'),
   'utf8',
 )
+const migration079 = readFileSync(
+  join(process.cwd(), 'supabase', 'migrations', '079_insyte_bohrung_capture_plan.sql'),
+  'utf8',
+)
 
 /** Every `('key', version, $plan$…$plan$)` row of a seed migration. */
 const seededPlans = (sql: string): Map<string, unknown> => {
@@ -77,6 +82,7 @@ const CATALOG = new Map<string, unknown>([
   ...seededPlans(migration059),
   ...seededPlans(migration071),
   ...seededPlans(migration076),
+  ...seededPlans(migration079),
 ])
 
 const sectionOf = (plan: CapturePlan, key: string): CaptureSection => {
@@ -282,7 +288,7 @@ describe('the Soplado de RA plan', () => {
     expect(SOPLADO_RA_PLAN.key).toBe('soplado_ra')
     expect(SOPLADO_RA_PLAN.workType).toBe('soplado')
     expect(compiledVariantsForWorkType('soplado')).toEqual([SOPLADO_RA_PLAN])
-    expect(compiledVariantsForWorkType('alta')).toEqual([])
+    expect(compiledVariantsForWorkType('alta')).not.toContain(SOPLADO_RA_PLAN)
   })
 
   // Since v4 the four mandatory photos are split by WHERE they are taken, and
@@ -700,6 +706,214 @@ describe('migration 053 seeds exactly the Soplado de RA plan', () => {
     expect(sql).toContain("has_permission('settings.manage_capture_plans')")
     // A new plan is a new version row, never an edit of an existing one.
     expect(sql).toContain('on conflict (key, version) do update')
+  })
+})
+
+describe('the Insyte Bohrung + Aktivierung plan (migration 079)', () => {
+  it('is a variant of alta, offered only on alta orders', () => {
+    expect(INSYTE_BOHRUNG_PLAN.key).toBe('insyte_bohrung_aktivierung')
+    expect(INSYTE_BOHRUNG_PLAN.version).toBe(1)
+    expect(INSYTE_BOHRUNG_PLAN.workType).toBe('alta')
+    expect(compiledVariantsForWorkType('alta')).toEqual([INSYTE_BOHRUNG_PLAN])
+    expect(compiledVariantsForWorkType('soplado')).not.toContain(INSYTE_BOHRUNG_PLAN)
+  })
+
+  // The hard rule migration 078 bought with three blocked orders: the slot, not
+  // the section, is the identity of a photo. Two sections claiming one slot
+  // name would make their photos count for nothing.
+  it('keeps every photo slot key unique across the WHOLE plan', () => {
+    const keys = INSYTE_BOHRUNG_PLAN.sections.flatMap((section) =>
+      'slots' in section ? section.slots.map((slot) => slot.key) : [],
+    )
+    expect(keys.length).toBeGreaterThan(0)
+    expect(new Set(keys).size).toBe(keys.length)
+  })
+
+  it('seeds the plan and nothing else, identical to the compiled constant', () => {
+    expect([...seededPlans(migration079).keys()]).toEqual(['insyte_bohrung_aktivierung@1'])
+    expect(CATALOG.get(`insyte_bohrung_aktivierung@${INSYTE_BOHRUNG_PLAN.version}`)).toEqual(
+      JSON.parse(JSON.stringify(INSYTE_BOHRUNG_PLAN)),
+    )
+  })
+
+  it('ships the interim signature as a required yesno under the load-bearing key', () => {
+    // Gap C (plan 011): the canvas will answer this very node later — the key
+    // must survive the widget swap, the plan JSONB must not change.
+    const signature = sectionOf(INSYTE_BOHRUNG_PLAN, 'closing_signature')
+    const fields = 'fields' in signature ? signature.fields : []
+    expect(fields).toEqual([
+      {
+        key: 'client_signature',
+        type: 'yesno',
+        labelKey: 'capturePlan.insyteBohrung.field.clientSignature',
+        required: true,
+      },
+    ])
+  })
+
+  it('binds the catalogue position and declares the migration structure', () => {
+    const sql = migration079.toLowerCase()
+    expect(sql).toMatch(/--\s*depends on:[\s\S]*052_capture_plans\.sql/)
+    expect(sql).toMatch(/--\s*depends on:[\s\S]*066_client_owned_service_catalog\.sql/)
+    expect(sql).toContain('on conflict (key, version) do update')
+    expect(sql).toContain('begin;')
+    expect(sql).toContain('commit;')
+    // The new column and the binding: every INSYTE row of the position, by
+    // client + description, so it holds for the five per-operator rows and for
+    // any future collapsed one alike.
+    expect(sql).toMatch(
+      /alter table public\.service_items\s+add column if not exists capture_plan_key text null/,
+    )
+    expect(migration079).toContain("c.code = 'INSYTE'")
+    expect(migration079).toContain(
+      "si.description_de = 'HÜP-GFTA-ONT, Fusion + Aktivierung + Bohrung'",
+    )
+  })
+
+  it('teaches the SQL twin the three-step precedence, in order', () => {
+    const fn = migration079.slice(
+      migration079.indexOf('CREATE OR REPLACE FUNCTION public.work_order_capture_plan_key'),
+    )
+    // order override → service item → work type, exactly like the TS twin.
+    expect(fn).toMatch(
+      /COALESCE\(\s*NULLIF\(btrim\(wo\.capture_plan_key\), ''\),\s*NULLIF\(btrim\(si\.capture_plan_key\), ''\),\s*wo\.work_type::text\s*\)/,
+    )
+    expect(fn).toContain('LEFT JOIN public.service_items si ON si.id = wo.service_item_id')
+  })
+
+  it('resolves order override → service item → work type in the TS twin', () => {
+    const item = { capture_plan_key: 'insyte_bohrung_aktivierung' }
+    expect(capturePlanKeyForOrder({ work_type: 'alta', service_items: item })).toBe(
+      'insyte_bohrung_aktivierung',
+    )
+    expect(
+      capturePlanKeyForOrder({ work_type: 'alta', capture_plan_key: 'alta', service_items: item }),
+    ).toBe('alta')
+    expect(
+      capturePlanKeyForOrder({ work_type: 'alta', capture_plan_key: '  ', service_items: item }),
+    ).toBe('insyte_bohrung_aktivierung')
+    expect(
+      capturePlanKeyForOrder({
+        work_type: 'alta',
+        service_items: { capture_plan_key: '   ' },
+      }),
+    ).toBe('alta')
+    expect(capturePlanKeyForOrder({ work_type: 'alta', service_items: null })).toBe('alta')
+    expect(defaultCapturePlanFor('insyte_bohrung_aktivierung')).toBe(INSYTE_BOHRUNG_PLAN)
+  })
+})
+
+describe('evaluating the Insyte Bohrung + Aktivierung plan', () => {
+  const photosFor = (sectionKey: string, slotKeys: string[]): CapturedPhotoRef[] =>
+    slotKeys.map((slotKey) => ({
+      id: `${sectionKey}-${slotKey}`,
+      section_key: sectionKey,
+      slot_key: slotKey,
+    }))
+
+  /** A finished lance job: no trench, TA installed, NT in sync, no service pack. */
+  const lanzeAnswers = (): CaptureAnswers => ({
+    external_method: { execution_type: 'lanze' },
+    nt_ta: { ta_installed: true, nt_synchronized: true },
+    service_pack: { sp_performed: false },
+    closing_signature: { client_signature: true },
+  })
+
+  const lanzePhotos = (): CapturedPhotoRef[] => [
+    ...photosFor('external_photos', ['speedpipe', 'before_work', 'after_work']),
+    ...photosFor('huep', ['huep_open', 'huep_closed', 'huep_panorama', 'faser_anmeldung']),
+    ...photosFor('nt_ta_photos', ['nt_connected', 'nt_serial', 'ta_front', 'nt_panorama']),
+    ...photosFor('closing', ['activation', 'measurements']),
+  ]
+
+  it('accepts a complete lance job', () => {
+    const result = evaluateCapturePlan(INSYTE_BOHRUNG_PLAN, lanzePhotos(), lanzeAnswers())
+    expect(describeMissingNodes(result)).toEqual([])
+    expect(result.canSubmit).toBe(true)
+  })
+
+  it('swaps the outside evidence when the job was an excavation', () => {
+    const answers = { ...lanzeAnswers(), external_method: { execution_type: 'tiefbau' } }
+    const result = evaluateCapturePlan(INSYTE_BOHRUNG_PLAN, lanzePhotos(), answers)
+
+    // The lance slots stop counting as demands; the excavation ones start.
+    expect(result.canSubmit).toBe(false)
+    expect(result.missing.map((node) => node.slotKey)).toEqual([
+      'excavation_open',
+      'muffe',
+      'excavation_closed',
+    ])
+    const external = result.sections.find((section) => section.key === 'external_photos')
+    expect(external?.slots.find((slot) => slot.slotKey === 'before_work')?.visible).toBe(false)
+    expect(external?.slots.find((slot) => slot.slotKey === 'after_work')?.visible).toBe(false)
+  })
+
+  it('demands only the speedpipe outside until the execution type is answered', () => {
+    const answers = { ...lanzeAnswers(), external_method: {} }
+    const result = evaluateCapturePlan(INSYTE_BOHRUNG_PLAN, [], answers)
+
+    const outside = result.missing.filter((node) => node.sectionKey === 'external_photos')
+    expect(outside.map((node) => node.slotKey)).toEqual(['speedpipe'])
+    expect(
+      result.missing.some(
+        (node) => node.sectionKey === 'external_method' && node.fieldKey === 'execution_type',
+      ),
+    ).toBe(true)
+  })
+
+  it('demands the explanation as soon as the NT did not synchronize', () => {
+    const answers = {
+      ...lanzeAnswers(),
+      nt_ta: { ta_installed: true, nt_synchronized: false },
+    }
+    const result = evaluateCapturePlan(INSYTE_BOHRUNG_PLAN, lanzePhotos(), answers)
+
+    expect(result.canSubmit).toBe(false)
+    expect(result.missing.map((node) => node.fieldKey)).toEqual(['sync_issue_note'])
+  })
+
+  it('stops demanding the TA front view when no TA was installed', () => {
+    const answers = {
+      ...lanzeAnswers(),
+      nt_ta: { ta_installed: false, nt_synchronized: true },
+    }
+    const photos = lanzePhotos().filter((photo) => photo.slot_key !== 'ta_front')
+    const result = evaluateCapturePlan(INSYTE_BOHRUNG_PLAN, photos, answers)
+
+    expect(result.canSubmit).toBe(true)
+    const taFront = result.sections
+      .find((section) => section.key === 'nt_ta_photos')
+      ?.slots.find((slot) => slot.slotKey === 'ta_front')
+    expect(taFront?.visible).toBe(false)
+  })
+
+  it('demands hours and evidence once a service pack was performed', () => {
+    const answers = { ...lanzeAnswers(), service_pack: { sp_performed: true } }
+    const result = evaluateCapturePlan(INSYTE_BOHRUNG_PLAN, lanzePhotos(), answers)
+
+    expect(result.canSubmit).toBe(false)
+    expect(result.missing.map((node) => node.fieldKey ?? node.slotKey)).toEqual([
+      'sp_hours',
+      'sp_evidence',
+    ])
+  })
+
+  // yesno semantics: required = answered, not "yes". A refused signature is an
+  // answer the office sees; the canvas of Gap C will tighten this to a real
+  // signature without a plan change.
+  it('takes an answered "no" on the signature, but not silence', () => {
+    const signed = evaluateCapturePlan(INSYTE_BOHRUNG_PLAN, lanzePhotos(), {
+      ...lanzeAnswers(),
+      closing_signature: { client_signature: false },
+    })
+    expect(signed.canSubmit).toBe(true)
+
+    const silent = evaluateCapturePlan(INSYTE_BOHRUNG_PLAN, lanzePhotos(), {
+      ...lanzeAnswers(),
+      closing_signature: {},
+    })
+    expect(silent.canSubmit).toBe(false)
+    expect(silent.missing.map((node) => node.fieldKey)).toEqual(['client_signature'])
   })
 })
 

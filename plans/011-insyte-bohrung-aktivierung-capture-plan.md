@@ -1,6 +1,8 @@
 # Plan 011 — Insyte "Bohrung + Aktivierung" capture plan (230 € position)
 
-Status: TODO
+Status: IN PROGRESS (slice 1 — Gap A + Gap B shipped as migration 079; slice 2 —
+Gap C signature shipped as migration 080; slice 3 — Gap D field attachments
+shipped, no migration needed)
 Priority: P1 · Effort: L
 Source: field requirements from Jeisson Romero (Slack, 2026-07-29), transcribed
 and reconciled against the code by the coordinator.
@@ -98,43 +100,51 @@ resolution in both twins — `public.work_order_capture_plan_key()` and
 **order override → service item → work type**. Without this, someone has to pick the
 variant by hand on every order (`src/pages/admin/WorkOrderFormPage.tsx:230,631-632`).
 
-**C. Real client signature.** Nothing exists today: only the boolean
-`wo_detail_alta.client_signature` (`001_initial_schema.sql:157`,
-`src/constants/detail-fields.ts:62`), rendered as a plain checkbox
-(`CapturePlanForm.tsx:224-227`). Needs a canvas capture component, storage of the
-signature image alongside the order's photos, and inclusion in the certificate PDF
-(`src/services/pdfService.ts:40-215`). **Interim**: ship section 9 as the existing
-checkbox so the plan is usable, and swap it for the real signature when C lands.
+**C. Real client signature.** ~~Nothing exists today~~ **Shipped (slice 2,
+migration 080).** `SignatureField` (pointer-event canvas, ink-on-paper tokens)
+replaces the plain control behind any `client_signature` field — the yesno of
+this plan and the checkbox of the alta default alike. The PNG lives in the
+`work-order-photos` bucket under `<orderId>/signature/` (the 073 path scoping is
+the whole access rule — no storage DDL), referenced from
+`work_order_capture_reports.client_signature_path`; the boolean answer flips to
+true only after the image is stored, so the gate and the plan JSONB are
+untouched. The certificate PDF embeds the image as its closing section.
 
-**D. Attachments.** The security prerequisite is already handled; two changes remain:
-1. Allow images outside `diagrama_routing` — today PNG/JPG are only accepted for that
-   type (`src/types/work-order-documents.ts:29-41`).
-2. Surface attachments to the technician by mounting `DocumentUploader` (read-only) on
-   the field pages; it lives only on admin pages today.
+**D. Attachments.** **Shipped (slice 3, no migration).** Every document type now
+accepts PDF, Excel or an image (one allow-list, validated in the service as well
+as the uploader), and the technician pages (Rückmeldung + order detail) mount
+`WorkOrderAttachments` — a lean read-only list that fetches its own rows and
+signed URLs, renders nothing when the order has no attachments, and shows name,
+type and size only. Admin upload UI is unchanged apart from the widened hints.
 
 The blocker that used to sit here — `tech_read_work_order_documents` being scoped by
 *team* rather than by assignee, and ignoring the role — was fixed in **PR #24**
-(migration `073_work_order_access_scope.sql`), together with the `work-order-documents`
-bucket and `work-order-photos`, which was readable and writable by any authenticated
-user. **Do not mount the field attachment view until PR #24 is merged and applied.**
+(migration `073_work_order_access_scope.sql`, merged AND applied), together with the
+`work-order-documents` bucket and `work-order-photos`, which was readable and writable
+by any authenticated user. That is what made mounting the field view safe.
 
 ## Migrations
 
-Verified against `upstream/develop` on 2026-07-31: `065`–`069` are **merged** (PR #23,
-merged 2026-07-30), `071_capture_plan_soplado_ra_v3.sql` and
-`072_revoke_anon_assign_work_order.sql` are taken, `073_work_order_access_scope.sql` is
-claimed by **PR #24** (open at the time of writing), and `070` stays reserved for the
-post-cutover cleanup of plan 010. Next free number is therefore **074**. Re-check with
-`git ls-tree upstream/develop supabase/migrations/` before writing any SQL — this plan
-has already had to be renumbered once.
+Verified against `upstream/develop` on 2026-08-09: `071`–`078` are all **taken**
+(`073` landed with PR #24; `074`–`078` followed — phantom-column fix, basemap
+bucket, soplado_ra v4, billing repair, slot-key rescue). Next free number is
+therefore **079**. Re-check with `git ls-tree upstream/develop supabase/migrations/`
+before writing any SQL — this plan has now been renumbered three times
+(074/075 → renumbered → **079/080**).
 
-1. `074_insyte_bohrung_capture_plan.sql` — seed the plan; add
-   `service_items.capture_plan_key` and extend `work_order_capture_plan_key()`.
-2. `075_client_signature.sql` — signature storage/column (Gap C).
+1. `079_insyte_bohrung_capture_plan.sql` — **shipped in slice 1**: seeds the
+   plan; adds `service_items.capture_plan_key`, binds the INSYTE rows of the
+   position, and extends `work_order_capture_plan_key()` with the precedence
+   order override → service item → work type.
+2. `080_client_signature.sql` — **shipped in slice 2**: adds
+   `work_order_capture_reports.client_signature_path`. No storage DDL — the
+   image reuses the `<orderId>/…` prefix the 073 policies already scope.
 Gap D needs no migration of its own any more — the policy work landed in `073`.
 
 Note: `071_capture_plan_soplado_ra_v3.sql` is a worked example of publishing a new
-plan version rather than editing one in place — follow its shape.
+plan version rather than editing one in place — follow its shape. `078` adds the
+hard rule slice 1 builds on: a photo slot key must be unique across the WHOLE
+plan, because the slot — not the section — is the identity of a photo.
 
 Ship `.sql` only; the repo owner applies them and regenerates `database.types.ts`.
 
@@ -165,7 +175,7 @@ Ship `.sql` only; the repo owner applies them and regenerates `database.types.ts
 
 ## STOP conditions
 
-- STOP if `git ls-tree upstream/develop supabase/migrations/` shows `074`/`075` taken.
+- STOP if `git ls-tree upstream/develop supabase/migrations/` shows `079`/`080` taken.
 - STOP before mounting the technician attachment view until PR #24 (migration `073`) is
   merged AND applied — until then the document policy is still team-scoped and
   role-agnostic, and the photo bucket is world-readable to any authenticated user.

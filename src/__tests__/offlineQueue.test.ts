@@ -48,6 +48,7 @@ function submission(workOrderId: string, overrides = {}) {
     planVersion: 1,
     answers: { details: { meters: 120 } },
     reportedServiceItems: [],
+    clientSignaturePath: null,
     notes: 'Fertig',
     consumption: null,
     notification: null,

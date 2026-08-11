@@ -20,6 +20,7 @@ import {
   saveCaptureReport,
 } from '@/services/capturePlanService'
 import { DEFAULT_CAPTURE_PLANS } from '@/constants/capture-plans'
+import { INSYTE_BOHRUNG_PLAN } from '@/constants/capture-plans-insyte-bohrung'
 import { SOPLADO_RA_PLAN } from '@/constants/capture-plans-soplado-ra'
 import { evaluateCapturePlan } from '@/services/capturePlanEngine'
 import { validateTransitionPrerequisites } from '@/services/workOrderService'
@@ -63,11 +64,33 @@ describe('capture plans in demo mode', () => {
     expect((await fetchCapturePlanForOrder(order))?.key).toBe('soplado_ra')
   })
 
-  it('offers the variant to the admin form, and only for soplado', async () => {
+  it('offers each variant to the admin form of its own work type only', async () => {
     expect((await fetchCapturePlanVariants('soplado')).map((plan) => plan.key)).toEqual([
       'soplado_ra',
     ])
-    expect(await fetchCapturePlanVariants('alta')).toEqual([])
+    expect((await fetchCapturePlanVariants('alta')).map((plan) => plan.key)).toEqual([
+      'insyte_bohrung_aktivierung',
+    ])
+    expect(await fetchCapturePlanVariants('pop')).toEqual([])
+  })
+
+  it('resolves the Insyte demo order through its catalogue position, not an override', async () => {
+    // The demo Insyte Bohrung order (fixtures) carries no capture_plan_key of
+    // its own: the plan comes from service_items.capture_plan_key (079).
+    const { data: rows } = await supabase
+      .from('work_orders')
+      .select('work_type, capture_plan_key, service_items ( capture_plan_key )')
+      .eq('order_number', 'LUM-20260429-0011')
+
+    const order = rows?.[0] as unknown as {
+      work_type: string
+      capture_plan_key: string | null
+      service_items: { capture_plan_key: string | null } | null
+    }
+    expect(order.work_type).toBe('alta')
+    expect(order.capture_plan_key ?? null).toBeNull()
+    expect(order.service_items?.capture_plan_key).toBe('insyte_bohrung_aktivierung')
+    expect(await fetchCapturePlanForOrder(order)).toEqual(INSYTE_BOHRUNG_PLAN)
   })
 
   it('reports a key nobody seeded and nobody compiled in', async () => {

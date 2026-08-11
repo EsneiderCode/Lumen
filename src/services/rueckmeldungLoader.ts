@@ -40,6 +40,8 @@ export interface RueckmeldungSnapshot {
   catalog: ServiceItemWithRelations[]
   vehicles: InventoryVehicle[]
   returnedNote: string | null
+  /** Storage path of the client signature image (migration 080), if captured. */
+  clientSignaturePath: string | null
 }
 
 export interface RueckmeldungLoadResult {
@@ -119,6 +121,7 @@ async function loadFromNetwork(
     catalog,
     vehicles,
     returnedNote: returnEntry?.notes ?? null,
+    clientSignaturePath: report?.client_signature_path ?? null,
   }
 
   // Best effort: a device that cannot cache still works with a network.
@@ -154,5 +157,11 @@ export async function loadRueckmeldung(
 
   const { workOrderId: _id, cachedAt, ...snapshot } = cached
   void _id
-  return { data: snapshot, error: null, fromCache: true, cachedAt }
+  // Snapshots cached before migration 080 have no signature path.
+  return {
+    data: { clientSignaturePath: null, ...snapshot },
+    error: null,
+    fromCache: true,
+    cachedAt,
+  }
 }

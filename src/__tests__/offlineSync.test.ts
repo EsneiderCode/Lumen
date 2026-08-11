@@ -17,7 +17,8 @@ const uploadCapturePhoto = vi.fn(async ({ slotKey }: { slotKey: string }): Promi
   calls.push(`upload:${slotKey}`)
   return { data: { id: slotKey }, error: null }
 })
-const saveCaptureReport = vi.fn(async (args: { reportedServiceItems?: unknown }) => {
+type SavedReport = { reportedServiceItems?: unknown; clientSignaturePath?: unknown }
+const saveCaptureReport = vi.fn(async (args: SavedReport) => {
   calls.push('answers')
   savedReportedItems = args.reportedServiceItems
   return { error: null as string | null }
@@ -43,7 +44,7 @@ const fetchWorkOrder = vi.fn(async () => ({
 
 vi.mock('@/services/capturePlanService', () => ({
   uploadCapturePhoto: (args: { slotKey: string }) => uploadCapturePhoto(args),
-  saveCaptureReport: (args: { reportedServiceItems?: unknown }) => saveCaptureReport(args),
+  saveCaptureReport: (args: SavedReport) => saveCaptureReport(args),
 }))
 vi.mock('@/services/workOrderService', () => ({
   fetchWorkOrder: () => fetchWorkOrder(),
@@ -95,6 +96,7 @@ function queueSubmission(workOrderId: string, overrides: Record<string, unknown>
     planVersion: 1,
     answers: { details: { meters: 120 } },
     reportedServiceItems: [],
+    clientSignaturePath: null,
     notes: 'Fertig',
     consumption: null,
     notification: null,
@@ -312,6 +314,17 @@ describe('draining the offline queue', () => {
     await syncOfflineQueue()
 
     expect(savedReportedItems).toEqual([{ service_item_id: 'si-9', qty: 3, notes: null }])
+  })
+
+  // Differential (plan 011): dropped here, client_signature_path stays NULL forever.
+  it('carries the client signature path through to the report', async () => {
+    await queueSubmission(WO_A, { clientSignaturePath: 'wo-a/signature/sig-1.png' })
+
+    await syncOfflineQueue()
+
+    expect(saveCaptureReport).toHaveBeenCalledWith(
+      expect.objectContaining({ clientSignaturePath: 'wo-a/signature/sig-1.png' }),
+    )
   })
 
   it('books material before the transition, and only when there is some', async () => {

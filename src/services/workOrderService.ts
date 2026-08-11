@@ -56,7 +56,11 @@ const MAX_LISTED_MISSING_NODES = 6
  */
 async function validateCapturePlanCompleteness(
   workOrderId: string,
-  order: { work_type: string; capture_plan_key?: string | null },
+  order: {
+    work_type: string
+    capture_plan_key?: string | null
+    service_items?: { capture_plan_key?: string | null } | null
+  },
 ): Promise<string | null> {
   const { data: report } = await fetchCaptureReport(workOrderId)
   if (!report) return 'Rückmeldung fehlt — Auftrag kann nicht zertifiziert werden'
@@ -100,11 +104,20 @@ export async function validateTransitionPrerequisites(
     return null
   }
 
-  const { data: order, error: orderError } = await supabase
+  const { data: rawOrder, error: orderError } = await supabase
     .from('work_orders')
-    .select('work_type, client_id, capture_plan_key')
+    .select('work_type, client_id, capture_plan_key, service_items ( capture_plan_key )')
     .eq('id', workOrderId)
     .single()
+
+  // Structural cast: `service_items.capture_plan_key` (migration 079) is not in
+  // database.types.ts until the owner applies the migration and regenerates.
+  const order = rawOrder as unknown as {
+    work_type: string
+    client_id: string | null
+    capture_plan_key: string | null
+    service_items: { capture_plan_key: string | null } | null
+  } | null
 
   if (orderError || !order) return 'Auftrag nicht gefunden'
 
@@ -187,6 +200,8 @@ export interface WorkOrderWithRelations extends WorkOrderRow {
     description_es: string | null
     unit: string | null
     detail_form: string | null
+    /** Plan bound to the catalogue position (migration 079). */
+    capture_plan_key?: string | null
   } | null
 }
 
@@ -329,7 +344,7 @@ export async function fetchWorkOrder(id: string) {
       clients ( name, code ),
       projects ( name, code, city, center_lat, center_lng ),
       operators ( name, code ),
-      service_items ( id, code, description_de, description_es, unit, detail_form )
+      service_items ( id, code, description_de, description_es, unit, detail_form, capture_plan_key )
     `,
     )
     .eq('id', id)

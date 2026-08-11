@@ -90,6 +90,7 @@ export async function fetchCapturePlanVersion(
 export function fetchCapturePlanForOrder(order: {
   work_type: string
   capture_plan_key?: string | null
+  service_items?: { capture_plan_key?: string | null } | null
 }): Promise<CapturePlan | null> {
   return fetchCapturePlan(capturePlanKeyForOrder(order))
 }
@@ -149,6 +150,13 @@ export interface CaptureReport {
    * admin bills from. Moved here from wo_detail_alta by migration 055.
    */
   reported_service_items: ReportedServiceItemDraft[]
+  /**
+   * Storage path of the client's hand-drawn signature PNG (migration 080),
+   * inside the `work-order-photos` bucket under `<orderId>/signature/`. The
+   * boolean `client_signature` answer stays what the gate judges; this is the
+   * evidence behind it.
+   */
+  client_signature_path?: string | null
   submitted_at: string | null
 }
 
@@ -174,6 +182,8 @@ export async function saveCaptureReport(params: {
   submitted?: boolean
   /** Alta orders only; left alone when omitted. */
   reportedServiceItems?: ReportedServiceItemDraft[]
+  /** Signature image path (080). Omitted = left alone; null = cleared. */
+  clientSignaturePath?: string | null
 }): Promise<{ error: string | null; errorCode: string | null }> {
   const { workOrderId, plan, answers, userId, submitted, reportedServiceItems } = params
 
@@ -188,6 +198,11 @@ export async function saveCaptureReport(params: {
   // The double cast is structural, not a missing type: an interface has no index
   // signature, so TS will not accept it as Json even though the shape is valid.
   if (reportedServiceItems) payload.reported_service_items = reportedServiceItems as unknown as Json
+  // Structural: the column lands with migration 080; database.types.ts follows
+  // once the owner applies it and regenerates.
+  if (params.clientSignaturePath !== undefined) {
+    ;(payload as Record<string, unknown>).client_signature_path = params.clientSignaturePath
+  }
   if (submitted) payload.submitted_at = new Date().toISOString()
 
   const { error } = await supabase
@@ -271,4 +286,40 @@ export async function uploadCapturePhoto(
     .single()
 
   return { data: (data as CapturePhotoRow | null) ?? null, error: error?.message ?? null }
+}
+
+// ── Client signature (plan 011 Gap C, migration 080) ─────────────────────────
+//
+// The signature PNG lives in the `work-order-photos` bucket under
+// `<orderId>/signature/…` on purpose: the 073 storage policies scope that
+// bucket by the first path segment — the order id — to the assigned technician
+// and the office, which is exactly the write/read contract a signature needs.
+// No new bucket, no storage DDL, no second policy source to keep in sync.
+// The path is referenced from `work_order_capture_reports.client_signature_path`
+// rather than a `work_order_photos` row, so the signature never surfaces in
+// photo galleries and never counts toward any photo slot of the plan.
+
+/** Uploads the drawn signature and returns its storage path. */
+export async function uploadClientSignature(
+  workOrderId: string,
+  blob: Blob,
+): Promise<{ path: string | null; error: string | null }> {
+  const path = `${workOrderId}/signature/client-signature-${Date.now()}.png`
+  const { error } = await supabase.storage
+    .from('work-order-photos')
+    .upload(path, blob, { contentType: 'image/png' })
+  return { path: error ? null : path, error: error?.message ?? null }
+}
+
+/** Best effort: a stale PNG left behind never blocks re-signing. */
+export async function removeClientSignature(path: string): Promise<void> {
+  await supabase.storage.from('work-order-photos').remove([path])
+}
+
+/** Short-lived signed URL of the stored signature, for the form and the PDF. */
+export async function fetchClientSignatureUrl(path: string): Promise<string | null> {
+  const { data, error } = await supabase.storage
+    .from('work-order-photos')
+    .createSignedUrl(path, 3600)
+  return error ? null : (data?.signedUrl ?? null)
 }

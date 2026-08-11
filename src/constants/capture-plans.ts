@@ -14,6 +14,7 @@
 // module produces, so the two can never silently drift.
 
 import { legacyDetailsSection, legacyPhotoSlot } from '@/constants/capture-plan-sections'
+import { INSYTE_BOHRUNG_PLAN } from '@/constants/capture-plans-insyte-bohrung'
 import { SOPLADO_RA_PLAN } from '@/constants/capture-plans-soplado-ra'
 import type { CapturePlan, CaptureSection, LegacyPhotoType } from '@/types/capture-plan'
 import { WorkType } from '@/types/enums'
@@ -64,7 +65,7 @@ export const DEFAULT_CAPTURE_PLANS: Record<WorkType, CapturePlan> = Object.fromE
 ) as Record<WorkType, CapturePlan>
 
 /** Plans that are not the default of a work type but a variant of it. */
-export const VARIANT_CAPTURE_PLANS: CapturePlan[] = [SOPLADO_RA_PLAN]
+export const VARIANT_CAPTURE_PLANS: CapturePlan[] = [SOPLADO_RA_PLAN, INSYTE_BOHRUNG_PLAN]
 
 /** Every plan the client carries, keyed by plan key. */
 export const COMPILED_CAPTURE_PLANS: Record<string, CapturePlan> = {
@@ -73,15 +74,21 @@ export const COMPILED_CAPTURE_PLANS: Record<string, CapturePlan> = {
 }
 
 /**
- * The plan a work order is captured under: its explicit `capture_plan_key`, or
- * its work type. Mirrors `public.work_order_capture_plan_key()` (migration 052).
+ * The plan a work order is captured under: its explicit `capture_plan_key`,
+ * failing that the one bound to its catalogue position, failing that its work
+ * type. Mirrors `public.work_order_capture_plan_key()` (migrations 052 + 079).
  */
 export function capturePlanKeyForOrder(order: {
   work_type: WorkType | string
   capture_plan_key?: string | null
+  /** The order's `service_items` embed, when the caller loaded it (079). */
+  service_items?: { capture_plan_key?: string | null } | null
 }): string {
   const explicit = order.capture_plan_key?.trim()
-  return explicit && explicit.length > 0 ? explicit : String(order.work_type)
+  if (explicit && explicit.length > 0) return explicit
+  const fromItem = order.service_items?.capture_plan_key?.trim()
+  if (fromItem && fromItem.length > 0) return fromItem
+  return String(order.work_type)
 }
 
 /** The work type a plan belongs to — its own key for the defaults. */

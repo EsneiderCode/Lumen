@@ -42,8 +42,11 @@ import {
 import { notifyReportSubmitted, type ReportSubmittedNotification } from '@/services/notificationService'
 import {
   fetchCaptureExampleUrls,
+  fetchClientSignatureUrl,
+  removeClientSignature,
   saveCaptureReport,
   uploadCapturePhoto,
+  uploadClientSignature,
   type CapturePhotoRow,
 } from '@/services/capturePlanService'
 import { pinResetKeys, setTrenchLocation, trenchesForReview } from '@/lib/trenchReview'
@@ -67,7 +70,9 @@ import {
   evaluateCapturePlan,
   slotNodeId,
 } from '@/services/capturePlanEngine'
+import { capturePlanKeyForOrder } from '@/constants/capture-plans'
 import { CapturePlanForm, type PendingPhoto, type SlotTarget } from '@/components/capture/CapturePlanForm'
+import { WorkOrderAttachments } from '@/components/capture/WorkOrderAttachments'
 import type { ServiceItemWithRelations } from '@/types/service-items'
 import type { ConsumptionCorrectionRequired, ConsumptionDraft, InventoryVehicle, VehicleStockRow } from '@/types/material-inventory'
 import type { TeamColor } from '@/types/enums'
@@ -153,6 +158,12 @@ export function RueckmeldungPage() {
   const [error, setError] = useState<string | null>(null)
   const [savedOk, setSavedOk] = useState(false)
   const [returnedNote, setReturnedNote] = useState<string | null>(null)
+  // The client signature (plan 011 Gap C): the stored PNG's path travels with
+  // the capture report; the boolean answer only turns true once the image is up.
+  const [signaturePath, setSignaturePath] = useState<string | null>(null)
+  const [signatureUrl, setSignatureUrl] = useState<string | null>(null)
+  const [signatureUploading, setSignatureUploading] = useState(false)
+  const [signatureError, setSignatureError] = useState<string | null>(null)
   /** `cachedAt` of the snapshot on screen when it came from the device, else null. */
   const [offlineSince, setOfflineSince] = useState<string | null>(null)
   const [queuedNotice, setQueuedNotice] = useState<string | null>(null)
@@ -220,6 +231,7 @@ export function RueckmeldungPage() {
         setPlan(data.plan)
         setAnswers(data.answers)
         setReturnedNote(data.returnedNote)
+        setSignaturePath(data.clientSignaturePath)
         setCatalog(data.catalog)
         setVehicles(data.vehicles)
         setReportedDrafts(
@@ -238,6 +250,9 @@ export function RueckmeldungPage() {
           getPhotoSignedUrls(data.photos.map((photo) => photo.storage_path)).then(setPhotoUrls)
           if (data.plan) {
             fetchCaptureExampleUrls(captureExamplePaths(data.plan)).then(setExampleUrls)
+          }
+          if (data.clientSignaturePath) {
+            fetchClientSignatureUrl(data.clientSignaturePath).then(setSignatureUrl)
           }
         }
       },
@@ -258,7 +273,11 @@ export function RueckmeldungPage() {
   const persistedRef = useRef<string | null>(null)
   useEffect(() => {
     if (isLoading || !plan || !id || !user) return
-    const snapshot = JSON.stringify({ answers, reported: reportedServiceItems() })
+    const snapshot = JSON.stringify({
+      answers,
+      reported: reportedServiceItems(),
+      signature: signaturePath,
+    })
     // La primera pasada es lo recién cargado: no hay nada que guardar todavía.
     if (persistedRef.current === null) {
       persistedRef.current = snapshot
@@ -268,14 +287,14 @@ export function RueckmeldungPage() {
 
     const timer = setTimeout(() => {
       persistedRef.current = snapshot
-      void cacheAnswers(id, answers, reportedServiceItems())
+      void cacheAnswers(id, answers, reportedServiceItems(), signaturePath)
       // Sin cobertura basta la copia del dispositivo; la de servidor irá cuando
       // vuelva la red o cuando el técnico guarde a mano.
       if (navigator.onLine) void persistCaptureReport(false)
     }, 2500)
     return () => clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [answers, reportedDrafts, isLoading, plan, id, user])
+  }, [answers, reportedDrafts, signaturePath, isLoading, plan, id, user])
 
   // ── Plano de las catas ────────────────────────────────────────────────────
   // Cada cata confirma su pin en su propio bloque; este mapa solo las enseña
@@ -707,7 +726,41 @@ export function RueckmeldungPage() {
       userId: user.id,
       submitted,
       reportedServiceItems: reportedServiceItems(),
+      clientSignaturePath: signaturePath,
     })
+  }
+
+  // ── Client signature (plan 011 Gap C) ─────────────────────────────────────
+  // The image goes up first; only a successful upload lets the form flip the
+  // `client_signature` answer to true. Signing needs a network — a signature
+  // captured into the void would vouch for evidence that does not exist.
+
+  async function handleSignatureCapture(blob: Blob): Promise<boolean> {
+    if (!id) return false
+    setSignatureUploading(true)
+    setSignatureError(null)
+    const previous = signaturePath
+    const { path } = await uploadClientSignature(id, blob)
+    if (!path) {
+      setSignatureError(t('capture.signature.error'))
+      setSignatureUploading(false)
+      return false
+    }
+    // Preview from the local blob: no reason to wait for a signed URL of the
+    // very bytes that are still in hand.
+    setSignaturePath(path)
+    setSignatureUrl(URL.createObjectURL(blob))
+    if (previous) void removeClientSignature(previous)
+    setSignatureUploading(false)
+    return true
+  }
+
+  async function handleSignatureClear(): Promise<boolean> {
+    if (signaturePath) void removeClientSignature(signaturePath)
+    setSignaturePath(null)
+    setSignatureUrl(null)
+    setSignatureError(null)
+    return true
   }
 
   async function handleSave() {
@@ -720,7 +773,7 @@ export function RueckmeldungPage() {
     // No network: the draft lives on the device. Nothing is queued for upload —
     // a draft is not a submission, and re-saving it later replaces it.
     if (!navigator.onLine) {
-      await cacheAnswers(id, answers, reportedServiceItems())
+      await cacheAnswers(id, answers, reportedServiceItems(), signaturePath)
       setQueuedNotice(t('offline.savedLocally'))
       setIsSaving(false)
       return
@@ -735,7 +788,7 @@ export function RueckmeldungPage() {
 
     // Keep the offline copy current, so reopening without coverage shows what
     // was just saved rather than what was loaded.
-    await cacheAnswers(id, answers, reportedServiceItems())
+    await cacheAnswers(id, answers, reportedServiceItems(), signaturePath)
 
     setSavedOk(true)
     setTimeout(() => setSavedOk(false), 3000)
@@ -813,7 +866,7 @@ export function RueckmeldungPage() {
     // nothing coherent to queue.
     if (!navigator.onLine) {
       if (!plan) {
-        setError(t('capture.planMissing', { key: order.capture_plan_key ?? order.work_type }))
+        setError(t('capture.planMissing', { key: capturePlanKeyForOrder(order) }))
         setIsSending(false)
         return
       }
@@ -824,6 +877,7 @@ export function RueckmeldungPage() {
         planVersion: plan.version,
         answers,
         reportedServiceItems: reportedServiceItems(),
+        clientSignaturePath: signaturePath,
         notes,
         consumption:
           consumptionDraftValues.length > 0
@@ -840,7 +894,7 @@ export function RueckmeldungPage() {
         return
       }
 
-      await cacheAnswers(id, answers, reportedServiceItems())
+      await cacheAnswers(id, answers, reportedServiceItems(), signaturePath)
       void refreshPendingCounts()
       setIsSending(false)
       navigate(`/tech/orders/${id}`)
@@ -1072,6 +1126,11 @@ export function RueckmeldungPage() {
         </div>
       )}
 
+      {/* Files the office attached for this job (plan 011 Gap D) — context to
+          read BEFORE working, so it sits above the form. Renders nothing when
+          the order has no attachments. */}
+      {id && !offlineSince && <WorkOrderAttachments workOrderId={id} />}
+
       {/* Capture plan — photos and technical data, driven by the plan of this
           work order (its capture_plan_key, or its work type) */}
       {plan && evaluation ? (
@@ -1092,10 +1151,17 @@ export function RueckmeldungPage() {
           onDeletePhoto={(photo) => handlePhotoDelete(photo.id, photo.storage_path)}
           onAddItem={handleAddItem}
           onRemoveItem={handleRemoveItem}
+          signature={{
+            url: signatureUrl,
+            uploading: signatureUploading,
+            error: signatureError,
+            onCapture: handleSignatureCapture,
+            onClear: handleSignatureClear,
+          }}
         />
       ) : (
         <div className="rounded-l border border-warn/40 bg-warn/10 px-4 py-3 text-sm text-warn">
-          {t('capture.planMissing', { key: order.capture_plan_key ?? order.work_type })}
+          {t('capture.planMissing', { key: capturePlanKeyForOrder(order) })}
         </div>
       )}
 

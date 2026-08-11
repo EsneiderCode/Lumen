@@ -185,7 +185,9 @@
     "Erdgeschoss": "Erdgeschoss",
     "Obergeschoss": "Obergeschoss",
     "Dach": "Dach",
-    "Außen": "Außen"
+    "Außen": "Außen",
+    "tiefbau": "Tiefbau",
+    "lanze": "Lanze"
   },
   "workOrder": {
     "title": "Aufträge",
@@ -1712,6 +1714,20 @@
       "hint": "Jede Grube hat ihren Pin bereits bestätigt. Hier stehen sie zusammen: ergibt der Verlauf keinen Sinn, den Pin der Ausreißerin verschieben und erneut bestätigen.",
       "confirmedCount": "{{done}}/{{total}} BESTÄTIGT",
       "unconfirmed": "nicht bestätigt"
+    },
+    "signature": {
+      "action": "Unterschreiben",
+      "hint": "Der Kunde unterschreibt hier mit dem Finger oder einem Stift.",
+      "save": "Unterschrift übernehmen",
+      "saving": "Wird gespeichert…",
+      "clear": "Löschen",
+      "cancel": "Abbrechen",
+      "signed": "Unterschrieben",
+      "redo": "Neu unterschreiben",
+      "error": "Unterschrift konnte nicht gespeichert werden. Bitte erneut versuchen.",
+      "decline": "Kunde lehnt Unterschrift ab",
+      "declined": "Unterschrift abgelehnt",
+      "undo": "Rückgängig"
     }
   },
   "map": {
@@ -1811,6 +1827,137 @@
         "location": "Die Koordinaten aus dem Wasserzeichen eines Fotos dieser Grube übernehmen.",
         "pinConfirmed": "Auf der Karte prüfen, ob der Pin dort sitzt, wo die Grube war."
       }
+    },
+    "insyteBohrung": {
+      "title": "Bohrung + Aktivierung (Insyte)",
+      "externalMethod": {
+        "title": "Ausführung außen",
+        "description": "Wie wurde die Zuleitung zum Haus ausgeführt?"
+      },
+      "externalPhotos": {
+        "title": "Fotos außen",
+        "description": "Speedpipe (Mikrorohr) und Zuleitung, je nach Ausführungsart."
+      },
+      "huep": {
+        "title": "HÜP",
+        "description": "Hausübergabepunkt: offen, geschlossen, Umgebung und Faser-Anmeldung."
+      },
+      "ntTa": {
+        "title": "NT / TA",
+        "description": "Installation und Synchronisation bestätigen."
+      },
+      "ntTaPhotos": {
+        "title": "Fotos NT / TA",
+        "description": "Angeschlossener NT, Seriennummer und Umgebung."
+      },
+      "servicePack": {
+        "title": "Service-Pack",
+        "description": "Nur ausfüllen, wenn zusätzliche Arbeit als Service-Pack geleistet wurde."
+      },
+      "servicePackPhotos": {
+        "title": "Fotos Service-Pack",
+        "description": "Nachweis der als Service-Pack geleisteten Arbeit."
+      },
+      "closing": {
+        "title": "Abschluss",
+        "description": "Aktivierung und Messwerte dokumentieren."
+      },
+      "closingSignature": {
+        "title": "Unterschrift des Kunden"
+      },
+      "slot": {
+        "speedpipe": {
+          "label": "Speedpipe (Mikrorohr)",
+          "hint": "Verlegte Speedpipe (Mikrorohr), Verlauf im Bild erkennbar."
+        },
+        "excavationOpen": {
+          "label": "Graben offen",
+          "hint": "Offener Graben mit sichtbarer Speedpipe."
+        },
+        "muffe": {
+          "label": "Muffe",
+          "hint": "Gesetzte Muffe im offenen Graben."
+        },
+        "excavationClosed": {
+          "label": "Graben geschlossen",
+          "hint": "Wiederhergestellte Oberfläche nach dem Tiefbau."
+        },
+        "beforeWork": {
+          "label": "Vor der Arbeit",
+          "hint": "Zustand vor dem Einsatz der Lanze."
+        },
+        "afterWork": {
+          "label": "Nach der Arbeit",
+          "hint": "Zustand nach dem Einsatz der Lanze, Oberfläche wiederhergestellt."
+        },
+        "huepOpen": {
+          "label": "HÜP offen",
+          "hint": "Geöffneter HÜP mit sichtbarer Faserführung."
+        },
+        "huepClosed": {
+          "label": "HÜP geschlossen",
+          "hint": "Geschlossener HÜP nach der Arbeit."
+        },
+        "huepPanorama": {
+          "label": "HÜP Panorama",
+          "hint": "HÜP mit Umgebung, zur Lage im Gebäude."
+        },
+        "faserAnmeldung": {
+          "label": "Faser anmelden",
+          "hint": "Nachweis der Faser-Anmeldung (Bildschirm der App oder Etikett)."
+        },
+        "ntConnected": {
+          "label": "NT angeschlossen",
+          "hint": "Angeschlossener NT mit sichtbarer Kabelführung."
+        },
+        "ntSerial": {
+          "label": "NT Seriennummer",
+          "hint": "Etikett mit Seriennummer, Text lesbar."
+        },
+        "taFront": {
+          "label": "TA Frontansicht",
+          "hint": "Installierte TA von vorn."
+        },
+        "ntPanorama": {
+          "label": "NT Panorama",
+          "hint": "NT mit Umgebung, zur Lage im Raum."
+        },
+        "spEvidence": {
+          "label": "Nachweis Service-Pack",
+          "hint": "Die zusätzlich geleistete Arbeit, im Bild erkennbar."
+        },
+        "activation": {
+          "label": "Aktivierung",
+          "hint": "Aktivierter Anschluss, z. B. leuchtende Status-LEDs."
+        },
+        "measurements": {
+          "label": "Messwerte",
+          "hint": "Messergebnis der Aktivierung, Werte lesbar."
+        }
+      },
+      "field": {
+        "executionType": "Ausführungsart",
+        "taInstalled": "TA installiert?",
+        "ntSynchronized": "NT synchronisiert?",
+        "syncIssueNote": "Problem bei der Synchronisation",
+        "spPerformed": "Service-Pack geleistet?",
+        "spHours": "Stunden",
+        "clientSignature": "Unterschrift des Kunden liegt vor?"
+      },
+      "placeholder": {
+        "syncIssueNote": "Was verhindert die Synchronisation?",
+        "spHours": "z. B. 2"
+      }
+    }
+  },
+  "fieldAttachments": {
+    "title": "Anhänge zum Auftrag",
+    "hint": "Vom Büro angehängte Unterlagen — nur Ansicht.",
+    "type": {
+      "plano": "Plan / Trassenplan",
+      "cartas_empalme": "Spleißprotokoll",
+      "diagrama_routing": "Routing-Diagramm",
+      "other": "Sonstiges"
     }
   }
 }

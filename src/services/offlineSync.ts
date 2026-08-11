@@ -114,6 +114,8 @@ async function sendSubmission(submission: QueuedSubmission): Promise<string | nu
     reportedServiceItems:
       submission.reportedServiceItems ??
       normalizeReportedServiceItems(submission.detail?.reported_service_items),
+    // Undefined on pre-080 queue entries: "left alone", never a silent wipe.
+    clientSignaturePath: submission.clientSignaturePath,
   })
   if (reportError.error) return reportError.error
 
