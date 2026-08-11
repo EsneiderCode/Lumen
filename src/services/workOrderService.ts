@@ -8,7 +8,10 @@ import {
   type ProfileComplianceResult,
 } from '@/services/complianceService'
 import { capturePlanKeyForOrder } from '@/constants/capture-plans'
-import { describeMissingNodes, evaluateCapturePlan } from '@/services/capturePlanEngine'
+import {
+  describeMissingNodesForPeople,
+  evaluateCapturePlan,
+} from '@/services/capturePlanEngine'
 import {
   fetchCapturePlan,
   fetchCapturePlanVersion,
@@ -44,8 +47,8 @@ const MAX_LISTED_MISSING_NODES = 6
 
 /**
  * Completeness according to the order's capture plan — the client twin of
- * assert_work_order_rueckmeldung_complete() (migration 056), down to the
- * wording of the message.
+ * assert_work_order_rueckmeldung_complete() (migration 056). The rule stays in
+ * sync with SQL, but its message resolves the plan's i18n labels for people.
  *
  * Every order that was ever captured has a report — migration 055 backfilled
  * the ones that predate the plans — so no report means nobody has reported
@@ -74,12 +77,9 @@ async function validateCapturePlanCompleteness(
   const evaluation = evaluateCapturePlan(plan, (photos ?? []) as CapturedPhotoRef[], report.answers)
   if (evaluation.canSubmit) return null
 
-  const missing = describeMissingNodes(evaluation)
-  const shown = missing.slice(0, MAX_LISTED_MISSING_NODES)
-  if (missing.length > shown.length) {
-    shown.push(`… (+${missing.length - shown.length})`)
-  }
-  return `Rückmeldung unvollständig (${planKey}): ${shown.join('; ')}`
+  return describeMissingNodesForPeople(plan, evaluation, {
+    maxNodes: MAX_LISTED_MISSING_NODES,
+  })
 }
 
 /**
@@ -936,12 +936,32 @@ export async function certifyWorkOrderInternal(
     return toFailureResult([{ code: 'server_error', message: billingResult.error }])
   }
 
-  return callLifecycleRpc('certify_work_order_internal', {
+  const result = await callLifecycleRpc('certify_work_order_internal', {
     p_work_order_id: args.workOrderId,
     p_changed_by: args.changedBy,
     p_data_hash: args.dataHash!.trim(),
     p_notes: args.notes ?? null,
   })
+
+  const completenessReason = result.reasons.find(
+    (reason) => reason.code === 'incomplete_rueckmeldung' || reason.code === 'missing_required_photos',
+  )
+  if (!result.ok && completenessReason) {
+    console.error('Internal certification rejected by database completeness gate', {
+      workOrderId: args.workOrderId,
+      rawMessage: completenessReason.message,
+    })
+    // The database correctly owns the gate, but SQL only knows internal keys.
+    // Re-read the pinned plan/report/photos and present their translated labels.
+    // A client/DB disagreement fails safe: the raw database message remains.
+    const readable = await validateTransitionPrerequisites(
+      args.workOrderId,
+      'internally_certified',
+    )
+    if (readable?.includes('\n• ')) completenessReason.message = readable
+  }
+
+  return result
 }
 
 export async function acceptWorkOrderClient(

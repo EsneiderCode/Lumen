@@ -656,7 +656,7 @@ export function CertificationPage() {
                         {item.orderNumber ?? item.workOrderId}
                       </div>
                       {item.reasons.length > 0 && (
-                        <div className="m mt-1 text-xs">
+                        <div className="m mt-1 whitespace-pre-line text-xs">
                           {item.reasons.map((reason) => reason.message).join('; ')}
                         </div>
                       )}

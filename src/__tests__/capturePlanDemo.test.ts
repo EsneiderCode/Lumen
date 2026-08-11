@@ -197,9 +197,10 @@ describe('the certification gate in demo mode', () => {
     })
 
     const result = await validateTransitionPrerequisites(workOrderId, 'internally_certified')
-    expect(result).toContain('Rückmeldung unvollständig (alta)')
-    expect(result).toContain('Angabe details.equipment_installed')
-    expect(result).toContain('Angabe details.client_signature')
+    expect(result).toContain('Rückmeldung unvollständig')
+    expect(result).toContain('• Eingebaute Geräte')
+    expect(result).toContain('• Kundenunterschrift')
+    expect(result).not.toContain('details.equipment_installed')
   })
 
   // The report is pinned to the plan it was captured under, but the order's own

@@ -1690,7 +1690,14 @@
       }
     },
     "missing": {
-      "summary": "Es fehlen {{count}} Angaben"
+      "summary": "Es fehlen {{count}} Angaben",
+      "title": "Rückmeldung unvollständig — folgende Anforderungen fehlen:",
+      "photos": "Pflichtfotos ({{count}})",
+      "fields": "Pflichtangaben ({{count}})",
+      "items": "Fehlende Einträge ({{count}})",
+      "itemContext": "{{item}} {{index}} — {{label}}",
+      "count": "({{count}}×)",
+      "more": "… und {{count}} weitere Anforderungen"
     },
     "review": {
       "title": "Die Gruben auf der Karte",

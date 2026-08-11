@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import de from '@/i18n/locales/de.json'
 import es from '@/i18n/locales/es.json'
-import { SOPLADO_RA_PLAN } from '@/constants/capture-plans-soplado-ra'
+import { COMPILED_CAPTURE_PLANS } from '@/constants/capture-plans'
 import type { CapturePlan } from '@/types/capture-plan'
 
 // Helper: retrieve a nested value by dot-path (e.g. "auth.pin.savePIN")
@@ -43,7 +43,22 @@ const ASSIGNMENT_KEYS = [
   'assignment.rosterDocumented',
 ]
 
-const REQUIRED_KEYS = [...AUTH_PIN_KEYS, ...BREADCRUMB_KEYS, ...ASSIGNMENT_KEYS]
+const CAPTURE_MISSING_KEYS = [
+  'capture.missing.title',
+  'capture.missing.photos',
+  'capture.missing.fields',
+  'capture.missing.items',
+  'capture.missing.itemContext',
+  'capture.missing.count',
+  'capture.missing.more',
+]
+
+const REQUIRED_KEYS = [
+  ...AUTH_PIN_KEYS,
+  ...BREADCRUMB_KEYS,
+  ...ASSIGNMENT_KEYS,
+  ...CAPTURE_MISSING_KEYS,
+]
 
 describe('i18n locale key parity — de.json and es.json', () => {
   for (const key of REQUIRED_KEYS) {
@@ -120,7 +135,7 @@ describe('i18n locale key parity — de.json and es.json', () => {
   // A capture plan is data: every label it shows comes from a key in these two
   // files. A missing one shows up as a raw key on a technician's phone, in the
   // field, on the plan whose whole point is being self-explanatory.
-  it('resolves every label the Soplado de RA plan references, in both locales', () => {
+  it('resolves every label every compiled capture plan references, in both locales', () => {
     const referencedKeys = (plan: CapturePlan): string[] => {
       const keys: string[] = []
       const collect = (value: string | undefined) => {
@@ -150,9 +165,11 @@ describe('i18n locale key parity — de.json and es.json', () => {
       return keys
     }
 
-    for (const key of referencedKeys(SOPLADO_RA_PLAN)) {
-      expect(getKey(de as Record<string, unknown>, key), `de: ${key}`).toEqual(expect.any(String))
-      expect(getKey(es as Record<string, unknown>, key), `es: ${key}`).toEqual(expect.any(String))
+    for (const plan of Object.values(COMPILED_CAPTURE_PLANS)) {
+      for (const key of referencedKeys(plan)) {
+        expect(getKey(de as Record<string, unknown>, key), `de: ${key}`).toEqual(expect.any(String))
+        expect(getKey(es as Record<string, unknown>, key), `es: ${key}`).toEqual(expect.any(String))
+      }
     }
   })
 
