@@ -45,3 +45,9 @@ docs/
 # Contratos, tarifarios firmados y demás documentación local del cliente.
 # No entra al repositorio: son documentos firmados con datos del cliente.
 Recursos_Locales/
+
+# Keep credentials out of every environment variant (including nested apps).
+.env
+.env.*
+!.env.example
+!.env.demo
